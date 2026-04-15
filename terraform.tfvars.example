@@ -1,0 +1,64 @@
+# =============================================================================
+# terraform.tfvars.example
+# Upwork AI Creative Pipeline — Variable Values
+#
+# HOW TO USE:
+#   1. Copy this file:  cp terraform.tfvars.example terraform.tfvars
+#   2. Fill in every PLACEHOLDER value below
+#   3. Run: terraform plan
+#
+# IMPORTANT: terraform.tfvars is in .gitignore — never commit it.
+# It may contain sensitive endpoint URLs. Secrets (API keys, passwords)
+# must live in AWS Secrets Manager, NOT here.
+# =============================================================================
+
+# ── Project ───────────────────────────────────────────────────────────────────
+project     = "upwork-adam"
+environment = "alpha"   # alpha | staging | prod
+aws_region  = "us-east-1"
+
+# ── S3 ────────────────────────────────────────────────────────────────────────
+# Must be globally unique across all AWS accounts.
+runs_bucket_name     = "PLACEHOLDER — e.g. upwork-adam-runs-alpha"
+artifact_retention_days = 90   # delete run artifacts after 90 days
+
+# ── Lambda ────────────────────────────────────────────────────────────────────
+lambda_timeout              = 60     # seconds — Gemini + Pillow needs headroom
+lambda_memory               = 1024   # MB
+lambda_reserved_concurrency = 10     # max simultaneous executions
+
+# ── LLM Gateway — get these values from Haresh's engineering team ─────────────
+llm_gateway_endpoint = "PLACEHOLDER — e.g. https://llm-gateway.upwork.internal/v1/messages"
+llm_gateway_model    = "PLACEHOLDER — e.g. claude-sonnet-4-20250514"
+
+# ── VPC (optional) ────────────────────────────────────────────────────────────
+# Leave commented out unless Lambda needs to reach internal Upwork services.
+# vpc_subnet_ids         = ["subnet-0abc123", "subnet-0def456"]
+# vpc_security_group_ids = ["sg-0abc123"]
+
+# ── Secrets Manager secret names ──────────────────────────────────────────────
+# These are just the NAMES of secrets, not the secret values themselves.
+# Create each secret in AWS Secrets Manager before running terraform apply.
+#
+# aws secretsmanager create-secret \
+#   --name "upwork-adam/mind-studio-webhook-url" \
+#   --secret-string "https://your-webhook-url-here"
+#
+# (Repeat for each secret below)
+
+mind_studio_webhook_secret_name    = "upwork-adam/mind-studio-webhook-url"
+webhook_secret_name                = "upwork-adam/webhook-secret"
+llm_gateway_api_key_secret_name    = "upwork-adam/llm-gateway-api-key"
+google_service_account_secret_name = "upwork-adam/google-service-account"
+gemini_api_key_secret_name         = "upwork-adam/gemini-api-key"
+
+# ── Observability ─────────────────────────────────────────────────────────────
+log_retention_days = 30
+
+# ── Tags ──────────────────────────────────────────────────────────────────────
+tags = {
+  Project   = "upwork-adam"
+  ManagedBy = "terraform"
+  Team      = "paid-acquisition"
+  Owner     = "creative-machine"
+}
