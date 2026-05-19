@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ADAM Tag Manager</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 12px;
+    background: #ffffff;
+    color: #1a1a1a;
+  }
+  header {
+    padding: 14px 20px 10px;
+    border-bottom: 1px solid #e6e6e6;
+    background: #fafafa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 {
+    margin: 0 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .summary {
+    color: #4a4a4a;
+    font-size: 11px;
+  }
+  .summary strong { color: #1a1a1a; }
+  .controls {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  button {
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: #333; }
+  button.secondary {
+    background: #fff;
+    color: #1a1a1a;
+    border: 1px solid #d6d6d6;
+  }
+  button.secondary:hover { background: #f0f0f0; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Selection panel */
+  .selection-panel {
+    border-bottom: 1px solid #e6e6e6;
+    background: #f0f7ff;
+    padding: 12px 20px;
+  }
+  .selection-panel.empty { display: none; }
+  .selection-panel .label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #0050a0;
+    margin-bottom: 6px;
+  }
+  .selection-panel .photo-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+  }
+  .selection-panel .multi-summary {
+    font-size: 12px;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+  }
+  .selection-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .editor-section {
+    margin-top: 10px;
+  }
+  .editor-section .editor-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #4a4a4a;
+    margin-bottom: 6px;
+  }
+  .editor-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .editor-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: #1a1a1a;
+    color: #fff;
+    border: 1px solid #1a1a1a;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .editor-tag:hover { background: #333; border-color: #333; }
+  .editor-tag .x {
+    font-size: 13px;
+    line-height: 1;
+    opacity: 0.7;
+  }
+  .editor-tag:hover .x { opacity: 1; }
+  .add-tag-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .add-tag-row input {
+    flex: 1;
+    padding: 5px 8px;
+    border: 1px solid #d6d6d6;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+  }
+  .add-tag-row input:focus {
+    outline: none;
+    border-color: #0050a0;
+  }
+
+  /* Active filters bar */
+  .active-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-bottom: 1px solid #e6e6e6;
+    background: #fffaf2;
+  }
+  .active-filters.empty { display: none; }
+  .active-filters-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #8a5a00;
+    margin-right: 4px;
+  }
+  .active-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #1a1a1a;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .active-pill .x { opacity: 0.7; font-size: 13px; line-height: 1; }
+  .active-pill:hover .x { opacity: 1; }
+
+  main { padding: 14px 20px 24px; }
+  .section { margin-bottom: 18px; }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .section-name {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #1a1a1a;
+  }
+  .section-count { font-size: 10px; color: #777; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    background: #f4f4f4;
+    color: #1a1a1a;
+    border: 1px solid #d6d6d6;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .tag:hover { background: #ebebeb; border-color: #b8b8b8; }
+  .tag.active {
+    background: #1a1a1a;
+    color: #fff;
+    border-color: #1a1a1a;
+  }
+  .tag.zero { opacity: 0.4; cursor: not-allowed; }
+  .tag .count {
+    color: #1a1a1a;
+    background: #ffffff;
+    border: 1px solid #d6d6d6;
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 14px;
+    text-align: center;
+  }
+  .tag.active .count {
+    background: #ffffff;
+    color: #1a1a1a;
+    border-color: #1a1a1a;
+  }
+  .tag.zero .count { background: #f4f4f4; color: #999; }
+  .section.uncategorized .tag {
+    background: #fff5e6;
+    border-color: #f0a830;
+    color: #5a3500;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+  }
+  .empty-state h2 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    color: #666;
+  }
+  .empty-state p { margin: 0; font-size: 11px; line-height: 1.5; }
+  footer {
+    padding: 8px 20px;
+    border-top: 1px solid #e6e6e6;
+    color: #666;
+    font-size: 10px;
+    text-align: center;
+    background: #fafafa;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ADAM Tag Manager</h1>
+  <div class="summary" id="summary">Scanning library…</div>
+  <div class="controls">
+    <button id="refresh">Refresh</button>
+    <button class="secondary" id="select-canvas">Select in canvas</button>
+    <button class="secondary" id="zoom-canvas">Zoom to selection</button>
+    <button class="secondary" id="export-csv">Export CSV</button>
+    <button class="secondary" id="close-btn">Close</button>
+  </div>
+</header>
+
+<div class="selection-panel empty" id="selection-panel"></div>
+
+<div class="active-filters empty" id="active-filters">
+  <span class="active-filters-label">Filters</span>
+  <span id="active-pills"></span>
+  <button class="secondary" id="clear-filters" style="margin-left:auto">Clear all</button>
+</div>
+
+<main id="content">
+  <div class="empty-state">
+    <h2>Scanning…</h2>
+    <p>Walking the page to find tagged library photos.</p>
+  </div>
+</main>
+
+<footer>
+  Click a photo in Figma to edit its tags. Select 2+ photos to copy tags between them.
+</footer>
+
+<script>
+  // ── Constants ──────────────────────────────────────────────────────────────
+
+  var DIMENSION_ORDER = [
+    "style", "people", "demographics", "age", "objects", "setting",
+    "palette", "mood", "activity", "composition", "rights", "uncategorized"
+  ];
+  var DIMENSION_LABELS = {
+    style: "Style", people: "People", demographics: "Demographics",
+    age: "Age", objects: "Objects", setting: "Setting",
+    palette: "Palette", mood: "Mood", activity: "Activity",
+    composition: "Composition", rights: "Rights",
+    uncategorized: "Uncategorized",
+  };
+  var PEOPLE_PATTERN = /^(man|woman)_\d+$/;
+  var RIGHTS_PATTERN = /^rights_(\d{4})_(\d{2})$/;
+
+  // ── State ─────────────────────────────────────────────────────────────────
+
+  var allPhotos = [];
+  var registry = {};
+  var activeFilters = new Set();
+  var selectedPhotos = []; // [{ id, name, tags }] — synced from Figma selection
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  function dimensionOf(tag) {
+    if (RIGHTS_PATTERN.test(tag)) return "rights";
+    if (PEOPLE_PATTERN.test(tag)) return "people";
+    return registry[tag] || "uncategorized";
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  function photoMatchesFilters(photo) {
+    if (activeFilters.size === 0) return true;
+    var byDim = {};
+    activeFilters.forEach(function (tag) {
+      var d = dimensionOf(tag);
+      if (!byDim[d]) byDim[d] = [];
+      byDim[d].push(tag);
+    });
+    var photoTagSet = {};
+    for (var i = 0; i < photo.tags.length; i++) photoTagSet[photo.tags[i]] = 1;
+    for (var dim in byDim) {
+      var any = false;
+      for (var j = 0; j < byDim[dim].length; j++) {
+        if (photoTagSet[byDim[dim][j]]) { any = true; break; }
+      }
+      if (!any) return false;
+    }
+    return true;
+  }
+
+  function getFilteredPhotos() {
+    if (activeFilters.size === 0) return allPhotos.slice();
+    var out = [];
+    for (var i = 0; i < allPhotos.length; i++) {
+      if (photoMatchesFilters(allPhotos[i])) out.push(allPhotos[i]);
+    }
+    return out;
+  }
+
+  function computeChipCount(tag) {
+    var tagDim = dimensionOf(tag);
+    var simulatedFilters = new Set();
+    activeFilters.forEach(function (t) {
+      if (dimensionOf(t) !== tagDim) simulatedFilters.add(t);
+    });
+    var byDim = {};
+    simulatedFilters.forEach(function (t) {
+      var d = dimensionOf(t);
+      if (!byDim[d]) byDim[d] = [];
+      byDim[d].push(t);
+    });
+    var count = 0;
+    photoLoop:
+    for (var i = 0; i < allPhotos.length; i++) {
+      var photo = allPhotos[i];
+      var hasTag = false;
+      for (var j = 0; j < photo.tags.length; j++) {
+        if (photo.tags[j] === tag) { hasTag = true; break; }
+      }
+      if (!hasTag) continue;
+      var photoTagSet = {};
+      for (var k = 0; k < photo.tags.length; k++) photoTagSet[photo.tags[k]] = 1;
+      for (var dim in byDim) {
+        var any = false;
+        for (var m = 0; m < byDim[dim].length; m++) {
+          if (photoTagSet[byDim[dim][m]]) { any = true; break; }
+        }
+        if (!any) continue photoLoop;
+      }
+      count++;
+    }
+    return count;
+  }
+
+  function collectAllTags() {
+    var seen = {};
+    var tags = [];
+    for (var i = 0; i < allPhotos.length; i++) {
+      for (var j = 0; j < allPhotos[i].tags.length; j++) {
+        var t = allPhotos[i].tags[j];
+        if (!seen[t]) { seen[t] = 1; tags.push(t); }
+      }
+    }
+    return tags;
+  }
+
+  function groupTagsByDimension(tags) {
+    var grouped = {};
+    for (var i = 0; i < tags.length; i++) {
+      var d = dimensionOf(tags[i]);
+      if (!grouped[d]) grouped[d] = [];
+      grouped[d].push(tags[i]);
+    }
+    return grouped;
+  }
+
+  // ── Rendering ─────────────────────────────────────────────────────────────
+
+  function renderAll() {
+    renderSummary();
+    renderSelectionPanel();
+    renderActiveFilters();
+    renderSections();
+    syncCanvasSelection(false);
+  }
+
+  function renderSummary() {
+    var summary = document.getElementById("summary");
+    var filtered = getFilteredPhotos().length;
+    if (activeFilters.size === 0) {
+      summary.innerHTML =
+        '<strong>' + allPhotos.length + '</strong> tagged photos · ' +
+        '<strong>' + collectAllTags().length + '</strong> unique tags';
+    } else {
+      summary.innerHTML =
+        '<strong>' + filtered + '</strong> of ' + allPhotos.length +
+        ' photos match · ' + activeFilters.size + ' filter' +
+        (activeFilters.size === 1 ? '' : 's') + ' active';
+    }
+  }
+
+  function renderSelectionPanel() {
+    var panel = document.getElementById("selection-panel");
+    panel.innerHTML = "";
+
+    if (selectedPhotos.length === 0) {
+      panel.classList.add("empty");
+      return;
+    }
+    panel.classList.remove("empty");
+
+    if (selectedPhotos.length === 1) {
+      renderSinglePhotoEditor(panel, selectedPhotos[0]);
+    } else {
+      renderMultiPhotoActions(panel, selectedPhotos);
+    }
+  }
+
+  function renderSinglePhotoEditor(panel, photo) {
+    var label = document.createElement("div");
+    label.className = "label";
+    label.textContent = "Selected photo · edit tags";
+    panel.appendChild(label);
+
+    var name = document.createElement("div");
+    name.className = "photo-name";
+    name.textContent = photo.name;
+    panel.appendChild(name);
+
+    // Current tags (clickable to remove)
+    var editorSection = document.createElement("div");
+    editorSection.className = "editor-section";
+
+    var currentLabel = document.createElement("div");
+    currentLabel.className = "editor-label";
+    currentLabel.textContent = "Current tags (" + photo.tags.length + ") — click × to remove";
+    editorSection.appendChild(currentLabel);
+
+    if (photo.tags.length === 0) {
+      var none = document.createElement("div");
+      none.style.fontSize = "11px";
+      none.style.color = "#999";
+      none.style.fontStyle = "italic";
+      none.textContent = "No tags yet. Add some below.";
+      editorSection.appendChild(none);
+    } else {
+      var tagWrap = document.createElement("div");
+      tagWrap.className = "editor-tags";
+      var sorted = photo.tags.slice().sort();
+      for (var i = 0; i < sorted.length; i++) {
+        var t = sorted[i];
+        var chip = document.createElement("button");
+        chip.className = "editor-tag";
+        chip.title = "Remove '" + t + "'";
+        chip.innerHTML =
+          '<span>' + escapeHtml(t) + '</span><span class="x">×</span>';
+        (function (tag) {
+          chip.addEventListener("click", function () {
+            parent.postMessage({ pluginMessage: { type: "remove-tag", photoId: photo.id, tag: tag } }, "*");
+          });
+        })(t);
+        tagWrap.appendChild(chip);
+      }
+      editorSection.appendChild(tagWrap);
+    }
+
+    // Add new tag row
+    var addLabel = document.createElement("div");
+    addLabel.className = "editor-label";
+    addLabel.textContent = "Add a tag";
+    editorSection.appendChild(addLabel);
+
+    var addRow = document.createElement("div");
+    addRow.className = "add-tag-row";
+    var input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "e.g., warehouse, man_3, lifestyle_photo";
+    input.setAttribute("list", "tag-suggestions");
+    addRow.appendChild(input);
+
+    var addBtn = document.createElement("button");
+    addBtn.textContent = "Add";
+    addBtn.addEventListener("click", function () {
+      var val = input.value.trim();
+      if (!val) return;
+      parent.postMessage({ pluginMessage: { type: "add-tag", photoId: photo.id, tag: val } }, "*");
+      input.value = "";
+    });
+    addRow.appendChild(addBtn);
+
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") addBtn.click();
+    });
+
+    // Datalist of suggestions: registry + currently-used tags
+    var datalist = document.createElement("datalist");
+    datalist.id = "tag-suggestions";
+    var suggestions = {};
+    Object.keys(registry).forEach(function (k) { suggestions[k] = 1; });
+    collectAllTags().forEach(function (k) { suggestions[k] = 1; });
+    Object.keys(suggestions).sort().forEach(function (s) {
+      var opt = document.createElement("option");
+      opt.value = s;
+      datalist.appendChild(opt);
+    });
+    addRow.appendChild(datalist);
+
+    editorSection.appendChild(addRow);
+    panel.appendChild(editorSection);
+  }
+
+  function renderMultiPhotoActions(panel, photos) {
+    var label = document.createElement("div");
+    label.className = "label";
+    label.textContent = "Selected · " + photos.length + " photos";
+    panel.appendChild(label);
+
+    var summary = document.createElement("div");
+    summary.className = "multi-summary";
+    summary.innerHTML =
+      "Source: <strong>" + escapeHtml(photos[0].name) + "</strong> (" +
+      photos[0].tags.length + " tags)<br>" +
+      "Destination: " + (photos.length - 1) + " other photo" +
+      (photos.length === 2 ? "" : "s") +
+      ' (' + photos.slice(1).map(function (p) { return escapeHtml(p.name); }).join(", ") + ')';
+    panel.appendChild(summary);
+
+    var actions = document.createElement("div");
+    actions.className = "selection-actions";
+
+    var copyBtn = document.createElement("button");
+    copyBtn.textContent = "Copy tags to other photos (add)";
+    copyBtn.title = "Add the source photo's tags to the others (keeps existing tags on destinations)";
+    copyBtn.addEventListener("click", function () {
+      var toIds = photos.slice(1).map(function (p) { return p.id; });
+      parent.postMessage({
+        pluginMessage: { type: "copy-tags", fromId: photos[0].id, toIds: toIds, replace: false }
+      }, "*");
+    });
+    actions.appendChild(copyBtn);
+
+    var replaceBtn = document.createElement("button");
+    replaceBtn.className = "secondary";
+    replaceBtn.textContent = "Replace tags on destinations";
+    replaceBtn.title = "Clear destination tags and replace with source tags";
+    replaceBtn.addEventListener("click", function () {
+      var toIds = photos.slice(1).map(function (p) { return p.id; });
+      var ok = window.confirm(
+        "Replace all tags on " + toIds.length + " photo(s)?\n\n" +
+        "This deletes existing tags and copies " + photos[0].tags.length +
+        " tags from '" + photos[0].name + "'."
+      );
+      if (!ok) return;
+      parent.postMessage({
+        pluginMessage: { type: "copy-tags", fromId: photos[0].id, toIds: toIds, replace: true }
+      }, "*");
+    });
+    actions.appendChild(replaceBtn);
+
+    panel.appendChild(actions);
+  }
+
+  function renderActiveFilters() {
+    var bar = document.getElementById("active-filters");
+    var pills = document.getElementById("active-pills");
+    pills.innerHTML = "";
+    if (activeFilters.size === 0) {
+      bar.classList.add("empty");
+      return;
+    }
+    bar.classList.remove("empty");
+    activeFilters.forEach(function (tag) {
+      var pill = document.createElement("span");
+      pill.className = "active-pill";
+      pill.title = "Click to remove this filter";
+      pill.innerHTML = escapeHtml(tag) + ' <span class="x">×</span>';
+      pill.addEventListener("click", function () { toggleFilter(tag); });
+      pills.appendChild(pill);
+    });
+  }
+
+  function renderSections() {
+    var content = document.getElementById("content");
+    content.innerHTML = "";
+
+    if (allPhotos.length === 0) {
+      content.innerHTML =
+        '<div class="empty-state">' +
+        '<h2>No tagged photos found</h2>' +
+        '<p>This page does not contain any library photos with tag rectangles.</p>' +
+        '<p>Make sure the right page is open and try Refresh.</p>' +
+        '</div>';
+      return;
+    }
+
+    var allTags = collectAllTags();
+    var grouped = groupTagsByDimension(allTags);
+
+    for (var i = 0; i < DIMENSION_ORDER.length; i++) {
+      var dim = DIMENSION_ORDER[i];
+      var tagsInDim = grouped[dim];
+      if (!tagsInDim || tagsInDim.length === 0) continue;
+
+      var withCounts = [];
+      for (var t = 0; t < tagsInDim.length; t++) {
+        var name = tagsInDim[t];
+        withCounts.push({ name: name, count: computeChipCount(name) });
+      }
+      withCounts.sort(function (a, b) {
+        if (b.count !== a.count) return b.count - a.count;
+        return a.name.localeCompare(b.name);
+      });
+
+      var section = document.createElement("section");
+      section.className = "section " + dim;
+
+      var header = document.createElement("div");
+      header.className = "section-header";
+      var label = document.createElement("div");
+      label.className = "section-name";
+      label.textContent = DIMENSION_LABELS[dim] || dim;
+      header.appendChild(label);
+      var countLabel = document.createElement("div");
+      countLabel.className = "section-count";
+      countLabel.textContent = tagsInDim.length + " tag" + (tagsInDim.length === 1 ? "" : "s");
+      header.appendChild(countLabel);
+      section.appendChild(header);
+
+      var tagWrap = document.createElement("div");
+      tagWrap.className = "tags";
+
+      for (var c = 0; c < withCounts.length; c++) {
+        var item = withCounts[c];
+        var chip = document.createElement("button");
+        var classes = ["tag"];
+        if (activeFilters.has(item.name)) classes.push("active");
+        if (item.count === 0 && !activeFilters.has(item.name)) classes.push("zero");
+        chip.className = classes.join(" ");
+        chip.dataset.tag = item.name;
+        chip.title = activeFilters.has(item.name)
+          ? "Remove filter '" + item.name + "'"
+          : "Filter to '" + item.name + "' (" + item.count + " photo(s))";
+        chip.innerHTML =
+          '<span>' + escapeHtml(item.name) + '</span>' +
+          '<span class="count">' + item.count + '</span>';
+        chip.addEventListener("click", (function (tag, count) {
+          return function () {
+            if (count === 0 && !activeFilters.has(tag)) return;
+            toggleFilter(tag);
+          };
+        })(item.name, item.count));
+        tagWrap.appendChild(chip);
+      }
+
+      section.appendChild(tagWrap);
+      content.appendChild(section);
+    }
+  }
+
+  function toggleFilter(tag) {
+    if (activeFilters.has(tag)) activeFilters.delete(tag);
+    else activeFilters.add(tag);
+    renderAll();
+  }
+
+  function syncCanvasSelection(zoom) {
+    // Only override canvas selection if there are filters AND no manual selection.
+    // Otherwise we'd fight the user's clicks. Let manual selection win.
+    if (selectedPhotos.length > 0) return;
+
+    var ids;
+    if (activeFilters.size === 0) {
+      ids = [];
+    } else {
+      var filtered = getFilteredPhotos();
+      ids = [];
+      for (var i = 0; i < filtered.length; i++) ids.push(filtered[i].id);
+    }
+    parent.postMessage({ pluginMessage: { type: "select-photos", ids: ids, zoom: !!zoom } }, "*");
+  }
+
+  function downloadCsv(text, filename) {
+    var blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 0);
+  }
+
+  // ── Wiring ────────────────────────────────────────────────────────────────
+
+  window.onmessage = function (event) {
+    var msg = event.data.pluginMessage;
+    if (!msg) return;
+    if (msg.type === "library") {
+      allPhotos = msg.data.photos || [];
+      registry = msg.data.registry || {};
+      renderAll();
+    } else if (msg.type === "selection") {
+      selectedPhotos = msg.photos || [];
+      renderSelectionPanel();
+    } else if (msg.type === "csv") {
+      var fname = "photo_library_tags_" + new Date().toISOString().slice(0, 10) + ".csv";
+      downloadCsv(msg.text, fname);
+    } else if (msg.type === "error") {
+      var content = document.getElementById("content");
+      content.innerHTML =
+        '<div class="empty-state">' +
+        '<h2>Error</h2>' +
+        '<p>' + escapeHtml(msg.message) + '</p>' +
+        '</div>';
+    }
+  };
+
+  document.getElementById("refresh").addEventListener("click", function () {
+    document.getElementById("summary").textContent = "Refreshing…";
+    parent.postMessage({ pluginMessage: { type: "scan" } }, "*");
+  });
+  document.getElementById("select-canvas").addEventListener("click", function () {
+    selectedPhotos = []; // clear so canvas-sync runs
+    syncCanvasSelection(false);
+  });
+  document.getElementById("zoom-canvas").addEventListener("click", function () {
+    selectedPhotos = [];
+    syncCanvasSelection(true);
+  });
+  document.getElementById("export-csv").addEventListener("click", function () {
+    parent.postMessage({ pluginMessage: { type: "export-csv" } }, "*");
+  });
+  document.getElementById("clear-filters").addEventListener("click", function () {
+    activeFilters.clear();
+    renderAll();
+  });
+  document.getElementById("close-btn").addEventListener("click", function () {
+    parent.postMessage({ pluginMessage: { type: "close" } }, "*");
+  });
+</script>
+</body>
+</html>

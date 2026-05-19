@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Upwork Pipeline Assembly</title>
+  <style>
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      margin: 0;
+      padding: 16px;
+      background: #2c2c2c;
+      color: #e8e8e8;
+    }
+    h1 {
+      font-size: 14px;
+      margin: 0 0 4px 0;
+      color: #fff;
+    }
+    p.subtitle {
+      margin: 0 0 16px 0;
+      color: #a0a0a0;
+      font-size: 11px;
+    }
+    .step {
+      margin-bottom: 12px;
+      padding: 10px;
+      background: #232323;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+    }
+    .step-instruction {
+      font-size: 11px;
+      color: #b8b8b8;
+      margin-bottom: 8px;
+    }
+    .step-status {
+      font-size: 11px;
+      color: #6bdd6b;
+      margin-top: 6px;
+      min-height: 14px;
+    }
+    .step-status.empty {
+      color: #888;
+    }
+    button {
+      padding: 6px 12px;
+      background: #18a0fb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0d8de8;
+    }
+    button.secondary {
+      background: #444;
+    }
+    button.secondary:hover {
+      background: #555;
+    }
+    button.primary-action {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+    .file-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .file-label {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #444;
+      color: #e8e8e8;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .file-label:hover {
+      background: #555;
+    }
+    .file-name {
+      flex: 1;
+      color: #a0a0a0;
+      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-name.loaded {
+      color: #6bdd6b;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    #log {
+      margin-top: 12px;
+      padding: 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      height: 220px;
+      overflow-y: auto;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .log-error {
+      color: #ff6b6b;
+    }
+    .log-success {
+      color: #6bdd6b;
+    }
+  </style>
+</head>
+<body>
+  <h1>Upwork Pipeline Assembly</h1>
+  <p class="subtitle">Assembles ads using library photos directly from Figma — no PNG uploads.</p>
+
+  <div class="step">
+    <div class="step-instruction"><b>Step 1.</b> In Figma, select the assembly template (the frame with image_placeholder + headline_text + cta_text), then click below.</div>
+    <button id="capture-template">Capture Template</button>
+    <div class="step-status empty" id="template-status">No template captured yet</div>
+  </div>
+
+  <div class="step">
+    <div class="step-instruction"><b>Step 2 (optional).</b> Pick a destination frame where assembled ads should appear. If skipped, they'll appear at your current viewport center.</div>
+    <button id="capture-destination">Capture Destination</button>
+    <div class="step-status empty" id="destination-status">No destination — assembled ads go to viewport center</div>
+  </div>
+
+  <div class="step">
+    <div class="step-instruction"><b>Step 3.</b> Load the manifest CSV from the demo run.</div>
+    <div class="file-row">
+      <label for="csv-file" class="file-label">Choose CSV file…</label>
+      <input type="file" id="csv-file" accept=".csv,text/csv" />
+      <span id="file-name" class="file-name">No file chosen</span>
+    </div>
+  </div>
+
+  <div class="row">
+    <button id="assemble" class="primary-action">Assemble</button>
+  </div>
+  <div class="row">
+    <button id="close" class="secondary">Close</button>
+  </div>
+
+  <h2 style="font-size: 11px; color: #b0b0b0; margin: 14px 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">Log</h2>
+  <div id="log"></div>
+
+  <script>
+    var logEl = document.getElementById("log");
+    var fileInput = document.getElementById("csv-file");
+    var fileNameEl = document.getElementById("file-name");
+    var templateStatus = document.getElementById("template-status");
+    var destinationStatus = document.getElementById("destination-status");
+    var csvText = "";
+
+    function appendLog(msg, level) {
+      level = level || "info";
+      var span = document.createElement("span");
+      span.textContent = msg + "\n";
+      if (level === "error") span.className = "log-error";
+      else if (level === "success") span.className = "log-success";
+      logEl.appendChild(span);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    fileInput.addEventListener("change", function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (evt) {
+        csvText = evt.target.result;
+        fileNameEl.textContent = file.name + " (" + Math.round(file.size / 1024) + " KB)";
+        fileNameEl.classList.add("loaded");
+        var lineCount = (csvText.match(/\n/g) || []).length;
+        appendLog("Loaded: " + file.name + " — " + lineCount + " lines (incl. header).", "success");
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById("capture-template").addEventListener("click", function () {
+      parent.postMessage({ pluginMessage: { type: "capture-template" } }, "*");
+    });
+
+    document.getElementById("capture-destination").addEventListener("click", function () {
+      parent.postMessage({ pluginMessage: { type: "capture-destination" } }, "*");
+    });
+
+    document.getElementById("assemble").addEventListener("click", function () {
+      if (!csvText) {
+        appendLog("Choose a manifest CSV first.", "error");
+        return;
+      }
+      logEl.innerHTML = "";
+      appendLog("Assembling...");
+      parent.postMessage({ pluginMessage: { type: "assemble", csv: csvText } }, "*");
+    });
+
+    document.getElementById("close").addEventListener("click", function () {
+      parent.postMessage({ pluginMessage: { type: "close" } }, "*");
+    });
+
+    onmessage = function (event) {
+      var msg = event.data.pluginMessage;
+      if (!msg) return;
+      if (msg.type === "log") {
+        appendLog(msg.text);
+      } else if (msg.type === "error") {
+        appendLog("ERROR: " + msg.text, "error");
+      } else if (msg.type === "template-captured") {
+        templateStatus.classList.remove("empty");
+        templateStatus.textContent = "✓ Template captured: " + msg.name;
+      } else if (msg.type === "destination-captured") {
+        destinationStatus.classList.remove("empty");
+        destinationStatus.textContent = "✓ Destination: " + msg.name;
+      } else if (msg.type === "assembly-complete") {
+        appendLog("Assembly complete: " + msg.assembled + " of " + msg.total + " assets assembled.", "success");
+      }
+    };
+  </script>
+</body>
+</html>

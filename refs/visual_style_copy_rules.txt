@@ -1,0 +1,240 @@
+UPWORK PAID ACQUISITION — PER-VISUAL-STYLE COPY RULES
+======================================================
+
+These rules define how ad copy should differ based on the visual style ordered.
+The copy generator reads these rules and adapts headline length, body format,
+CTA placement, and tone based on which style is being produced.
+
+General rules that apply to ALL styles:
+- Follow the Upwork brand voice: clear, concise, supportive, professional
+- 95/5 rule: 95% informative/helpful, 5% subtle personality
+- Use only approved claims and verified statistics
+- Never overpromise or use superlatives without sourced proof
+- CTA should always be actionable and specific
+
+
+1. GRAPHIC WITH TEXT
+   Copy role: Primary. Text carries the message alongside an illustrated graphic.
+   Headline: 5-8 words. Clear, direct statement.
+   Body: 1-2 sentences max. Supports the headline with one proof point.
+   CTA: Action verb + benefit. "Post your first job" not "Learn more"
+   Tone: Confident, modern.
+   Avoid: Long paragraphs. The graphic does half the communication work.
+
+2. SPLIT SCREEN
+   Copy role: Shared with visual. Two sides create a comparison or contrast.
+   Headline: Short phrase for each side. "Before Upwork / After Upwork" structure.
+   Body: Minimal or none. The contrast tells the story.
+   CTA: Single CTA below or between the two sides.
+   Tone: Punchy, contrast-driven.
+   Avoid: Explaining the comparison in words. The visual handles it.
+
+3. US VS THEM
+   Copy role: Comparative. Two opposing positions.
+   Headline: Frame the comparison clearly. "Old way vs Upwork way"
+   Body: 1 bullet or line per side. Keep it scannable.
+   CTA: Positions Upwork as the obvious choice.
+   Tone: Confident but not aggressive. Never name competitors directly.
+   Avoid: Being mean-spirited. Show why Upwork is better, don't tear others down.
+
+4. PHOTO WITH TEXT (UPWORK SHELL)
+   Copy role: Supporting. Photo is the hero, text reinforces.
+   Headline: 4-6 words. Complements the photograph.
+   Body: 1 sentence. Context for what the photo shows.
+   CTA: Standard Upwork CTA.
+   Tone: Warm, human, grounded.
+   Avoid: Text that competes with the photo for attention.
+
+5. LIFESTYLE PHOTO (FULL BLEED)
+   Copy role: Overlay. Text sits on top of a full-bleed photograph.
+   Headline: 3-5 words. Must be readable against any background.
+   Body: None or 1 short line. Minimal text — the image is the story.
+   CTA: Bold, visible, high contrast.
+   Tone: Aspirational but grounded. Show the outcome, not the process.
+   Avoid: Long text. Anything that blocks the photograph.
+
+6. TESTIMONIAL
+   Copy role: Primary. The user quote IS the ad.
+   Headline: The testimonial quote itself. Use real quotes only.
+   Body: Attribution — name, role, company (if approved).
+   CTA: Soft. "See more stories" or "Join [name] on Upwork"
+   Tone: Authentic, human. The user's voice, not Upwork's.
+   Avoid: Editing quotes to sound like marketing copy. Keep them real.
+
+7. SOCIAL MEDIA PROFILE
+   Copy role: Minimal. The mockup of a social profile does the work.
+   Headline: Profile name or tagline shown within the mockup.
+   Body: None outside the mockup. Everything lives in the UI.
+   CTA: "Find pros like [name]" or "Browse talent"
+   Tone: Aspirational — this is the kind of talent you can hire.
+   Avoid: Text outside the mockup that duplicates what's inside it.
+
+8. PIE CHART
+   Copy role: Data-driven. The chart visualizes a stat.
+   Headline: State the insight the chart reveals. "72% of contracts completed"
+   Body: 1 sentence contextualizing the data point.
+   CTA: Connects the stat to action. "See what gets done on Upwork"
+   Tone: Factual, authoritative. Let the numbers speak.
+   Avoid: Vague data. Every number must come from the approved claims doc.
+
+9. HYBRID
+   Copy role: Balanced. Both photography and UI elements share space.
+   Headline: 5-7 words. Bridges the real-world photo and the digital UI.
+   Body: 1-2 sentences. Explain how the platform enables the real-world outcome.
+   CTA: Standard action CTA.
+   Tone: Modern, capable, trustworthy.
+   Avoid: Cluttered messaging. The layout is already complex — keep copy clean.
+
+10. SEARCH RESULTS
+    Copy role: Contextual. The search bar UI shows results.
+    Headline: The search query itself becomes the headline. "web developer react"
+    Body: None or minimal. The search results tell the story.
+    CTA: "Start searching" or "Find your match"
+    Tone: Functional, direct. Like using the actual product.
+    Avoid: Marketing language that breaks the UI illusion.
+
+11. SEARCH BAR WITH TALENT BADGE
+    Copy role: Minimal. Search bar + branded badge elements.
+    Headline: The search query. Keep it realistic.
+    Body: Badge text — "Top Rated" "100% Job Success" "Expert-Vetted"
+    CTA: "Search Upwork" or "Find talent"
+    Tone: Product-focused. This is showing the tool.
+    Avoid: Copy that doesn't belong in a search UI.
+
+12. TEXT ONLY
+    Copy role: Everything. Text IS the ad.
+    Headline: 5-10 words. Must be compelling enough to stand alone.
+    Body: 2-3 sentences. This is where you make the full argument.
+    CTA: Bold, clear, actionable.
+    Tone: Direct, confident. Every word earns its place.
+    Avoid: Filler. With no visual support, weak copy is immediately obvious.
+
+13. CHAT BUBBLE
+    Copy role: Conversational. Appears as a text message or chat thread.
+    Headline: The message content. Written like a real person texting.
+    Body: 1-2 chat bubbles. Keep it natural.
+    CTA: "Start the conversation" or "Message a freelancer"
+    Tone: Casual, human, authentic. This should feel like real communication.
+    Avoid: Marketing speak inside a chat bubble. Nobody texts like that.
+
+14. NOTIFICATION
+    Copy role: Alert-style. Appears as a mobile app notification.
+    Headline: Notification title. Short, actionable. "New proposal received"
+    Body: Notification preview text. 1 line.
+    CTA: Implied by the notification. "Open Upwork" or "View proposals"
+    Tone: Functional, urgent but not alarming. Like a real notification.
+    Avoid: Long text. Notifications are short by nature.
+
+15. REMINDER
+    Copy role: Nudge. Mobile app reminder format.
+    Headline: Reminder title. "Your project is waiting"
+    Body: 1 line of context. "3 proposals ready to review"
+    CTA: Implied. "Open" or "Review now"
+    Tone: Helpful, timely. Not pushy.
+    Avoid: Aggressive urgency. Reminders should feel supportive.
+
+16. DEVICE UI (PHOTO)
+    Copy role: Minimal. The Upwork UI shown on a device (laptop/phone) is the hero.
+    Headline: 3-5 words about what the UI shows. "Your talent pipeline, organized"
+    Body: None or 1 sentence. The screenshot speaks for itself.
+    CTA: "Try it yourself" or "See it in action"
+    Tone: Product-forward. Show, don't tell.
+    Avoid: Describing what people can already see in the screenshot.
+
+17. PLATFORM UI
+    Copy role: Contextual. A highlighted moment from the Upwork interface.
+    Headline: Name the feature or moment. "Instant AI matching"
+    Body: 1 sentence explaining what the user is seeing.
+    CTA: Feature-specific. "Try Copilot" or "Post a job"
+    Tone: Modern, capable. Highlight the innovation.
+    Avoid: Generic headlines that don't connect to the specific UI shown.
+
+18. MEME
+    Copy role: The joke. Humor is the hook.
+    Headline: The meme text. Must be genuinely funny AND on-brand.
+    Body: None. Memes don't need body copy.
+    CTA: Light touch. "Been there? Upwork can help" or similar.
+    Tone: Relatable, self-aware. The 5% personality dialed up.
+    Avoid: Forced humor. Inside jokes. Anything that could alienate.
+
+19. STICKY NOTE
+    Copy role: Handwritten feel. Key message on a sticky note.
+    Headline: Written as if someone jotted it on a real sticky note.
+    Body: None outside the note.
+    CTA: Casual. "We can help with that"
+    Tone: Human, relatable, slightly informal.
+    Avoid: Perfect marketing copy. Sticky notes should feel spontaneous.
+
+20. POLL
+    Copy role: Interactive feel. Poll format shows multiple options.
+    Headline: The poll question. "How do you find freelancers?"
+    Body: Poll options. 3-4 choices with Upwork as the clear winner.
+    CTA: "Join the majority" or "Try the top choice"
+    Tone: Social, engaging. Feels like participating.
+    Avoid: Rigging the poll too obviously. Keep it clever.
+
+21. TWEET / POST MOCKUP
+    Copy role: Social proof. Looks like a real social media post.
+    Headline: The tweet/post content. Written in social media voice.
+    Body: Engagement metrics if relevant (likes, retweets).
+    CTA: "See why people are talking" or "Join the conversation"
+    Tone: Authentic social media voice. Not corporate.
+    Avoid: Making it look fake. Should feel like a real post someone would write.
+
+22. TEXT WITH BUTTON AND CURSOR
+    Copy role: Action-oriented. Headline + UI button + cursor pointer.
+    Headline: 4-6 words. Direct statement.
+    Body: The button text IS the CTA. "Get started" "Post a job" "Find talent"
+    CTA: The button itself. Make it the focal point.
+    Tone: Clean, direct, action-focused.
+    Avoid: Competing text. The button should be the obvious next step.
+
+23. TALENT PROFILE
+    Copy role: Showcase. Platform talent profile(s) with key messaging.
+    Headline: About the talent category. "AI Engineers, ready now"
+    Body: Profile details — skills, rating, job success rate.
+    CTA: "Browse talent" or "Hire [category]"
+    Tone: Impressive but authentic. Real profiles, real credentials.
+    Avoid: Generic profiles. Use specific, believable specializations.
+
+24. BESPOKE
+    Copy role: Varies. Newly concepted layout.
+    Headline: Adapt to the specific concept. No default rules.
+    Body: As needed by the concept.
+    CTA: Must still follow Upwork CTA guidelines.
+    Tone: On-brand regardless of format.
+    Note: Bespoke concepts should still follow all brand voice and compliance rules.
+
+
+============================================================================
+STRUCTURAL COPY LIMITS — by visual style
+============================================================================
+These are the hard character ceilings enforced by Brandon's templates. The
+copy generator MUST clip or regenerate if a field exceeds its max. Source:
+template frame annotations in Figma (Adtype: <style> > Copy Rules), captured
+2026-05-11.
+
+TEXT ONLY
+  headline       max 104   (template layer: TextOnly_headline_text — "Quote")
+  subhead        max 52    (template layer: TextOnly_Subhead_Text   — "Name")
+  cta            max 14    (template layer: cta_text)
+
+SPLIT SCREEN
+  headline       max 36    (template layer: SplitScreen_Headline_Text)
+  cta            max 14    (template layer: cta_text)
+  (No subhead. Two image slots — left_image_placeholder, right_image_placeholder.)
+
+REMINDER
+  label          max 52    (static "Reminder" — usually not regenerated)
+  body           max 104   (template layer: Notification_Headline_Text — "Quote")
+  cta            max 32    (template layer: Notification_SubjectName_Text — soft limit, no Brandon spec)
+
+MEME
+  caption        max 104   (template layer: SplitScreen_Headline_Text — "Quote")
+  cta            (none — Cta Pill is hidden in Brandon's design; do not generate)
+  image          (none — meme image is BAKED INTO the template, one meme per template family)
+  note: Each meme template (this-is-fine, future Drake, Distracted Boyfriend,
+        etc.) is a separate template family. Pipeline picks the family by
+        order-time meme selection (once more memes exist); copy generator
+        writes a caption appropriate for THAT specific meme. The meme image
+        itself is never overwritten by the pipeline.

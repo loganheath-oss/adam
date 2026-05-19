@@ -1,0 +1,206 @@
+UPWORK PAID ACQUISITION — PER-VISUAL-STYLE IMAGE GENERATION RULES
+===================================================================
+
+These rules define what the AI image generator (Gemini) should produce
+for each visual style, and how the image should be composed to sit
+correctly inside the Figma template's image-slot layer.
+
+General rules for ALL styles:
+- Never generate text, logos, or watermarks in the image
+- Leave adequate negative space at edges where brand elements will sit
+- Warm, natural lighting preferred over flat or harsh light
+- Photorealistic unless style explicitly calls for illustration
+- No faces with distorted features — if generating people, quality matters
+- Images should feel professional, modern, and on-brand for Upwork
+- Default color palette: warm neutrals, Upwork green (#14a800) accents welcome
+
+
+1. GRAPHIC WITH TEXT
+   Image type: Illustrated graphic or abstract visual element
+   Composition: Graphic occupies 40-60% of frame, leaving clear space for text
+   Subject: Abstract shapes, icons, or stylized illustrations related to work/hiring
+   Negative space: Required on left or right side for headline
+   DO NOT: Generate photorealistic images. This style uses illustration.
+
+2. SPLIT SCREEN
+   Image type: Two distinct photographs or scenes
+   Composition: Two halves — left side and right side should contrast
+   Subject: "Before" scenario (frustration, manual work) vs "After" (success, ease)
+   Negative space: Minimal — each half is fully used
+   DO NOT: Make both sides look similar. The contrast IS the concept.
+
+3. US VS THEM
+   Image type: Two contrasting visual approaches
+   Composition: Clear visual division. One side chaotic/old, one side clean/modern
+   Subject: Old way of hiring vs Upwork way
+   Negative space: Center divider area for comparison text
+   DO NOT: Use real competitor imagery or logos.
+
+4. PHOTO WITH TEXT (UPWORK SHELL)
+   Image type: Professional photography
+   Composition: Subject centered with branded border space around edges
+   Subject: People working, collaborating, or using technology
+   Negative space: Border zone on all edges (template adds Upwork frame)
+   DO NOT: Put important subjects at the very edges — they'll be hidden by the shell.
+
+5. LIFESTYLE PHOTO (FULL BLEED)
+   Image type: Full-bleed editorial photography
+   Composition: Subject fills the entire frame edge to edge
+   Subject: Professional scenarios — people working, meeting, creating
+   Negative space: Top or bottom band for text overlay (darken that area slightly)
+   DO NOT: Use busy backgrounds that make text overlay unreadable.
+
+6. TESTIMONIAL
+   Image type: Portrait photo or headshot
+   Composition: Person positioned to one side, quote space on the other
+   Subject: Professional-looking person (the testimonial giver)
+   Negative space: Large area for the quote text (50%+ of frame)
+   DO NOT: Generate generic stock photo faces. Quality and authenticity matter.
+
+7. SOCIAL MEDIA PROFILE
+   Image type: Profile photo (small, circular crop)
+   Composition: Headshot centered for circular crop
+   Subject: Professional headshot-style portrait
+   Negative space: Not applicable — template handles the mockup UI
+   DO NOT: Generate a full social media UI. Just the profile photo. Template does the rest.
+
+8. PIE CHART
+   Image type: Background texture or gradient only
+   Composition: Clean, minimal background for chart overlay
+   Subject: Subtle gradient or solid color
+   Negative space: Entire frame — the chart is a template element, not AI-generated
+   DO NOT: Generate a chart. The template has the chart. AI provides the background only.
+
+9. HYBRID
+   Image type: Photography that works alongside UI elements
+   Composition: Photo on one portion (usually left or bottom), UI overlay space on the rest
+   Subject: Real-world professional scenario
+   Negative space: 30-40% clear space for UI element overlay
+   DO NOT: Generate UI elements. The template adds those. Just provide the photo portion.
+
+10. SEARCH RESULTS
+    Image type: None or minimal background
+    Composition: Template handles the search UI mockup
+    Subject: Background gradient or blur only
+    Negative space: Entire frame is template territory
+    DO NOT: Generate search UI. Template does this. AI provides background texture only.
+
+11. SEARCH BAR WITH TALENT BADGE
+    Image type: Background only
+    Composition: Clean background for search bar and badge overlay
+    Subject: Subtle gradient, solid color, or light abstract pattern
+    Negative space: Full frame
+    DO NOT: Generate search bars or badges. Template handles all UI.
+
+12. TEXT ONLY
+    Image type: Background texture, gradient, or color fill
+    Composition: Clean surface for text to sit on
+    Subject: Branded gradient (Upwork green to dark), texture, or pattern
+    Negative space: Entire frame — text is everything
+    DO NOT: Generate any subjects, objects, or scenes. Pure background.
+
+13. CHAT BUBBLE
+    Image type: Background only
+    Composition: Clean background for chat bubble overlay
+    Subject: Solid color, subtle gradient, or lifestyle photo heavily blurred
+    Negative space: Full frame — template adds chat bubbles
+    DO NOT: Generate chat UI elements.
+
+14. NOTIFICATION
+    Image type: Background only
+    Composition: Mobile-feel background for notification overlay
+    Subject: Blurred app screen, gradient, or abstract mobile-inspired background
+    Negative space: Upper third for notification banner
+    DO NOT: Generate notification UI. Template handles it.
+
+15. REMINDER
+    Image type: Background only
+    Composition: Clean mobile-style background
+    Subject: Similar to Notification — blurred app or clean gradient
+    Negative space: Center area for reminder card overlay
+    DO NOT: Generate UI elements.
+
+16. DEVICE UI (PHOTO)
+    Image type: Environment/setting photo
+    Composition: Scene showing where a device would naturally be (desk, office, cafe)
+    Subject: Workspace environment, desk setup, hands near a device
+    Negative space: Center area where template will overlay a device mockup
+    DO NOT: Generate screens or device UI. Template composites the device + screen.
+
+17. PLATFORM UI
+    Image type: None — this is a screenshot/UI highlight
+    Composition: Template uses an actual Upwork UI screenshot
+    Subject: No AI generation needed
+    Negative space: N/A
+    SKIP IMAGE GENERATION for this style. Template handles everything.
+
+18. MEME
+    Image type: Meme-appropriate photo or reaction image
+    Composition: Standard meme format — image with space for text above/below
+    Subject: Expressive person, relatable scenario, reaction shot
+    Negative space: Top and/or bottom bands for meme text
+    DO NOT: Generate text in the image. Template adds meme text.
+
+19. STICKY NOTE
+    Image type: Background surface photo
+    Composition: Desk, wall, or surface where a sticky note would naturally appear
+    Subject: Clean desk surface, cork board, whiteboard edge
+    Negative space: Center area for sticky note overlay
+    DO NOT: Generate sticky notes. Template handles the note element.
+
+20. POLL
+    Image type: Background only
+    Composition: Clean background for poll UI overlay
+    Subject: Gradient, solid color, or subtle pattern
+    Negative space: Full frame
+    DO NOT: Generate poll UI. Template handles it.
+
+21. TWEET / POST MOCKUP
+    Image type: Background only
+    Composition: Background behind a social post mockup
+    Subject: Subtle gradient or blurred social-media-feel background
+    Negative space: Full frame for post mockup overlay
+    DO NOT: Generate social media UI.
+
+22. TEXT WITH BUTTON AND CURSOR
+    Image type: Background only
+    Composition: Clean surface for headline + button + cursor overlay
+    Subject: Gradient, solid, or subtle branded background
+    Negative space: Full frame
+    DO NOT: Generate buttons, cursors, or UI elements.
+
+23. TALENT PROFILE
+    Image type: Professional headshot(s)
+    Composition: Portrait-style, centered for profile card crop
+    Subject: Professional-looking person appropriate to the talent category
+    Negative space: Space around subject for profile card UI overlay
+    DO NOT: Generate the profile card UI. Template adds that. Just the portrait.
+
+24. BESPOKE
+    Image type: Varies by concept
+    Composition: As specified in the creative brief
+    Subject: As specified
+    Negative space: As specified
+    Note: Bespoke prompts should still follow general quality rules.
+
+
+STYLE CATEGORIES — IMAGE GENERATION ROUTING
+============================================
+
+FULL PHOTO (AI generates a complete scene):
+  Graphic with Text, Split Screen, Us vs Them, Photo with Text,
+  Lifestyle Photo, Hybrid, Device UI, Meme, Sticky Note
+
+PORTRAIT ONLY (AI generates a headshot/person):
+  Testimonial, Social Media Profile, Talent Profile
+
+BACKGROUND ONLY (AI generates gradient/texture/pattern):
+  Pie Chart, Search Results, Search Bar with Badge, Text Only,
+  Chat Bubble, Notification, Reminder, Poll, Tweet/Post Mockup,
+  Text with Button
+
+NO IMAGE NEEDED (template handles everything):
+  Platform UI
+
+VARIES:
+  Bespoke

@@ -1,0 +1,376 @@
+KOTH Static Creative Style Guide — Top 8 Styles with Examples
+Scope: Test campaigns only (PRSP + RT ASC), account 253747911, static format Period: May 2025 – March 2026
+(all test sprints) Ranked by: $/JP (cost per job post)
+Style Performance Summary
+Rank
+Style
+Ads
+Spend
+JPs
+Avg $/JP
+vs. Static Avg
+1
+Testimonial
+6
+$8,402
+369
+$22.77
++13.3% better
+2
+Person With Text In Corner
+14
+$28,219
+1,206
+$23.40
++10.9% better
+3
+Text With Button Cursor
+2
+$11,090
+466
+$23.80
++9.3% better
+4
+Chat Bubble
+1
+$1,774
+74
+$23.98
++8.7% better
+5
+Top Freelancer Profile
+12
+$27,802
+1,119
+$24.85
++5.3% better
+6
+Carousel
+1
+$2,297
+92
+$24.97
++4.9% better
+7
+Text With Faces
+5
+$14,771
+584
+$25.29
++3.7% better
+8
+Person With Text Overlay
+6
+$19,773
+769
+$25.71
++2.1% better
+Static average: $26.25/JP
+1. TESTIMONIAL — $22.77 avg $/JP
+Best-performing static style. Real freelancer quote overlays on dark backgrounds. Q3-S4 variants all delivered
+under $21/JP.
+4/21/26, 12:15 PM
+Agent Response
+https://app.hightouch.com/upwork/agents/chats/100c34dc-c3e5-45f0-ac32-e74ede00e47d
+1/9
+Notes
+#1 Ad
+#2 Ad
+#3 Ad
+All top 3 from Q3-S4
+sprint. Black backgrounds
+dominate. Quote-driven
+messaging outperforms all
+other static styles.
+Asset:
+REALRESULTS
+Sprint: Q3-S4
+BG: Black
+Spend: $950
+JPs: 58
+$/JP: $16.37
+Asset:
+SMALLPROJECTS
+Sprint: Q3-S4
+BG: Black
+Spend: $1,212
+JPs: 70
+$/JP: $17.32
+Asset:
+DISAPPEARMIDPROJECT
+Sprint: Q3-S4
+BG: Black
+Spend: $1,003
+JPs: 54
+$/JP: $18.57
+2. PERSONWITHTEXTINCORNER — $23.40 avg $/JP
+Second-best style and largest ad count (14 ads). Person imagery with text overlaid in corners. AdStudio-Inspired
+variants dominate the top spots.
+4/21/26, 12:15 PM
+Agent Response
+https://app.hightouch.com/upwork/agents/chats/100c34dc-c3e5-45f0-ac32-e74ede00e47d
+2/9
+Notes
+#1 Ad
+#2 Ad
+#3 Ad
+#4 Ad
+All from Q1-26
+sprints plus
+HIDDEN-HIRING-
+COSTS
+(reclassified from
+GraphicWithText).
+Mix of white and
+StrongGlimmer
+backgrounds.
+Asset:
+SCALABLETALENT-
+HT-ADSTUDIO-
+INSPIRED
+Sprint: Q1-S4
+BG: White
+Spend: $1,289
+JPs: 74
+$/JP: $17.42
+Asset:
+EXPERTS-FAST-
+MAN-IN-
+CONTEXT
+Sprint: Q1-S2
+BG:
+StrongGlimmer
+Spend: $787
+JPs: 45
+$/JP: $17.50
+Asset:
+GLOBALTALENTPOOL-
+HT-ADSTUDIO-
+INSPIRED
+Sprint: Q1-S3
+BG: White
+Spend: $2,093
+JPs: 108
+$/JP: $19.38
+Asset: HID
+HIRING-
+COSTS-H
+ADSTUDIO
+INSPIRED
+Sprint: Q1
+BG: Black
+Spend: $1
+JPs: 80
+$/JP: $21
+3. TEXTWITHBUTTONCURSOR — $23.80 avg $/JP
+Text-forward layouts with a clickable button and cursor visual element. Both ads from Q2 (earliest sprint), both
+using StrongGlimmer backgrounds.
+4/21/26, 12:15 PM
+Agent Response
+https://app.hightouch.com/upwork/agents/chats/100c34dc-c3e5-45f0-ac32-e74ede00e47d
+3/9
+Notes
+#1 Ad
+#2 Ad
+Only 2 ads but both performed well. FASTTRACK
+has strong volume ($7.6K spend, 326 JPs).
+StrongGlimmer background is the consistent
+thread.
+Asset:
+FASTTRACK
+Sprint: Q2
+BG: StrongGlimmer
+Spend: $7,647
+JPs: 326
+$/JP: $23.46
+Asset:
+MOREDONELESSSTRESS
+Sprint: Q2
+BG: StrongGlimmer
+Spend: $3,443
+JPs: 140
+$/JP: $24.59
+4. CHATBUBBLE — $23.98 $/JP
+Chat/messaging-style UI creative. Only 1 static ad exists in this style.
+4/21/26, 12:15 PM
+Agent Response
+https://app.hightouch.com/upwork/agents/chats/100c34dc-c3e5-45f0-ac32-e74ede00e47d
+4/9
+Notes
+#1 Ad
+Single ad, but solid performance. Worth testing more variants of this style
+given its strong $/JP.
+Asset: PING-SLACK
+Sprint: Q3-S3
+BG: Black
+Spend: $1,774
+JPs: 74
+$/JP: $23.98
+5. TOPFREELANCERPROFILE — $24.85 avg $/JP
+Freelancer profile card layouts showing ratings, skills, and hourly rates. Large style (12 ads) with strong volume.
+4/21/26, 12:15 PM
+Agent Response
+https://app.hightouch.com/upwork/agents/chats/100c34dc-c3e5-45f0-ac32-e74ede00e47d
+5/9
+Notes
+#1 Ad
+#2 Ad
+#3 Ad
+COMPETITOR-FOMO-AI
+concept is the top
+performer. FAQ-CRITICAL
+variants also strong. Mix of
+backgrounds —
+StrongGlimmer wins on
+$/JP.
+Asset:
+COMPETITOR-
+FOMO-AI-
+CATEGORY-HT-
+ADSTUDIO-INSPIRED
+Sprint: Q1-S4
+BG: StrongGlimmer
+Spend: $819
+JPs: 53
+$/JP: $15.45
+Asset: FAQ-
+CRITICAL-
+PROJECTS-
+NEGATIVE
+Sprint: Q3-S4
+BG: White
+Spend: $710
+JPs: 43
+$/JP: $16.51
+Asset: FAQ-
+CRITICAL-
+PROJECTS-
+POSITIVE
+Sprint: Q3-S4
+BG:
+DarkGreenGlimmer
+Spend: $958
+JPs: 50
+$/JP: $19.16
+6. CAROUSEL — $24.97 $/JP
+Carousel-style layout within a static image. Only 1 ad exists in this style.
+4/21/26, 12:15 PM
+Agent Response
+https://app.hightouch.com/upwork/agents/chats/100c34dc-c3e5-45f0-ac32-e74ede00e47d
+6/9
+Notes
+#1 Ad
+Single ad showing multi-panel talent profiles. Strong $/JP despite
+limited data. Style label refers to the layout, not Meta's carousel
+format.
+Asset: SENIOR-TALENT-NOT-
+PAYROLL-TALENT-CALLOUT
+Sprint: Q1-S1
+BG: Black
+Spend: $2,297
+JPs: 92
+$/JP: $24.97
+7. TEXTWITHFACES — $25.29 avg $/JP
+Text-heavy layouts with small face/headshot elements. All 5 ads are AdStudio-Inspired from Q1-S3. Very tight
+$/JP band ($24–$25) across the top 3.
+4/21/26, 12:15 PM
+Agent Response
+https://app.hightouch.com/upwork/agents/chats/100c34dc-c3e5-45f0-ac32-e74ede00e47d
+7/9
+Notes
+#1 Ad
+#2 Ad
+#3 Ad
+Remarkably consistent
+performance. All
+AdStudio-Inspired, all
+Q1-S3. Black
+backgrounds
+outperform white
+significantly.
+Asset: TALENT-
+DENSITY-HT-
+ADSTUDIO-
+INSPIRED
+Sprint: Q1-S3
+BG: Black
+Spend: $1,698
+JPs: 70
+$/JP: $24.25
+Asset: COST-OF-
+BAD-HIRING-HT-
+ADSTUDIO-
+INSPIRED-BLACK
+Sprint: Q1-S3
+BG: Black
+Spend: $4,918
+JPs: 198
+$/JP: $24.84
+Asset:
+JUSTINTIMETALENT-
+HT-ADSTUDIO-
+INSPIRED
+Sprint: Q1-S3
+BG: Black
+Spend: $5,636
+JPs: 225
+$/JP: $25.05
+8. PERSONWITHTEXTOVERLAY — $25.71 avg $/JP
+Person imagery with text overlaid directly on the photo. 6 ads across multiple sprints. Top 3 all deliver under
+$21/JP.
+4/21/26, 12:15 PM
+Agent Response
+https://app.hightouch.com/upwork/agents/chats/100c34dc-c3e5-45f0-ac32-e74ede00e47d
+8/9
+Notes
+#1 Ad
+#2 Ad
+#3 Ad
+Strong top-end performers
+despite higher style average.
+UNLOCK has the most
+volume. Black backgrounds
+lead again.
+Asset: FAQ-
+CRITICAL-
+PROJECTS-
+POSITIVE
+Sprint: Q3-S4
+BG: Black
+Spend: $794
+JPs: 41
+$/JP: $19.36
+Asset: UNLOCK
+Sprint: Q3-S3
+BG: Black
+Spend: $1,999
+JPs: 102
+$/JP: $19.59
+Asset:
+TENSORFLOW-
+TALENT-CALLOUT
+Sprint: Q1-S1
+BG: White
+Spend: $507
+JPs: 25
+$/JP: $20.28
+Key Takeaways
+What's winning: Testimonial and PersonWithTextInCorner are the clear top performers, both delivering 10%+
+better $/JP than the static average. Testimonials work especially well with black backgrounds and real freelancer
+quotes.
+AdStudio-Inspired is a pattern: Many of the top performers across PersonWithTextInCorner,
+TopFreelancerProfile, and TextWithFaces carry the "HT-ADSTUDIO-INSPIRED" tag, suggesting this creative
+approach consistently outperforms.
+Black backgrounds dominate: Across all 8 styles, dark/black backgrounds appear in the majority of top-
+performing ads. StrongGlimmer also performs well where used.
+Undertested styles with potential: ChatBubble (1 ad), TextWithButtonCursor (2 ads), and Carousel (1 ad) all beat
+the static average but have very small sample sizes. These are strong candidates for expanded testing in future
+sprints.
+Note: HIDDEN-HIRING-COSTS was originally tagged as STL:GraphicWithText in the ad name but has been
+reclassified here as PersonWithTextInCorner based on the actual creative visual. With that reclassification,
+GraphicWithText drops to 1 ad (COSTFLEXIBILITY at $33.01/JP) and falls out of the top 8, replaced by
+PersonWithTextOverlay.
+4/21/26, 12:15 PM
+Agent Response
+https://app.hightouch.com/upwork/agents/chats/100c34dc-c3e5-45f0-ac32-e74ede00e47d
+9/9

@@ -1,0 +1,98 @@
+BRANDON'S TEMPLATE RULES AND MEETING NOTES
+============================================
+Source: Brandon Morayo, Slack message + working session transcript (April 20-21, 2026)
+
+
+CRITICAL RULE FROM BRIAN (CREATIVE DIRECTOR):
+- Brian does NOT want AI-generated photography
+- All lifestyle/person imagery must be pulled from the approved 2026 brand photography library
+- Brandon has pulled approved brand photos into the Figma template library (far right side)
+- Each photo asset needs a tag so the pipeline knows which one to pull for each ad type
+- This means for photo-based styles, the pipeline selects from the library, NOT generates with Gemini
+
+
+TEMPLATE A: LIFESTYLE PHOTO (FULL BLEED)
+-----------------------------------------
+Brandon's rules:
+- Clear visual hierarchy with top-down reading order
+- Human-centered or lifestyle imagery that reflects target users and use cases
+- Framed at center. Image bleeds to the edge of design (full bleed, no border)
+- White or black text, white or black CTA pill with white text
+- CTA pill (container fill) and text must be same color
+- Balanced spacing between text lines
+- Immediate clarity of value proposition without extra explanation
+- Logo at bottom right corner, aligned to bottom of CTA pill
+- Padding around logo must match border thickness of overall design
+- Headline + CTA positioned in bottom lower left
+- Headline size varies by character count (more text = smaller font)
+- Copy must not cover more than 40% of the design
+
+From transcript:
+- Gradient adapts (not fixed)
+- 24 characters max for headline (can be exceeded but Brandon adjusts in proofing)
+- Photos must come from approved brand library, not AI-generated
+- Layout will auto-adjust to content via Figma component system
+
+
+TEMPLATE B: PHOTO WITH TEXT (UPWORK SHELL)
+-------------------------------------------
+Brandon's rules:
+- Clear visual hierarchy with top-down reading order
+- Human-centered imagery that reflects target users and use cases
+- Framed at center. Image bleeds to the edge of the internal border
+- White borders, black text, black CTA pill with white text
+- Balanced spacing and padding for visual clarity
+- Rounded corners 37.33%
+- Immediate clarity of value proposition without extra explanation
+- Logo at top right corner, positioned at edge of corner
+- Padding around logo must match border thickness
+- Headline + CTA positioned in bottom lower left
+
+From transcript:
+- The "shell shape" (the branded frame/border cutout) changes every time
+- It depends on how much copy is needed — variable shape
+- The border thickness stays the same, but the cutout shape adapts
+- Subject should be center or slightly right so mask doesn't hide them
+- Brandon is building a Figma component with auto layout that automatically
+  snaps regardless of copy length
+- Brandon considers this the most important style to nail for the demo —
+  "that ad type might not be the sexiest thing, but if we can nail that one,
+  they would be very happy"
+- Logo placement: always top right or bottom right
+
+
+TEMPLATE C: QUOTE / TESTIMONIAL
+---------------------------------
+From transcript:
+- Image is always a circular headshot
+- headline_text = the quote itself
+- #Headline = name of the quote giver
+- Stars are variable — sometimes all five, sometimes none
+  ("it's kind of a BS metric" — depends on what they want to convey)
+- Max quote length: 200 characters
+- Font size decreases based on quote length (adaptive)
+- Template only for: Testimonial style
+
+
+BRANDON'S NEXT STEPS (from transcript):
+-----------------------------------------
+- Building component system for photography-based ad styles (Lifestyle + Photo with Text)
+- Components will use auto layout — content auto-adjusts regardless of copy length
+- Will have descriptions ready with granular detail on what works / what doesn't
+- Will include best-of examples and error examples
+- Plans to speak through rules via audio/dictation for speed
+- Target: components and descriptions for the two photo styles ready by Tuesday
+
+
+KEY INSIGHT FOR THE PIPELINE:
+------------------------------
+Brandon said: "The brand is so simple. We can just have all of the templates built out
+pre-made in Figma. The only thing being replaced is the photography we're pulling from
+our guidelines and the copy that's going to go in from the GPT. Everything else could
+be pre-built."
+
+This means:
+1. Templates are FIXED designs — pipeline doesn't change the layout
+2. Pipeline provides TWO things only: a photo from the brand library + generated copy
+3. Figma components handle all the auto-adjustment (font sizing, shape adaptation)
+4. No AI image generation for photo styles — only library selection

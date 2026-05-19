@@ -1,0 +1,661 @@
+1
+© 2024 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+© 2024 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+ADAM:
+Automated Digital 
+Ad Machine
+2
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Demand for paid creative has exploded, 
+but the operating model has not. Brands 
+are still paying premium costs for 
+timelines and workﬂows that can’t keep 
+up with modern marketing.
+3
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+  Agencies are expensive.
+      Creative cycles can be slow.
+      Teams are stretched.
+      Content demand keeps rising.
+And the gap between what brands need and how 
+creative gets made is only getting                    .
+4
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+So we’re building a new creative operating 
+system: one that combines human expertise, 
+the power of AI, and cutting edge tools to 
+deliver quality creative at the speed modern 
+marketing requires.
+5
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Meet ADAM 
+Automated Digital Ad Machine
+A custom creative engine built for the speed and 
+scale that Upwork requires.
+6
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+WHY DOES THIS MATTER TO SMBS?
+ADAM helps us create stronger, more relevant 
+advertising faster, so we can better reach SMB 
+audiences and increase consideration 
+for Upwork.
+7
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Creative 
+brief overview
+link to full Creative and Technical Briefs
+01
+8
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+What ADAM is
+An internal, AI-powered creative pipeline that transforms how Paid Acquisition creative is concepted, produced, scaled, 
+and optimized.
+A creative operating system — not a one-click generator — designed to turn performance signals into high-quality, on-brand 
+assets at speed.
+What ADAM does
+The system enables the team to:
+●
+Turn performance insights into clear creative direction
+●
+Rapidly generate on-brief concepts and variations
+●
+Produce channel-native assets at scale (static, copy, and motion)
+●
+Enforce brand, voice, and legal guardrails automatically
+●
+Continuously learn from live performance to improve outputs 
+9
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+How ADAM works
+Inputs
+●
+Paid Acq briefs and sprint goals
+●
+Performance data (MMM, SUIT, 
+platform signals)
+●
+Channel requirements
+●
+Brand voice, visual, and legal 
+guidelines
+Core System
+●
+Prompt frameworks and reusable 
+templates
+●
+Asset generation (copy, design, light 
+motion)
+●
+Versioning and variation logic
+Human in the Loop
+●
+Strategy and concept selection
+●
+Brand, copy, and design approval
+●
+Legal and channel sign-off
+Outputs
+●
+Channel-ready creative assets
+●
+Scalable variant sets
+●
+Performance-tagged deliverables
+Feedback Loop
+●
+Live performance data feeds future prompts, concepts, and 
+systems
+●
+Every sprint improves the next 
+10
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Creative Principles
+●
+Performance is the brief — 
+grounded in data, not taste alone
+●
+Systems over one-offs — 
+reusable, scalable creative 
+frameworks
+●
+Human judgment at the edges — 
+AI accelerates; humans decide
+●
+Channel-native execution — built 
+for each platform, not adapted
+●
+Creative as a learning loop — 
+every output informs the next
+Goals
+●
+Reduced time from brief → 
+launch (weeks to days)
+●
+Increased creative volume 
+without cost inflation
+●
+Faster, more effective testing 
+and learning cycles
+●
+Performance that meets or 
+exceeds current benchmarks
+●
+Consistent, high-quality 
+creative that feels 
+unmistakably Upwork
+Guardrails
+●
+Strong brand and voice 
+adherence (clarity over hype, 
+human-first messaging)
+●
+Human oversight across 
+strategy, quality, and 
+approvals
+●
+Controlled tool ecosystem 
+prioritizing usability and 
+integration
+11
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Meet our 
+core building team
+12
+© 2024 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+© 2024 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Workshop Core Team
+Brandon Morayo
+Bree Hovan
+Adrie Etherington
+Role: Creative/Copy Lead
+Responsibility
+Lead with copy background who 
+specializes in ad and video copy, 
+overseeing automation tools that 
+enable rapid copy iteration across 
+deliverables. Responsible for 
+creative oversight and ownership of 
+the workstream. Ensures brand 
+consistency and reﬁnes messaging 
+based on insights from Growth 
+strategy and channel performance 
+testing.
+Role: Motion & Graphic 
+Designer
+Responsibility
+Responsible for delivering 
+consistent and on-brand creative 
+design. Oversees automation tools 
+to enable scalable design 
+production. Skilled in working 
+within brand systems, adapting 
+templates, and producing 
+high-quality static and motion 
+assets across channels.
+Role: Design Producer
+Responsibility
+Manages the day-to-day creative 
+workﬂows across tools, 
+coordinating across design, copy, 
+and cross-functional teams from 
+concept through asset delivery. 
+Driving eﬃciency and organization 
+across the workﬂow.
+13
+© 2024 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+In 2025, we built a proof of concept model.
+We proved it could work. Then we found the right partner to help us 
+build it right.
+14
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Meet our creative 
+technology partner
+15
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
++
+16
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+An independent agency 
+group connecting brands to 
+humans since 2008.
+Capabilities
+© 2026
+Who we 
+are
+17
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+RAVI
+LOGAN
+Director of AI/Wonder
+Technical Lead/Development
+18
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+WONDER 2026
+NOTABLE PROJECTS
+Microsoft Copilot
+Meta Vibes
+Microsoft Copilot Actions + Mico
+OpenAI Dall-E / Midjourney
+The Chosen
+Google Search
+Starbucks
+19
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+WONDER 2026
+RESPONSIBILITY FOR ADAM
+Workﬂow development and AI integration of 
+automation tools to boost efficiency, speed, and 
+creative output. Bridging creativity and technology 
+to scale production, accelerate testing, and drive 
+data-informed decisions with the absolute cutting 
+edge of AI tools and expertise.
+20
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Phase 1 build
+02
+21
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+In its mature state:
+●
+ADAM should be able to generate and iterate paid social statics, modular copy systems 
+(headlines, primaries, CTAs), and light motion and MOGRT components for long-form motion 
+outputs for all of our social and paid channels at scale.
+●
+Performance metrics will be gathered by an AI agent to share with ADAM’s order form.
+What ADAM ultimately makes
+Initial focus is on static-ﬁrst, with controlled expansion into motion. (Aiming for May 1.)
+Phase 1:
+●
+ADAM will generate and iterate paid social statics and modular copy systems (headlines, 
+primaries, CTAs) for Meta ads at scale. 
+●
+At this stage, performance metrics will be added to ADAM manually to inform each batch 
+of creative. 
+22
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+ADAM won’t:
+●
+Generate long-form video assets (AI capabilities are not there yet.)
+●
+Generate completed motion assets (It will create motion components that will be 
+refined by the graphic designer.)
+●
+Automatically pull performance data and “learn” from it in a continuous 
+production loop (ADAM will receive performance insights as a variable to consider — not as 
+training instructions.) 
+Why it matters: Continuous training on performance data can cause the model to drift away from Upwork's 
+guidelines over time. This keeps ADAM anchored.
+23
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+A visual overview of the Phase 1 automated workflow currently in development.
+Link to HD Workflow 
+24
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+The journey
+03
+25
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Development
+Weeks of 4/6-4/13
+26
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Progress updates
+We’ve been focusing on:
+●
+Reﬁning the order form
+○
+Applied latest round of feedback
+○
+Visual menu has been incorporated
+●
+Direct info gathering from the Paid Acq team 
+●
+Getting access to MindStudio
+●
+Collaborating with Haresh Siva from engineering to set up our build environment in Upwork’s 
+system
+●
+R1 copy generator built and tested with early strong results (see slide 27)
+●
+Stocking the image library with parameters for the instructions in Figma (see slide 28)
+●
+Coding the stages of the workﬂow (screen share)
+27
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+We built a copy generator in Claude to 
+write ad copy for Meta.
+Next we will: 
+●
+Refine the copy to match our 
+internal standards
+●
+Write rules for on-image tailored 
+to each visual style
+28
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Mapping our static ad styles
+29
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Feedback/guidance we're looking for at this stage:
+Active Feedback
+●
+Feedback Document - We will have a central document to capture 
+necessary feedback for ease. 
+Archived Feedback
+●
+Order Form Feedback  
+30
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Speedbumps & 
+detours
+04
+31
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Items we’re navigating
+●
+Domain and software access extended into last week, causing slight 
+delays. In the interim, we worked on the portions of ADAM we could address 
+and made good progress. Our access issues were resolved EOW so are full 
+steam ahead.
+●
+WKSP Team Bandwidth
+○
+Ongoing discussions around bandwidth continue on the WKSP side. A 
+check-in call has been scheduled for Wednesday to align on priorities 
+and explore opportunities to rebalance workloads for Adrie and Brandon.
+32
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+What’s next
+05
+33
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Next time we meet (M 5/4)
+●
+Intake Form
+○
+The Paid Acq team has provided a list of desired presets for the Intake 
+Form. We will begin evaluating the most eﬀective approach to 
+incorporate these into the form.
+○
+Logan and Brandon will be developing a template registry that 
+consolidates templates, visual styles, and their associated guidelines. 
+This will deﬁne best practices for template usage, establish standards for 
+visual quality, and outline how templates and styles should be eﬀectively 
+combined.
+●
+Target Status by M 5/4
+○
+We should be in the ﬁnal stages of the Pilot Copy Review Automation 
+(Gate 3), the check point to catch tone, voice, or constraint issues prior 
+to multiplying across assets.
+○
+We are also tracking to be in the beginning stages of the Image Prompt 
+Scan automation (Gate 4), which will ensure prompts are on-brand, 
+visually coherent, and aligned with their copy.
+34
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Next time we meet (M 5/4)
+●
+6 Week Check In will be completed 
+○
+On F 5/1 WKSP and CM/Wonder teams will meet for a comprehensive 
+review of the current tool build & automation progress. Out of this 
+meeting both partners should have alignment on the remainder of the 
+current production schedule and scope of work through the end of May.
+35
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Timeline 
+overview
+06
+36
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+KO
+1
+Onboarding & Assessment
+●
+Paid Acq partners onboard 
+Workshop team and evaluate the 
+current state of paid acquisition 
+channels, processes, tools, and 
+best practices.
+●
+Paid Acq partners conduct 
+channel deep dives and deﬁne 
+clear roles and responsibilities 
+across Workshop and Paid 
+Acquisition leads.
+●
+Workshop identify the Creative 
+Technologist to partner with the 
+core Creative team and lead 
+development of the automation 
+pipeline.
+●
+Align and formalize ways of 
+working across Creative and Paid 
+Acquisition, including Slack 
+communication guidelines, review 
+cadences (async vs. live), deﬁned 
+SLAs, and legal review 
+requirements. 
+●
+Workshop Ops to document, 
+socialize, and distribute the 
+ﬁnalized operating plan.
+Creative Asset Alignment
+●
+Align on immediate Q1 asset 
+needs across channels.
+●
+Workshop to deﬁne required 
+creative development sprints 
+prior to standing up 
+automation.
+Pipeline Kick Oﬀ
+●
+Finalize project scope and onboard 
+CM/Wonder to begin integrating 
+with the Creative team. 
+●
+Establish production workback 
+schedule with CM/Wonder, 
+including key milestones for 
+automation development. 
+●
+Partner with Upwork Infosec to 
+eliminate potential access risks.
+●
+Workshop and CM/Wonder identify 
+any additional tools access or 
+licensing required for pipeline 
+automation (including additional 
+costs required).
+Pilot & Expand
+●
+Run pilot sprints for priority 
+paid acquisition 
+workstreams (i.e. Meta, 
+KOTH).
+●
+Produce creative assets 
+through the new pipeline 
+and validate performance 
+end-to-end.
+●
+Gradually expand to 
+additional channels and 
+increase volume as stability 
+and capabilities grow.
+Creative Capability Goals 
+WIP
+●
+Tool can accept a 
+structured creative brief and 
+generate static ad variants 
+for Meta.
+●
+Generate headline & 
+description copy variants 
+aligned to our ICP 
+messaging.
+●
+Prompt libraries, brand 
+rules, and template systems 
+are documented and 
+operational.
+Build the Foundation
+●
+Workshop Ops to establish ways of 
+working with CM/Wonder and 
+implement workﬂow rhythms 
+between Creative and Paid Acq 
+teams. 
+●
+Clarify roles and responsibilities 
+across Paid Acquisition and 
+Workshop.
+●
+Begin development on the ﬁrst 
+version of the creative automation 
+tool, informed by Phase 1 
+requirements, connecting necessary 
+applications (i.e. Mindstudio.ai, 
+Figma, OpenAI, Linear, etc).
+●
+Workshop Ops update the 
+deliverables grid to support AI 
+workﬂows, automation 
+inputs/outputs, and tracking needs.
+●
+Workshop creates standardized, 
+platform-speciﬁc ad templates 
+within the automation pipeline to 
+enable automated ad generation for 
+each paid acquisition channel.
+Operations roadmap: 
+How we will get it done
+Action Color Key
+⚪ In Progress   🟢 Completed  
+Kick Oﬀ & Onboarding: Q1 ‘26
+Phase 1: Build & Reﬁne: March - April Q2 ‘26
+��
+WE ARE HERE ��
+37
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+2
+Process Optimization
+●
+Workshop Ops to establish and 
+reﬁne workﬂows across intake, 
+production, review, and asset 
+delivery.
+●
+Paid Acquisition and Workshop to 
+continuously improve the process 
+based on testing, performance 
+data, and team feedback.
+●
+Workshop Ops, in partnership 
+with the Creative core team, lead 
+process documentation and reﬁne 
+as the pipeline expands or 
+optimizes.
+●
+Partner with Paid Acquisition and 
+Workshop Ops to forecast Q2/Q3 
+channel demand and establish 
+workback schedules and 
+milestones to inform the 
+automation roadmap.
+Measure & Learn
+●
+Collective collaboration 
+tracking key indicators of the 
+automation pipeline progress, 
+including the creative quality, 
+speed, output volume, and 
+creative performance.
+●
+Incorporate learnings ahead 
+of full operational scale.
+Operationalize as the Standard
+●
+Establish the automation pipeline as 
+the default process for paid creative 
+requests.
+●
+Conﬁrm long-term ownership, roles 
+between teams, and any changes to 
+the current resourcing model.
+Optimize Creative Performance
+●
+Continuously improve creative 
+output based on performance 
+insights and testing.
+●
+Core team and CM/Wonder identify 
+additional eﬃciency and automation 
+opportunities.
+Future Planning
+●
+Creative core Team and 
+Paid Acq leads to conduct 
+an end-of-phase review to 
+evaluate process impact, 
+performance, and team 
+feedback.
+●
+Identify enhancements and 
+roadmap priorities for Q1 
+‘27.
+●
+Align on next-phase 
+investments and resourcing 
+needs. Key considerations 
+around incorporating 
+insights, analysis, draft 
+creative brieﬁng. 
+●
+Optimizing for full feedback 
+loop: performance data → 
+insights → hypotheses → 
+brief → creative → 
+activation → measurement 
+→ repeat
+Enable & Embed
+●
+Workshop Ops develop clear 
+documentation and playbooks for 
+the pipeline process and ways of 
+working between teams.
+●
+Core team and CM/Wonder partner 
+on training teams on tools and 
+workﬂows to ensure consistent 
+adoption.
+Creative Capability Goals WIP
+●
+Tool can ingest creative 
+performance data (via 
+Hightouch/SUIT/platform data).
+●
+Light motion capability.
+●
+Channel expansion to Reddit and 
+LinkedIn, PMAX, Display.
+Operations Roadmap: 
+How we will get it done
+Phase 2: Launch & Optimize: May - Q3 ‘26
+Action Color Key
+⚪ In Progress   🟢 Completed  
+38
+© 2025 Upwork Inc. Proprietary and conﬁdential. Do not distribute.
+Questions?
+Bree Hovan
+breannahovan@cloud.upwork.com
+Adrie Etherington
+adrieetherington@cloud.upwork.com
+Brandon Morayo
+brandonmorayo@cloud.upwork.com  
+Thank
+you

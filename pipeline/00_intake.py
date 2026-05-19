@@ -20,7 +20,6 @@ import json
 import os
 import re
 import uuid
-import boto3
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
@@ -43,12 +42,21 @@ VALID_PLATFORMS = {
     "Meta", "LinkedIn", "Reddit", "YouTube", "3rd Party / Affiliate", "Google / Bing"
 }
 
-# Visual styles supported by the pipeline
+# Visual styles supported by the pipeline (all 24 from the order form)
 VALID_STYLES = {
+    "Graphic with Text", "Split Screen", "Us vs Them",
+    "Photo with Text", "Lifestyle Photo", "Testimonial",
+    "Social Media Profile", "Pie Chart", "Hybrid",
+    "Search Results", "Search Bar with Talent Badge", "Text Only",
+    "Chat Bubble", "Notification", "Reminder",
+    "Device UI", "Platform UI", "Meme",
+    "Sticky Note", "Poll", "Tweet / Post Mockup",
+    "Text with Button", "Text with Button and Cursor",  # latter is legacy alias
+    "Talent Profile", "Bespoke",
+    # Pipeline routing aliases
     "Image Library", "Illustration", "Text Based",
-    # Legacy style names from order form (keep for backwards compatibility)
-    "Device UI", "Graphic Hero", "Graph/Chart", "Hybrid", "Photo Bio",
-    "Split Screen", "Talent Profile", "Testimonial", "Text Hero", "UI Hero",
+    # Legacy names
+    "Graphic Hero", "Graph/Chart", "Photo Bio", "Text Hero", "UI Hero",
     "Other"
 }
 
@@ -184,14 +192,15 @@ def build_order(payload: dict, sprint_id: str) -> dict:
     batches = []
     for batch in payload["batches"]:
         normalised = {
-            "platform":        batch["platform"],
-            "format":          batch["format"],
-            "quantity":        int(batch.get("quantity", 1)),
-            "visual_styles":   batch.get("visual_styles", []),
-            "resolutions":     batch.get("resolutions", []),
-            "carousel":        bool(batch.get("carousel", False)),
-            "carousel_slides": batch.get("carousel_slides"),
-            "audience":        batch.get("audience"),
+            "platform":          batch["platform"],
+            "format":            batch["format"],
+            "quantity":          int(batch.get("quantity", 1)),
+            "visual_styles":     batch.get("visual_styles", []),
+            "style_quantities":  batch.get("style_quantities", {}),
+            "resolutions":       batch.get("resolutions", []),
+            "carousel":          bool(batch.get("carousel", False)),
+            "carousel_slides":   batch.get("carousel_slides"),
+            "audience":          batch.get("audience"),
         }
         batches.append(normalised)
 
@@ -235,6 +244,7 @@ def build_order(payload: dict, sprint_id: str) -> dict:
 
 def save_order_to_s3(sprint_id: str, order: dict) -> None:
     """Save order.json to S3 at /runs/{sprint_id}/order.json"""
+    import boto3  # lazy: only needed when actually saving to S3
     s3 = boto3.client("s3")
     key = f"runs/{sprint_id}/order.json"
     s3.put_object(

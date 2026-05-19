@@ -1,0 +1,11 @@
+**/.venv
+**/__pycache__
+**/.DS_Store
+**/.pytest_cache
+**/*.pyc
+.git
+.github
+node_modules
+plugin/library_tagger/exports
+runs/*/exports
+runs/*/images

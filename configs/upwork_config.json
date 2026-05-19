@@ -36,84 +36,59 @@
     "file_id": "DoDwumxELkuAuKKSP5p00e",
     "access_token_env_var": "FIGMA_ACCESS_TOKEN",
     "templates": {
-      "_note": "One entry per platform + format combination. node_id targets the specific frame in the Figma file.",
-      "meta": {
-        "static_feed": {
-          "4_5":  "PLACEHOLDER_NODE_ID",
-          "1_1":  "PLACEHOLDER_NODE_ID",
-          "9_16": "PLACEHOLDER_NODE_ID"
+      "_note": "Branded templates have image_placeholder, headline_text, cta_text layers. Platform containers are empty canvases awaiting brand layers from Brandon.",
+
+      "branded_templates": {
+        "_note": "These are fully layered templates with image_placeholder ready for assembly.",
+        "photo_with_text_1440x1440": {
+          "frame_id": "4779:742",
+          "image_placeholder_id": "4779:758",
+          "headline_text_id": "4779:760",
+          "cta_text_id": "4779:762",
+          "size": "1440x1440"
         },
-        "carousel_feed": {
-          "2_3": "PLACEHOLDER_NODE_ID",
-          "1_1": "PLACEHOLDER_NODE_ID"
+        "lifestyle_photo_1440x1440": {
+          "frame_id": "4783:780",
+          "image_placeholder_id": "4783:795",
+          "headline_text_id": "4783:797",
+          "cta_text_id": "4783:799",
+          "size": "1440x1440"
         },
-        "static_stories": {
-          "9_16": "PLACEHOLDER_NODE_ID"
-        },
-        "carousel_stories": {
-          "9_16": "PLACEHOLDER_NODE_ID"
+        "quote_1080x1080": {
+          "frame_id": "4784:804",
+          "image_placeholder_id": "4784:817",
+          "headline_text_id": "4784:819",
+          "size": "1440x1440"
         }
       },
-      "linkedin": {
-        "single_image": {
-          "1_1":    "PLACEHOLDER_NODE_ID",
-          "1_91_1": "PLACEHOLDER_NODE_ID"
+
+      "platform_containers": {
+        "_note": "Container components with correct sizes but no brand layers yet. Brandon will add image_placeholder and text layers as he builds out styles.",
+        "meta": {
+          "static_feed_1_1": {"component_id": "4440:389", "content_id": "4440:394", "canvas_id": "4440:399", "size": "1440x1440"},
+          "static_feed_4_5": {"component_id": "4440:419", "content_id": "4440:424", "canvas_id": "4440:429", "size": "1440x1800"},
+          "general_feed":    {"component_id": "4438:163", "content_id": "4438:168"},
+          "static_stories_9_16":   {"component_id": "4449:555", "content_id": "4449:560", "canvas_id": "4449:571", "size": "1440x2560"},
+          "carousel_stories_9_16": {"component_id": "4449:584", "content_id": "4449:589"}
         },
-        "carousel": {
-          "1_1": "PLACEHOLDER_NODE_ID"
+        "linkedin": {
+          "static_feed_1_1":    {"component_id": "4450:776", "content_id": "4450:781"},
+          "single_image_1_1":   {"component_id": "4450:824", "content_id": "4450:829"}
         },
-        "dynamic_spotlight": {
-          "1_1": "PLACEHOLDER_NODE_ID"
-        }
-      },
-      "reddit": {
-        "image": {
-          "16_9": "PLACEHOLDER_NODE_ID",
-          "4_3":  "PLACEHOLDER_NODE_ID",
-          "4_5":  "PLACEHOLDER_NODE_ID",
-          "1_1":  "PLACEHOLDER_NODE_ID"
-        }
-      },
-      "youtube": {
-        "image": {
-          "1_1":    "PLACEHOLDER_NODE_ID",
-          "1_91_1": "PLACEHOLDER_NODE_ID",
-          "9_16":   "PLACEHOLDER_NODE_ID",
-          "4_5":    "PLACEHOLDER_NODE_ID"
+        "reddit": {
+          "image_feed": {"component_id": "4451:180", "content_id": "4451:185"}
         },
-        "carousel": {
-          "1_1":    "PLACEHOLDER_NODE_ID",
-          "1_91_1": "PLACEHOLDER_NODE_ID",
-          "4_5":    "PLACEHOLDER_NODE_ID"
-        }
-      },
-      "google_bing": {
-        "display": {
-          "1_1":    "PLACEHOLDER_NODE_ID",
-          "1_91_1": "PLACEHOLDER_NODE_ID",
-          "4_1":    "PLACEHOLDER_NODE_ID"
+        "youtube": {
+          "single_images":     {"component_id": "4458:431", "content_id": "4458:436"},
+          "carousel_feed_4_5": {"component_id": "4458:477", "content_id": "4458:482"},
+          "carousel_feed_1_1": {"component_id": "4457:200", "content_id": "4457:205"}
         },
-        "performance_max": {
-          "1_1":    "PLACEHOLDER_NODE_ID",
-          "1_91_1": "PLACEHOLDER_NODE_ID",
-          "4_5":    "PLACEHOLDER_NODE_ID"
+        "google_bing": {
+          "display": {"component_id": "4458:952", "content_id": "4458:957"},
+          "pmax":    {"component_id": "4458:1063", "content_id": "4458:1068"}
         },
-        "sem": {
-          "1_1":    "PLACEHOLDER_NODE_ID",
-          "1_91_1": "PLACEHOLDER_NODE_ID"
-        }
-      },
-      "3rd_party_affiliate": {
-        "display_ads": {
-          "1_1":     "PLACEHOLDER_NODE_ID",
-          "1_91_1":  "PLACEHOLDER_NODE_ID",
-          "3_88_1":  "PLACEHOLDER_NODE_ID",
-          "10_8_1":  "PLACEHOLDER_NODE_ID",
-          "8_1_1":   "PLACEHOLDER_NODE_ID",
-          "6_5":     "PLACEHOLDER_NODE_ID",
-          "16_5":    "PLACEHOLDER_NODE_ID",
-          "1_2":     "PLACEHOLDER_NODE_ID",
-          "4_15":    "PLACEHOLDER_NODE_ID"
+        "3rd_party": {
+          "general": {"component_id": "4460:212", "content_id": "4460:217"}
         }
       }
     },
@@ -122,7 +97,7 @@
       "headline":    "headline_text",
       "body_copy":   "body_text",
       "cta":         "cta_text",
-      "image_frame": "image-slot",
+      "image_frame": "image_placeholder",
       "logo":        "upwork_logo"
     }
   },

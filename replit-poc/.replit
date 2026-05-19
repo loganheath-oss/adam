@@ -1,0 +1,16 @@
+run = "uvicorn app:app --host 0.0.0.0 --port 5000 --reload"
+entrypoint = "app.py"
+
+[nix]
+channel = "stable-23_11"
+
+[deployment]
+deploymentTarget = "vm"
+run = ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5000"]
+
+# Replit's webview mode requires port 5000 to map to the public preview pane.
+# Replit Agent will silently override port 8000 → 5000 on first run; we set
+# 5000 explicitly here so re-imports of this zip behave the same way.
+[[ports]]
+localPort = 5000
+externalPort = 80

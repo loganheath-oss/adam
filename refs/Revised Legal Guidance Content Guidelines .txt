@@ -1,0 +1,925 @@
+ 
+Content guidelines 
+How to write for our product experience 
+ 
+In this guide 
+1.​ How we write 
+2.​ Style guide 
+3.​ Labels and names 
+4.​ Legal guidance 
+ 
+In other places... 
+●​ Learn how to write UI elements (like buttons or tooltips) under components 
+●​ Use our one-pager as a quick reference when you review writing  
+●​ Find detailed advice on our brand strategy and voice in our Writer’s Guide  
+●​ See how we’re positioning Upwork’s offerings in the Product Marketing 
+Message Map 
+ 
+ 
+ 
+//////// CUT ////// 
+ 
+ 
+Legal guidance 
+As we build Upwork, it’s important that we make sure we’re following the law and don’t 
+accidentally get ourselves into trouble. Our Legal and Policy teams have put these 
+guidelines together to help you do that.  
+For a quick reference guide to when to check in with Legal (and when it’s not needed), 
+take a look through our “When to get guidance” section below. For a quick primer on 
+keywords to remove from copy, check out terms to avoid or limit. 
+Questions? Just ask your Legal contact or in our slack channel #ask-legal. 
+ 
+When to get guidance 
+ 
+Not every asset requires Legal review.  These guidelines provide guidance on when to 
+submit your asset for Legal review versus when teams can feel confident moving 
+forward without the Legal team’s review.   
+As a starting point, so long as our Legal Principles are followed, Legal generally does 
+not need to review: 
+●​ Routine emails, such as Marketing Emails encouraging new and current users to 
+use the platform, or describing existing products and features (these should only 
+be sent to users who have not opted-out of marketing emails); 
+●​ How-to articles, that explain existing features on the platform; 
+●​ Routine Customer Support communications, i.e. those advising users how to 
+flag or report another user or other existing processes. 
+So what type of assets do require Legal Review? Use this checklist to determine when 
+you should submit your asset for Legal review.  If your answer to any question is “No”, 
+skip along to the next question. But be sure to go through each question - even if an 
+earlier question requires Legal Review, a later question may also require Legal Review 
+and ask you to provide additional information in your Request: 
+Language Usage/Content 
+1 
+ 
+1.​ Terms to Be Avoided: Are you using any terminology or concept listed here as 
+“avoid”? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> submit for Legal review & provide context for why you believe an 
+exception is necessary 
+2.​ Terms to Limit: Are you using any terminology or concept listed here as “limit”? 
+a.​ If no or only using 1-2 times -> proceed to next question 
+b.​ If using 3+ times ->  submit for Legal review & provide context for why 
+you believe an exception is necessary 
+3.​ Upwork Doing the Work: Does your language indicate that Upwork is the one 
+actually doing the work contracted for by the user, or involved in any way in the 
+work/deliverable to the client or freelancer, as opposed to the user doing the 
+work and/or providing the deliverable? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> submit for Legal review & provide context for why you believe an 
+exception is necessary 
+4.​ Upwork as Employer:  Does your language indicate or imply that Upwork 
+employs the freelancer (i.e., “Upwork’s freelancers” or “Upwork Talent”)? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> submit for Legal review & provide context for why you believe an 
+exception is necessary 
+5.​ Directing Freelancers: Does your language indicate that a user should or must 
+do something, act in a certain way or otherwise direct a user to conduct their 
+business or perform their work in a particular manner? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> submit for Legal review & provide context for why you believe an 
+exception is necessary 
+6.​ Equal Footing: Does your language imply or indicate that clients dictate the 
+relationship between clients and freelancers instead of the parties being on 
+equal footing? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> submit for Legal review & provide context for why you believe an 
+exception is necessary 
+2 
+ 
+7.​ Promises & Guarantees: Are you using language that could be construed as 
+making a promise, guarantee, or establishing an expectation? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> submit for Legal review & provide context for why a promise is 
+necessary and reasonable 
+8.​ Overselling: Are you using superlative or comparative language, or language 
+that could be considered “puffery”? (Examples: “Upwork is the greatest talent 
+platform;” “Find the best talent;” etc). 
+a.​ If no -> proceed to next question 
+b.​ If yes -> include your proof/data points & submit for Legal review 
+9.​ Relying on Data: Are you using data? (Examples: “40% of talent…”; “57% more 
+likely…”) 
+a.​ If no -> proceed to next question 
+b.​ If yes -> Has the data been previously approved + is it no more than 2 
+years old + is still reasonably accurate ? 
+1.​ If yes -> proceed to next question 
+2.​ If no (i.e. new data, unsure of accuracy, or older than 2 
+years) -> submit for Legal review and provide the rationale 
+for the statement + underlying data  
+10.​Not Our IP: Does the content use or play off of others’ IP (i.e. music, song, art 
+etc.)? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> submit for Legal review 
+i.​
+Please specify whether you have permission to use the IP in your 
+request and how the permission was obtained. 
+11.​User or Third-Party Content: Does the content include User testimonials or 
+other User or third-party provided content (i.e. user profiles available only in the 
+logged-in view, user messages, any other user-generated content or content 
+generated outside of our platform)? 
+a.​ If no -> go to next question 
+b.​ If yes -> submit for Legal review 
+i.​
+Please specify whether you have a release from the User and how 
+the release was obtained. ​
+ 
+3 
+ 
+12.​Upwork’s IP: Does the content include any Upwork Intellectual Property, 
+especially any Upwork trademarks? 
+a.​ If no -> go to next question 
+b.​ If yes -> please review and comply with the Trademark section below, and 
+submit for Legal review if you have any questions.  
+Subject Matter 
+13.​Marketing to Specific Populations: Are you attempting to target a particular 
+group or population, such as for a heritage or identity month? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> please review and comply with the population-focused 
+marketing pointers below, submit for Legal review with appropriate 
+context on the campaign.  
+14.​Generative AI: Does your copy or product involve or relate to Artificial 
+Intelligence? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> please review and comply with the AI concerns section below, 
+and submit for Legal review with appropriate context on the AI feature. 
+15.​Legal or Tax Advice: Does the copy discuss anything close to legal or tax 
+advice? (Examples: Copy that discusses how to classify freelancer talent, how 
+to avoid liability in a particular category or situation, best practices for tax 
+compliance etc.) 
+a.​ If no -> proceed to next question 
+b.​ If yes -> please review the legal advice section below, and submit for 
+Legal review with explanation why providing this information is necessary 
+or desirable and a proposed disclaimer. Note: Upwork cannot provide 
+legal advice to users. To the extent it cannot be justified, removing it 
+would be preferable and can help you avoid Legal review. 
+16.​New Product or Offering: Is the copy for a new product, feature, test, service, 
+or offering? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> submit for Legal review. Make sure the draft copy already 
+complies with these guidelines. Note: as a general matter, Legal should 
+be looped into the new Product concept before copy is drafted. If this has 
+4 
+ 
+not happened, provide context for the new product, service or offering in 
+the submission. 
+17.​Updates to Algorithms/Rankings: Does your writing involve updates to our 
+algorithms or rankings process? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> submit for Legal review with explanation of underlying updates to 
+algorithms or rankings. Note: as a general matter, Legal should be looped 
+into algorithm and rankings updates before copy is drafted. 
+18.​New Pricing/Escrow/Compliance Language: Does it discuss updates or 
+changes to our pricing or escrow or payments, or describe our compliance 
+programs or standards in a way that we have not before? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> submit for Legal review 
+19.​Collection and Use of Data: Are you implementing a new data collection tool or 
+writing content that relates to Upwork’s collection and use of user data? 
+a.​ If no -> proceed to next question 
+b.​ If yes -> Make sure you review and comply with our Data Handling 
+Principles and then submit for Legal review. 
+20.​Sharing User Data: Are you sharing any personal/user data of talent or clients, 
+even in the aggregate, beyond a previously approved data set or to a new 
+audience? 
+a.​ If no -> does  not need Legal review, unless required by a previous 
+question 
+b.​ If yes -> submit for Legal review 
+How to get guidance 
+Make sure to leave time in your roadmap for Legal review, particularly when developing 
+a new feature or when any of the circumstances in “When to get guidance” apply.  
+Please submit your review request via Hive; we no longer accept routine review 
+requests via Slack or email. The Legal team needs to get requests 5 business days in 
+advance, although longer is always better.  
+Here’s what’s here: 
+5 
+ 
+In this guide 
+In other places... 
+REVISED DRAFT 
+Legal guidance 
+When to get guidance 
+How to get guidance 
+How Legal approaches copy 
+Legal principles for writing about Upwork 
+1. Upwork is the world’s work marketplace, not an employer or staffing agency. 
+Clients and Talent use the Upwork platform with Upwork’s support, but Upwork does 
+not do the work. 
+Freelancers do not work for Upwork. 
+We can advise, but do not direct or control. 
+Talent and clients are on equal footing. 
+How we describe talent on the platform matters. “Talent,” and other alternatives, are 
+preferred terms to “freelancer”. 
+2. Data handling principles 
+How to keep your writing compliant 
+1. Terms to avoid 
+2. Terms to limit or vary 
+3. Details on restricted terms 
+4. Technical Stuff 
+5. Accuracy & Promises 
+6. Trademark Principles 
+7. AI Concerns 
+ 
+How Legal approaches copy 
+ 
+The number one thing you should know when working with Legal is that we want you 
+and Upwork to be successful while avoiding unnecessary risk.  
+The Legal team is flexible, but we aren’t copywriters. There is almost never only one 
+way to say something—but there are definitely many ways we can’t say something. In 
+cases where we think the writing is not compliant, we may give you alternative ideas. If 
+you don’t like an idea, we won’t be offended—let’s work together to find the best 
+6 
+ 
+solution. If we can’t agree on something, that’s when we sometimes want to add a little 
+legal disclaimer; and no one loves that outcome. So please work with us! 
+ 
+Legal principles for writing about Upwork 
+ 
+When the Legal team shares its view of our work marketplace with you, it’s typically to 
+help keep Upwork out of trouble. Here are some important concepts to keep in mind as 
+you write about and work on the entire Upwork experience. 
+1.​
+Upwork is the world’s work marketplace, not an 
+employer or staffing agency. 
+Clients and Talent use the Upwork platform with Upwork’s support, but Upwork 
+does not do the work.  
+From a legal perspective, we want it to be clear that the clients and talent are the 
+actors on our site, and we are the support. In most cases, the client or the freelancer 
+should be the actor in a sentence. We help, assist, and simplify the process of 
+connecting with great talent or great clients so they can get work done—but we don’t 
+vet, verify or provide projects or talent, nor do we do the work.  That means we should 
+almost always be framed as the helper, not the primary actor.   
+●​ For example, we can say “our platform will help you find talent,” but we wouldn’t 
+say that “Upwork finds the right talent for you.”   
+●​ Likewise, we could let talent know that “the more great projects you complete, 
+the more your profile rises in the marketplace,” but we wouldn’t tell them that 
+“the more great projects you complete, the more we send you projects.” 
+Freelancers do not work for Upwork.  
+We do NOT employ the talent on our marketplace—they don’t work for us!1 Also, we 
+don’t work for the clients on Upwork. Talent are our customers—they pay us, and in 
+exchange we provide them services and resources to help them grow their businesses. 
+We are not a part of freelancer-client relationships—we don’t guarantee a freelancer’s 
+going to be successful or that the client will be happy with the freelancer’s work 
+product. We are not a staffing agency. We do not decide which talent work with which 
+clients, and vice versa. We should make sure to describe talent accordingly, i.e. they 
+are “freelancers on Upwork” or “talent on Upwork” not “Upwork Freelancers” or 
+“Upwork Talent”. 
+1 Except for talent engaged directly by Upwork to provide work or services directly for Upwork.   
+7 
+ 
+We can advise, but do not direct or control.  
+A freelancer’s business relationships and decisions about their businesses are theirs to 
+make, not ours, so we should communicate our recommendations as optional 
+suggestions, not mandates. Talent decide when, where, and with whom to work, and 
+how much to charge. We should avoid saying talent must do something, should 
+“always” do something, or using the command tense, e.g., “Call your mother.” Instead, 
+share common traits and practices that typically generate great outcomes for talent 
+and build lasting relationships on our platform. 
+Talent and clients are on equal footing.  
+When talking about their relationship, make it clear that they should come to an 
+agreement on all terms. The client doesn’t “decide” how much a freelancer is paid, they 
+make an offer and negotiate. Likewise, talent are open to accept or decline 
+opportunities.  Additionally all users need to know how to use Upwork, so take care to 
+consider both groups when writing tutorials or other guidance. Even if the feature is 
+specific to one of the groups, you should consider how the other audience might read 
+or interpret it.  
+How we describe talent on the platform matters. “Talent,” and other alternatives, 
+are preferred terms to “freelancer”.   
+While the independent professionals who use Upwork to offer their services like the 
+term “freelancer” because it’s most reflective of the quality of their work, they also have 
+mixed feelings about it and Clients sometimes see the terms as lacking in 
+professionalism and gravity.  And, from our perspective, other words are more closely 
+aligned with the non-commodified work and long-term working relationships we strive 
+to promote on our platform. 
+ 
+2.​
+Data handling principles 
+Our customers rely on us to be trustworthy stewards of their data, and how we handle 
+their data matters.  To keep our customers’ trust and avoid inadvertently violating data 
+protection laws, Upwork follows these data handling principles: 
+●​ We are proactive not reactive. We design and implement the Upwork experience 
+to avoid privacy risks before they happen; privacy isn’t an add-on or 
+afterthought. 
+○​ Do: Proactively anticipate and answer user questions about privacy. As 
+users navigate our site, they are thinking about the data they share with 
+us, and how we use and protect it. We have an opportunity to show them 
+8 
+ 
+we are thinking about that too by proactively building answers into the 
+user experience. 
+●​ Users are in control of their privacy. Wherever possible, we aim to make it easy 
+for our users to make informed decisions around how we use and share their 
+data. 
+○​ Do: Give our users choices about their data by looking for ways to let 
+them decide what data to share with us and others 
+●​ We prioritize security from collection through destruction. Our user experience 
+considers security from the moment we collect data to the moment we securely 
+destroy or delete it. 
+○​ Do: Build in security from collection through destruction. Any data we 
+collect, store, or share is kept as safe as possible from misuse, loss, or 
+inadvertent corruption. Reach out to your information security partners 
+(#ask-infosec on Slack) if you need to make decisions about how to 
+collect, store, or share data securely. 
+○​ Don’t: Collect information you don’t need because you think you might 
+need it in the future.  
+○​ Don’t: Share data with people who don’t need it, or share more data than 
+necessary.  
+○​ Don’t: change in-product privacy settings or how broadly we share users’ 
+data with others without reaching out to your legal partners in privacy. If 
+the privacy settings on any of our features change, we inform our users 
+by updating our Privacy Policy and/or sending appropriate in-product or 
+external communications with the affected users. By keeping Legal in the 
+loop we can make sure to update our Privacy Policy, ToS, or notify users 
+some other way. Reach out via the #ask-legal Slack channel for help with 
+this, or any other questions     
+●​ We are transparent about our privacy practices. Our users and other 
+stakeholders understand how data moves through our system and the options 
+they have.  
+●​ We respect user privacy, and it shows. Our presentation to users should inspire 
+confidence because it demonstrates that we take our users’ privacy very 
+seriously. 
+9 
+ 
+How to keep your writing compliant 
+ 
+No one knows better than you that the words we use matter. The Legal team has 
+compiled a list of terms and phrases that you should avoid using to keep Upwork 
+compliant and out of legal trouble. Check out the suggested alternatives to use 
+instead. If you want to know more about why certain terms are off-limits, read the 
+[details on restricted terms.](LINK). 
+Remember, if you are using any of the terms to avoid or limit, you must [contact the 
+legal team](LINK). 
+1.​
+Terms to avoid 
+ 
+What you need to know about word choice with a legal lens: 
+Terminology Best Practices 
+ 
+❌ Terms to Avoid 
+✅ Recommended Alternatives 
+Talent and Client 
+relationship 
+admonish   directions     supervision   
+audit       discharge     suspend 
+coach       fire            suspension 
+coaching    instruct       terminate 
+control      instructions   termination 
+counsel     [manage](link to details]       train 
+demote     monitor       training 
+demotion   report to       trainer 
+discipline   reprimand     warn  
+direct       supervise      warning 
+We’ve placed your account on a temporary hold 
+ 
+closed your account 
+collaborate with 
+describe the work 
+end the contract 
+review and approve the work 
+partner with 
+set milestones 
+reject the work 
+check hours and/or that deadlines will be met 
+work with 
+Payment 
+paycheck 
+salary 
+wages 
+payment guarantee 
+charge more 
+fee 
+increase your rate 
+payment 
+rate 
+[Hourly Payment Protection](LINK) 
+10 
+ 
+Escrow 
+deposit funds 
+transfer funds 
+We hold funds in escrow until we release them to 
+the other party based on the escrow instructions 
+Freelancer/Talent 
+role and business 
+employee  
+[staff/staffing](link to details] 
+candidate 
+applicant  
+[career](Link to explanation] 
+[people](link to details]] 
+business owner 
+contractor 
+expert 
+freelancer 
+independent professional 
+professional 
+pro 
+professional on Upwork 
+talent 
+independent talent  
+Independent business  
+business 
+Freelancer 
+onboarding 
+application 
+apply 
+directive 
+guidelines 
+handbook 
+employment/work policies 
+procedures 
+protocol 
+rules 
+[tools](link to details] 
+submit bid/proposal  
+submissions 
+best practices 
+contract 
+industry standards 
+profile 
+proposal 
+submit a proposal 
+terms of service (for Upwork website) 
+Freelancer history 
+or experience  
+evaluate 
+evaluation 
+review 
+[performance](link to details] 
+[resume/CV](link to details] 
+client satisfaction 
+client success 
+job success 
+freelancer rating 
+feedback 
+successful projects/outcomes 
+successful client relationships 
+User’s actions 
+disintermediate 
+disintermediation 
+circumvent 
+circumvention 
+Upwork’s role 
+intermediary 
+[Upwork’s/our talent/people/talent](link to details] 
+[suggest/recommend talent](LINK) 
+website 
+online marketplace 
+freelancer and client work platform 
+Enterprise Compliance 
+marketplace 
+talent choices 
+talent to consider 
+Work 
+duties 
+job description 
+contract 
+deliverables 
+11 
+ 
+job offer 
+job title 
+[role](link to details] 
+describe the work 
+project description 
+scope of work 
+services 
+work description 
+Type of work 
+at will             on-call 
+as needed         ongoing 
+employment         position 
+Indefinite          staffing 
+ 
+These terms are generally avoided, but are 
+permissible when talking about Payroll and 
+Full-Time offerings: 
+Permanent      exclusive          
+full-time          staff augmentation 
+long-term           
+ 
+ 
+ 
+contracted hours           
+working relationship        retainer agreement 
+in between projects        undetermined end date 
+larger project             undetermined contract term 
+Catalog project      unspecified end date 
+project                  unspecified contract term 
+repeat client              unsure of end date  
+repeat contract            alternative to staffing 
+ 
+ 
+ 
+ 
+2.​
+Terms to limit or vary 
+ 
+ 
+ 
+Terms to limit or vary  
+! denotes Legal approval will be needed 
+Recommended Alternatives 
+** denotes a usage note 
+hire*  
+get hired 
+ 
+*please vary, but merely using “hire” will not require Legal review 
+engage                 **even better - make the freelancer  
+contract with            the active party to the action, e.g., 
+select the proposal       “win a client”, “win the contract”  
+award the job            instead of “get hired” 
+! job* in connection with “hire” or “apply” (e.g., avoid apply for a 
+job, or hire for a job) 
+work                   **acceptable but not preferred 
+project                  submit a proposal for a job 
+contract                accept a job 
+engagement               
+! recruit 
+! recruiter 
+find talent 
+network 
+networker 
+source talent 
+talent sourcer 
+! timesheets 
+track your own hours 
+log your hours 
+record your hours 
+invoice your clients 
+bill your clients 
+! pause contract  
+! “fire” freelancer  
+ 
+end the contract 
+work when you want 
+in between projects 
+pause billing 
+12 
+ 
+! full-time in connection with “job” or “work” 
+! part-time 
+you can freelance full-time 
+large project 
+small project 
+short project 
+! workday 
+! workweek 
+billing/invoicing/payment period 
+billing/invoicing/payment cycle 
+business day 
+ 
+ 
+ 
+ 
+3.​
+Details on restricted terms 
+ 
+ 
+ 
+❌ Avoid 
+Terminology Insights 
+✅ Examples of Alternatives 
+Career 
+This is typically used to describe employment, 
+whereas independent talent have businesses 
+ 
+Compromise: “Independent career,” but please limit 
+business 
+freelance business 
+freelance career 
+independent career 
+ 
+●​ If you’re looking for a home where your independent 
+business will thrive, we invite you to join us. 
+●​ If you’re looking for a home where you will thrive… 
+●​ If you’re looking for a home where your career as an 
+independent professional will thrive... 
+ 
+Manage 
+Talent are independent. In other words, independent 
+talent have control over their lives and work schedules 
+because they manage themselves. Clients do not 
+manage them. 
+ 
+Usage note: You can use “manage” to talk about a 
+program, e.g., “manage your freelance program with 
+Upwork” 
+●​ Our Enterprise Suite is a powerful platform for hiring, 
+partnering with, and scaling talent… 
+●​ The Enterprise Suite platform lets you manage your 
+whole program from a single centralized hub. 
+●​ The Enterprise Suite platform lets you see/track all 
+of them from a single centralized hub. 
+Our talent 
+Our people 
+Our talent 
+We should never imply that the independent talent who 
+uses the Upwork platform works for Upwork. Talent 
+who use the Upwork platform work for themselves and 
+use the Upwork platform to grow their independent 
+businesses. 
+●​ You will find that many of the talent/talent here have 
+been in our community for more than 5 years… 
+●​ You will find that many of the talent on Upwork… 
+●​ You will find that many of the professionals on 
+Upwork... 
+People [in 
+reference to 
+talent] 
+Using people to describe the talent on Upwork limits 
+the scope of the marketplace. The talent on Upwork 
+are agencies, independent professionals, corporations, 
+and LLCs. 
+●​ You’ll be surprised at the kind of talent you will find 
+on Upwork. 
+●​ We can’t begin to express the gratitude we have for 
+our community 
+Performance 
+Avoid referring to a freelancer’s past work as their 
+performance. Instead, talk about a freelancer’s 
+success, successful project outcomes, or something 
+similar. Avoid the combinations like “performance and 
+“monitor performance.” 
+●​ We’ll analyze your needs and use our powerful 
+engine to find people that have the right skills, 
+experience, and work history. 
+●​ We’ll analyze your needs and use our powerful 
+engine to find people that have the right skills and 
+13 
+ 
+ 
+Usage note: You can use performance in other 
+contexts, like the performance of software or anything 
+other than the above. 
+experience and a history of happy clients. 
+Resume/ 
+CV 
+Resumes/CVs commonly describe employment. It is 
+better to use terms such as “profile” or “proposal” 
+depending on the context. 
+●​ Clients on Upwork can view talent profiles that will 
+introduce talent’s business, highlight their 
+expertise… 
+●​ Talent on Upwork can submit a proposal to clients 
+on Upwork... 
+Role 
+"Role" is an employment term and signifies 
+exclusivity, whereas independent professionals seek 
+to work on projects or contracts and may work with 
+whomever they would like 
+●​ Independent professionals can meet clients and 
+work on projects…​
+ 
+●​ Independent talent grow their businesses on 
+Upwork working on contracts that appeal to them.  
+●​ If you have a need for design services, find a 
+freelancer on Upwork. 
+Staffing 
+Upwork is not a staffing company. Staffing agencies 
+and the staffing industry are governed by very specific 
+laws.  
+ 
+Usage note: We can say that we are an “alternative to 
+staffing” 
+ 
+ 
+●​ We are not a staffing agency, but clients can meet 
+all of the needs they typically go to a staffing agency 
+to meet.   
+○​
+"We are better than staffing" — we have 
+higher NPS, higher quality talent is on 
+Upwork, speed to engage is shorter, and 
+cost is lower.   
+○​
+Clients can use Upwork as an alternative 
+by re-thinking "roles" to be more 
+IC-friendly, by engaging talent 
+internationally, or by using Upwork Payroll 
+●​ “Staffing" can only be used to describe services 
+closely in connection with Upwork Payroll.  
+○​
+E.g., if you say "use Upwork for your 
+staffing needs", that needs to be about 
+Upwork Payroll. Not just include a fine 
+print caveat that Upwork Payroll is 
+available. 
+Suggest or 
+recommend 
+a freelancer 
+We cannot say that Upwork is “recommending” or 
+"suggesting" specific talent to clients. 
+ 
+Upwork is not a provider or staffing vendor and we 
+cannot guarantee the talent's capabilities.  
+●​
+We can offer clients choices of talent to 
+consider 
+●​
+We can show talent based on client behavior 
+(like previous hires or search queries) as long 
+as we clarify why we are showing this talent. 
+●​
+We can recommend or suggest catalog 
+projects to clients, but we should take care 
+when doing so. For example, if the client 
+posts a job for a graphic designer, we can 
+show them related catalog projects.  
+Tools 
+“Tools” has a specific meaning in employment law, and 
+we need to be careful we don’t say we provide “tools” 
+to talent to do their work. For example, we can’t 
+provide a designer with a design tool, or a writer with 
+Microsoft Word, or a CS agent with a phone line. 
+Those are tools that are used to complete the work. 
+ 
+It’s better to use resources, informational materials, 
+●​ Talent have access to many resources to run their 
+freelance business on Upwork 
+●​ Join this webinar for information and tips on running 
+your business 
+14 
+ 
+or similar terms. 
+ 
+ 
+4.​
+Technical Stuff 
+UPWK. Since we are a publicly traded company, we have to be very deliberate about 
+what financial information we share. Therefore, any new statistic that isn’t already 
+public needs to be run by our Investor Relations & Legal teams. Examples: Number of 
+users that sign up, average price per contract, number of contracts, number or 
+percentage of individuals on the platform Upwork uses for its own business (i.e., TIP 
+workers). 
+Rate setting and price fixing. We don’t, and never should, do anything that looks like 
+we are setting the rates charged by talent. When we share market data to help 
+customers make more informed decisions, we need to be clear that all we are doing is 
+sharing market data. 
+Customer logos and photos. As a general matter, we need permission to use any 
+customer or third-party photo, name, logo, music or art in our marketing materials. 
+Some Enterprise customers have already given us permission. But in any instance 
+where we do not already have explicit consent, reach out to Legal for advice on what 
+you need to do to get permission in any specific case. 
+Population-focused marketing. While uplifting and focusing on particular populations in 
+marketing can be great, there are certain do’s and don’ts to keep in mind.  Don’t ask 
+users for and don’t track legally protected class information (e.g., race, religion, 
+sexual-orientation, etc.).  What you can do is ask targeted groups (e.g., top-rated 
+talent, rising talent, etc.) if they would like to participate in population-focused 
+campaigns, and provide a checklist of potential campaigns for them to opt-in to.  You 
+will also want to ask them to provide the reason(s) for their interest so you can 
+appropriately determine eligibility for your campaign.   
+Coalitions, Associations, Group Acronyms. We must avoid using the names of any 
+formal associated groups or acronyms that could be confused for these entities.  Even 
+if we make up a name (e.g., the “Future of Work Coalition”) we need to check and 
+ensure no such group actually exists that corresponds with that name.  We also want 
+to make sure no group actually exists with a different name, but that uses the same 
+acronym as the made up group name (e.g.  if there was a group called the “Free 
+15 
+ 
+Workers’ Committee,” that wouldn’t conflict with “Future of Work Coalition” but the 
+acronym for the real group and the made up group would: “FWC”). 
+Tax & legal advice. We can’t provide legal or tax advice to our users. But sometimes it 
+might be important to give tips or pointers. If we need to do this, we need to include a 
+disclaimer, such as: 
+Each state’s laws are different, so be sure to consult a local attorney so they can 
+explain your state’s rules and regulations to you before making a decision. 
+This article does not address all tax issues for talent, and you should not rely on 
+it as legal advice. We strongly encourage readers to seek tax advice based on 
+their particular circumstances from an independent tax advisor. 
+Freelance writer Inamul Karim submitted this story, and it reflects his views and 
+opinions. This article does not constitute the views or opinions of Upwork, nor 
+does Upwork sponsor or endorse the views of the author. 
+5.​
+Accuracy & Promises 
+Look, we get it. You all love Upwork. We do too—but we can’t let that love lead to 
+overpromising or overshadow the fine print. Accuracy is the word—don’t oversell and 
+don’t make promises or guarantees.  
+For example, our payment protection program is a membership perk that has several 
+requirements and exclusions—it is not a payment guarantee. We know, “we guarantee 
+payment” sounds amazing—but it isn’t accurate. In fact, “Hourly Payment Protection” 
+requires talent to meet eight separate criteria. If you really want to say “We protect your 
+payments,” then you’ll need to include “See details” as well. 
+Likewise, we can never promise that a client and freelancer are going to have a great 
+outcome. There are just too many factors we don’t have visibility into or any control 
+over. That said, we can accurately talk about how successful most outcomes are on 
+Upwork: “X% of clients would recommend Upwork to a friend.” (when based on actual 
+evidence; though you may need to get approval from Investor Relations and Legal if 
+the stat hasn’t been disclosed before). 
+We also have to be careful when using comparative and superlative language (“better 
+than,” “faster than,” “the best,” etc.).  While consumers often recognize that this type of 
+language is what is known as “puffery” and not necessarily a scientifically, 
+16 
+ 
+data-backed promise, it is always better if the statement is backed up by something. 
+We do not want to overpromise. Are we saying that a new feature results in more 
+profile views? Let’s make sure we have some data backing that up and we are being 
+clear about what is being compared.   
+Finally, we must be particularly cautious if we are ever comparing Upwork to its 
+competitors.  Such statements should be particularly fact-based if used as the risk of 
+repercussions from inaccurate statements is much higher than it would be when just 
+comparing new and old features of the Upwork platform. 
+6.​
+Trademark Principles 
+A trademark is a word or string of words registered or otherwise established by use to 
+represent a particular company or product. One way to establish trademark protection 
+is to register the mark, another way is by first developing “secondary meaning” in a 
+phrase, which essentially means that a company develops a new, distinct meaning to a 
+word or phrase that may already have meaning in common language by using it in 
+commercial use to the point that consumers associate the phrase with that company. 
+Famous examples include “Apple” as a company name and “Just Do It” (Nike) or “I’m 
+Lovin’ It” (McDonald’s) as company mottos. A trademark holder can enforce their mark 
+against other companies who may try to market their services through use of the mark 
+(i.e. if Wendy’s tried to use “I’m Lovin’ It”). 
+Upwork has established trademarks over “Upwork,” “Up We Go,” “Headroom,” “Work 
+Without Limits,” “Work Differently,” “Talent Cloud,” “Private Talent Cloud,” “Elance,” 
+“Elancer,” and “oDesk”. We are also claiming trademark rights over other marks, 
+including “This Is How We Work Now,” and “Upwork It.”  In order to preserve these 
+trademarks, we need to adhere to the following principles for use and flexible use of 
+Upwork’s marks. … 
+The following pointers apply to the use of all trademarks at Upwork: 
+●​ Use the ® symbol with the first use in an asset of a registered trademark, such 
+as Upwork.  
+●​ Use the ™ symbol for those where we are seeking trademark status but have 
+not yet obtained it through registration, such as TIHWWN, Project Catalog, and 
+Virtual Talent Bench.   
+●​ Use consistent font or sentence structure (such as title case) across usage for 
+the same mark where possible in assets.  
+17 
+ 
+●​ If using the mark as a sentence (i.e. “This is how we work now.”), always put the 
+™ at the end, even if it’s not the first usage in the asset. 
+ 
+Please consult the following important guidelines when using variations of the 
+TIHWWN brand mark: 
+​If your asset uses “This is how…now”, with different wording than “we work” in 
+the middle, we need to include a reference to the full TIHWWN phrasing in close 
+proximity in the same asset. You can either: 
+​Write out “This is how we work now™” and then mock it up by striking 
+through the words you’re replacing and adding them in subscript on top. 
+So for Example 3 above, we would write, “This is how we work now™”, 
+then cross out “work” and add in subscript above it “hire full time”.  
+​Use your variation first and later in the asset (often right afterwards) add, 
+This is how we work now™.” So, to comply with this guideline, Example 1 
+would become: “This is how we CEO now. This is how we work now™.” 
+​If your asset only uses 3 or less words from TIHWWN, such as “This is how” or 
+“how __ works,” with no other reference to or words from TIHWWN or 
+replacement of other TIHWWN words, it is approved to move forward without a 
+requirement for a specific reference to TIHWWN in the same asset (but it doesn’t 
+hurt to add it!). Here is an example that mostly is fine based on this guideline, 
+but due to the last usage, “how the Fortune 500 works now,” we would need to 
+end with “This is how we work now™”: 
+ 
+ 
+​If your asset is purely for internal purposes and will not be used externally for 
+any purpose at any time, we have more flexibility and do not have to follow 
+these guidelines as strictly as any use or asset for external purposes. 
+By following these guidelines in our brand marketing, we can both protect our brand 
+while driving it forward. 
+18 
+ 
+7.​AI Concerns 
+Generative AI tools have already begun to revolutionize the tech and business world, 
+but with these tools come a number of legal concerns:   
+Content Creation 
+If Upwork is responsible for the content, Upwork could be liable.  For that reason, we 
+must always be sure that, when describing Gen AI tools, we describe them as just 
+that–tools—that supplement and support the User’s own work, but do not replace it. 
+So, in the example of a Gen AI tool that helps draft a proposal for a User, it is important 
+that we don’t describe the tool as drafting the proposal for the user: “Provide some 
+basic information and this tool will do the rest, leaving you with a ready-to-send 
+proposal.” Instead, the Gen AI tool should always be a support and should be 
+described as such: “Get a start on your proposal with some tips from this tool.” 
+Intellectual Property Issues 
+IP ownership has been one of the major concerns associated with AI tools. The 
+concerns are two-fold:  
+1.​
+Whether the AI tools have or need rights to the content on which they are trained 
+2.​
+Whether and under what circumstances end-users can claim IP rights over 
+content generated by genAI tools 
+Our Terms of Service state that users are responsible for ensuring they own any IP 
+rights to content they post or otherwise share through Upwork, including work-product. 
+This is another reason users must retain control over all their content on Upwork. All 
+Product features must ensure that Users: 
+●​
+Maintain control over the content 
+●​
+Maintain control over both inputs and outputs used in GenAI tools 
+Bias Concerns 
+If an AI tool has been trained on biased/discriminatory content, the entity responsible 
+for the content could be liable for any discriminatory violations.  This again underlines 
+the importance of maintaining user control over the ultimate content.  It also means 
+19 
+ 
+that we need to be careful and thoughtful when developing AI tools to ensure that they 
+are not incorporating any biases, including implicit ones. 
+Classification Concerns 
+While AI tools can be useful in helping users perform their work, we must be careful to 
+ensure that providing third-party AI tools to Users does not make freelancers who use 
+the Upwork platform appear to be employees. To that end, Upwork’s own AI tools 
+cannot be mandatory or direct user’s work too much. Independent contractors like the 
+talent on our platform make their own business decisions, including the tools they will 
+use to do their work. 
+ 
+ 
+ 
+END 
+20 

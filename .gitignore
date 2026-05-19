@@ -1,0 +1,43 @@
+# Environment and secrets
+# (the previous `*.json` blanket was too aggressive — it excluded
+# configs/template_registry.json and the plugin manifests. Replaced with
+# targeted patterns that catch credentials only.)
+.env
+.env.*
+!.env.example
+service-account*.json
+*credentials*.json
+*secret*.json
+
+# Local run output
+runs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*/.venv/
+
+# Lambda packaging / deploy artifacts
+*.zip
+package/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Terraform state (uses remote backend)
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ADAM Library Tagger</title>
+  <style>
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      margin: 0;
+      padding: 16px;
+      background: #2c2c2c;
+      color: #e8e8e8;
+    }
+    h1 {
+      font-size: 14px;
+      margin: 0 0 4px 0;
+      color: #fff;
+    }
+    p.subtitle {
+      margin: 0 0 16px 0;
+      color: #a0a0a0;
+      font-size: 11px;
+    }
+    h2 {
+      font-size: 12px;
+      margin: 16px 0 6px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #b0b0b0;
+    }
+    .step {
+      margin-bottom: 12px;
+      padding: 10px;
+      background: #232323;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+    }
+    .step-instruction {
+      font-size: 11px;
+      color: #b8b8b8;
+      margin-bottom: 8px;
+    }
+    .step-status {
+      font-size: 11px;
+      color: #6bdd6b;
+      margin-top: 6px;
+      min-height: 14px;
+    }
+    .step-status.empty {
+      color: #888;
+    }
+    button {
+      padding: 6px 12px;
+      background: #18a0fb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0d8de8;
+    }
+    button.secondary {
+      background: #444;
+    }
+    button.secondary:hover {
+      background: #555;
+    }
+    button.primary-action {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+    .file-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      border-radius: 4px;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .file-label {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #444;
+      color: #e8e8e8;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .file-label:hover {
+      background: #555;
+    }
+    .file-name {
+      flex: 1;
+      color: #a0a0a0;
+      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-name.loaded {
+      color: #6bdd6b;
+    }
+    .paste-toggle {
+      margin-top: 8px;
+    }
+    .paste-toggle summary {
+      cursor: pointer;
+      color: #a0a0a0;
+      font-size: 11px;
+      padding: 4px 0;
+    }
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 10px;
+      padding: 8px;
+      background: #1a1a1a;
+      color: #e8e8e8;
+      border: 1px solid #444;
+      border-radius: 4px;
+      resize: vertical;
+      height: 80px;
+      margin-top: 6px;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    #log {
+      margin-top: 12px;
+      padding: 8px;
+      background: #1a1a1a;
+      border-radius: 4px;
+      height: 180px;
+      overflow-y: auto;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    .log-error {
+      color: #ff6b6b;
+    }
+    .log-warn {
+      color: #ffd966;
+    }
+    .log-success {
+      color: #6bdd6b;
+    }
+  </style>
+</head>
+<body>
+  <h1>ADAM Library Tagger</h1>
+  <p class="subtitle">Generates tagged photo components from source shoots + a CSV.</p>
+
+  <div class="step">
+    <div class="step-instruction"><b>Step 1.</b> In Figma, select all of your source shoot frames (the ones containing the photos), then click below.</div>
+    <button id="capture-sources">Capture Source Selection</button>
+    <div class="step-status empty" id="sources-status">No sources captured yet</div>
+  </div>
+
+  <div class="step">
+    <div class="step-instruction"><b>Step 2.</b> In Figma, select the template frame (the small frame with image placeholder + tag rectangles), then click below.</div>
+    <button id="capture-template">Capture Template</button>
+    <div class="step-status empty" id="template-status">No template captured yet</div>
+  </div>
+
+  <div class="step">
+    <div class="step-instruction"><b>Step 3.</b> Either export a fresh CSV from the captured sources, or load an edited CSV.</div>
+    <div class="file-row">
+      <label for="csv-file" class="file-label">Choose CSV file…</label>
+      <input type="file" id="csv-file" accept=".csv,text/csv" />
+      <span id="file-name" class="file-name">No file chosen</span>
+    </div>
+    <details class="paste-toggle">
+      <summary>Or paste CSV manually</summary>
+      <textarea id="csv" placeholder="Paste the contents of refs/photo_library_tags.csv here"></textarea>
+    </details>
+  </div>
+
+  <h2>Run</h2>
+  <div class="row">
+    <button id="export" class="primary-action">Export CSV</button>
+    <button id="export-pngs" class="primary-action">Export PNGs</button>
+  </div>
+  <div class="row">
+    <button id="scan" class="primary-action">Scan</button>
+    <button id="generate" class="primary-action">Generate</button>
+  </div>
+  <div class="row">
+    <button id="close" class="secondary">Close</button>
+  </div>
+
+  <h2>Log</h2>
+  <div id="log"></div>
+
+  <script>
+    var logEl = document.getElementById("log");
+    var fileInput = document.getElementById("csv-file");
+    var fileNameEl = document.getElementById("file-name");
+    var csvTextarea = document.getElementById("csv");
+    var sourcesStatus = document.getElementById("sources-status");
+    var templateStatus = document.getElementById("template-status");
+
+    // ── PNG buffer for ZIP export ──────────────────────────────────────────
+    var pngBuffer = []; // { filename, bytes (Uint8Array) }
+
+    // ── Minimal ZIP encoder (STORE method, no compression) ─────────────────
+    // Builds a valid ZIP file from an array of { name, bytes } entries.
+    var crcTable = (function () {
+      var t = [];
+      for (var n = 0; n < 256; n++) {
+        var c = n;
+        for (var k = 0; k < 8; k++) {
+          c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+        }
+        t[n] = c >>> 0;
+      }
+      return t;
+    })();
+
+    function crc32(bytes) {
+      var crc = -1;
+      for (var i = 0; i < bytes.length; i++) {
+        crc = (crc >>> 8) ^ crcTable[(crc ^ bytes[i]) & 0xff];
+      }
+      return (crc ^ -1) >>> 0;
+    }
+
+    function strToUtf8(s) {
+      return new TextEncoder().encode(s);
+    }
+
+    function buildZip(files) {
+      var parts = [];
+      var central = [];
+      var offset = 0;
+
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        var nameBytes = strToUtf8(file.name);
+        var crc = crc32(file.bytes);
+        var size = file.bytes.length;
+
+        // Local file header (30 bytes + filename)
+        var lh = new Uint8Array(30 + nameBytes.length);
+        var lhv = new DataView(lh.buffer);
+        lhv.setUint32(0, 0x04034b50, true);
+        lhv.setUint16(4, 20, true);          // version needed
+        lhv.setUint16(6, 0, true);           // flags
+        lhv.setUint16(8, 0, true);           // STORE
+        lhv.setUint16(10, 0, true);          // mod time
+        lhv.setUint16(12, 0, true);          // mod date
+        lhv.setUint32(14, crc, true);
+        lhv.setUint32(18, size, true);       // compressed
+        lhv.setUint32(22, size, true);       // uncompressed
+        lhv.setUint16(26, nameBytes.length, true);
+        lhv.setUint16(28, 0, true);          // extra field length
+        lh.set(nameBytes, 30);
+        parts.push(lh);
+        parts.push(file.bytes);
+
+        // Central directory entry (46 bytes + filename)
+        var cd = new Uint8Array(46 + nameBytes.length);
+        var cdv = new DataView(cd.buffer);
+        cdv.setUint32(0, 0x02014b50, true);
+        cdv.setUint16(4, 20, true);
+        cdv.setUint16(6, 20, true);
+        cdv.setUint16(8, 0, true);
+        cdv.setUint16(10, 0, true);
+        cdv.setUint16(12, 0, true);
+        cdv.setUint16(14, 0, true);
+        cdv.setUint32(16, crc, true);
+        cdv.setUint32(20, size, true);
+        cdv.setUint32(24, size, true);
+        cdv.setUint16(28, nameBytes.length, true);
+        cdv.setUint16(30, 0, true);
+        cdv.setUint16(32, 0, true);
+        cdv.setUint16(34, 0, true);
+        cdv.setUint16(36, 0, true);
+        cdv.setUint32(38, 0, true);
+        cdv.setUint32(42, offset, true);
+        cd.set(nameBytes, 46);
+        central.push(cd);
+
+        offset += lh.length + file.bytes.length;
+      }
+
+      // End of central directory (22 bytes)
+      var cdSize = 0;
+      for (var c = 0; c < central.length; c++) cdSize += central[c].length;
+      var eocd = new Uint8Array(22);
+      var edv = new DataView(eocd.buffer);
+      edv.setUint32(0, 0x06054b50, true);
+      edv.setUint16(4, 0, true);
+      edv.setUint16(6, 0, true);
+      edv.setUint16(8, files.length, true);
+      edv.setUint16(10, files.length, true);
+      edv.setUint32(12, cdSize, true);
+      edv.setUint32(16, offset, true);
+      edv.setUint16(20, 0, true);
+
+      // Concat
+      var totalSize = offset + cdSize + 22;
+      var out = new Uint8Array(totalSize);
+      var pos = 0;
+      for (var p = 0; p < parts.length; p++) {
+        out.set(parts[p], pos);
+        pos += parts[p].length;
+      }
+      for (var ce = 0; ce < central.length; ce++) {
+        out.set(central[ce], pos);
+        pos += central[ce].length;
+      }
+      out.set(eocd, pos);
+      return out;
+    }
+
+    function appendLog(msg, level) {
+      level = level || "info";
+      var span = document.createElement("span");
+      span.textContent = msg + "\n";
+      if (level === "error") span.className = "log-error";
+      else if (level === "warn") span.className = "log-warn";
+      else if (level === "success") span.className = "log-success";
+      logEl.appendChild(span);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function getCSV() {
+      return csvTextarea.value.trim();
+    }
+
+    fileInput.addEventListener("change", function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (evt) {
+        csvTextarea.value = evt.target.result;
+        fileNameEl.textContent = file.name + " (" + Math.round(file.size / 1024) + " KB)";
+        fileNameEl.classList.add("loaded");
+        var lineCount = (evt.target.result.match(/\n/g) || []).length;
+        appendLog("Loaded: " + file.name + " — " + lineCount + " lines (incl. header).", "success");
+      };
+      reader.onerror = function () {
+        appendLog("Failed to read file.", "error");
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById("capture-sources").addEventListener("click", function () {
+      parent.postMessage({ pluginMessage: { type: "capture-sources" } }, "*");
+    });
+
+    document.getElementById("capture-template").addEventListener("click", function () {
+      parent.postMessage({ pluginMessage: { type: "capture-template" } }, "*");
+    });
+
+    document.getElementById("scan").addEventListener("click", function () {
+      var csv = getCSV();
+      if (!csv) {
+        appendLog("Choose a CSV file first (or paste manually).", "error");
+        return;
+      }
+      logEl.innerHTML = "";
+      appendLog("Scanning...");
+      parent.postMessage({ pluginMessage: { type: "scan", csv: csv } }, "*");
+    });
+
+    document.getElementById("generate").addEventListener("click", function () {
+      var csv = getCSV();
+      if (!csv) {
+        appendLog("Choose a CSV file first (or paste manually).", "error");
+        return;
+      }
+      var ok = confirm("This will create a 'Tagged Library Output' frame and populate it with tagged components. Proceed?");
+      if (!ok) return;
+      logEl.innerHTML = "";
+      appendLog("Generating...");
+      parent.postMessage({ pluginMessage: { type: "generate", csv: csv } }, "*");
+    });
+
+    document.getElementById("export").addEventListener("click", function () {
+      logEl.innerHTML = "";
+      appendLog("Exporting CSV...");
+      // If a CSV is already loaded, pass it as a "seed" to pre-populate tag columns
+      var seedCsv = csvTextarea.value.trim();
+      parent.postMessage({ pluginMessage: { type: "export", seedCsv: seedCsv } }, "*");
+    });
+
+    document.getElementById("export-pngs").addEventListener("click", function () {
+      var ok = confirm(
+        "This will export all photos as PNGs and bundle them into a single ZIP file. One save dialog at the end.\n\nProceed?"
+      );
+      if (!ok) return;
+      logEl.innerHTML = "";
+      pngBuffer = []; // reset
+      appendLog("Exporting PNGs (will bundle into a ZIP at the end)...");
+      parent.postMessage({ pluginMessage: { type: "export-pngs" } }, "*");
+    });
+
+    document.getElementById("close").addEventListener("click", function () {
+      parent.postMessage({ pluginMessage: { type: "close" } }, "*");
+    });
+
+    onmessage = function (event) {
+      var msg = event.data.pluginMessage;
+      if (!msg) return;
+      if (msg.type === "log") {
+        var level = /WARNING|MISMATCH/.test(msg.message) ? "warn" : "info";
+        appendLog(msg.message, level);
+      } else if (msg.type === "error") {
+        appendLog("ERROR: " + msg.message, "error");
+      } else if (msg.type === "scan-complete") {
+        appendLog("Scan complete.", "success");
+      } else if (msg.type === "generate-complete") {
+        appendLog("Generate complete.", "success");
+      } else if (msg.type === "sources-captured") {
+        sourcesStatus.classList.remove("empty");
+        sourcesStatus.textContent = "✓ " + msg.count + " source frame(s) captured. See log for details.";
+      } else if (msg.type === "template-captured") {
+        templateStatus.classList.remove("empty");
+        templateStatus.textContent = "✓ Template captured. See log for details.";
+      } else if (msg.type === "export-ready") {
+        // Trigger a download of the exported CSV
+        var blob = new Blob([msg.csvText], { type: "text/csv;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "photo_library_tags_export.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        appendLog("Downloaded photo_library_tags_export.csv", "success");
+      } else if (msg.type === "png-data") {
+        // Buffer this PNG. Bundle into ZIP when complete signal arrives.
+        var bytes = new Uint8Array(msg.bytes);
+        pngBuffer.push({ name: msg.filename, bytes: bytes });
+        if ((msg.index + 1) % 10 === 0 || msg.index + 1 === msg.total) {
+          appendLog("Buffered " + (msg.index + 1) + "/" + msg.total + " PNGs");
+        }
+      } else if (msg.type === "png-export-complete") {
+        if (pngBuffer.length === 0) {
+          appendLog("No PNGs to bundle.", "error");
+          return;
+        }
+        appendLog("Building ZIP from " + pngBuffer.length + " PNGs...");
+        try {
+          var zipBytes = buildZip(pngBuffer);
+          var zipBlob = new Blob([zipBytes], { type: "application/zip" });
+          var zipUrl = URL.createObjectURL(zipBlob);
+          var zipLink = document.createElement("a");
+          zipLink.href = zipUrl;
+          zipLink.download = "photo_library_pngs.zip";
+          document.body.appendChild(zipLink);
+          zipLink.click();
+          document.body.removeChild(zipLink);
+          URL.revokeObjectURL(zipUrl);
+          var sizeMB = (zipBytes.length / (1024 * 1024)).toFixed(1);
+          appendLog("ZIP downloaded: photo_library_pngs.zip (" + sizeMB + " MB, " + pngBuffer.length + " PNGs)", "success");
+          // Clear the buffer to free memory
+          pngBuffer = [];
+        } catch (e) {
+          appendLog("ZIP build failed: " + e.message, "error");
+        }
+      }
+    };
+  </script>
+</body>
+</html>

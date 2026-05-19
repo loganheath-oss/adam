@@ -1,0 +1,118 @@
+Statement
+Period: Historical Data
+Period: 2025
+Top 1% of Earners (2025)
+Top 10% of earners 
+(2025)
+Comments
+Trust
+X million jobs completed on Upwork
+22M
+1.9M
+121K
+572K
+X Jobs posted on the platform each week
+60K / Week
+X jobs completed on the platform each day
+2.7K
+5.2K
+335
+1571
+X years supporting businesses through freelance work
+22
+22
+% of contracts completed
+72
+76
+Average number of freelancers hired per client
+5.4
+2.9
+The “jobs completed per day” metric is calculated as a daily average within each period. The historical figure is averaged across many years (including 
+higher-volume periods), while the 2025 number reflects only activity within 2025.
+So this does not mean that 2025 has more or less daily work than the past — it’s simply a difference in the time window used to compute the average.
+% of clients who hire more than one freelancer
+51
+43
+% of first-time clients who complete a contract
+95
+89
+Quality
+10,000 skills across AI & machine learning, software development, 
+sales & marketing, customer support, finance & accounting, and more
+ 
+Talent in more than 180 countries
+Talent available across X categories
+-
+130
+Average freelancer completes X jobs per year
+9
+4
+30
+15
+Let's look at top earning and see if this number is higher
+X freelancers with 5-star ratings
+-
+170,000
+719
+9.3K
+# of Reviews with 5 Stars 
+1.1M
+58K
+293K
+X many (insert category AI prompt engineers, lawyers etc.)
+See tab L3
+From legal: For marketing messaging use a number slightly less than and say we have more than X 
+% of earning freelancers with 5+ years of professional experience
+1.7M
+152K
+2.6k
+22k
+As I didn't find a proxy for "experience" y used Freelancer Registration date + earnings in the last 12 months
+# of freelancers with 4.5+ star ratings
+198K
+1.1K
+13K
+Average number of completed jobs per freelancer per year
+4.3
+3.8
+31
+15
+Calculated as the average number of completed contracts per freelancer per calendar year, considering only qualified contracts that reached an end date.
+Number of freelancers earning revenue across key categories
+See tab Eaning Freelancers
+% of hires in specialized or senior-level roles
+15%/ 3.8M
+13%/ 311K
+16%/ 23K
+15%/110K
+Used "expertise tier" from job posts table as proxy
+Growth in AI category
+Expand on this claim
+$ work completed on the platform.
+$3.3B+ 
+Approved by legal to use in paid acq
+Ease
+Avg time from job post to first proposal
+9 hours
+3 hours
+% of job posts receiving proposals within 24 hours
+98%
+98%
+Median time from job post to hire
+16 hours 
+6 hours 
+% of contracts that are hourly vs fixed price
+Skewed data
+Fixed: 66%; Hourly: 34%
+Average contract length
+138 days 
+44 days 
+% of clients running multiple contract types
+27%
+20%
+% of first-time clients who post a second job
+38
+30
+Median time between first and second job post in days
+10
+2

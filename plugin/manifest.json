@@ -1,0 +1,13 @@
+{
+  "name": "Upwork Pipeline Assembly",
+  "id": "upwork-pipeline-assembly",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": ["figma"],
+  "ui": "ui.html",
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  }
+}

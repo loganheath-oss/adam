@@ -1,0 +1,629 @@
+Style Guide Audit 
+Last updated Mar 27, 2025 | FINAL 
+ 
+Purpose: Evaluate and refresh the style guide to ensure it aligns with changes to the brand 
+voice. Prepare the information to move from the Writing at Upwork site to the Supernova 
+platform.  
+ 
+Contributors: 
+ and 
+ 
+Haley Donoughe
+Adrie Etherington
+Informed: 
+ 
+ and 
+ 
+Ian Walter
+Anna Schaefer
+Jeremy Burton
+ 
+ 
+Primary landing page 
+Formatting section 
+Numbers section 
+Punctuation section 
+ 
+Primary landing page 
+Link 
+ 
+Heading 
+Style and format 
+ 
+Body copy 
+When we're consistent in our writing style, it helps us build trust with the people who interact 
+with Upwork every day. It helps them see that we're one company, no matter which internal 
+team wrote the thing they're reading.  
+ 
+This guide covers the basics that are specific to Upwork. If your case isn’t covered, use AP 
+style. 
+Formatting section 
+Link 
+ 
+Heading 
+Formatting 
+ 
+Body copy 
+Abbreviations 
+It’s okay to use most standard American abbreviations, including acronyms (within reason), 
+shortened words, and contractions.  
+For acronyms, spell out the full term on first use, followed by the abbreviation in parentheses. 
+After that, you can use the acronym on its own. 
+Periods with abbreviations 
+We don’t use periods in many abbreviations, especially in measurements, time units, states, 
+and well-known acronyms. Refer to AP style for a full list.  
+✅ Do this: 
+Job time: 20 min 
+Monica is based in New York, NY. 
+The CEO presented the company’s growth strategy during the annual meeting. 
+❌Not this: 
+Job time: 20 min. 
+She works out of Washington, D.C. 
+The C.E.O. presented the company’s growth strategy during the annual meeting. 
+ 
+One important exception is to use periods for the abbreviation of the United States. 
+✅ Do this: 
+This freelancer lives in the U.S. 
+❌Not this: 
+This company is looking for US-based freelancers. 
+ 
+File types and extensions 
+Use all caps for abbreviations of file types. 
+✅ Do this: 
+You can upload JPEG, GIF, or PNG files. 
+❌Not this: 
+You can upload .jpeg, .gif, or .png files. 
+ 
+Plural abbreviations 
+Don’t add an apostrophe before the s when you form the plural of an abbreviation, unless it’s 
+possessive. 
+Product names 
+Don’t abbreviate any Upwork product names, unless the abbreviation or acronym is commonly 
+known and used. View approved product names 
+Days and months 
+Months and days of the week can be abbreviated where appropriate with no periods. Don't use 
+all caps. 
+✅ Do this: 
+Jan 
+Tue 
+Mon 
+❌Not this: 
+JAN 
+Tues. 
+MON 
+Addresses 
+U.S. addresses 
+For U.S. addresses, put the recipient on the first line, the company (if needed) on the second 
+line, the street address on the third line, and then the city/state/postal code on the fourth line.  
+Use a comma between the city and state, and include one space between the state and postal 
+code. Use “postal code” not “ZIP code.” 
+✅ Do this: 
+Jose Longoria 
+Upwork 
+525 W Van Buren St STE 1100 
+Chicago, IL 60607 
+USA 
+U.S. states 
+Use AP Style two-letter abbreviation for U.S. state names, such as CA for California. 
+International addresses 
+Many international addresses put the postal code and the city name on the same line. Put the 
+recipient on the first line, the company (if needed) in the second line, the street address on the 
+third line, the postal code and the city on the fourth line (which one comes first varies by 
+country), and then the country on the fifth line. Include one space between the postal code and 
+the city name. 
+The format of international addresses varies by country. Use the Universal Postal Union 
+guidelines when you format international addresses for specific countries. 
+✅ Do this: 
+Guillaume Debois 
+Accenture 
+5 Notre Dame 
+13888 Paris 
+France 
+Capitalization 
+There are 3 styles of capitalization: 
+■​
+Title case capitalizes the first letter of every word except articles, prepositions, and 
+conjunctions. This Is Written in Title Case. 
+■​
+Sentence case capitalizes the first word of each sentence and any proper nouns. 
+This is written in sentence case. 
+■​
+Uppercase capitalizes every letter. THIS IS WRITTEN IN UPPERCASE. 
+Here’s how we use them at Upwork. (For specific names of products and features, go to the 
+word list.) 
+ 
+Title case 
+In general, avoid using title case because: 
+■​
+It’s harder to process 
+■​
+It’s slower to read because it uses fewer lowercase letters 
+■​
+It quickly becomes inconsistent—it’s tricky to decide which words to capitalize 
+ 
+Title case should only be used in these cases: 
+●​ Article, blog post, ebook, and success story titles in the Resource Center and blog 
+(subheadings remain in sentence case) 
+●​ Press releases 
+●​ YouTube video titles 
+If you need to use it, here’s a helpful text converter. Use the AP style filter.  
+ 
+Sentence case 
+We almost always use sentence case. This includes for: 
+■​
+Headings 
+■​
+Buttons 
+■​
+Page titles 
+■​
+Clickable links 
+■​
+Menus 
+■​
+Tooltips 
+You’ll need to capitalize the names of brands, companies, software, products, and services — 
+these things are proper nouns. 
+If you’re not sure what needs to be capitalized, check our word list or send a message to 
+#ask-content-design on Slack. 
+✅ Do this: 
+Your job feed 
+View profile 
+Try Business Plus 
+Go to settings 
+❌Not this: 
+Your Job Feed 
+View Profile 
+Try business plus 
+Go to Settings 
+ 
+Uppercase (All caps) 
+Avoid using all capital letters unless the word is an acronym. It’s hard to read and can come 
+across as screaming. 
+Exception: "New" and "Beta" tags, which are written in all caps.  
+Clause order 
+Put conditional clauses before instructions, not after them. Try to mention the circumstance 
+before you provide the instructions, so readers can skip the instruction if the condition doesn’t 
+apply. 
+ 
+✅ Do this: 
+To learn more, see the user guide. 
+If you have questions, visit our support guide. 
+Now that your first proposal is submitted, are you wondering what’s next? 
+ 
+❌Not this: 
+See the user guide to learn more. 
+Visit our support guide if you have questions.  
+Are you wondering what’s next now that your proposal is submitted? 
+Contractions 
+Since we want to sound informal and conversational, it’s okay to use contractions when they 
+make a sentence easier to understand. 
+You can use common contractions of be verbs (also known as state-of-being verbs) and 
+auxiliary verbs with not, as well as common contractions of be verbs and auxiliary verbs with 
+personal pronouns. 
+ 
+✅ Do this: 
+aren’t 
+isn’t 
+can’t 
+couldn’t 
+didn’t 
+doesn’t 
+hadn’t 
+haven’t 
+weren’t 
+won’t 
+he’s 
+I’m 
+I’ve 
+it’s 
+she’ll 
+they’re 
+we’ve 
+you’re 
+here’s 
+let’s 
+that’s 
+there’s 
+what’s 
+ 
+Nouns and contractions 
+Avoid contractions that combine a proper noun or regular noun with a verb. 
+ 
+✅ Do this: 
+Uma will help you draft a proposal. 
+Upwork is going to make a big announcement next quarter. 
+ 
+❌ Not this: 
+Uma’ll help you draft a proposal. 
+Upwork’s going to make a big announcement next quarter. 
+Countries and cities 
+Use the English version of international countries and cities.  
+✅ Do this: 
+Sweden 
+Germany 
+Venice 
+❌Not this: 
+Sverige 
+Deutschland 
+Venetia 
+Lists 
+Use numbers if there are steps the user needs to take in order. Otherwise, use bullets. List 
+items should not end with periods, unless the item includes multiple sentences. In that case, 
+punctuate normally. 
+Here are two examples: 
+Numbers 
+Here's how to send a proposal: 
+1.​ Pick a job 
+2.​ Bid your price 
+3.​ Set a start date 
+4.​ Add the number of hours 
+5.​ Send in your proposal 
+Bullets 
+To bid for a job, you need your: 
+■​
+Bid amount 
+■​
+Start date 
+■​
+Estimate of time it will take to finish 
+Quotes 
+Always cite the source of a quote or statistic. This includes the author’s last name, year of 
+publication, and page number (if applicable). When citing web pages, use the author and date 
+if known. 
+For example: 
+A recent report said "more than 40% of workers would be willing to work from home if it 
+meant more time with their family" (Thomas, 2015, 244) 
+Long quotes 
+If you need to use a long quotation, set off the quotation from the other text using a smaller 
+font, with one space before and after the quote. You can also include a pull quote that includes 
+part of the quotation. 
+URLs 
+Don't use the "www" designation (it's obvious by now) and don't include the "http://" path. 
+Sub-domains follow these same rules. 
+✅ Do this: 
+upwork.com 
+mail.google.com 
+❌Not this: 
+http://www.upwork.com 
+http://mail.google.com 
+Numbers section 
+Link​
+​
+Heading 
+Numbers, dates, and currency 
+ 
+Body copy 
+Basics 
+Use numerals instead of spelling numbers out. (Exception: for content on the Resource Center 
+and blog, spell out numbers below 10 and use numerals for numbers 10 and above.) 
+Use a hyphen (-) when indicating a range, and don't put spaces before or after. 
+✅ Do this: 
+July 18-20 
+❌Not this: 
+July 18 - 20 
+ 
+Use a comma with numbers of 4 digits or more. 
+✅ Do this: 
+2,045 
+❌Not this: 
+2045 
+ 
+Don’t use K for thousands. 
+✅ Do this: 
+15,000 
+❌Not this: 
+15K 
+Currency 
+Use the U.S. dollar for the standard currency. When referring to dollars, use USD instead of 
+U.S. Dollar. For foreign currencies, add the currency abbreviation (ISO 4217) after the amount. 
+✅ Do this: 
+15.50 GBP 
+❌Not this: 
+15.50 pounds 
+ 
+Spell out million, billion, and other large numbers. 
+✅ Do this: 
+15 million 
+❌Not this: 
+15,000,000 
+ 
+Don't use fractional monetary units like cents. 
+✅ Do this: 
+$0.13 
+❌Not this: 
+13¢ 
+ 
+Don’t use spaces with numbers and units. 
+✅ Do this: 
+$15/hr 
+❌Not this: 
+$15 / hr 
+Dates 
+Use full dates with a comma after the day when you have the space. Don't add zeroes to days. 
+✅ Do this: 
+December 3, 2026 
+❌Not this: 
+Dec 03 2026 
+ 
+Abbreviations 
+If you need to shorten the date, use three-letter month abbreviations without periods. Don't use 
+shortened formats like MM/DD/YYYY—it doesn't work internationally. 
+✅ Do this: 
+Dec 3, 2026 
+❌Not this: 
+12/03/2026 
+Jan. 01, 2025 
+ 
+Ordinal numbers 
+If you’re including a month, don’t add an ordinal (e.g. th, rd, nd).  
+If you’re not including a month, you can include the ordinal. Write it in normal text, not 
+subscript. 
+✅ Do this: 
+This job starts on December 2. 
+This job starts on the 12th. 
+❌Not this: 
+This job starts on December 2nd. 
+This job starts on the 12th. 
+ 
+Date ranges 
+Separate a range of dates with a hyphen and no spaces before and after. Show the year at 
+both the start and end, unless both dates are in the same year. 
+✅ Do this: 
+December 3, 2025-January 3, 2026 
+December 3-10, 2025 
+❌Not this: 
+December 3, 2025 - January 3, 2026 
+December 3 - 10, 2025 
+ 
+Days of the week 
+Try not to shorten the days of the week, but if you have to, use Mon, Tue, Wed, Thu, Fri, Sat, 
+and Sun. 
+Times 
+Use numbers, except noon or midnight. If it’s on the hour, you don’t need to include the 
+minutes (unless it looks inconsistent with other times you’re talking about). We use the 12-hour 
+clock (not 24-hour) and we use am or pm with a space. 
+✅ Do this: 
+2:30 pm 
+4 am 
+❌Not this: 
+2:30 PM 
+03:00 p.m. 
+ 
+Cumulative minutes, hours, elapsed time, and rates 
+If you’re talking about cumulated time (like how long a freelancer has worked on a project), use 
+decimals without adding zeroes, and use "min" and "hr" to save space. When it comes to 
+elapsed time (like timesheets), use a colon between the hours and minutes. 
+✅ Do this: 
+3.25 hr 
+12:31 hr 
+60 min meeting 
+❌Not this: 
+03.25 hours 
+12:31 hours 
+60 min. meeting 
+ 
+For rates, don't add any spaces. 
+✅ Do this: 
+$95/hr 
+❌Not this: 
+$95 / hr 
+ 
+Time ranges 
+Separate a range of times with a hyphen and no spaces. Use one lowercase am or pm, and no 
+leading zero. 
+✅ Do this: 
+2-4 pm 
+❌Not this: 
+02:00 - 04:00PM 
+ 
+Time zones 
+Include the user's time zone if it provides helpful context, like when they're scheduling a 
+meeting.  
+Spell out the time zone when you have space. If not, abbreviate it in all capital letters without 
+periods.  
+✅ Do this: 
+4 pm Australian Eastern Time 
+9 am AET 
+❌Not this: 
+04:00 pacific time 
+9:00 am pt 
+ 
+If the time zone doesn’t have a name, use the offset from Coordinated Universal Time (UTC). 
+Don't include spaces around the plus sign (+) or hyphen (-). 
+✅ Do this: 
+UTC+7 
+UTC-2 
+❌Not this: 
+4:00 UTC -2 
+utc+4 
+ 
+Relative time 
+When possible, include the relevant time and date when something happened. 
+✅ Do this: 
+You hired Chetan on Dec 3, 2016. 
+❌Not this: 
+You hired Chetan on 852 days ago 
+ 
+Writing dates and times together 
+Write the date, then the time and time zone. Use “at to separate them. If it’s less than a week 
+away, you can include the day of the week to provide helpful information for the user.  
+ 
+✅ Do this:  
+October 20, 2019 at 10:23 am PT 
+You have until Friday, February 17, 2023 at 12:30 pm Eastern Standard Time to dispute these 
+charges.  
+ 
+❌Not this: 
+Oct 20, 2019 10:23 am PT 
+You have until February 17, 2023 on Friday, 12:30 pm to dispute these charges.  
+ 
+It’s OK to abbreviate the day of the week and the month. But don’t mix your abbreviations. If 
+you’re shortening one, shorten both. 
+✅ Do this:  
+Your consultation with Haley is on Monday, January 12, 2022 at 1 pm Eastern Standard Time. 
+Available on Mon, Jan 12, 2022 at 1 pm ET. 
+❌Not this: 
+Your consultation with Haley is on Monday, Jan 12, 2022 at 1 pm Pacific Daylight Time.  
+ 
+ 
+Measurements 
+When you’re talking about distance, temperature, volume, size, weight, or any other kind of 
+measurement, use numerals (even if it’s under 10).  
+You can abbreviate measurements, such as KB and GHz, if the abbreviations are well known. If 
+not, spell out the unit in full.  
+When using a unit of measurement, put a space between the number and unit. 
+✅ Do this: 
+128 GB 
+❌Not this: 
+128GB 
+Phone numbers 
+International 
+For international numbers, or to write U.S. or Canadian numbers for international audiences, 
+add the abbreviation of the country and a plus sign (+) immediately before the country code.  
+✅ Do this: 
+US +1 4155551212 
+❌Not this: 
++1 4155551212 
+ 
+Local audiences 
+Then you don’t need the country code. For example, if you are writing for a North American 
+audience, put the area code in parentheses followed by a space, and then enter a hyphen after 
+the three-digit exchange code. 
+✅ Do this: 
+(415) 555-1212 
+❌Not this: 
+415-555-1212 
+Punctuation section 
+Link 
+ 
+Heading 
+Punctuation 
+ 
+Body copy 
+Ampersands 
+Don’t use an ampersand (&) unless it’s: 
+■​
+Part of a company or brand name 
+■​
+Creative use in a headline 
+■​
+Part of current ontology and structured data practices for category names 
+Use "and" since it’s easier to read and will help us localize internationally in the future. Some 
+people with lower literacy levels also find ampersands harder to understand.  
+✅ Do this: 
+Time and payments 
+Ben & Jerry's 
+❌Not this: 
+Time & payments 
+Ben and Jerry's 
+Apostrophes 
+Use the curved apostrophe (‘), the same character as a single closing quotation mark.  
+ 
+Plurals 
+Don’t use apostrophes for plurals of single letters, symbols, mathematical signs, or acronyms. 
+✅ Do this: 
+FAQs 
+❌Not this: 
+FAQ's 
+ 
+Possessives 
+For singular nouns, use an apostrophe followed by an “s”, including proper nouns ending in an 
+“s” or “z” sound. For plural nouns, add an apostrophe, but no s. 
+✅ Do this: 
+The CEO's announcement 
+Use the writers' guide 
+❌Not this: 
+The CEOs announcement 
+Use the writers's guide 
+ 
+Don’t use our product names as possessives—rewrite the sentence instead.  
+✅ Do this: 
+Business Plus makes it easy to find and hire freelancers. 
+❌Not this: 
+Business Plus’ features make it easy to find and hire freelancers. 
+Colons 
+Use colons to keep sentences flowing and introduce lists. When you use a colon in a sentence, 
+the first word after it should be lowercase. For example: 
+Time to get started: let's create your account. 
+If the text preceding a colon is bold, make the colon bold as well. 
+Commas 
+Use commas to separate items in a series, and to separate certain kinds of clauses. Use the 
+serial comma to separate items in a list, and place commas (and other punctuation) inside 
+quotes.  
+✅ Do this: 
+Work on websites, apps, and other technology. 
+The prototype "works," but not very well. 
+❌Not this: 
+Work on websites, apps and other technology. 
+The prototype "works", but not very well. 
+Ellipses 
+Use ellipses (...) when you want to indicate an unfinished thought or sentence. They work well 
+for loading states. For example: 
+Setting up your account... 
+Em dashes 
+To show a break or a change of direction in the middle of a sentence, use the em dash (—) with 
+spaces before or after it. Here's an example. 
+See all your apps — work and social — in one place. 
+Exclamation points 
+Be careful about using exclamation points. Ideally, we want the content of what we're writing to 
+excite our users, not the punctuation itself. 
+Too many exclamation points can come off as over-excited or self-centered, when we want to 
+come off as focused on our users and what they need. 
+Hyphens 
+Use hyphens to compound adjectives or for ranges. Don't use spaces on either side.  
+✅ Do this: 
+High-quality talent 
+Enter your email address. 
+You’ll be working on this project full time.  
+ 
+❌Not this: 
+High quality talent 
+Enter your e-mail address. 
+You’ll be working on this project full-time. 
+Parentheses 
+Periods in parentheses 
+If there is a sentence inside parentheses, the period at the end also goes inside the 
+parentheses. In all other cases, the period goes outside the parentheses. For parentheses that 
+appear in the middle of sentences, don’t add periods, even if the text in the parentheses is a 
+standalone sentence. 
+✅ Do this: 
+Contact us. (We typically respond in 24 hours or less.) 
+❌ Not this: 
+Contact us. (We typically respond in 24 hours or less). 
+ 
+Question marks and exclamation points 
+Place question marks or exclamation marks inside parentheses only when they’re part of the 
+parenthetical text.  
+Periods 
+End full sentences with periods, unless it's a question, and only leave one space between 
+sentences. This includes things like form field descriptions. 
+Acronyms and abbreviations 
+Don’t use periods with most acronyms or abbreviations, such as MB, PhD, or EPA. Generally, 
+it’s better to spell out abbreviations.  
+Decimal points 
+Use periods to represent decimal points.  
+Headings, headlines, and titles 
+Don’t use periods in headings, headlines, or titles. This includes things like form field labels. 
+In quotes 
+In general, put a period inside a quote if it ends a sentence, even if the period isn’t part of the 
+text inside the quotation marks. If the text inside quotation marks ends with a question mark or 
+exclamation point, don’t use a period. 
+Links  
+If a link is part of a full sentence, include a period at the end. Make sure the link formatting 
+does not include the period (the underline should stop before the period). 
+For stand-alone links (e.g., "Show more"), don’t use a period.  
+Slashes 
+Try not to use slashes. Exceptions include computer files and URLs: then it’s fine. If you’re 
+writing out a Windows path, use backslashes (\). 
+✅ Do this: 
+These instructions are for PC and Mac users. 
+❌Not this: 
+These instructions are for PC/Mac users. 
+Trademarks 
+Use the trademark symbol [superscript TM] on the first instance only or with the most prominent 
+use of the mark. The remaining instances should be without the symbol. Always use the full 
+trademarked name and proper capitalization. You can find a list here.  
+ 
+ 
+ 
