@@ -23,7 +23,11 @@ from fastapi.staticfiles import StaticFiles
 
 
 BASE_DIR = Path(__file__).parent
-ORDER_FORM_PATH = BASE_DIR / "order-form" / "upwork-order-form.html"
+# order-form-local.html is the 24-style modern form with preview thumbnails.
+# upwork-order-form.html is the legacy 13-style production form (still served
+# at /legacy below for comparison).
+ORDER_FORM_PATH = BASE_DIR / "order-form" / "order-form-local.html"
+LEGACY_FORM_PATH = BASE_DIR / "order-form" / "upwork-order-form.html"
 FONTS_DIR = BASE_DIR / "order-form" / "fonts"
 RUNS_DIR = BASE_DIR / "runs"
 RUNS_DIR.mkdir(exist_ok=True)
@@ -71,6 +75,18 @@ async def submit_order(request: Request):
     )
 
 
+@app.get("/legacy", response_class=HTMLResponse)
+async def legacy_form():
+    """Optional: serves the older 13-style form for comparison."""
+    if not LEGACY_FORM_PATH.exists():
+        return HTMLResponse("<h1>Legacy form not found</h1>", status_code=404)
+    return FileResponse(LEGACY_FORM_PATH, media_type="text/html")
+
+
 @app.get("/health")
 async def health():
-    return {"ok": True, "order_form_present": ORDER_FORM_PATH.exists()}
+    return {
+        "ok": True,
+        "order_form_present": ORDER_FORM_PATH.exists(),
+        "legacy_form_present": LEGACY_FORM_PATH.exists(),
+    }
