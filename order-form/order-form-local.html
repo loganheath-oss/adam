@@ -1336,7 +1336,7 @@ function buildAndDownloadCSV(payload, sprintId) {
 
 // ── BACKEND CONFIG ────────────────────────────────────────────────────────────
 // Override at runtime by setting window.ADAM_PIPELINE_URL before this script loads.
-const ADAM_PIPELINE_URL = (window.ADAM_PIPELINE_URL || 'https://adam-pipeline-cm.fly.dev/submit-order?auth=11cToL-yxmRumMilF7FRdcq1uLBStA0nuSpR8W-_fH8');
+const ADAM_PIPELINE_URL = (window.ADAM_PIPELINE_URL || '/submit');
 
 async function confirmSubmit() {
   const btn = document.querySelector('.btn-confirm-submit');
@@ -1383,7 +1383,7 @@ async function confirmSubmit() {
 
   const idForDisplay = sprintId || fallbackSprintId;
   const backendLine = sprintId
-    ? '<div style="font-family:\'PP Neue Montreal\',sans-serif;font-size:11px;color:#14a800;margin-bottom:24px;">✓ Submitted to pipeline · open ADAM Pipeline in Claude to drive it</div>'
+    ? `<div style="font-family:'PP Neue Montreal',sans-serif;font-size:11px;color:#14a800;margin-bottom:24px;">✓ Pipeline running · <a href="/sprints/${sprintId}" target="_blank" style="color:#14a800;">check status</a></div>`
     : `<div style="font-family:'PP Neue Montreal',sans-serif;font-size:11px;color:#c2410c;margin-bottom:24px;">⚠ Backend submission failed (${backendError ? backendError.replace(/</g,'&lt;') : 'unknown'})<br>Use the downloaded CSV manually.</div>`;
 
   successEl.innerHTML = `
