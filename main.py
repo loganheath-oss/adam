@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 BASE_DIR = Path(__file__).parent
-ORDER_FORM_PATH = BASE_DIR / "order-form" / "upwork-order-form.html"
+ORDER_FORM_PATH = BASE_DIR / "order-form" / "order-form-local.html"
 FONTS_DIR = BASE_DIR / "order-form" / "fonts"
 RUNS_DIR = BASE_DIR / "runs"
 RUNS_DIR.mkdir(exist_ok=True)
