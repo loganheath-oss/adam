@@ -1,0 +1,23 @@
+# ── Web server (Phase 2 form + status API) ─────────────────────────────────
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+
+# ── Pipeline core ──────────────────────────────────────────────────────────
+# Google services (Drive integration in 01_refs / 06_deliver, Gemini image
+# generation in run_pipeline stage 04).
+google-genai>=0.3
+google-api-python-client>=2.100
+google-auth>=2.30
+google-auth-httplib2>=0.2
+google-auth-oauthlib>=1.2
+
+# TLS root certs for figma_library urllib calls
+certifi>=2024.0
+
+# AWS SDK — referenced by older pipeline stages for S3. Kept for completeness;
+# Replit deployment uses local filesystem, not S3.
+boto3>=1.34
+
+# Pillow — used by the assembler / image post-processing
+Pillow>=10.0
