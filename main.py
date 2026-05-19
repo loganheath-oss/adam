@@ -30,7 +30,7 @@ async def root():
     if not ORDER_FORM_PATH.exists():
         return HTMLResponse(
             "<h1>Order form not found</h1>"
-            "<p>Expected at <code>order-form/upwork-order-form.html</code>.</p>",
+            "<p>Expected at <code>order-form/order-form-local.html</code>.</p>",
             status_code=500,
         )
     return FileResponse(ORDER_FORM_PATH, media_type="text/html")
