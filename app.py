@@ -25,6 +25,14 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
+# Phase 3: gate orchestrator (chat UI + Claude tool-use loop).
+# Lazy import inside the include so the rest of the app still boots
+# if the anthropic SDK isn't installed yet.
+try:
+    from agent.routes import router as agent_router
+except Exception as _agent_import_err:  # noqa: F841
+    agent_router = None
+
 
 BASE_DIR = Path(__file__).parent
 ORDER_FORM_PATH = BASE_DIR / "order-form" / "order-form-local.html"
@@ -39,6 +47,9 @@ app = FastAPI(title="ADAM Pipeline")
 
 if FONTS_DIR.exists():
     app.mount("/fonts", StaticFiles(directory=FONTS_DIR), name="fonts")
+
+if agent_router is not None:
+    app.include_router(agent_router)
 
 
 # ── Pipeline subprocess launcher ────────────────────────────────────────────

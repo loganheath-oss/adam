@@ -21,3 +21,10 @@ boto3>=1.34
 
 # Pillow — used by the assembler / image post-processing
 Pillow>=10.0
+
+# ── Phase 3: native gate orchestration ─────────────────────────────────────
+# Anthropic SDK for the chat-driven gate flow inside Replit (agent/ module).
+# Replaces the claude.ai + MCP server orchestration once stable.
+anthropic>=0.40
+sse-starlette>=2.0
+
