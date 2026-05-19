@@ -2,17 +2,17 @@
 ADAM Pipeline — Replit entry point
 Serves the order form via FastAPI on port 5000.
 On form submission, writes order.json and launches the pipeline
-as a background subprocess.
+as a background task.
 """
 
+import asyncio
 import json
-import subprocess
 import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
@@ -21,67 +21,55 @@ BASE_DIR = Path(__file__).parent
 ORDER_FORM_PATH = BASE_DIR / "order-form" / "order-form-local.html"
 FONTS_DIR = BASE_DIR / "order-form" / "fonts"
 RUNS_DIR = BASE_DIR / "runs"
-PIPELINE_SCRIPT = BASE_DIR / "pipeline" / "run_pipeline.py"
 RUNS_DIR.mkdir(exist_ok=True)
 
-app = FastAPI(title="ADAM Pipeline")
+sys.path.insert(0, str(BASE_DIR / "pipeline"))
+from run_pipeline import run_pipeline_auto
+
+app = FastAPI(title="ADAM Pipeline — Replit POC")
 
 if FONTS_DIR.exists():
     app.mount("/fonts", StaticFiles(directory=FONTS_DIR), name="fonts")
 
 
-def _write_status(sprint_dir: Path, stage: str, detail: str = ""):
-    (sprint_dir / "status.json").write_text(json.dumps({
-        "stage": stage,
-        "detail": detail,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }, indent=2))
+def _generate_sprint_id(payload: dict) -> str:
+    """Generate a sprint ID matching the pipeline's format: YYYY-MM-{platform}-{uid}."""
+    platform_raw = (payload.get("batches") or [{}])[0].get("platform", "unknown")
+    platform_slug = (
+        platform_raw.lower()
+        .replace(" / ", "-")
+        .replace("/", "-")
+        .replace(" ", "-")
+        .replace("3rd-party", "affiliate")
+    )
+    now = datetime.now(timezone.utc)
+    uid = uuid.uuid4().hex[:4]
+    return f"{now.strftime('%Y-%m')}-{platform_slug}-{uid}"
 
 
-def _run_pipeline(sprint_id: str, order_path: Path):
+async def _run_pipeline_task(payload: dict):
+    """Run the pipeline in a thread pool so it doesn't block the event loop."""
+    loop = asyncio.get_event_loop()
+    sprint_id = payload.get("sprint_id", "unknown")
     sprint_dir = RUNS_DIR / sprint_id
-    _write_status(sprint_dir, "running", "Pipeline started")
-    log_path = sprint_dir / "pipeline.log"
+
+    def _write_state(state: str, error: str = ""):
+        data = {
+            "sprint_id": sprint_id,
+            "state": state,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if error:
+            data["error"] = error
+        (sprint_dir / "pipeline_state.json").write_text(json.dumps(data, indent=2))
+
+    _write_state("running")
     try:
-        with open(log_path, "w") as log:
-            result = subprocess.run(
-                [sys.executable, str(PIPELINE_SCRIPT), "--json", str(order_path)],
-                cwd=str(BASE_DIR),
-                stdout=log,
-                stderr=subprocess.STDOUT,
-                timeout=3600,
-            )
-        if result.returncode == 0:
-            _write_status(sprint_dir, "complete", "Pipeline finished successfully")
-        else:
-            _write_status(sprint_dir, "failed", f"Exit code {result.returncode} — check pipeline.log")
-    except subprocess.TimeoutExpired:
-        _write_status(sprint_dir, "failed", "Pipeline timed out after 60 minutes")
-    except Exception as e:
-        _write_status(sprint_dir, "failed", str(e))
-
-
-def _sprint_summary(sprint_id: str) -> dict:
-    sprint_dir = RUNS_DIR / sprint_id
-    status_file = sprint_dir / "status.json"
-    status = json.loads(status_file.read_text()) if status_file.exists() else {"stage": "unknown"}
-    order_file = sprint_dir / "order.json"
-    order = json.loads(order_file.read_text()) if order_file.exists() else {}
-    outputs = {
-        "order": (sprint_dir / "order.json").exists(),
-        "context": (sprint_dir / "context.json").exists(),
-        "copy_outputs": (sprint_dir / "copy_outputs.json").exists(),
-        "image_prompts": (sprint_dir / "image_prompts.csv").exists(),
-        "asset_manifest": (sprint_dir / "asset_manifest.csv").exists(),
-        "run_summary": (sprint_dir / "run_summary.json").exists(),
-    }
-    return {
-        "sprint_id": sprint_id,
-        "status": status,
-        "driver": order.get("driver", ""),
-        "platform": order.get("platform", ""),
-        "outputs": outputs,
-    }
+        result = await loop.run_in_executor(None, run_pipeline_auto, payload)
+        if result is None:
+            _write_state("error", "Pipeline failed at intake — check order payload for validation errors")
+    except Exception as exc:
+        _write_state("error", str(exc))
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -96,40 +84,30 @@ async def root():
 
 
 @app.post("/submit")
-async def submit_order(request: Request, background_tasks: BackgroundTasks):
+async def submit_order(request: Request):
     payload = await request.json()
-    sprint_id = (
-        payload.get("sprint_id")
-        or f"sprint_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
-    )
+
+    sprint_id = payload.get("sprint_id") or _generate_sprint_id(payload)
+    payload["sprint_id"] = sprint_id
+
     sprint_dir = RUNS_DIR / sprint_id
     sprint_dir.mkdir(exist_ok=True)
-    order_path = sprint_dir / "order.json"
-    order_path.write_text(json.dumps(payload, indent=2))
-    _write_status(sprint_dir, "queued", "Order received, pipeline starting")
-    background_tasks.add_task(_run_pipeline, sprint_id, order_path)
+
+    (sprint_dir / "order.json").write_text(json.dumps(payload, indent=2))
+    (sprint_dir / "pipeline_state.json").write_text(json.dumps({
+        "sprint_id": sprint_id,
+        "state": "queued",
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }, indent=2))
+
+    asyncio.create_task(_run_pipeline_task(payload))
+
     return JSONResponse({
         "ok": True,
         "sprint_id": sprint_id,
         "status_url": f"/sprints/{sprint_id}",
+        "message": f"Pipeline started. Poll /sprints/{sprint_id} for status.",
     })
-
-
-@app.get("/sprints")
-async def list_sprints():
-    sprints = []
-    for d in sorted(RUNS_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
-        if d.is_dir():
-            sprints.append(_sprint_summary(d.name))
-    return JSONResponse(sprints)
-
-
-@app.get("/sprints/{sprint_id}")
-async def get_sprint(sprint_id: str):
-    sprint_dir = RUNS_DIR / sprint_id
-    if not sprint_dir.exists():
-        return JSONResponse({"error": "Sprint not found"}, status_code=404)
-    return JSONResponse(_sprint_summary(sprint_id))
 
 
 @app.get("/sprints/{sprint_id}/log")
@@ -140,6 +118,60 @@ async def get_sprint_log(sprint_id: str):
     return HTMLResponse(
         f"<pre style='font-family:monospace;font-size:12px;white-space:pre-wrap'>{log_path.read_text()}</pre>"
     )
+
+
+@app.get("/sprints/{sprint_id}")
+async def get_sprint_status(sprint_id: str):
+    sprint_dir = RUNS_DIR / sprint_id
+    if not sprint_dir.exists():
+        return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
+
+    state_path = sprint_dir / "pipeline_state.json"
+    if state_path.exists():
+        pipeline_state = json.loads(state_path.read_text())
+    else:
+        pipeline_state = {"state": "unknown"}
+
+    result = {
+        "ok": True,
+        "sprint_id": sprint_id,
+        "state": pipeline_state.get("state", "unknown"),
+        "updated_at": pipeline_state.get("updated_at"),
+    }
+
+    if pipeline_state.get("error"):
+        result["error"] = pipeline_state["error"]
+
+    summary_path = sprint_dir / "run_summary.json"
+    if summary_path.exists():
+        result["summary"] = json.loads(summary_path.read_text())
+
+    outputs = {}
+    for fname in ["order.json", "context.json", "copy_outputs.json"]:
+        if (sprint_dir / fname).exists():
+            outputs[fname] = True
+    for fname in ["asset_manifest.csv", "copy_review.csv", "image_prompts.csv"]:
+        if (sprint_dir / fname).exists():
+            outputs[fname] = True
+    if outputs:
+        result["outputs"] = outputs
+
+    return JSONResponse(result)
+
+
+@app.get("/sprints")
+async def list_sprints():
+    sprints = []
+    for sprint_dir in sorted(RUNS_DIR.iterdir(), reverse=True):
+        if not sprint_dir.is_dir():
+            continue
+        state_path = sprint_dir / "pipeline_state.json"
+        state = "unknown"
+        if state_path.exists():
+            data = json.loads(state_path.read_text())
+            state = data.get("state", "unknown")
+        sprints.append({"sprint_id": sprint_dir.name, "state": state})
+    return JSONResponse({"ok": True, "sprints": sprints})
 
 
 @app.get("/health")

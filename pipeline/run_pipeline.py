@@ -121,7 +121,7 @@ def stage_00_intake(payload):
             print(f"    - {e}")
         return None
 
-    sprint_id = intake.generate_sprint_id(payload)
+    sprint_id = payload.get("sprint_id") or intake.generate_sprint_id(payload)
     order = intake.build_order(payload, sprint_id)
 
     # Save locally instead of S3
@@ -1690,6 +1690,64 @@ def run_full_pipeline(payload):
     ]
 
     _print_gate(2, "ORDER + REFS CONFIRMATION", sprint_id, review_items)
+    return sprint_id
+
+
+def run_pipeline_auto(payload):
+    """Run all stages end-to-end without gate pauses.
+
+    Designed for web-triggered runs (POST /submit). All human-in-the-loop
+    gates are skipped; the pipeline runs straight through to delivery.
+    State is written to pipeline_state.json after each stage so the caller
+    can poll /sprints/{sprint_id} for progress.
+    """
+    print("\n" + "#"*60)
+    print("  UPWORK CREATIVE PIPELINE - AUTO RUN (no gates)")
+    print("#"*60)
+    print(f"  Time: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    print(f"  Driver: {payload.get('driver', 'unknown')}")
+    print(f"  Platform: {payload.get('batches', [{}])[0].get('platform', 'unknown')}")
+    print("#"*60)
+
+    # Stage 00: Intake
+    result = stage_00_intake(payload)
+    if not result:
+        print("\nPipeline stopped: intake validation failed")
+        return None
+    sprint_id, order = result
+    _save_pipeline_state(sprint_id, "stage_01_load_refs")
+
+    # Stage 01: Load Refs
+    context = stage_01_load_refs(sprint_id, order)
+    _save_pipeline_state(sprint_id, "stage_02_copy_gen")
+
+    # Stage 02: Copy Generation
+    copy_outputs = stage_02_copy_gen(sprint_id, order, context)
+    _save_pipeline_state(sprint_id, "stage_03_image_prompts")
+
+    # Stage 03: Image Prompts (uses copy_review.csv if present, else copy_outputs)
+    run_dir = RUNS_DIR / sprint_id
+    _apply_copy_overrides(run_dir, copy_outputs or {})
+    image_rows = stage_03_image_prompts(sprint_id, order, copy_outputs)
+    _save_pipeline_state(sprint_id, "stage_04_generate_images")
+
+    # Stage 04: Image Generation
+    image_results = stage_04_generate_images(sprint_id, image_rows or [])
+    _save_pipeline_state(sprint_id, "stage_05_figma_assembly")
+
+    # Stage 05: Figma Assembly
+    stage_05_figma_assembly(sprint_id, image_rows or [], image_results or {})
+    _save_pipeline_state(sprint_id, "stage_06_deliver")
+
+    # Stage 06: Deliver
+    summary = stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results or {})
+    _save_pipeline_state(sprint_id, "complete")
+
+    print("\n" + "#"*60)
+    print(f"  AUTO RUN COMPLETE — Sprint {sprint_id}")
+    print(f"  Assets: {summary.get('total_assets', 0)} | Delivered: {summary.get('delivered', 0)}")
+    print("#"*60 + "\n")
+
     return sprint_id
 
 
