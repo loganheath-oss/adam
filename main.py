@@ -934,6 +934,7 @@ async def api_sprint(sprint_id: str):
 @app.get("/sync-log", response_class=HTMLResponse, dependencies=[Depends(require_api_key_or_session)])
 async def sync_log_page(request: Request):
     entries = _read_sync_log(50)
+    total = _count_sync_log()
 
     rows = ""
     for e in entries:
@@ -987,7 +988,7 @@ async def sync_log_page(request: Request):
 </nav>
 <div class="container">
   <h1>GitHub Sync History</h1>
-  <p class="sub">Showing {len(entries)} of {_count_sync_log()} total event{"s" if _count_sync_log() != 1 else ""} (capped at {SYNC_LOG_MAX_ENTRIES}) · newest first</p>
+  <p class="sub">Showing {len(entries)} of {total} total event{"s" if total != 1 else ""} (capped at {SYNC_LOG_MAX_ENTRIES}) · newest first</p>
   <table>
     <thead><tr><th>Time (UTC)</th><th>Pusher</th><th>Commit SHA</th><th>Status</th><th>Detail</th></tr></thead>
     <tbody>{rows}{empty}</tbody>
