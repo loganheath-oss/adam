@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADAM Agent</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f9fafb;
+    color: #111827;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nav {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 52px;
+    flex-shrink: 0;
+  }
+  .nav-logo { font-weight: 700; font-size: 15px; letter-spacing: 0.05em; color: #14a800; }
+  .nav a { font-size: 13px; color: #6b7280; text-decoration: none; padding: 4px 10px; border-radius: 4px; }
+  .nav a:hover { background: #f3f4f6; color: #111; }
+  .nav .active { color: #111; font-weight: 600; }
+
+  .chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 16px;
+    min-height: 0;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .message {
+    display: flex;
+    gap: 12px;
+    animation: fadeIn 0.15s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+
+  .message.user { flex-direction: row-reverse; }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .avatar.assistant { background: #14a800; color: #fff; }
+  .avatar.user { background: #e5e7eb; color: #374151; }
+
+  .bubble {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .message.assistant .bubble { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px 12px 12px 2px; }
+  .message.user .bubble { background: #14a800; color: #fff; border-radius: 12px 12px 2px 12px; }
+
+  .tool-event {
+    font-size: 12px;
+    color: #6b7280;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 12px;
+    max-width: 75%;
+    font-family: ui-monospace, 'SF Mono', monospace;
+  }
+  .tool-event .tool-name { color: #374151; font-weight: 600; }
+  .tool-event .tool-input { color: #6b7280; margin-top: 2px; }
+  .tool-event.result { border-color: #d1fae5; background: #f0fdf4; color: #065f46; }
+  .tool-event.result .tool-name { color: #065f46; }
+
+  .typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 10px 14px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px 12px 12px 2px;
+    width: fit-content;
+  }
+  .typing-indicator span {
+    width: 6px; height: 6px;
+    background: #9ca3af;
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-6px); }
+  }
+
+  .input-row {
+    padding: 12px 0 20px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  textarea {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    max-height: 160px;
+    overflow-y: auto;
+    transition: border-color 0.15s;
+  }
+  textarea:focus { border-color: #14a800; }
+  textarea::placeholder { color: #9ca3af; }
+
+  button#send {
+    padding: 10px 18px;
+    background: #14a800;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    white-space: nowrap;
+  }
+  button#send:hover { background: #0f8600; }
+  button#send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #6b7280;
+    padding-bottom: 60px;
+  }
+  .empty-state .icon { font-size: 40px; }
+  .empty-state h2 { font-size: 18px; font-weight: 600; color: #374151; }
+  .empty-state p { font-size: 13px; text-align: center; max-width: 380px; line-height: 1.6; }
+
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .suggestion {
+    padding: 6px 14px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s;
+  }
+  .suggestion:hover { background: #f9fafb; border-color: #14a800; color: #14a800; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="nav-logo">ADAM Pipeline</span>
+  <a href="/">Order Form</a>
+  <a href="/sprints">Sprints</a>
+  <a href="/agent" class="active">Agent</a>
+</nav>
+
+<div class="chat-container">
+  <div class="messages" id="messages">
+    <div class="empty-state" id="empty-state">
+      <div class="icon">🤖</div>
+      <h2>ADAM Pipeline Agent</h2>
+      <p>Ask me to inspect sprints, review copy concepts, check image prompts, or approve pipeline gates.</p>
+      <div class="suggestions">
+        <span class="suggestion" onclick="suggest(this)">List recent sprints</span>
+        <span class="suggestion" onclick="suggest(this)">What sprints need gate approval?</span>
+        <span class="suggestion" onclick="suggest(this)">Show me the copy for the latest sprint</span>
+        <span class="suggestion" onclick="suggest(this)">Walk me through the pipeline status</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-row">
+    <textarea
+      id="input"
+      placeholder="Ask about sprints, copy review, gate approvals…"
+      rows="1"
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button id="send" onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+const messagesEl = document.getElementById('messages');
+const inputEl = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+const emptyEl = document.getElementById('empty-state');
+
+let history = [];
+let streaming = false;
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+
+function suggest(el) {
+  inputEl.value = el.textContent;
+  autoResize(inputEl);
+  inputEl.focus();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function scrollToBottom() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function addMessage(role, content) {
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  const msg = document.createElement('div');
+  msg.className = `message ${role}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = `avatar ${role}`;
+  avatar.textContent = role === 'user' ? 'U' : 'A';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = content;
+
+  msg.appendChild(avatar);
+  msg.appendChild(bubble);
+  messagesEl.appendChild(msg);
+  scrollToBottom();
+  return bubble;
+}
+
+function addTyping() {
+  if (emptyEl) emptyEl.style.display = 'none';
+  const msg = document.createElement('div');
+  msg.className = 'message assistant';
+  msg.id = 'typing-msg';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar assistant';
+  avatar.textContent = 'A';
+
+  const indicator = document.createElement('div');
+  indicator.className = 'typing-indicator';
+  indicator.innerHTML = '<span></span><span></span><span></span>';
+
+  msg.appendChild(avatar);
+  msg.appendChild(indicator);
+  messagesEl.appendChild(msg);
+  scrollToBottom();
+  return msg;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing-msg');
+  if (el) el.remove();
+}
+
+function addToolEvent(type, name, detail) {
+  const msg = document.createElement('div');
+  msg.className = 'message assistant';
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar assistant';
+  avatar.style.visibility = 'hidden';
+  avatar.textContent = 'A';
+
+  const ev = document.createElement('div');
+  ev.className = type === 'result' ? 'tool-event result' : 'tool-event';
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'tool-name';
+  nameEl.textContent = type === 'result' ? `✓ ${name}` : `⚙ calling ${name}…`;
+
+  ev.appendChild(nameEl);
+
+  if (type !== 'result' && detail) {
+    const inp = document.createElement('div');
+    inp.className = 'tool-input';
+    inp.textContent = JSON.stringify(detail);
+    ev.appendChild(inp);
+  }
+
+  msg.appendChild(avatar);
+  msg.appendChild(ev);
+  messagesEl.appendChild(msg);
+  scrollToBottom();
+}
+
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text || streaming) return;
+
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+  sendBtn.disabled = true;
+  streaming = true;
+
+  addMessage('user', text);
+  history.push({ role: 'user', content: text });
+
+  const typingEl = addTyping();
+
+  let assistantBubble = null;
+  let assistantText = '';
+
+  try {
+    const resp = await fetch('/agent/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history }),
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+
+      const lines = buf.split('\n\n');
+      buf = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let evt;
+        try { evt = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (evt.type === 'text') {
+          removeTyping();
+          if (!assistantBubble) {
+            const m = document.createElement('div');
+            m.className = 'message assistant';
+            const av = document.createElement('div');
+            av.className = 'avatar assistant';
+            av.textContent = 'A';
+            assistantBubble = document.createElement('div');
+            assistantBubble.className = 'bubble';
+            m.appendChild(av);
+            m.appendChild(assistantBubble);
+            messagesEl.appendChild(m);
+          }
+          assistantText += evt.text;
+          assistantBubble.textContent = assistantText;
+          scrollToBottom();
+        } else if (evt.type === 'tool_call') {
+          removeTyping();
+          addToolEvent('call', evt.name, evt.input);
+        } else if (evt.type === 'tool_result') {
+          addToolEvent('result', evt.name, null);
+          typingEl && addTyping();
+        } else if (evt.type === 'error') {
+          removeTyping();
+          addMessage('assistant', '⚠️ Error: ' + evt.message);
+          assistantText = '⚠️ Error: ' + evt.message;
+        } else if (evt.type === 'done') {
+          removeTyping();
+        }
+      }
+    }
+  } catch (err) {
+    removeTyping();
+    addMessage('assistant', '⚠️ Network error: ' + err.message);
+    assistantText = '⚠️ Network error: ' + err.message;
+  }
+
+  if (assistantText) {
+    history.push({ role: 'assistant', content: assistantText });
+  }
+
+  streaming = false;
+  sendBtn.disabled = false;
+  inputEl.focus();
+}
+</script>
+</body>
+</html>

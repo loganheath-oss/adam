@@ -24,6 +24,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
+from agent.routes import router as agent_router
+
 BASE_DIR = Path(__file__).parent
 ORDER_FORM_PATH = BASE_DIR / "order-form" / "order-form-local.html"
 FONTS_DIR = BASE_DIR / "order-form" / "fonts"
@@ -114,6 +116,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="ADAM Pipeline", lifespan=lifespan)
+app.include_router(agent_router)
 
 if FONTS_DIR.exists():
     app.mount("/fonts", StaticFiles(directory=FONTS_DIR), name="fonts")
