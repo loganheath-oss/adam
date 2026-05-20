@@ -122,11 +122,25 @@ def _read_sync_log(limit: int = 50) -> list[dict]:
     return list(reversed(entries[-limit:]))
 
 
-def _count_sync_log() -> int:
-    """Return the total number of valid entries in sync_log.jsonl."""
+def _count_sync_log() -> dict:
+    """Return total, ok, and error counts from sync_log.jsonl in a single pass."""
     if not SYNC_LOG_PATH.exists():
-        return 0
-    return sum(1 for line in SYNC_LOG_PATH.read_text(encoding="utf-8").splitlines() if line.strip())
+        return {"total": 0, "ok": 0, "errors": 0}
+    total = ok = errors = 0
+    for line in SYNC_LOG_PATH.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        total += 1
+        try:
+            entry = json.loads(line)
+            if entry.get("status") == "ok":
+                ok += 1
+            else:
+                errors += 1
+        except json.JSONDecodeError:
+            errors += 1
+    return {"total": total, "ok": ok, "errors": errors}
 
 
 def _sync_mini_panel() -> str:
@@ -957,7 +971,10 @@ async def api_sprint(sprint_id: str):
 @app.get("/sync-log", response_class=HTMLResponse, dependencies=[Depends(require_api_key_or_session)])
 async def sync_log_page(request: Request):
     entries = _read_sync_log(50)
-    total = _count_sync_log()
+    counts = _count_sync_log()
+    total = counts["total"]
+    ok_count = counts["ok"]
+    err_count = counts["errors"]
 
     rows = ""
     for e in entries:
@@ -1011,7 +1028,7 @@ async def sync_log_page(request: Request):
 </nav>
 <div class="container">
   <h1>GitHub Sync History</h1>
-  <p class="sub">Showing {len(entries)} of {total} total event{"s" if total != 1 else ""} (capped at {SYNC_LOG_MAX_ENTRIES}) · newest first</p>
+  <p class="sub">Showing {len(entries)} of {total} total event{"s" if total != 1 else ""} (capped at {SYNC_LOG_MAX_ENTRIES}) · {ok_count} ok, {err_count} error{"s" if err_count != 1 else ""} · newest first</p>
   <table>
     <thead><tr><th>Time (UTC)</th><th>Pusher</th><th>Commit SHA</th><th>Status</th><th>Detail</th></tr></thead>
     <tbody>{rows}{empty}</tbody>
