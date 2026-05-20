@@ -122,6 +122,13 @@ def _read_sync_log(limit: int = 50) -> list[dict]:
     return list(reversed(entries[-limit:]))
 
 
+def _count_sync_log() -> int:
+    """Return the total number of valid entries in sync_log.jsonl."""
+    if not SYNC_LOG_PATH.exists():
+        return 0
+    return sum(1 for line in SYNC_LOG_PATH.read_text(encoding="utf-8").splitlines() if line.strip())
+
+
 def _sync_mini_panel() -> str:
     """Return HTML for the compact recent-syncs panel shown on the sprints dashboard."""
     entries = _read_sync_log(5)
@@ -980,7 +987,7 @@ async def sync_log_page(request: Request):
 </nav>
 <div class="container">
   <h1>GitHub Sync History</h1>
-  <p class="sub">{len(entries)} event{"s" if len(entries) != 1 else ""} — last 50 shown · newest first</p>
+  <p class="sub">Showing {len(entries)} of {_count_sync_log()} total event{"s" if _count_sync_log() != 1 else ""} (capped at {SYNC_LOG_MAX_ENTRIES}) · newest first</p>
   <table>
     <thead><tr><th>Time (UTC)</th><th>Pusher</th><th>Commit SHA</th><th>Status</th><th>Detail</th></tr></thead>
     <tbody>{rows}{empty}</tbody>
