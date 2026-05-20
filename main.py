@@ -599,6 +599,28 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
           <div style="font-size:13px;color:#7f1d1d">{s['error'] or 'Unknown error — check the log.'}</div>
         </div>"""
 
+    # Sync-overlap notice
+    sync_notice = ""
+    order_json_path = sprint_dir / "order.json"
+    if order_json_path.exists():
+        sprint_start_ts = order_json_path.stat().st_mtime
+        sprint_start_dt = datetime.fromtimestamp(sprint_start_ts, tz=timezone.utc)
+        recent_syncs = _read_sync_log(1)
+        if recent_syncs:
+            latest_sync = recent_syncs[0]
+            sync_ts_str = latest_sync.get("ts", "")
+            try:
+                sync_dt = datetime.fromisoformat(sync_ts_str.replace("Z", "+00:00"))
+                if sync_dt > sprint_start_dt:
+                    display_time = sync_dt.strftime("%Y-%m-%d %H:%M UTC")
+                    sync_notice = f"""
+                    <div style="margin-bottom:20px;padding:14px 18px;background:#fefce8;border:1px solid #fde047;border-radius:8px;display:flex;align-items:center;gap:10px">
+                      <span style="font-size:15px;flex-shrink:0">⚠</span>
+                      <span style="font-size:13px;color:#854d0e">Code was synced at <strong>{display_time}</strong> — this run may have been affected.&nbsp;<a href="/sync-log" style="color:#713f12;font-weight:600;text-decoration:underline">View sync log →</a></span>
+                    </div>"""
+            except Exception:
+                pass
+
     # Outputs table
     out_rows = ""
     file_links = {
@@ -785,6 +807,7 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
     <a href="/sprints/{sprint_id}/log" target="_blank" style="margin-left:auto;font-size:12px;color:#6b7280;text-decoration:none">View log →</a>
   </div>
 
+  {sync_notice}
   {gate_section}
   {summary_stat}
 
