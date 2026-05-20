@@ -18,7 +18,8 @@ from pathlib import Path
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Security
+from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
@@ -57,6 +58,37 @@ STAGE_LABELS = {
 }
 
 INTERRUPTED_STATES = {"queued", "running"}
+
+# ── API Key auth ──────────────────────────────────────────────────────────────
+_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+_api_key_query  = APIKeyQuery(name="api_key",    auto_error=False)
+
+async def require_api_key(
+    header_key: str | None = Security(_api_key_header),
+    query_key:  str | None = Security(_api_key_query),
+) -> None:
+    """Dependency: rejects requests that don't supply a valid API key.
+
+    Accepted as either:
+      • HTTP header  X-API-Key: <key>
+      • Query param  ?api_key=<key>
+
+    If PIPELINE_API_KEY is not configured the server returns 503 so operators
+    know setup is incomplete rather than silently letting requests through.
+    """
+    configured = os.environ.get("PIPELINE_API_KEY", "")
+    if not configured:
+        raise HTTPException(
+            status_code=503,
+            detail="PIPELINE_API_KEY secret is not configured on this server.",
+        )
+    provided = header_key or query_key or ""
+    if not hmac.compare_digest(configured, provided):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or missing API key. "
+                   "Supply it via the X-API-Key header or ?api_key= query param.",
+        )
 
 
 @asynccontextmanager
@@ -635,7 +667,7 @@ async function retrySprint() {{
 </html>""")
 
 
-@app.get("/sprints/{sprint_id}/copy")
+@app.get("/sprints/{sprint_id}/copy", dependencies=[Depends(require_api_key)])
 async def sprint_copy(sprint_id: str):
     sprint_dir = RUNS_DIR / sprint_id
     if not sprint_dir.exists():
@@ -647,7 +679,7 @@ async def sprint_copy(sprint_id: str):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "copy_outputs": data})
 
 
-@app.get("/sprints/{sprint_id}/manifest")
+@app.get("/sprints/{sprint_id}/manifest", dependencies=[Depends(require_api_key)])
 async def sprint_manifest(sprint_id: str):
     sprint_dir = RUNS_DIR / sprint_id
     if not sprint_dir.exists():
@@ -663,7 +695,7 @@ async def sprint_manifest(sprint_id: str):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "count": len(rows), "assets": rows})
 
 
-@app.get("/sprints/{sprint_id}/files/{filename:path}")
+@app.get("/sprints/{sprint_id}/files/{filename:path}", dependencies=[Depends(require_api_key)])
 async def sprint_file(sprint_id: str, filename: str):
     sprint_dir = RUNS_DIR / sprint_id
     if not sprint_dir.exists():
@@ -702,7 +734,7 @@ pre{{white-space:pre-wrap;word-break:break-all}}</style></head>
 <body><pre>{content}</pre></body></html>""")
 
 
-@app.get("/api/sprints")
+@app.get("/api/sprints", dependencies=[Depends(require_api_key)])
 async def api_sprints():
     sprints = []
     if RUNS_DIR.exists():
@@ -712,7 +744,7 @@ async def api_sprints():
     return JSONResponse({"ok": True, "sprints": sprints})
 
 
-@app.get("/api/sprints/{sprint_id}")
+@app.get("/api/sprints/{sprint_id}", dependencies=[Depends(require_api_key)])
 async def api_sprint(sprint_id: str):
     sprint_dir = RUNS_DIR / sprint_id
     if not sprint_dir.exists():
