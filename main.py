@@ -15,6 +15,8 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -50,9 +52,35 @@ STAGE_LABELS = {
     "stage_06_deliver":         "Stage 6 — Delivering",
     "complete":                 "Complete",
     "error":                    "Error",
+    "interrupted":              "Interrupted",
 }
 
-app = FastAPI(title="ADAM Pipeline")
+INTERRUPTED_STATES = {"queued", "running"}
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """On startup, mark any in-flight sprints as interrupted."""
+    if RUNS_DIR.exists():
+        for d in RUNS_DIR.iterdir():
+            if not d.is_dir():
+                continue
+            state_path = d / "pipeline_state.json"
+            if not state_path.exists():
+                continue
+            try:
+                state_data = json.loads(state_path.read_text())
+                if state_data.get("state") in INTERRUPTED_STATES:
+                    state_data["state"] = "interrupted"
+                    state_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+                    state_data["interrupted_reason"] = "Server restarted while pipeline was in progress"
+                    state_path.write_text(json.dumps(state_data, indent=2))
+            except Exception:
+                pass
+    yield
+
+
+app = FastAPI(title="ADAM Pipeline", lifespan=lifespan)
 
 if FONTS_DIR.exists():
     app.mount("/fonts", StaticFiles(directory=FONTS_DIR), name="fonts")
@@ -93,6 +121,7 @@ def _sprint_data(sprint_id: str) -> dict:
         "state_label": STAGE_LABELS.get(state, state),
         "updated_at": state_raw.get("updated_at", ""),
         "error": state_raw.get("error", ""),
+        "interrupted_reason": state_raw.get("interrupted_reason", ""),
         "driver": order.get("driver", ""),
         "platform": order.get("platform", ""),
         "targeting": order.get("targeting", ""),
@@ -188,6 +217,33 @@ async def approve_gate(sprint_id: str, gate_num: int):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "gate": gate_num, "message": f"Gate {gate_num} approved, pipeline resuming"})
 
 
+@app.post("/sprints/{sprint_id}/retry")
+async def retry_sprint(sprint_id: str):
+    sprint_dir = RUNS_DIR / sprint_id
+    if not sprint_dir.exists():
+        return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
+    state_path = sprint_dir / "pipeline_state.json"
+    pipeline_state = _load_json(state_path)
+    current_state = pipeline_state.get("state", "unknown")
+    if current_state != "interrupted":
+        raise HTTPException(
+            status_code=409,
+            detail=f"Sprint is in state '{current_state}', expected 'interrupted'",
+        )
+    order_path = sprint_dir / "order.json"
+    if not order_path.exists():
+        return JSONResponse({"ok": False, "error": "order.json not found — cannot retry"}, status_code=400)
+    payload = _load_json(order_path)
+    payload["sprint_id"] = sprint_id
+    state_path.write_text(json.dumps({
+        "sprint_id": sprint_id,
+        "state": "queued",
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }, indent=2))
+    asyncio.create_task(_run_pipeline_task(payload))
+    return JSONResponse({"ok": True, "sprint_id": sprint_id, "message": "Sprint re-queued from interrupted state"})
+
+
 @app.get("/sprints", response_class=HTMLResponse)
 async def sprints_dashboard():
     sprints = []
@@ -200,6 +256,7 @@ async def sprints_dashboard():
         colors = {
             "complete": ("#d1fae5", "#065f46"),
             "error": ("#fee2e2", "#991b1b"),
+            "interrupted": ("#fce7f3", "#9d174d"),
             "running": ("#dbeafe", "#1e40af"),
             "queued": ("#f3f4f6", "#374151"),
         }
@@ -288,6 +345,7 @@ async def sprint_detail(sprint_id: str):
     def _badge(state):
         if state == "complete": return "#d1fae5", "#065f46"
         if state == "error": return "#fee2e2", "#991b1b"
+        if state == "interrupted": return "#fce7f3", "#9d174d"
         if "awaiting" in state: return "#fef9c3", "#854d0e"
         if state in ("running", "queued") or state.startswith("stage_"): return "#dbeafe", "#1e40af"
         return "#f3f4f6", "#374151"
@@ -307,6 +365,19 @@ async def sprint_detail(sprint_id: str):
             ✓ {g['action']}
           </button>
           <span id="gate-msg" style="margin-left:12px;font-size:12px;color:#6b7280"></span>
+        </div>"""
+
+    if s["state"] == "interrupted":
+        reason = s.get("interrupted_reason") or "The server restarted while this pipeline was in progress."
+        gate_section = f"""
+        <div style="margin:24px 0;padding:20px;background:#fdf2f8;border:1px solid #f0abdb;border-radius:8px">
+          <div style="font-weight:600;font-size:14px;color:#9d174d;margin-bottom:6px">⚠ Pipeline Interrupted</div>
+          <div style="font-size:13px;color:#831843;margin-bottom:14px">{reason}</div>
+          <button onclick="retrySprint()"
+            style="padding:10px 24px;background:#9d174d;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer">
+            ↺ Retry from beginning
+          </button>
+          <span id="retry-msg" style="margin-left:12px;font-size:12px;color:#6b7280"></span>
         </div>"""
 
     if s["state"] == "error":
@@ -427,6 +498,25 @@ async function approveGate(num) {{
     }} else {{
       if (msg) msg.textContent = 'Error: ' + (d.error || 'unknown');
       if (btn) {{ btn.disabled = false; btn.textContent = 'Retry'; }}
+    }}
+  }} catch(e) {{
+    if (msg) msg.textContent = 'Network error';
+    if (btn) {{ btn.disabled = false; }}
+  }}
+}}
+async function retrySprint() {{
+  const btn = document.querySelector('button[onclick="retrySprint()"]');
+  const msg = document.getElementById('retry-msg');
+  if (btn) {{ btn.disabled = true; btn.textContent = 'Re-queuing…'; }}
+  try {{
+    const r = await fetch('/sprints/{sprint_id}/retry', {{method:'POST'}});
+    const d = await r.json();
+    if (d.ok) {{
+      if (msg) msg.textContent = 'Sprint re-queued — refreshing…';
+      setTimeout(() => location.reload(), 2000);
+    }} else {{
+      if (msg) msg.textContent = 'Error: ' + (d.error || d.detail || 'unknown');
+      if (btn) {{ btn.disabled = false; btn.textContent = '↺ Retry from beginning'; }}
     }}
   }} catch(e) {{
     if (msg) msg.textContent = 'Network error';
