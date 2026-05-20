@@ -5,7 +5,11 @@ Serves the order form, runs the pipeline, and provides a sprint dashboard.
 
 import asyncio
 import csv
+import hashlib
+import hmac
 import json
+import os
+import subprocess
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -522,6 +526,67 @@ async def api_sprint(sprint_id: str):
 @app.get("/health")
 async def health():
     return {"ok": True, "order_form_present": ORDER_FORM_PATH.exists()}
+
+
+@app.post("/github-webhook")
+async def github_webhook(request: Request):
+    """
+    GitHub push webhook. Verifies HMAC-SHA256 signature, runs sync_from_github.sh,
+    then restarts the process so new code is picked up immediately.
+
+    GitHub webhook setup:
+      Payload URL : https://<your-repl-domain>/github-webhook
+      Content type: application/json
+      Secret      : value of WEBHOOK_SECRET Replit secret
+      Events      : Just the push event
+    """
+    webhook_secret = os.environ.get("WEBHOOK_SECRET", "")
+    if not webhook_secret:
+        return JSONResponse({"ok": False, "error": "WEBHOOK_SECRET not configured"}, status_code=503)
+
+    signature_header = request.headers.get("X-Hub-Signature-256", "")
+    body = await request.body()
+
+    expected = "sha256=" + hmac.new(
+        webhook_secret.encode(), body, hashlib.sha256
+    ).hexdigest()
+    if not hmac.compare_digest(expected, signature_header):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+
+    payload = json.loads(body) if body else {}
+    ref = payload.get("ref", "")
+    pusher = payload.get("pusher", {}).get("name", "unknown")
+
+    if ref != "refs/heads/main":
+        return JSONResponse({"ok": True, "message": f"Ignored push to {ref}"})
+
+    print(f"[webhook] Push to main by {pusher} — syncing from GitHub…")
+    asyncio.create_task(_do_sync_and_restart(pusher))
+    return JSONResponse({"ok": True, "message": "Sync triggered"})
+
+
+async def _do_sync_and_restart(pusher: str = "webhook"):
+    loop = asyncio.get_event_loop()
+    try:
+        result = await loop.run_in_executor(
+            None,
+            lambda: subprocess.run(
+                ["bash", str(BASE_DIR / "sync_from_github.sh")],
+                capture_output=True, text=True, timeout=120,
+            ),
+        )
+        if result.returncode == 0:
+            print(f"[webhook] Sync complete. Restarting process…")
+            print(result.stdout)
+        else:
+            print(f"[webhook] Sync failed (exit {result.returncode}):\n{result.stderr}")
+            return
+    except Exception as exc:
+        print(f"[webhook] Sync error: {exc}")
+        return
+
+    await asyncio.sleep(1)
+    os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
 if __name__ == "__main__":
