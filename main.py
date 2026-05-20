@@ -84,8 +84,11 @@ def _valid_session(cookie_value: str | None) -> bool:
     return hmac.compare_digest(_session_token(key), cookie_value)
 
 
+SYNC_LOG_MAX_ENTRIES = 500
+
+
 def _append_sync_log(pusher: str, sha: str, status: str, detail: str = "") -> None:
-    """Append one JSONL line to sync_log.jsonl."""
+    """Append one JSONL line to sync_log.jsonl, keeping at most SYNC_LOG_MAX_ENTRIES entries."""
     entry = {
         "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "pusher": pusher,
@@ -95,6 +98,11 @@ def _append_sync_log(pusher: str, sha: str, status: str, detail: str = "") -> No
     }
     with SYNC_LOG_PATH.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(entry) + "\n")
+    lines = SYNC_LOG_PATH.read_text(encoding="utf-8").splitlines()
+    valid_lines = [l for l in lines if l.strip()]
+    if len(valid_lines) > SYNC_LOG_MAX_ENTRIES:
+        trimmed = valid_lines[-SYNC_LOG_MAX_ENTRIES:]
+        SYNC_LOG_PATH.write_text("\n".join(trimmed) + "\n", encoding="utf-8")
 
 
 def _read_sync_log(limit: int = 50) -> list[dict]:
