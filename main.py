@@ -116,7 +116,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="ADAM Pipeline", lifespan=lifespan)
-app.include_router(agent_router)
+app.include_router(agent_router, dependencies=[Depends(require_api_key)])
 
 if FONTS_DIR.exists():
     app.mount("/fonts", StaticFiles(directory=FONTS_DIR), name="fonts")
@@ -228,7 +228,7 @@ async def submit_order(request: Request):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "status_url": f"/sprints/{sprint_id}"})
 
 
-@app.post("/sprints/{sprint_id}/approve/{gate_num}")
+@app.post("/sprints/{sprint_id}/approve/{gate_num}", dependencies=[Depends(require_api_key)])
 async def approve_gate(sprint_id: str, gate_num: int):
     if gate_num not in GATE_HANDLERS:
         return JSONResponse({"ok": False, "error": f"Unknown gate {gate_num}. Valid: 2–6"}, status_code=400)
@@ -253,7 +253,7 @@ async def approve_gate(sprint_id: str, gate_num: int):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "gate": gate_num, "message": f"Gate {gate_num} approved, pipeline resuming"})
 
 
-@app.post("/sprints/{sprint_id}/retry")
+@app.post("/sprints/{sprint_id}/retry", dependencies=[Depends(require_api_key)])
 async def retry_sprint(sprint_id: str):
     sprint_dir = RUNS_DIR / sprint_id
     if not sprint_dir.exists():
@@ -627,18 +627,22 @@ async def sprint_detail(sprint_id: str):
 </div>
 
 <script>
+const _apiKey = {repr(os.environ.get("PIPELINE_API_KEY", ""))};
+function _authHeaders() {{
+  return _apiKey ? {{'X-API-Key': _apiKey}} : {{}};
+}}
 async function approveGate(num) {{
   const btn = document.querySelector('button[onclick^="approveGate"]');
   const msg = document.getElementById('gate-msg');
   if (btn) {{ btn.disabled = true; btn.textContent = 'Approving…'; }}
   try {{
-    const r = await fetch('/sprints/{sprint_id}/approve/' + num, {{method:'POST'}});
+    const r = await fetch('/sprints/{sprint_id}/approve/' + num, {{method:'POST', headers: _authHeaders()}});
     const d = await r.json();
     if (d.ok) {{
       if (msg) msg.textContent = 'Pipeline resumed — refreshing…';
       setTimeout(() => location.reload(), 2000);
     }} else {{
-      if (msg) msg.textContent = 'Error: ' + (d.error || 'unknown');
+      if (msg) msg.textContent = 'Error: ' + (d.error || d.detail || 'unknown');
       if (btn) {{ btn.disabled = false; btn.textContent = 'Retry'; }}
     }}
   }} catch(e) {{
@@ -651,7 +655,7 @@ async function retrySprint() {{
   const msg = document.getElementById('retry-msg');
   if (btn) {{ btn.disabled = true; btn.textContent = 'Re-queuing…'; }}
   try {{
-    const r = await fetch('/sprints/{sprint_id}/retry', {{method:'POST'}});
+    const r = await fetch('/sprints/{sprint_id}/retry', {{method:'POST', headers: _authHeaders()}});
     const d = await r.json();
     if (d.ok) {{
       if (msg) msg.textContent = 'Sprint re-queued — refreshing…';
