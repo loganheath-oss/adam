@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
@@ -165,6 +165,20 @@ async def approve_gate(sprint_id: str, gate_num: int):
     sprint_dir = RUNS_DIR / sprint_id
     if not sprint_dir.exists():
         return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
+    state_path = sprint_dir / "pipeline_state.json"
+    pipeline_state = _load_json(state_path)
+    current_state = pipeline_state.get("state", "unknown")
+    expected_state = f"awaiting_gate_{gate_num}"
+    if current_state != expected_state:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Sprint is in state '{current_state}', expected '{expected_state}'",
+        )
+    state_path.write_text(json.dumps({
+        "sprint_id": sprint_id,
+        "state": f"resuming_gate_{gate_num}",
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }, indent=2))
     asyncio.create_task(_run_gate_task(sprint_id, gate_num))
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "gate": gate_num, "message": f"Gate {gate_num} approved, pipeline resuming"})
 
