@@ -1,0 +1,2 @@
+{"ts": "2026-05-20T10:00:00+00:00", "pusher": "alice", "sha": "abc1234567890", "status": "ok", "detail": "Already up to date."}
+{"ts": "2026-05-20T11:30:00+00:00", "pusher": "bob", "sha": "def0987654321", "status": "error", "detail": "exit 1: fatal: repository not found"}

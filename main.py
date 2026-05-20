@@ -31,6 +31,7 @@ ORDER_FORM_PATH = BASE_DIR / "order-form" / "order-form-local.html"
 FONTS_DIR = BASE_DIR / "order-form" / "fonts"
 RUNS_DIR = BASE_DIR / "runs"
 RUNS_DIR.mkdir(exist_ok=True)
+SYNC_LOG_PATH = BASE_DIR / "sync_log.jsonl"
 
 sys.path.insert(0, str(BASE_DIR / "pipeline"))
 from run_pipeline import run_pipeline_auto, resume_gate_2, resume_gate_3, resume_gate_4, resume_gate_5, resume_gate_6
@@ -81,6 +82,75 @@ def _valid_session(cookie_value: str | None) -> bool:
     if not key or not cookie_value:
         return False
     return hmac.compare_digest(_session_token(key), cookie_value)
+
+
+def _append_sync_log(pusher: str, sha: str, status: str, detail: str = "") -> None:
+    """Append one JSONL line to sync_log.jsonl."""
+    entry = {
+        "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "pusher": pusher,
+        "sha": sha[:12] if sha else "",
+        "status": status,
+        "detail": detail[:500] if detail else "",
+    }
+    with SYNC_LOG_PATH.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(entry) + "\n")
+
+
+def _read_sync_log(limit: int = 50) -> list[dict]:
+    """Return the last `limit` sync log entries, newest first."""
+    if not SYNC_LOG_PATH.exists():
+        return []
+    lines = SYNC_LOG_PATH.read_text(encoding="utf-8").splitlines()
+    entries = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entries.append(json.loads(line))
+        except json.JSONDecodeError:
+            pass
+    return list(reversed(entries[-limit:]))
+
+
+def _sync_mini_panel() -> str:
+    """Return HTML for the compact recent-syncs panel shown on the sprints dashboard."""
+    entries = _read_sync_log(5)
+    if not entries:
+        return ""
+    rows = ""
+    for e in entries:
+        status = e.get("status", "")
+        dot_color = "#16a34a" if status == "ok" else "#dc2626"
+        ts = e.get("ts", "").replace("T", " ").replace("+00:00", " UTC")[:19] + " UTC"
+        pusher = html.escape(e.get("pusher", "—"))
+        sha = html.escape(e.get("sha", "—"))
+        detail = html.escape(e.get("detail", ""))
+        detail_txt = detail[:60] + ("…" if len(detail) > 60 else "") if detail else ""
+        rows += f"""<tr>
+          <td style="padding:6px 14px;font-size:11px;color:#6b7280;white-space:nowrap">{ts}</td>
+          <td style="padding:6px 14px;font-size:12px;font-weight:600">{pusher}</td>
+          <td style="padding:6px 14px;font-family:monospace;font-size:11px">{sha}</td>
+          <td style="padding:6px 14px;font-size:11px"><span style="color:{dot_color};font-weight:700">{"✓" if status=="ok" else "✗"} {status}</span></td>
+          <td style="padding:6px 14px;font-size:11px;color:#6b7280;font-family:monospace">{detail_txt}</td>
+        </tr>"""
+    return f"""<div style="margin-top:28px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <span style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.05em">Recent GitHub Syncs</span>
+    <a href="/sync-log" style="font-size:12px;color:#14a800;text-decoration:none">View all →</a>
+  </div>
+  <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
+    <thead><tr style="background:#f9fafb;border-bottom:1px solid #e5e7eb">
+      <th style="padding:7px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">Time</th>
+      <th style="padding:7px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">Pusher</th>
+      <th style="padding:7px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">SHA</th>
+      <th style="padding:7px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">Status</th>
+      <th style="padding:7px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">Detail</th>
+    </tr></thead>
+    <tbody>{rows}</tbody>
+  </table>
+</div>"""
 
 
 async def require_api_key(
@@ -398,6 +468,7 @@ async def sprints_dashboard():
   <span class="nav-logo">ADAM Pipeline</span>
   <a href="/">Order Form</a>
   <a href="/sprints" style="color:#111;font-weight:600">Sprints</a>
+  <a href="/sync-log">Sync Log</a>
 </nav>
 <div class="container">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -409,6 +480,7 @@ async def sprints_dashboard():
     <thead><tr><th>Time</th><th>Sprint ID</th><th>Driver</th><th>Platform</th><th>Status</th></tr></thead>
     <tbody>{rows}{empty}</tbody>
   </table>
+  {_sync_mini_panel()}
 </div>
 </body>
 </html>""")
@@ -844,6 +916,72 @@ async def api_sprint(sprint_id: str):
     return JSONResponse({"ok": True, **_sprint_data(sprint_id)})
 
 
+@app.get("/sync-log", response_class=HTMLResponse, dependencies=[Depends(require_api_key_or_session)])
+async def sync_log_page(request: Request):
+    entries = _read_sync_log(50)
+
+    rows = ""
+    for e in entries:
+        status = e.get("status", "")
+        bg = "#d1fae5" if status == "ok" else "#fee2e2"
+        fg = "#065f46" if status == "ok" else "#991b1b"
+        label = "ok" if status == "ok" else "error"
+        sha = html.escape(e.get("sha", "—"))
+        pusher = html.escape(e.get("pusher", "—"))
+        ts = html.escape(e.get("ts", "—").replace("T", " ").replace("+00:00", " UTC"))
+        detail = html.escape(e.get("detail", ""))
+        detail_cell = f'<span title="{detail}" style="font-size:11px;color:#6b7280;font-family:monospace">{detail[:80] + ("…" if len(detail) > 80 else "")}</span>' if detail else "—"
+        rows += f"""<tr>
+          <td style="padding:10px 16px;font-size:12px;color:#6b7280;white-space:nowrap">{ts}</td>
+          <td style="padding:10px 16px;font-size:13px;font-weight:600">{pusher}</td>
+          <td style="padding:10px 16px;font-family:monospace;font-size:12px">{sha}</td>
+          <td style="padding:10px 16px"><span style="background:{bg};color:{fg};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">{label}</span></td>
+          <td style="padding:10px 16px">{detail_cell}</td>
+        </tr>"""
+
+    empty = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#9ca3af;font-size:14px">No syncs recorded yet</td></tr>' if not entries else ""
+
+    return HTMLResponse(f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ADAM — Sync History</title>
+<style>
+  *{{box-sizing:border-box;margin:0;padding:0}}
+  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;color:#111827}}
+  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
+  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
+  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
+  .nav a:hover{{background:#f3f4f6;color:#111}}
+  .container{{max-width:1100px;margin:0 auto;padding:32px 24px}}
+  h1{{font-size:22px;font-weight:700;margin-bottom:4px}}
+  .sub{{font-size:13px;color:#6b7280;margin-bottom:24px}}
+  table{{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)}}
+  thead tr{{background:#f9fafb;border-bottom:1px solid #e5e7eb}}
+  th{{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;letter-spacing:0.05em;text-transform:uppercase}}
+  tbody tr{{border-bottom:1px solid #f3f4f6}}
+  tbody tr:last-child{{border-bottom:none}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-logo">ADAM Pipeline</span>
+  <a href="/">Order Form</a>
+  <a href="/sprints">Sprints</a>
+  <a href="/sync-log" style="color:#111;font-weight:600">Sync Log</a>
+</nav>
+<div class="container">
+  <h1>GitHub Sync History</h1>
+  <p class="sub">{len(entries)} event{"s" if len(entries) != 1 else ""} — last 50 shown · newest first</p>
+  <table>
+    <thead><tr><th>Time (UTC)</th><th>Pusher</th><th>Commit SHA</th><th>Status</th><th>Detail</th></tr></thead>
+    <tbody>{rows}{empty}</tbody>
+  </table>
+</div>
+</body>
+</html>""")
+
+
 @app.get("/health")
 async def health():
     return {"ok": True, "order_form_present": ORDER_FORM_PATH.exists()}
@@ -877,16 +1015,17 @@ async def github_webhook(request: Request):
     payload = json.loads(body) if body else {}
     ref = payload.get("ref", "")
     pusher = payload.get("pusher", {}).get("name", "unknown")
+    sha = (payload.get("head_commit") or {}).get("id", "")
 
     if ref != "refs/heads/main":
         return JSONResponse({"ok": True, "message": f"Ignored push to {ref}"})
 
-    print(f"[webhook] Push to main by {pusher} — syncing from GitHub…")
-    asyncio.create_task(_do_sync_and_restart(pusher))
+    print(f"[webhook] Push to main by {pusher} ({sha[:12] or 'no-sha'}) — syncing from GitHub…")
+    asyncio.create_task(_do_sync_and_restart(pusher, sha))
     return JSONResponse({"ok": True, "message": "Sync triggered"})
 
 
-async def _do_sync_and_restart(pusher: str = "webhook"):
+async def _do_sync_and_restart(pusher: str = "webhook", sha: str = ""):
     loop = asyncio.get_event_loop()
     try:
         result = await loop.run_in_executor(
@@ -899,11 +1038,15 @@ async def _do_sync_and_restart(pusher: str = "webhook"):
         if result.returncode == 0:
             print(f"[webhook] Sync complete. Restarting process…")
             print(result.stdout)
+            _append_sync_log(pusher, sha, "ok", result.stdout.strip())
         else:
-            print(f"[webhook] Sync failed (exit {result.returncode}):\n{result.stderr}")
+            detail = result.stderr.strip() or result.stdout.strip()
+            print(f"[webhook] Sync failed (exit {result.returncode}):\n{detail}")
+            _append_sync_log(pusher, sha, "error", f"exit {result.returncode}: {detail}")
             return
     except Exception as exc:
         print(f"[webhook] Sync error: {exc}")
+        _append_sync_log(pusher, sha, "error", str(exc))
         return
 
     await asyncio.sleep(1)
