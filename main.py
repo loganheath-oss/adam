@@ -4,6 +4,7 @@ Serves the order form, runs the pipeline, and provides a sprint dashboard.
 """
 
 import asyncio
+import csv
 import json
 import sys
 import uuid
@@ -433,17 +434,60 @@ async function approveGate(num) {{
 </html>""")
 
 
-@app.get("/sprints/{sprint_id}/files/{filename}")
+@app.get("/sprints/{sprint_id}/copy")
+async def sprint_copy(sprint_id: str):
+    sprint_dir = RUNS_DIR / sprint_id
+    if not sprint_dir.exists():
+        return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
+    copy_path = sprint_dir / "copy_outputs.json"
+    if not copy_path.exists():
+        return JSONResponse({"ok": False, "error": "copy_outputs.json not yet available — pipeline has not reached Stage 02"}, status_code=404)
+    data = json.loads(copy_path.read_text())
+    return JSONResponse({"ok": True, "sprint_id": sprint_id, "copy_outputs": data})
+
+
+@app.get("/sprints/{sprint_id}/manifest")
+async def sprint_manifest(sprint_id: str):
+    sprint_dir = RUNS_DIR / sprint_id
+    if not sprint_dir.exists():
+        return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
+    manifest_path = sprint_dir / "asset_manifest.csv"
+    if not manifest_path.exists():
+        return JSONResponse({"ok": False, "error": "asset_manifest.csv not yet available — pipeline has not completed Stage 06"}, status_code=404)
+    rows = []
+    with manifest_path.open(newline="", encoding="utf-8") as fh:
+        reader = csv.DictReader(fh)
+        for row in reader:
+            rows.append(dict(row))
+    return JSONResponse({"ok": True, "sprint_id": sprint_id, "count": len(rows), "assets": rows})
+
+
+@app.get("/sprints/{sprint_id}/files/{filename:path}")
 async def sprint_file(sprint_id: str, filename: str):
-    allowed = {"order.json", "context.json", "copy_outputs.json", "copy_review.csv",
-                "image_prompts.csv", "asset_manifest.csv", "run_summary.json"}
-    if filename not in allowed:
-        return JSONResponse({"error": "Not found"}, status_code=404)
-    path = RUNS_DIR / sprint_id / filename
-    if not path.exists():
+    sprint_dir = RUNS_DIR / sprint_id
+    if not sprint_dir.exists():
+        return JSONResponse({"error": "Sprint not found"}, status_code=404)
+    # Resolve path and guard against directory traversal
+    try:
+        target = (sprint_dir / filename).resolve()
+        sprint_dir_resolved = sprint_dir.resolve()
+        target.relative_to(sprint_dir_resolved)
+    except ValueError:
+        return JSONResponse({"error": "Invalid filename"}, status_code=400)
+    if not target.exists() or not target.is_file():
         return JSONResponse({"error": "File not found"}, status_code=404)
-    media = "text/csv" if filename.endswith(".csv") else "application/json"
-    return FileResponse(path, media_type=media, filename=filename)
+    suffix = target.suffix.lower()
+    media_types = {
+        ".csv": "text/csv",
+        ".json": "application/json",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".pdf": "application/pdf",
+        ".log": "text/plain",
+    }
+    media = media_types.get(suffix, "application/octet-stream")
+    return FileResponse(target, media_type=media, filename=target.name)
 
 
 @app.get("/sprints/{sprint_id}/log", response_class=HTMLResponse)
