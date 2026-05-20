@@ -18,9 +18,9 @@ from pathlib import Path
 
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Security
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, Security
 from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
@@ -61,9 +61,27 @@ STAGE_LABELS = {
 
 INTERRUPTED_STATES = {"queued", "running"}
 
-# ── API Key auth ──────────────────────────────────────────────────────────────
+# ── Auth ──────────────────────────────────────────────────────────────────────
+_SESSION_COOKIE = "pipeline_sess"
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 _api_key_query  = APIKeyQuery(name="api_key",    auto_error=False)
+
+
+def _configured_key() -> str:
+    return os.environ.get("PIPELINE_API_KEY", "")
+
+
+def _session_token(api_key: str) -> str:
+    """Derive a stable, verifiable session token from the API key."""
+    return hmac.new(api_key.encode(), b"pipeline-session-v1", hashlib.sha256).hexdigest()
+
+
+def _valid_session(cookie_value: str | None) -> bool:
+    key = _configured_key()
+    if not key or not cookie_value:
+        return False
+    return hmac.compare_digest(_session_token(key), cookie_value)
+
 
 async def require_api_key(
     header_key: str | None = Security(_api_key_header),
@@ -78,7 +96,7 @@ async def require_api_key(
     If PIPELINE_API_KEY is not configured the server returns 503 so operators
     know setup is incomplete rather than silently letting requests through.
     """
-    configured = os.environ.get("PIPELINE_API_KEY", "")
+    configured = _configured_key()
     if not configured:
         raise HTTPException(
             status_code=503,
@@ -91,6 +109,32 @@ async def require_api_key(
             detail="Invalid or missing API key. "
                    "Supply it via the X-API-Key header or ?api_key= query param.",
         )
+
+
+async def require_api_key_or_session(
+    request: Request,
+    header_key: str | None = Security(_api_key_header),
+    query_key:  str | None = Security(_api_key_query),
+) -> None:
+    """Dependency: accepts a valid API key (header/query) OR a valid browser session cookie.
+
+    Used for action endpoints (approve, retry) so the browser UI can call them
+    after the user has authenticated via the inline auth form, without the API
+    key ever being present in client-side HTML.
+    """
+    configured = _configured_key()
+    if not configured:
+        raise HTTPException(status_code=503, detail="PIPELINE_API_KEY secret is not configured.")
+    provided = header_key or query_key or ""
+    if provided and hmac.compare_digest(configured, provided):
+        return
+    cookie = request.cookies.get(_SESSION_COOKIE, "")
+    if _valid_session(cookie):
+        return
+    raise HTTPException(
+        status_code=401,
+        detail="Invalid or missing API key. Supply via X-API-Key header, ?api_key= param, or log in via the browser.",
+    )
 
 
 @asynccontextmanager
@@ -228,7 +272,7 @@ async def submit_order(request: Request):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "status_url": f"/sprints/{sprint_id}"})
 
 
-@app.post("/sprints/{sprint_id}/approve/{gate_num}", dependencies=[Depends(require_api_key)])
+@app.post("/sprints/{sprint_id}/approve/{gate_num}", dependencies=[Depends(require_api_key_or_session)])
 async def approve_gate(sprint_id: str, gate_num: int):
     if gate_num not in GATE_HANDLERS:
         return JSONResponse({"ok": False, "error": f"Unknown gate {gate_num}. Valid: 2–6"}, status_code=400)
@@ -253,7 +297,7 @@ async def approve_gate(sprint_id: str, gate_num: int):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "gate": gate_num, "message": f"Gate {gate_num} approved, pipeline resuming"})
 
 
-@app.post("/sprints/{sprint_id}/retry", dependencies=[Depends(require_api_key)])
+@app.post("/sprints/{sprint_id}/retry", dependencies=[Depends(require_api_key_or_session)])
 async def retry_sprint(sprint_id: str):
     sprint_dir = RUNS_DIR / sprint_id
     if not sprint_dir.exists():
@@ -370,11 +414,56 @@ async def sprints_dashboard():
 </html>""")
 
 
+@app.post("/sprints/{sprint_id}/auth")
+async def sprint_auth(sprint_id: str, request: Request, response: Response):
+    """Browser login: validate API key submitted via form, set session cookie, redirect."""
+    form = await request.form()
+    api_key = (form.get("api_key") or "").strip()
+    configured = _configured_key()
+    if not configured:
+        return HTMLResponse("PIPELINE_API_KEY is not configured on this server.", status_code=503)
+    if not hmac.compare_digest(configured, api_key):
+        return RedirectResponse(url=f"/sprints/{sprint_id}?auth_error=1", status_code=303)
+    redirect = RedirectResponse(url=f"/sprints/{sprint_id}", status_code=303)
+    redirect.set_cookie(
+        key=_SESSION_COOKIE,
+        value=_session_token(configured),
+        httponly=True,
+        samesite="lax",
+        max_age=86400 * 7,
+    )
+    return redirect
+
+
 @app.get("/sprints/{sprint_id}", response_class=HTMLResponse)
-async def sprint_detail(sprint_id: str):
+async def sprint_detail(sprint_id: str, request: Request, auth_error: str = ""):
     sprint_dir = RUNS_DIR / sprint_id
     if not sprint_dir.exists():
         return HTMLResponse("<h1>Sprint not found</h1>", status_code=404)
+
+    # Show inline auth form if not logged in via session cookie
+    if not _valid_session(request.cookies.get(_SESSION_COOKIE)):
+        err_msg = '<p style="color:#dc2626;font-size:13px;margin-bottom:12px">Incorrect key — try again.</p>' if auth_error else ""
+        return HTMLResponse(f"""<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ADAM — {sprint_id}</title>
+<style>*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;display:flex;align-items:center;justify-content:center;min-height:100vh}}
+.box{{background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.1);padding:32px;width:100%;max-width:360px}}
+h2{{font-size:16px;font-weight:700;margin-bottom:4px}}
+.sub{{font-size:13px;color:#6b7280;margin-bottom:20px}}
+input{{width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;margin-bottom:12px}}
+button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer}}
+</style></head>
+<body><div class="box">
+  <h2>ADAM Pipeline</h2>
+  <p class="sub">Enter your API key to view this sprint.</p>
+  {err_msg}
+  <form method="POST" action="/sprints/{sprint_id}/auth">
+    <input type="password" name="api_key" placeholder="API key" autofocus required>
+    <button type="submit">Continue</button>
+  </form>
+</div></body></html>""")
 
     s = _sprint_data(sprint_id)
 
@@ -627,16 +716,12 @@ async def sprint_detail(sprint_id: str):
 </div>
 
 <script>
-const _apiKey = {repr(os.environ.get("PIPELINE_API_KEY", ""))};
-function _authHeaders() {{
-  return _apiKey ? {{'X-API-Key': _apiKey}} : {{}};
-}}
 async function approveGate(num) {{
   const btn = document.querySelector('button[onclick^="approveGate"]');
   const msg = document.getElementById('gate-msg');
   if (btn) {{ btn.disabled = true; btn.textContent = 'Approving…'; }}
   try {{
-    const r = await fetch('/sprints/{sprint_id}/approve/' + num, {{method:'POST', headers: _authHeaders()}});
+    const r = await fetch('/sprints/{sprint_id}/approve/' + num, {{method:'POST', credentials:'same-origin'}});
     const d = await r.json();
     if (d.ok) {{
       if (msg) msg.textContent = 'Pipeline resumed — refreshing…';
@@ -655,7 +740,7 @@ async function retrySprint() {{
   const msg = document.getElementById('retry-msg');
   if (btn) {{ btn.disabled = true; btn.textContent = 'Re-queuing…'; }}
   try {{
-    const r = await fetch('/sprints/{sprint_id}/retry', {{method:'POST', headers: _authHeaders()}});
+    const r = await fetch('/sprints/{sprint_id}/retry', {{method:'POST', credentials:'same-origin'}});
     const d = await r.json();
     if (d.ok) {{
       if (msg) msg.textContent = 'Sprint re-queued — refreshing…';
@@ -730,7 +815,7 @@ async def sprint_file(sprint_id: str, filename: str):
     return FileResponse(target, media_type=media, filename=target.name)
 
 
-@app.get("/sprints/{sprint_id}/log", response_class=HTMLResponse)
+@app.get("/sprints/{sprint_id}/log", response_class=HTMLResponse, dependencies=[Depends(require_api_key)])
 async def sprint_log(sprint_id: str):
     log_path = RUNS_DIR / sprint_id / "pipeline.log"
     content = log_path.read_text() if log_path.exists() else "(no log yet)"
