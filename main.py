@@ -7,6 +7,7 @@ import asyncio
 import csv
 import hashlib
 import hmac
+import html
 import json
 import os
 import subprocess
@@ -439,6 +440,10 @@ async def sprint_detail(sprint_id: str):
 
     # ── Copy Concepts ─────────────────────────────────────────────────────────
     copy_section = ""
+    def _e(v):
+        """HTML-escape a value from an untrusted file."""
+        return html.escape(str(v) if v is not None else "")
+
     copy_path = sprint_dir / "copy_outputs.json"
     if copy_path.exists():
         try:
@@ -448,15 +453,15 @@ async def sprint_detail(sprint_id: str):
             for c in concepts:
                 selected = c.get("selected", False)
                 score = c.get("score", "")
-                headline = c.get("headline", "—")
-                body = c.get("body", c.get("body_long", ""))
-                body_preview = (body[:180] + "…") if len(body) > 180 else body
-                concept_id = c.get("concept_id", "")
-                style = c.get("visual_style", c.get("concept_tag", ""))
+                headline = _e(c.get("headline", "—"))
+                body = str(c.get("body", c.get("body_long", "")))
+                body_preview = _e((body[:180] + "…") if len(body) > 180 else body)
+                concept_id = _e(c.get("concept_id", ""))
+                style = _e(c.get("visual_style", c.get("concept_tag", "")))
                 sel_bg = "#d1fae5" if selected else "#fee2e2"
                 sel_fg = "#065f46" if selected else "#991b1b"
                 sel_label = "Selected" if selected else "Rejected"
-                score_html = f'<span style="background:#f3f4f6;color:#374151;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Score {score}</span> ' if score else ""
+                score_html = f'<span style="background:#f3f4f6;color:#374151;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">Score {_e(score)}</span> ' if score else ""
                 concept_cards += f"""
                 <div style="padding:14px 16px;border-bottom:1px solid #f3f4f6">
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
@@ -477,8 +482,8 @@ async def sprint_detail(sprint_id: str):
               </div>
               {concept_cards or '<div style="padding:16px;font-size:13px;color:#9ca3af">No concepts found.</div>'}
             </div>"""
-        except Exception:
-            pass
+        except Exception as exc:
+            copy_section = f'<div class="card"><div style="padding:16px;font-size:13px;color:#991b1b">Could not parse copy_outputs.json: {_e(exc)}</div></div>'
 
     # ── Asset Manifest ────────────────────────────────────────────────────────
     manifest_section = ""
@@ -490,28 +495,29 @@ async def sprint_detail(sprint_id: str):
                 for row in csv.DictReader(fh):
                     manifest_rows_data.append(dict(row))
             if manifest_rows_data:
-                # Detect columns flexibly
+                # Detect columns flexibly (case-insensitive key lookup)
                 sample = manifest_rows_data[0]
                 col_assetid = next((k for k in sample if "asset_id" in k.lower()), "asset_id")
-                col_platform = next((k for k in sample if k.lower() in ("platform",)), "Platform")
-                col_format = next((k for k in sample if k.lower() in ("format",)), "Format")
+                col_platform = next((k for k in sample if k.lower() == "platform"), "Platform")
+                col_format = next((k for k in sample if k.lower() == "format"), "Format")
                 col_style = next((k for k in sample if "style" in k.lower()), "Visual_Style")
-                col_status = next((k for k in sample if k.lower() in ("status",)), "status")
+                col_status = next((k for k in sample if k.lower() == "status"), "status")
                 col_headline = next((k for k in sample if "headline" in k.lower()), "Headline")
                 mf_rows = ""
                 for r in manifest_rows_data:
-                    status = r.get(col_status, "")
-                    st_bg = "#d1fae5" if status == "delivered" else "#fef9c3"
-                    st_fg = "#065f46" if status == "delivered" else "#854d0e"
+                    status_raw = r.get(col_status, "").strip().lower()
+                    status_display = _e(r.get(col_status, ""))
+                    st_bg = "#d1fae5" if status_raw == "delivered" else "#fef9c3"
+                    st_fg = "#065f46" if status_raw == "delivered" else "#854d0e"
                     mf_rows += f"""<tr>
-                      <td style="padding:8px 12px;font-size:12px;color:#374151;font-family:monospace">{r.get(col_assetid,'')}</td>
-                      <td style="padding:8px 12px;font-size:12px">{r.get(col_platform,'')}</td>
-                      <td style="padding:8px 12px;font-size:12px">{r.get(col_format,'')}</td>
-                      <td style="padding:8px 12px;font-size:12px">{r.get(col_style,'')}</td>
-                      <td style="padding:8px 12px;font-size:12px">{r.get(col_headline,'')[:60]}</td>
-                      <td style="padding:8px 12px"><span style="background:{st_bg};color:{st_fg};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">{status}</span></td>
+                      <td style="padding:8px 12px;font-size:12px;color:#374151;font-family:monospace">{_e(r.get(col_assetid,''))}</td>
+                      <td style="padding:8px 12px;font-size:12px">{_e(r.get(col_platform,''))}</td>
+                      <td style="padding:8px 12px;font-size:12px">{_e(r.get(col_format,''))}</td>
+                      <td style="padding:8px 12px;font-size:12px">{_e(r.get(col_style,''))}</td>
+                      <td style="padding:8px 12px;font-size:12px">{_e(r.get(col_headline,'')[:60])}</td>
+                      <td style="padding:8px 12px"><span style="background:{st_bg};color:{st_fg};padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">{status_display}</span></td>
                     </tr>"""
-                delivered = sum(1 for r in manifest_rows_data if r.get(col_status) == "delivered")
+                delivered = sum(1 for r in manifest_rows_data if r.get(col_status, "").strip().lower() == "delivered")
                 manifest_section = f"""
                 <div class="card">
                   <div class="card-head" style="display:flex;justify-content:space-between;align-items:center">
@@ -532,8 +538,8 @@ async def sprint_detail(sprint_id: str):
                   </table>
                   </div>
                 </div>"""
-        except Exception:
-            pass
+        except Exception as exc:
+            manifest_section = f'<div class="card"><div style="padding:16px;font-size:13px;color:#991b1b">Could not parse asset_manifest.csv: {_e(exc)}</div></div>'
 
     return HTMLResponse(f"""<!DOCTYPE html>
 <html lang="en">
