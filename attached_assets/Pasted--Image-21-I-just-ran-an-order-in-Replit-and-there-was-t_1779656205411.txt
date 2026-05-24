@@ -1,0 +1,349 @@
+❯ [Image #21] I just ran an order in Replit and there was this [Image #23] saying I could check the status, but I have to put in the API key to check the status? This is a horrible setup. I want to be able to make the order and then go right into        
+  chatting with Claude about the order and proceed through the gates all while staying inside Replit. I want the screen to change to a Claude style chat where I will be progressed through the gates. There should be a series of tabs on the right hand     
+  side that show me what gate I'm working on, and when I approve the gate, we proceed to the next one. This should happen all the way until I need to work with Figma. Do you understand?                                                                     
+  ⎿  [Image #21]
+  ⎿  [Image #23]
+  
+⏺ Yes, I understand exactly. The current state IS bad — the Replit Agent added some "Enter API key" gate that doesn't belong (an API key is a server-side secret, not something a user types). Your vision is the right one and it's what I should have built
+  in the first chat UI.
+
+  Rebuilding now. Three pieces:
+
+  1. Sprint-bound chat UI with gate tabs on the right (Order+Refs / Copy / Prompts / Images / Final QA), checkmark when complete, dot for current, hollow for pending.
+  2. Route /sprints/<id>/chat that serves it, no API-key gate, auto-bootstraps the conversation with the sprint's current state.
+  3. Form redirect: after submit, go straight to /sprints/<id>/chat instead of the status page.
+
+⏺ Write(agent/sprint_chat_ui.html)
+  ⎿  Wrote 381 lines to agent/sprint_chat_ui.html
+       1 <!DOCTYPE html>
+       2 <html lang="en">
+       3 <head>
+       4   <meta charset="UTF-8">
+       5   <title>ADAM — Sprint __SPRINT_ID__</title>
+       6   <style>
+       7     :root {
+       8       --bg:#FFFFFF; --paper:#FFFFFF; --ink:#000000; --ink-mid:#5C5C5C; --ink-dim:#A0A0A0; --rule:#E5E5E5;
+       9       --brand-green:#14A800; --brand-hero:#67DC12;
+      10       --brand-green-light:#C4F4C0; --brand-green-cream:#E0F5C3; --brand-green-yellow:#E9F899;
+     … +371 lines (ctrl+o to expand)
+
+⏺ Now the route, and the orchestrator needs to accept sprint_id so it auto-binds.
+
+⏺ Update(agent/routes.py)
+  ⎿  Added 34 lines, removed 17 lines
+       1  """FastAPI router for the gate orchestrator.
+       2  
+       3 -Plug into whichever entry file exists (app.py / main.py):                                                                                                                                                                                    
+       3 +Routes:                                                                                                                                                                                                                                      
+       4 +  GET  /chat/ui                       — sprint-less playground chat                                                                                                                                                                          
+       5 +  GET  /sprints/{sprint_id}/chat      — sprint-bound chat with gate tabs (default UX)                                                                                                                                                        
+       6 +  POST /chat                          — SSE stream of orchestrator events                                                                                                                                                                    
+       7  
+       8 +Plug into whichever entry file exists (app.py / main.py):                                                                                                                                                                                    
+       9      from agent.routes import router as agent_router
+      10      app.include_router(agent_router)
+       7 -                                                                                                                                                                                                                                             
+       8 -After include: GET  /chat/ui   → minimal chat UI (HTML).                                                                                                                                                                                     
+       9 -               POST /chat      → SSE stream of orchestrator events.                                                                                                                                                                          
+      11  """
+      12  from __future__ import annotations
+      13  
+     ...
+      21  
+      22  from .orchestrator import run_turn
+      23  
+      23 -router = APIRouter(prefix="/chat", tags=["agent"])                                                                                                                                                                                           
+      24 +router = APIRouter(tags=["agent"])                                                                                                                                                                                                           
+      25  
+      26  _THIS_DIR = Path(__file__).parent
+      26 -_UI_FILE = _THIS_DIR / "chat_ui.html"                                                                                                                                                                                                        
+      27 +_PLAYGROUND_UI = _THIS_DIR / "chat_ui.html"                                                                                                                                                                                                  
+      28 +_SPRINT_UI = _THIS_DIR / "sprint_chat_ui.html"                                                                                                                                                                                               
+      29  
+      30  
+      29 -@router.get("/ui", response_class=HTMLResponse)                                                                                                                                                                                              
+      30 -async def chat_ui() -> HTMLResponse:                                                                                                                                                                                                         
+      31 -    if not _UI_FILE.exists():                                                                                                                                                                                                                
+      31 +@router.get("/chat/ui", response_class=HTMLResponse)                                                                                                                                                                                         
+      32 +async def chat_ui_playground() -> HTMLResponse:                                                                                                                                                                                              
+      33 +    """Sprint-less chat (for ad-hoc testing). Sprint-bound chat is the default UX."""                                                                                                                                                        
+      34 +    if not _PLAYGROUND_UI.exists():                                                                                                                                                                                                          
+      35          return HTMLResponse("<h1>chat_ui.html missing</h1>", status_code=500)
+      33 -    return HTMLResponse(_UI_FILE.read_text())                                                                                                                                                                                                
+      36 +    return HTMLResponse(_PLAYGROUND_UI.read_text())                                                                                                                                                                                          
+      37  
+      38  
+      36 -@router.post("")                                                                                                                                                                                                                             
+      37 -async def chat(request: Request):                                                                                                                                                                                                            
+      38 -    """Run one orchestrator turn against the supplied message history.                                                                                                                                                                       
+      39 +@router.get("/sprints/{sprint_id}/chat", response_class=HTMLResponse)                                                                                                                                                                        
+      40 +async def sprint_chat(sprint_id: str) -> HTMLResponse:                                                                                                                                                                                       
+      41 +    """The default post-submission UX: chat bound to a sprint, with gate tabs on the right.                                                                                                                                                  
+      42  
+      40 -    Request body shape:                                                                                                                                                                                                                      
+      41 -      { "messages": [ {"role": "user", "content": "..."}, ... ] }                                                                                                                                                                            
+      43 +    The form's success screen redirects here. No API-key gate — anyone with the                                                                                                                                                              
+      44 +    sprint URL can drive its gates. Add auth later via middleware if needed.                                                                                                                                                                 
+      45 +    """                                                                                                                                                                                                                                      
+      46 +    if not _SPRINT_UI.exists():                                                                                                                                                                                                              
+      47 +        return HTMLResponse("<h1>sprint_chat_ui.html missing</h1>", status_code=500)                                                                                                                                                         
+      48 +    # Lightweight template substitution — avoid Jinja for a single placeholder.                                                                                                                                                              
+      49 +    html = _SPRINT_UI.read_text().replace("__SPRINT_ID__", sprint_id)                                                                                                                                                                        
+      50 +    return HTMLResponse(html)                                                                                                                                                                                                                
+      51  
+      43 -    Response: text/event-stream of JSON events.                                                                                                                                                                                              
+      52 +                                                                                                                                                                                                                                             
+      53 +@router.post("/chat")                                                                                                                                                                                                                        
+      54 +async def chat(request: Request):                                                                                                                                                                                                            
+      55 +    """Run one orchestrator turn.                                                                                                                                                                                                            
+      56 +                                                                                                                                                                                                                                             
+      57 +    Request body:                                                                                                                                                                                                                            
+      58 +      { "messages": [ {"role": "user", "content": "..."}, ... ],                                                                                                                                                                             
+      59 +        "sprint_id": "..."  (optional — when present, orchestrator is bound to this sprint) }                                                                                                                                                
+      60      """
+      61      body = await request.json()
+      62      messages: list[dict[str, Any]] = body.get("messages", [])
+      63 +    sprint_id = body.get("sprint_id")                                                                                                                                                                                                        
+      64  
+      65      async def event_stream():
+      66          try:
+      50 -            async for event in run_turn(messages):                                                                                                                                                                                           
+      67 +            async for event in run_turn(messages, sprint_id=sprint_id):                                                                                                                                                                      
+      68                  yield {"event": event.get("type", "message"), "data": json.dumps(event)}
+      69          except Exception as e:
+      70              yield {"event": "error", "data": json.dumps({"error": f"{type(e).__name__}: {e}"})}
+
+⏺ Update(agent/orchestrator.py)
+  ⎿  Added 12 lines
+      42  async def run_turn( 
+      43      messages: list[dict[str, Any]],
+      44      model: str = DEFAULT_MODEL,
+      45 +    sprint_id: str | None = None,                                                                                                                                                                                                            
+      46  ) -> AsyncIterator[dict[str, Any]]:
+      47      """Run a single user turn, yielding events as they happen.
+      48  
+      49 +    When `sprint_id` is set, the orchestrator is told it's bound to that sprint                                                                                                                                                              
+      50 +    and should not ask for one — used by the per-sprint chat UI.                                                                                                                                                                             
+      51 +                                                                                                                                                                                                                                             
+      52      Event shapes (consumer can forward to SSE):
+      53        {"type": "text_delta", "text": "..."}
+      54        {"type": "tool_use", "name": "...", "input": {...}, "id": "..."}
+     ...
+      58      """
+      59      client = _client()
+      60      convo = list(messages)
+      61 +    system_prompt = SYSTEM_PROMPT                                                                                                                                                                                                            
+      62 +    if sprint_id:                                                                                                                                                                                                                            
+      63 +        system_prompt = (                                                                                                                                                                                                                    
+      64 +            SYSTEM_PROMPT                                                                                                                                                                                                                    
+      65 +            + f"\n\n# Sprint binding\n\nThis session is bound to sprint `{sprint_id}`. "                                                                                                                                                     
+      66 +            "Do not ask the user which sprint to work on. Default every tool call "                                                                                                                                                          
+      67 +            f"to `sprint_id=\"{sprint_id}\"` unless they explicitly reference a different one."                                                                                                                                              
+      68 +        )                                                                                                                                                                                                                                    
+      69  
+      70      for _ in range(MAX_TURNS):
+      71          # Prompt-cached system + tools — the first turn pays full cost, every
+
+⏺ Update(agent/orchestrator.py)
+  ⎿  Added 1 line, removed 1 line
+      76              system=[
+      77                  {
+      78                      "type": "text",
+      79 -                    "text": SYSTEM_PROMPT,                                                                                                                                                                                                   
+      79 +                    "text": system_prompt,                                                                                                                                                                                                   
+      80                      "cache_control": {"type": "ephemeral"},
+      81                  }
+      82              ],
+
+⏺ Now the form redirects on submit. Need to find and edit the submit handler in the local form.
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+⏺ Update(order-form/order-form-local.html)
+  ⎿  Added 4 lines, removed 2 lines
+      1335  }
+      1336  
+      1337  // ── BACKEND CONFIG ────────────────────────────────────────────────────────────
+      1338 -// Override at runtime by setting window.ADAM_PIPELINE_URL before this script loads.                                                                                                                                                       
+      1339 -const ADAM_PIPELINE_URL = (window.ADAM_PIPELINE_URL || 'https://adam-pipeline-cm.fly.dev/submit-order?auth=11cToL-yxmRumMilF7FRdcq1uLBStA0nuSpR8W-_fH8');                                                                                  
+      1338 +// Default: relative /submit (same Replit origin). Override by setting                                                                                                                                                                     
+      1339 +// window.ADAM_PIPELINE_URL before this script loads (e.g. when running the                                                                                                                                                                
+      1340 +// form standalone against the legacy Fly server).                                                                                                                                                                                         
+      1341 +const ADAM_PIPELINE_URL = (window.ADAM_PIPELINE_URL || '/submit');                                                                                                                                                                         
+      1342  
+      1343  async function confirmSubmit() {
+      1344    const btn = document.querySelector('.btn-confirm-submit');
+
+⏺ Update(order-form/order-form-local.html)
+  ⎿  Added 31 lines, removed 9 lines
+      1384    successEl.classList.add('visible');
+      1385  
+      1386    const idForDisplay = sprintId || fallbackSprintId;
+      1387 -  const backendLine = sprintId                                                                                                                                                                                                             
+      1388 -    ? '<div style="font-family:\'PP Neue Montreal\',sans-serif;font-size:11px;color:#14a800;margin-bottom:24px;">✓ Submitted to pipeline · open ADAM Pipeline in Claude to drive it</div>'                                                 
+      1389 -    : `<div style="font-family:'PP Neue Montreal',sans-serif;font-size:11px;color:#c2410c;margin-bottom:24px;">⚠ Backend submission failed (${backendError ? backendError.replace(/</g,'&lt;') : 'unknown'})<br>Use the downloaded CSV manu
+           -ally.</div>`;                                                                                                                                                                                                                              
+      1387  
+      1388 +  if (sprintId) {                                                                                                                                                                                                                          
+      1389 +    // Happy path: redirect into the sprint-bound chat where the user drives                                                                                                                                                               
+      1390 +    // gates. Brief visual handoff so they see the sprint ID before the page                                                                                                                                                               
+      1391 +    // transitions.                                                                                                                                                                                                                        
+      1392 +    successEl.innerHTML = `                                                                                                                                                                                                                
+      1393 +      <div style="text-align:center;padding:40px 20px;">                                                                                                                                                                                   
+      1394 +        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:32px;letter-spacing:0.1em;color:#14a800;margin-bottom:8px;">                                                                                                       
+      1395 +          ✅ ORDER SUBMITTED                                                                                                                                                                                                               
+      1396 +        </div>                                                                                                                                                                                                                             
+      1397 +        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:12px;color:#5a584f;margin-bottom:24px;letter-spacing:0.05em;">                                                                                                     
+      1398 +          Sprint ID: ${idForDisplay}                                                                                                                                                                                                       
+      1399 +        </div>                                                                                                                                                                                                                             
+      1400 +        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:13px;color:#14a800;margin-bottom:8px;">                                                                                                                            
+      1401 +          Opening chat to drive the gates…                                                                                                                                                                                                 
+      1402 +        </div>                                                                                                                                                                                                                             
+      1403 +        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:11px;color:#a09e94;line-height:1.8;">                                                                                                                              
+      1404 +          A local CSV receipt was downloaded for your records.                                                                                                                                                                             
+      1405 +        </div>                                                                                                                                                                                                                             
+      1406 +      </div>`;                                                                                                                                                                                                                             
+      1407 +    // Short delay so the user actually sees the confirmation before redirect.                                                                                                                                                             
+      1408 +    setTimeout(() => { window.location.href = '/sprints/' + sprintId + '/chat'; }, 1200);                                                                                                                                                  
+      1409 +    return;                                                                                                                                                                                                                                
+      1410 +  }                                                                                                                                                                                                                                        
+      1411 +                                                                                                                                                                                                                                           
+      1412 +  // Submission failed — keep the manual fallback path.                                                                                                                                                                                    
+      1413    successEl.innerHTML = `
+      1414      <div style="text-align:center;padding:40px 20px;">
+      1393 -      <div style="font-family:'PP Neue Montreal',sans-serif;font-size:32px;letter-spacing:0.1em;color:#14a800;margin-bottom:8px;">                                                                                                         
+      1394 -        ✅ ORDER SUBMITTED                                                                                                                                                                                                                 
+      1415 +      <div style="font-family:'PP Neue Montreal',sans-serif;font-size:32px;letter-spacing:0.1em;color:#c2410c;margin-bottom:8px;">                                                                                                         
+      1416 +        ⚠ SUBMISSION FAILED                                                                                                                                                                                                                
+      1417        </div>
+      1418        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:12px;color:#5a584f;margin-bottom:8px;letter-spacing:0.05em;">
+      1397 -        Sprint ID: ${idForDisplay}                                                                                                                                                                                                         
+      1419 +        Fallback Sprint ID: ${idForDisplay}                                                                                                                                                                                                
+      1420        </div>
+      1399 -      ${backendLine}                                                                                                                                                                                                                       
+      1400 -      <div style="font-family:'PP Neue Montreal',sans-serif;font-size:12px;color:#a09e94;margin-bottom:32px;line-height:1.8;">                                                                                                             
+      1401 -        A local CSV receipt was downloaded for your records.                                                                                                                                                                               
+      1421 +      <div style="font-family:'PP Neue Montreal',sans-serif;font-size:11px;color:#c2410c;margin-bottom:24px;">                                                                                                                             
+      1422 +        ${backendError ? backendError.replace(/</g,'&lt;') : 'unknown error'}<br>                                                                                                                                                          
+      1423 +        Use the downloaded CSV manually.                                                                                                                                                                                                   
+      1424        </div>
+      1425        <button onclick="location.reload()" style="font-family:'PP Neue Montreal',sans-serif;font-size:18px;letter-spacing:0.1em;background:#1c1b18;color:#fff;border:1px solid #3a3830;border-radius:6px;padding:12px 32px;cursor:pointer;">
+      1426          SUBMIT ANOTHER ORDER
+
+  Read 1 file (ctrl+o to expand)
+
+⏺ Update(order-form/upwork-order-form.html)
+  ⎿  Added 1 line, removed 1 line
+      1031  // ── BACKEND CONFIG ────────────────────────────────────────────────────────────
+      1032  // The submit endpoint requires the bearer token in the URL. Override at runtime
+      1033  // by setting window.ADAM_PIPELINE_URL before this script loads if needed.
+      1034 -const ADAM_PIPELINE_URL = (window.ADAM_PIPELINE_URL || 'https://adam-pipeline-cm.fly.dev/submit-order?auth=11cToL-yxmRumMilF7FRdcq1uLBStA0nuSpR8W-_fH8');                                                                                  
+      1034 +const ADAM_PIPELINE_URL = (window.ADAM_PIPELINE_URL || '/submit');                                                                                                                                                                         
+      1035  
+      1036  // ── PAYLOAD BUILDER ───────────────────────────────────────────────────────────
+      1037  function buildOrderPayload() {
+
+⏺ Update(order-form/upwork-order-form.html)
+  ⎿  Added 5 lines
+      1136  
+      1137      document.getElementById('review-state').style.display = 'none';
+      1138      successEl.classList.add('visible');
+      1139 +                                                                                                                                                                                                                                           
+      1140 +    // Redirect into the sprint-bound chat where the user drives gates.                                                                                                                                                                    
+      1141 +    if (data.sprint_id) {                                                                                                                                                                                                                  
+      1142 +      setTimeout(() => { window.location.href = '/sprints/' + data.sprint_id + '/chat'; }, 1200);                                                                                                                                          
+      1143 +    }                                                                                                                                                                                                                                      
+      1144    } catch (err) {
+      1145      alert('Could not reach the pipeline server. Check your connection and try again.\n\n' + err.message);
+      1146      if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
+
+⏺ Validating and pushing.
+
+⏺ Bash(python3 -c "
+      compile(open('app.py').read(), 'app.py', 'exec')…)
+  ⎿  ✓ python compiles
+
+     M  agent/orchestrator.py 
+     … +10 lines (ctrl+o to expand)
+
+⏺ Pushed. Commit ad745e6 has the full sprint-bound chat experience. Now you need to get it into the Repl.
+
+  Sequence to get the new UX live
+
+  1. Pull from GitHub in the Repl. Git panel → Pull origin/main. Brings in agent/sprint_chat_ui.html, the new route, the form changes.
+  2. Make sure the Repl runs app.py, not main.py. Open .replit in the Repl's file panel. The run command should read:
+  run = "uvicorn app:app --host 0.0.0.0 --port 5000 --reload"
+  2. If it says main:app, change to app:app. If there's a separate main.py file the Agent created with the API-key gate code, delete it (or rename to main.py.bak). The whole "Enter API key to view this sprint" thing was something the Agent added that we
+  don't want — app.py doesn't have it.
+  3. Confirm ANTHROPIC_API_KEY is in Replit Secrets. Lock icon, left sidebar. The chat won't talk to Claude without it. Add GEMINI_API_KEY and FIGMA_ACCESS_TOKEN too so the pipeline stages can actually run.
+  4. Restart the workflow. Either click the Run button again or use the workflow restart in Replit's UI. New env vars + new code load together.
+  5. Submit a fresh order. After clicking Submit, you'll see the "Order Submitted" screen for ~1 second, then the page redirects to /sprints/<your-sprint-id>/chat. That's the new UX:
+    - Left: chat with ADAM
+    - Right: 5 gate tabs (Order+Refs / Copy / Image Prompts / Images / Final QA) with progress dots
+    - Quick-action buttons under the chat: "approve", "show copy", "show prompts", etc.
+    - ADAM auto-loads the sprint and tells you what gate is open
+
+  What the loop feels like
+
+  - ADAM: "Sprint loaded. Gate 3 is open — copy review. Here are the 3 selected concepts: [table]. Approve?"
+  - You: "approve" (or click the quick-action button)
+  - ADAM: "Approving Gate 3..." (runs approve_gate, takes ~1-3 min)
+  - The gate tab turns green with a checkmark, the next tab becomes current
+  - ADAM: "Gate 4 is open — image prompts. Here's the CSV..."
+  - Repeat until Gate 6
+  Everything except the actual Figma assembly. That stays manual via the plugin for now (animating the manifest into Figma rendering would be Phase 4).
+
+  Tell me when you've pulled + restarted, send a screenshot of the new chat UI, and we'll watch a real sprint run through.
+
+✻ Worked for 5m 26s
+
+※ recap: You're migrating ADAM (Upwork's creative pipeline) to Replit, and the new sprint-bound chat UI with gate tabs is pushed to GitHub. Next: pull origin/main into the Repl, confirm `.replit` runs `app:app`, and add `ANTHROPIC_API_KEY` to Secrets.
+
+❯ I just reran the order in Replit and nothing is different. Do I need to ask its agent to make changes?                                                                                                                                                      
+
+⏺ Most likely cause: your Repl is still running main.py (the Agent's version) instead of app.py (which has my new routes). My push to GitHub doesn't matter if Replit isn't actually executing that file.
+
+  Check three things in this order (60 seconds total)
+
+  1. Did the pull actually run?
+
+  Open the git panel in the Repl. Does it say "Up to date with origin/main"? If it says "N commits behind", click Pull and wait. If you haven't pulled since I pushed, that's the whole problem.
+
+  2. What's the run command?
+
+  Open .replit in the file panel. Look for the line starting with run = . It should say:
+
+  run = "uvicorn app:app --host 0.0.0.0 --port 5000 --reload"
+
+  If it says uvicorn main:app instead, the Repl is running the wrong file — the new routes don't exist in main.py.
+
+  3. Is there a main.py next to app.py?
+
+  If yes, that's leftover from when the Agent built its parallel Phase 2. It needs to go (or be ignored).
+
+  Fastest fix — manual, no Agent credits
+
+  In the Repl's file panel:
+
+  1. If .replit says main:app, change it to app:app. Save the file.
+  2. Right-click main.py (if it exists) → Rename → main.py.bak (don't delete in case something useful is in it).
+  3. Stop and re-run the workflow. The Run button at the top kills and restarts uvicorn.
+  4. Submit a fresh order in a new browser tab (don't reuse the old "Order Submitted" page — that JS was cached before the pull).
+
+  After step 4, the redirect should go to /sprints/<id>/chat and you'll see the chat + gate tabs.
+
+  If the manual fix is uncomfortable — Agent prompt
+
+  Paste this into the Replit Agent chat:
+
+  ▎ Make these three changes:
+  ▎ 1. In .replit, change the run command to use app:app instead of main:app.
+  ▎ 2. Rename main.py to main.py.bak so it doesn't interfere.
+  ▎ 3. Restart the workflow.
+  ▎
+  ▎ After restart, the app should serve from app.py which has the new sprint-bound chat route at /sprints/{sprint_id}/chat and the gate-tabs UI in agent/sprint_chat_ui.html. Confirm by curling /sprints/test/chat from the shell and checking it returns
+  ▎ HTML (not a 404).
+
+  The Agent will do it in one action (~1 credit).
+
+  After either path: submit a new order from the form (fresh browser tab to avoid cached JS) and you should land in the new chat. If you still don't, screenshot what you see + the Repl's terminal output and I'll diagnose.

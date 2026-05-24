@@ -20,7 +20,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, Security
 from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
@@ -522,6 +522,48 @@ async def sprints_dashboard():
 </div>
 </body>
 </html>""")
+
+
+_SPRINT_CHAT_UI = BASE_DIR / "agent" / "sprint_chat_ui.html"
+
+
+@app.get("/sprints/{sprint_id}/chat", response_class=HTMLResponse)
+async def sprint_chat_ui(sprint_id: str):
+    """Sprint-bound chat UI — public (no API key required, sprint_id is the access token)."""
+    if not _SPRINT_CHAT_UI.exists():
+        return HTMLResponse("<h1>sprint_chat_ui.html not found</h1>", status_code=500)
+    return HTMLResponse(_SPRINT_CHAT_UI.read_text().replace("__SPRINT_ID__", sprint_id))
+
+
+@app.post("/sprints/{sprint_id}/chat/stream")
+async def sprint_chat_stream(sprint_id: str, request: Request):
+    """SSE endpoint for the sprint-bound chat UI — public."""
+    from agent.orchestrator import run_agent_turn
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+
+    body = await request.json()
+    messages = body.get("messages", [])
+
+    if not api_key:
+        async def _no_key():
+            yield 'data: {"type":"text","text":"⚠️ ANTHROPIC_API_KEY is not configured. Ask the server admin to add it as a Replit secret."}\n\n'
+            yield 'data: {"type":"done"}\n\n'
+        return StreamingResponse(_no_key(), media_type="text/event-stream")
+
+    async def _stream():
+        try:
+            async for chunk in run_agent_turn(messages, api_key, sprint_id=sprint_id):
+                yield chunk
+        except Exception as exc:
+            yield f'data: {json.dumps({"type": "error", "message": str(exc)})}\n\n'
+            yield 'data: {"type":"done"}\n\n'
+
+    return StreamingResponse(
+        _stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.post("/sprints/{sprint_id}/auth")

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADAM — __SPRINT_ID__</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f9fafb;
+    color: #111827;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .nav {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+  .nav-logo { font-weight: 700; font-size: 14px; letter-spacing: 0.05em; color: #14a800; }
+  .nav-sprint { font-size: 12px; color: #6b7280; font-family: monospace; }
+  .nav a { font-size: 12px; color: #6b7280; text-decoration: none; padding: 3px 8px; border-radius: 4px; margin-left: auto; }
+  .nav a:hover { background: #f3f4f6; color: #111; }
+
+  .workspace {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  /* ── Left: chat ── */
+  .chat-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-right: 1px solid #e5e7eb;
+    background: #fff;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .message {
+    display: flex;
+    gap: 10px;
+    animation: fadeIn 0.12s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .avatar-adam { background: #14a800; color: #fff; }
+  .avatar-user { background: #1c1b18; color: #fff; }
+  .avatar-system { background: #e5e7eb; color: #6b7280; }
+
+  .bubble {
+    flex: 1;
+    min-width: 0;
+  }
+  .bubble-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 3px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .bubble-text {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #111827;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .bubble-text.streaming::after {
+    content: '▋';
+    animation: blink 0.7s step-end infinite;
+    color: #14a800;
+    margin-left: 1px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .tool-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: #6b7280;
+    font-family: monospace;
+    margin: 3px 0;
+  }
+  .tool-pill.running { background: #fef9c3; border-color: #fde047; color: #854d0e; }
+  .tool-pill.done { background: #dcfce7; border-color: #86efac; color: #166534; }
+
+  /* quick actions */
+  .quick-bar {
+    padding: 8px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    border-top: 1px solid #f3f4f6;
+    background: #fafafa;
+  }
+  .quick-btn {
+    padding: 4px 12px;
+    font-size: 12px;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 20px;
+    cursor: pointer;
+    color: #374151;
+    transition: all 0.1s;
+    white-space: nowrap;
+  }
+  .quick-btn:hover { background: #f3f4f6; border-color: #9ca3af; }
+  .quick-btn.primary { background: #14a800; color: #fff; border-color: #14a800; }
+  .quick-btn.primary:hover { background: #128400; }
+
+  /* input */
+  .input-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px 16px;
+    background: #fff;
+    border-top: 1px solid #e5e7eb;
+  }
+  .input-row textarea {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    max-height: 120px;
+    overflow-y: auto;
+    transition: border-color 0.15s;
+  }
+  .input-row textarea:focus { border-color: #14a800; }
+  .send-btn {
+    padding: 9px 16px;
+    background: #14a800;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-end;
+    transition: background 0.1s;
+  }
+  .send-btn:hover { background: #128400; }
+  .send-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+  /* ── Right: gates panel ── */
+  .gates-col {
+    width: 240px;
+    flex-shrink: 0;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .gates-header {
+    padding: 16px 16px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6b7280;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .gate-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f9fafb;
+    transition: background 0.1s;
+    cursor: default;
+  }
+  .gate-item.current { background: #f0fdf4; }
+
+  .gate-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .gate-icon.done { background: #14a800; color: #fff; }
+  .gate-icon.current { background: #14a800; color: #fff; animation: pulse-ring 1.6s ease-out infinite; }
+  .gate-icon.pending { background: #e5e7eb; color: #9ca3af; }
+  .gate-icon.error { background: #dc2626; color: #fff; }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(20,168,0,0.5); }
+    70% { box-shadow: 0 0 0 6px rgba(20,168,0,0); }
+    100% { box-shadow: 0 0 0 0 rgba(20,168,0,0); }
+  }
+
+  .gate-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    line-height: 1.3;
+  }
+  .gate-label.done { color: #166534; }
+  .gate-label.current { color: #14a800; }
+  .gate-label.pending { color: #9ca3af; }
+  .gate-sublabel {
+    font-size: 10px;
+    color: #9ca3af;
+    margin-top: 2px;
+  }
+
+  .sprint-meta {
+    padding: 16px;
+    border-top: 1px solid #f3f4f6;
+    margin-top: auto;
+  }
+  .sprint-meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #9ca3af;
+    margin-bottom: 4px;
+  }
+  .sprint-meta-val { color: #374151; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="nav-logo">ADAM</span>
+  <span class="nav-sprint">__SPRINT_ID__</span>
+  <a href="/sprints">← All sprints</a>
+</nav>
+
+<div class="workspace">
+
+  <!-- Chat -->
+  <div class="chat-col">
+    <div class="messages" id="messages"></div>
+
+    <div class="quick-bar" id="quick-bar">
+      <button class="quick-btn" onclick="sendQuick('What gate are we at?')">Status</button>
+      <button class="quick-btn" onclick="sendQuick('Show me the copy concepts')">Show copy</button>
+      <button class="quick-btn" onclick="sendQuick('Show me the image prompts')">Show prompts</button>
+      <button class="quick-btn primary" id="approve-btn" onclick="sendQuick('approve')" style="display:none">✓ Approve gate</button>
+    </div>
+
+    <div class="input-row">
+      <textarea id="input" placeholder="Message ADAM…" rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- Gates panel -->
+  <div class="gates-col">
+    <div class="gates-header">Pipeline Gates</div>
+    <div id="gates-list">
+      <div class="gate-item" id="gate-2-item">
+        <div class="gate-icon pending" id="gate-2-icon">2</div>
+        <div>
+          <div class="gate-label pending" id="gate-2-label">Order + Refs</div>
+          <div class="gate-sublabel">Brief & references review</div>
+        </div>
+      </div>
+      <div class="gate-item" id="gate-3-item">
+        <div class="gate-icon pending" id="gate-3-icon">3</div>
+        <div>
+          <div class="gate-label pending" id="gate-3-label">Copy</div>
+          <div class="gate-sublabel">Ad copy concepts</div>
+        </div>
+      </div>
+      <div class="gate-item" id="gate-4-item">
+        <div class="gate-icon pending" id="gate-4-icon">4</div>
+        <div>
+          <div class="gate-label pending" id="gate-4-label">Image Prompts</div>
+          <div class="gate-sublabel">Visual direction scan</div>
+        </div>
+      </div>
+      <div class="gate-item" id="gate-5-item">
+        <div class="gate-icon pending" id="gate-5-icon">5</div>
+        <div>
+          <div class="gate-label pending" id="gate-5-label">Assembly</div>
+          <div class="gate-sublabel">Manifest & layout</div>
+        </div>
+      </div>
+      <div class="gate-item" id="gate-6-item">
+        <div class="gate-icon pending" id="gate-6-icon">6</div>
+        <div>
+          <div class="gate-label pending" id="gate-6-label">Final QA</div>
+          <div class="gate-sublabel">Pre-Figma check</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sprint-meta" id="sprint-meta">
+      <div class="sprint-meta-row"><span>State</span><span class="sprint-meta-val" id="meta-state">—</span></div>
+      <div class="sprint-meta-row"><span>Driver</span><span class="sprint-meta-val" id="meta-driver">—</span></div>
+      <div class="sprint-meta-row"><span>Platform</span><span class="sprint-meta-val" id="meta-platform">—</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SPRINT_ID = '__SPRINT_ID__';
+const STREAM_URL = `/sprints/${SPRINT_ID}/chat/stream`;
+const STATE_URL  = `/api/sprints/${SPRINT_ID}`;
+
+let history = [];   // [{role, content}]
+let streaming = false;
+let statePoller = null;
+
+// ── Gate state rendering ──────────────────────────────────────────────────────
+
+const GATE_NUMS = [2, 3, 4, 5, 6];
+
+// Returns which gate number is currently open, or null
+function gateFromState(state) {
+  if (!state) return null;
+  const m = state.match(/awaiting_gate_(\d+)/);
+  return m ? parseInt(m[1]) : null;
+}
+
+function updateGates(sprintState) {
+  const raw = (sprintState || '').toLowerCase();
+  const currentGate = gateFromState(raw);
+  const isComplete = raw === 'complete';
+  const isError = raw === 'error' || raw.includes('interrupted');
+  const isRunning = raw === 'running' || raw === 'queued';
+
+  GATE_NUMS.forEach(n => {
+    const icon  = document.getElementById(`gate-${n}-icon`);
+    const label = document.getElementById(`gate-${n}-label`);
+    const item  = document.getElementById(`gate-${n}-item`);
+    if (!icon) return;
+
+    let iconClass, labelClass, itemClass = '';
+
+    if (isError && currentGate === n) {
+      iconClass = 'error'; labelClass = 'error';
+    } else if (isComplete || (currentGate && n < currentGate)) {
+      iconClass = 'done'; labelClass = 'done';
+      icon.textContent = '✓';
+    } else if (currentGate === n || (isRunning && n === 2)) {
+      iconClass = 'current'; labelClass = 'current'; itemClass = 'current';
+    } else {
+      iconClass = 'pending'; labelClass = 'pending';
+      icon.textContent = n;
+    }
+
+    icon.className  = `gate-icon ${iconClass}`;
+    label.className = `gate-label ${labelClass}`;
+    item.className  = `gate-item ${itemClass}`;
+  });
+
+  // Show approve button only when a gate is waiting
+  const approveBtn = document.getElementById('approve-btn');
+  approveBtn.style.display = currentGate ? 'block' : 'none';
+}
+
+async function pollState() {
+  try {
+    const r = await fetch(STATE_URL);
+    if (!r.ok) return;
+    const d = await r.json();
+    const s = d.state || '';
+    document.getElementById('meta-state').textContent = s || '—';
+    document.getElementById('meta-driver').textContent = d.driver || '—';
+    document.getElementById('meta-platform').textContent = d.platform || '—';
+    updateGates(s);
+  } catch (_) {}
+}
+
+// ── Message rendering ─────────────────────────────────────────────────────────
+
+function addMessage(role, text) {
+  const msgs = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'message';
+
+  const isAdam = role === 'assistant';
+  const isUser = role === 'user';
+  const avatarClass = isAdam ? 'avatar-adam' : isUser ? 'avatar-user' : 'avatar-system';
+  const avatarText  = isAdam ? 'A' : isUser ? 'U' : '·';
+  const name        = isAdam ? 'ADAM' : isUser ? 'You' : 'System';
+
+  el.innerHTML = `
+    <div class="avatar ${avatarClass}">${avatarText}</div>
+    <div class="bubble">
+      <div class="bubble-name">${name}</div>
+      <div class="bubble-text">${escHtml(text)}</div>
+    </div>`;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  return el.querySelector('.bubble-text');
+}
+
+function addToolPill(name, state) {
+  const msgs = document.getElementById('messages');
+  const pill = document.createElement('div');
+  pill.className = `tool-pill ${state}`;
+  pill.id = `tool-${name}-${Date.now()}`;
+  pill.textContent = `⚙ ${name}`;
+  msgs.appendChild(pill);
+  msgs.scrollTop = msgs.scrollHeight;
+  return pill;
+}
+
+function escHtml(t) {
+  return String(t)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\n/g,'<br>');
+}
+
+// ── Sending ───────────────────────────────────────────────────────────────────
+
+async function sendMessage() {
+  const inp = document.getElementById('input');
+  const text = inp.value.trim();
+  if (!text || streaming) return;
+  inp.value = '';
+  autoResize(inp);
+  doSend(text);
+}
+
+function sendQuick(text) {
+  if (streaming) return;
+  doSend(text);
+}
+
+async function doSend(text) {
+  streaming = true;
+  setSendEnabled(false);
+
+  addMessage('user', text);
+  history.push({ role: 'user', content: text });
+
+  // Streaming assistant bubble
+  const msgs = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'message';
+  el.innerHTML = `
+    <div class="avatar avatar-adam">A</div>
+    <div class="bubble">
+      <div class="bubble-name">ADAM</div>
+      <div class="bubble-text streaming" id="streaming-bubble"></div>
+    </div>`;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  const bubble = document.getElementById('streaming-bubble');
+  let fullText = '';
+  let lastToolPill = null;
+
+  try {
+    const res = await fetch(STREAM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: history }),
+    });
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const parts = buf.split('\n\n');
+      buf = parts.pop();
+      for (const part of parts) {
+        if (!part.startsWith('data:')) continue;
+        let evt;
+        try { evt = JSON.parse(part.slice(5).trim()); } catch { continue; }
+
+        if (evt.type === 'text') {
+          fullText += evt.text;
+          bubble.innerHTML = escHtml(fullText);
+          bubble.className = 'bubble-text streaming';
+          msgs.scrollTop = msgs.scrollHeight;
+        } else if (evt.type === 'tool_call') {
+          lastToolPill = addToolPill(evt.name, 'running');
+        } else if (evt.type === 'tool_result') {
+          if (lastToolPill) { lastToolPill.className = 'tool-pill done'; lastToolPill = null; }
+          // Refresh gate state after tool calls
+          pollState();
+        } else if (evt.type === 'done') {
+          bubble.className = 'bubble-text';
+        } else if (evt.type === 'error') {
+          bubble.className = 'bubble-text';
+          fullText += `\n⚠ ${evt.message || evt.error || 'Unknown error'}`;
+          bubble.innerHTML = escHtml(fullText);
+        }
+      }
+    }
+  } catch (err) {
+    bubble.className = 'bubble-text';
+    fullText = fullText || `Connection error: ${err.message}`;
+    bubble.innerHTML = escHtml(fullText);
+  }
+
+  bubble.className = 'bubble-text';
+  if (fullText) {
+    history.push({ role: 'assistant', content: fullText });
+  }
+
+  streaming = false;
+  setSendEnabled(true);
+  pollState();
+}
+
+function setSendEnabled(on) {
+  document.getElementById('send-btn').disabled = !on;
+  document.getElementById('input').disabled = !on;
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+async function boot() {
+  // Show sprint state immediately
+  await pollState();
+
+  // Auto-send bootstrap message so Claude loads the sprint and greets the user
+  const bootstrap = `Sprint ${SPRINT_ID} just submitted. Load it and tell me its current state and what gate is open. Be concise.`;
+  await doSend(bootstrap);
+
+  // Poll every 10 s while page is open
+  statePoller = setInterval(pollState, 10000);
+}
+
+// Kick off
+window.addEventListener('DOMContentLoaded', boot);
+window.addEventListener('beforeunload', () => clearInterval(statePoller));
+</script>
+</body>
+</html>

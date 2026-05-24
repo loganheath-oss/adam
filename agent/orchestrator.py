@@ -240,12 +240,16 @@ Be concise and action-oriented. When reviewing copy or prompts, summarise what y
 async def run_agent_turn(
     messages: list[dict],
     api_key: str,
+    sprint_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """
     Run one turn of the Claude tool-use loop and yield SSE-formatted chunks.
 
     Each yielded string is a complete SSE line (e.g. 'data: <text>\n\n').
     The caller should stream these directly to the client.
+
+    When sprint_id is set the system prompt is extended to bind the session to
+    that sprint so Claude doesn't ask the user which sprint to work on.
     """
     import anthropic as _anthropic
 
@@ -253,11 +257,20 @@ async def run_agent_turn(
 
     loop_messages = list(messages)
 
+    system_prompt = SYSTEM_PROMPT
+    if sprint_id:
+        system_prompt = (
+            SYSTEM_PROMPT
+            + f"\n\n# Sprint binding\n\nThis session is bound to sprint `{sprint_id}`. "
+            "Do not ask the user which sprint to work on. Default every tool call "
+            f"to sprint_id=\"{sprint_id}\" unless the user explicitly references a different one."
+        )
+
     while True:
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=2048,
-            system=SYSTEM_PROMPT,
+            system=system_prompt,
             tools=TOOLS,
             messages=loop_messages,
         )

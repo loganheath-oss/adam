@@ -1382,17 +1382,38 @@ async function confirmSubmit() {
   successEl.classList.add('visible');
 
   const idForDisplay = sprintId || fallbackSprintId;
-  const backendLine = sprintId
-    ? `<div style="font-family:'PP Neue Montreal',sans-serif;font-size:11px;color:#14a800;margin-bottom:24px;">✓ Pipeline running · <a href="/sprints/${sprintId}" target="_blank" style="color:#14a800;">check status</a></div>`
-    : `<div style="font-family:'PP Neue Montreal',sans-serif;font-size:11px;color:#c2410c;margin-bottom:24px;">⚠ Backend submission failed (${backendError ? backendError.replace(/</g,'&lt;') : 'unknown'})<br>Use the downloaded CSV manually.</div>`;
+
+  if (sprintId) {
+    // Happy path — show brief confirmation then hand off to the sprint chat UI
+    successEl.innerHTML = `
+      <div style="text-align:center;padding:40px 20px;">
+        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:32px;letter-spacing:0.1em;color:#14a800;margin-bottom:8px;">
+          ✅ ORDER SUBMITTED
+        </div>
+        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:12px;color:#5a584f;margin-bottom:20px;letter-spacing:0.05em;">
+          Sprint ID: ${idForDisplay}
+        </div>
+        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:13px;color:#14a800;margin-bottom:8px;">
+          Opening ADAM chat to drive the gates…
+        </div>
+        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:11px;color:#a09e94;">
+          A local CSV receipt was downloaded for your records.
+        </div>
+      </div>`;
+    setTimeout(() => { window.location.href = '/sprints/' + sprintId + '/chat'; }, 1200);
+    return;
+  }
+
+  // Fallback — submission failed, show manual path
+  const backendLine = `<div style="font-family:'PP Neue Montreal',sans-serif;font-size:11px;color:#c2410c;margin-bottom:24px;">⚠ Backend submission failed (${backendError ? backendError.replace(/</g,'&lt;') : 'unknown'})<br>Use the downloaded CSV manually.</div>`;
 
   successEl.innerHTML = `
     <div style="text-align:center;padding:40px 20px;">
-      <div style="font-family:'PP Neue Montreal',sans-serif;font-size:32px;letter-spacing:0.1em;color:#14a800;margin-bottom:8px;">
-        ✅ ORDER SUBMITTED
+      <div style="font-family:'PP Neue Montreal',sans-serif;font-size:32px;letter-spacing:0.1em;color:#c2410c;margin-bottom:8px;">
+        ⚠ SUBMISSION FAILED
       </div>
       <div style="font-family:'PP Neue Montreal',sans-serif;font-size:12px;color:#5a584f;margin-bottom:8px;letter-spacing:0.05em;">
-        Sprint ID: ${idForDisplay}
+        Fallback Sprint ID: ${idForDisplay}
       </div>
       ${backendLine}
       <div style="font-family:'PP Neue Montreal',sans-serif;font-size:12px;color:#a09e94;margin-bottom:32px;line-height:1.8;">
