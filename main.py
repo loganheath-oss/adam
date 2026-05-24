@@ -518,13 +518,34 @@ async def sprints_dashboard():
     <thead><tr><th>Time</th><th>Sprint ID</th><th>Driver</th><th>Platform</th><th>Status</th></tr></thead>
     <tbody>{rows}{empty}</tbody>
   </table>
-  {_sync_mini_panel()}
+  <div id="sync-mini-panel">{_sync_mini_panel()}</div>
 </div>
+<script>
+(function() {{
+  var INTERVAL = 30000;
+  function refresh() {{
+    fetch('/sprints/sync-panel')
+      .then(function(r) {{ return r.text(); }})
+      .then(function(html) {{
+        var el = document.getElementById('sync-mini-panel');
+        if (el) el.innerHTML = html;
+      }})
+      .catch(function() {{}});
+  }}
+  setInterval(refresh, INTERVAL);
+}})();
+</script>
 </body>
 </html>""")
 
 
 _SPRINT_CHAT_UI = BASE_DIR / "agent" / "sprint_chat_ui.html"
+
+
+@app.get("/sprints/sync-panel", response_class=HTMLResponse)
+async def sprints_sync_panel():
+    """Return just the sync mini-panel fragment for polling refreshes."""
+    return HTMLResponse(_sync_mini_panel())
 
 
 @app.get("/sprints/{sprint_id}/chat", response_class=HTMLResponse)
