@@ -42,8 +42,12 @@ def _client() -> AsyncAnthropic:
 async def run_turn(
     messages: list[dict[str, Any]],
     model: str = DEFAULT_MODEL,
+    sprint_id: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Run a single user turn, yielding events as they happen.
+
+    When `sprint_id` is set, the orchestrator is told it's bound to that sprint
+    and should not ask for one — used by the per-sprint chat UI.
 
     Event shapes (consumer can forward to SSE):
       {"type": "text_delta", "text": "..."}
@@ -54,6 +58,14 @@ async def run_turn(
     """
     client = _client()
     convo = list(messages)
+    system_prompt = SYSTEM_PROMPT
+    if sprint_id:
+        system_prompt = (
+            SYSTEM_PROMPT
+            + f"\n\n# Sprint binding\n\nThis session is bound to sprint `{sprint_id}`. "
+            "Do not ask the user which sprint to work on. Default every tool call "
+            f"to `sprint_id=\"{sprint_id}\"` unless they explicitly reference a different one."
+        )
 
     for _ in range(MAX_TURNS):
         # Prompt-cached system + tools — the first turn pays full cost, every
@@ -64,7 +76,7 @@ async def run_turn(
             system=[
                 {
                     "type": "text",
-                    "text": SYSTEM_PROMPT,
+                    "text": system_prompt,
                     "cache_control": {"type": "ephemeral"},
                 }
             ],

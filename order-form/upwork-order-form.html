@@ -1031,7 +1031,7 @@ function makeSect(label, dotColor, bgColor, borderColor) {
 // ── BACKEND CONFIG ────────────────────────────────────────────────────────────
 // The submit endpoint requires the bearer token in the URL. Override at runtime
 // by setting window.ADAM_PIPELINE_URL before this script loads if needed.
-const ADAM_PIPELINE_URL = (window.ADAM_PIPELINE_URL || 'https://adam-pipeline-cm.fly.dev/submit-order?auth=11cToL-yxmRumMilF7FRdcq1uLBStA0nuSpR8W-_fH8');
+const ADAM_PIPELINE_URL = (window.ADAM_PIPELINE_URL || '/submit');
 
 // ── PAYLOAD BUILDER ───────────────────────────────────────────────────────────
 function buildOrderPayload() {
@@ -1136,6 +1136,11 @@ async function confirmSubmit() {
 
     document.getElementById('review-state').style.display = 'none';
     successEl.classList.add('visible');
+
+    // Redirect into the sprint-bound chat where the user drives gates.
+    if (data.sprint_id) {
+      setTimeout(() => { window.location.href = '/sprints/' + data.sprint_id + '/chat'; }, 1200);
+    }
   } catch (err) {
     alert('Could not reach the pipeline server. Check your connection and try again.\n\n' + err.message);
     if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
