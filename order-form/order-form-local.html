@@ -459,6 +459,25 @@
 </head>
 <body>
 
+<!-- Build stamp — visible so we can verify cache freshness at a glance.
+     If you don't see "build:redirect-v3" in the bottom-left, your browser
+     is showing a stale cached copy of this form. -->
+<div id="adam-build-stamp" style="position:fixed;bottom:6px;left:8px;z-index:99999;
+     font:10px/1 monospace;color:#888;background:rgba(255,255,255,0.7);
+     padding:2px 6px;border-radius:3px;pointer-events:none;">
+  build:redirect-v3
+</div>
+<script>
+  // Unregister any leftover service workers and clear caches —
+  // Replit preview iframes sometimes hang onto a stale form HTML.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(()=>{});
+  }
+  if (window.caches && caches.keys) {
+    caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(()=>{});
+  }
+</script>
+
 <!-- Ambient brand-green glimmer (CSS-animated, no asset). See .glimmer-bg in <style>. -->
 <div class="glimmer-bg" aria-hidden="true"></div>
 
