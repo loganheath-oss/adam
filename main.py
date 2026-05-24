@@ -361,7 +361,15 @@ async def _run_gate_task(sprint_id: str, gate_num: int):
 async def root():
     if not ORDER_FORM_PATH.exists():
         return HTMLResponse("<h1>Order form not found</h1><p>Expected at <code>order-form/order-form-local.html</code>.</p>", status_code=500)
-    return FileResponse(ORDER_FORM_PATH, media_type="text/html")
+    return FileResponse(
+        ORDER_FORM_PATH,
+        media_type="text/html",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
 
 
 @app.post("/submit")
