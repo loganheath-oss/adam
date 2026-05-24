@@ -1386,26 +1386,9 @@ async function confirmSubmit() {
   const idForDisplay = sprintId || fallbackSprintId;
 
   if (sprintId) {
-    // Happy path: redirect into the sprint-bound chat where the user drives
-    // gates. Brief visual handoff so they see the sprint ID before the page
-    // transitions.
-    successEl.innerHTML = `
-      <div style="text-align:center;padding:40px 20px;">
-        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:32px;letter-spacing:0.1em;color:#14a800;margin-bottom:8px;">
-          ✅ ORDER SUBMITTED
-        </div>
-        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:12px;color:#5a584f;margin-bottom:24px;letter-spacing:0.05em;">
-          Sprint ID: ${idForDisplay}
-        </div>
-        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:13px;color:#14a800;margin-bottom:8px;">
-          Opening chat to drive the gates…
-        </div>
-        <div style="font-family:'PP Neue Montreal',sans-serif;font-size:11px;color:#a09e94;line-height:1.8;">
-          A local CSV receipt was downloaded for your records.
-        </div>
-      </div>`;
-    // Short delay so the user actually sees the confirmation before redirect.
-    setTimeout(() => { window.location.href = '/sprints/' + sprintId + '/chat'; }, 1200);
+    // Happy path: redirect INSTANTLY into the sprint-bound chat. No popup,
+    // no splash — the form is just a router into the chat experience.
+    window.location.href = '/sprints/' + sprintId + '/chat';
     return;
   }
 

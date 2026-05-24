@@ -1120,27 +1120,17 @@ async function confirmSubmit() {
       return;
     }
 
-    // Stash the sprint id for the receipt and success screen.
+    // Stash the sprint id for the receipt.
     window.lastSprintId = data.sprint_id;
-    const successEl = document.getElementById('success-state');
-    if (successEl && data.sprint_id) {
-      let pill = document.getElementById('sprint-id-pill');
-      if (!pill) {
-        pill = document.createElement('div');
-        pill.id = 'sprint-id-pill';
-        pill.style.cssText = 'margin-top:14px;padding:10px 16px;background:var(--bg-input,#f5f3ee);border:1px solid var(--border-input,#d6d1c4);border-radius:6px;font-family:ui-monospace,monospace;font-size:13px;color:var(--ink,#1c1b18);display:inline-block;';
-        successEl.insertBefore(pill, successEl.firstChild);
-      }
-      pill.innerHTML = 'Sprint ID: <strong>' + data.sprint_id + '</strong>';
-    }
 
-    document.getElementById('review-state').style.display = 'none';
-    successEl.classList.add('visible');
-
-    // Redirect into the sprint-bound chat where the user drives gates.
+    // Redirect INSTANTLY into the sprint-bound chat. No popup, no splash —
+    // the form is just a router into the chat experience.
     if (data.sprint_id) {
-      setTimeout(() => { window.location.href = '/sprints/' + data.sprint_id + '/chat'; }, 1200);
+      window.location.href = '/sprints/' + data.sprint_id + '/chat';
+      return;
     }
+    document.getElementById('review-state').style.display = 'none';
+    document.getElementById('success-state').classList.add('visible');
   } catch (err) {
     alert('Could not reach the pipeline server. Check your connection and try again.\n\n' + err.message);
     if (btn) { btn.disabled = false; btn.textContent = originalLabel; }
