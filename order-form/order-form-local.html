@@ -1375,7 +1375,7 @@ async function confirmSubmit() {
   // succeeded. Fall back to a client-generated ID only if the backend
   // never accepted the order.
   const fallbackSprintId = sprintId || generateSprintId(payload.platform);
-  buildAndDownloadCSV(payload, fallbackSprintId);
+  try { buildAndDownloadCSV(payload, fallbackSprintId); } catch (_) { /* download blocked in iframe — non-fatal */ }
 
   document.getElementById('review-state').style.display = 'none';
   const successEl = document.getElementById('success-state');
