@@ -148,6 +148,7 @@ def _sync_mini_panel() -> str:
     entries = _read_sync_log(5)
     if not entries:
         return ""
+    counts = _count_sync_log()
     rows = ""
     for e in entries:
         status = e.get("status", "")
@@ -164,10 +165,18 @@ def _sync_mini_panel() -> str:
           <td style="padding:6px 14px;font-size:11px"><span style="color:{dot_color};font-weight:700">{"✓" if status=="ok" else "✗"} {status}</span></td>
           <td style="padding:6px 14px;font-size:11px;color:#6b7280;font-family:monospace">{detail_txt}</td>
         </tr>"""
+    ok_count = counts["ok"]
+    err_count = counts["errors"]
     return f"""<div style="margin-top:28px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
     <span style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.05em">Recent GitHub Syncs</span>
     <a href="/sync-log" style="font-size:12px;color:#14a800;text-decoration:none">View all →</a>
+  </div>
+  <div style="margin-bottom:10px;font-size:12px;color:#6b7280">
+    <span style="color:#16a34a;font-weight:600">{ok_count} ok</span>
+    <span style="margin:0 4px">/</span>
+    <span style="color:#dc2626;font-weight:600">{err_count} error{"s" if err_count != 1 else ""}</span>
+    <span style="color:#9ca3af;margin-left:2px">total</span>
   </div>
   <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
     <thead><tr style="background:#f9fafb;border-bottom:1px solid #e5e7eb">
