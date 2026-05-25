@@ -573,8 +573,8 @@ async function boot() {
   // Show sprint state immediately
   await pollState();
 
-  // Auto-send bootstrap message so Claude loads the sprint and greets the user
-  const bootstrap = `Sprint ${SPRINT_ID} just submitted. Load it and tell me its current state and what gate is open. Be concise.`;
+  // Auto-send bootstrap message so Claude loads the sprint and walks the user through whatever gate is open.
+  const bootstrap = `I just opened the chat for sprint ${SPRINT_ID}. I have never used this system before and don't know what files or gates exist. Please: (1) fetch the current state of this sprint, (2) figure out which gate is open (if any), (3) fetch the relevant artifact for that gate using the right tool, and (4) show me exactly what I need to approve, in plain English, with the data laid out clearly. End with a clear "reply approve to continue, or tell me what to change" prompt. Do not just tell me a gate is open — show me what's in it.`;
   await doSend(bootstrap);
 
   // Poll every 10 s while page is open
