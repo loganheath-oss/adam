@@ -443,6 +443,127 @@ async def submit_order(request: Request):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "status_url": f"/sprints/{sprint_id}"})
 
 
+@app.get("/sprints/{sprint_id}/handoff", response_class=HTMLResponse)
+async def sprint_handoff(sprint_id: str):
+    """Post-submit confirmation page. Shown to whoever submitted the order so
+    they know the creative team has been notified, and so they can grab the
+    chat link if they ARE the creative team."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    if not sprint_dir.exists():
+        return HTMLResponse("<h1>Sprint not found</h1>", status_code=404)
+    import html as _html
+    order = _load_json(sprint_dir / "order.json") or {}
+    batches = order.get("batches") or []
+    qty = sum(int(b.get("quantity", 0)) for b in batches) if batches else order.get("quantity", "?")
+    styles: list[str] = []
+    formats: list[str] = []
+    for b in batches:
+        styles.extend((b.get("style_quantities") or {}).keys() or b.get("visual_styles") or [])
+        if b.get("format"):
+            formats.append(str(b["format"]))
+    # Format lives per-batch; fall back to top-level if absent.
+    fmts_unique = sorted(set(formats)) if formats else ([str(order["format"])] if order.get("format") else [])
+    def esc(v) -> str:
+        return _html.escape(str(v if v not in (None, "") else "—"))
+    styles_str = esc(", ".join(sorted(set(styles))) or "—")
+    driver = esc(order.get("driver"))
+    platform = esc(order.get("platform"))
+    fmt = esc(", ".join(fmts_unique) or "—")
+    targeting = esc(order.get("targeting"))
+    delivery = esc(order.get("delivery_date"))
+    qty = esc(qty)
+    safe_sprint_id = esc(sprint_id)
+    chat_url = f"/sprints/{sprint_id}/chat"
+    status_url = f"/sprints/{sprint_id}"
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Order submitted — {safe_sprint_id}</title>
+<style>
+  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+         background: #f7f7f5; color: #1a1a1a; margin: 0; padding: 48px 24px; }}
+  .card {{ max-width: 640px; margin: 0 auto; background: #fff; border-radius: 14px;
+          box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 8px 28px rgba(0,0,0,.04);
+          padding: 36px 40px; }}
+  .check {{ width: 48px; height: 48px; border-radius: 999px; background: #10b981;
+           color: #fff; display: flex; align-items: center; justify-content: center;
+           font-size: 26px; font-weight: 600; margin-bottom: 18px; }}
+  h1 {{ margin: 0 0 6px; font-size: 22px; }}
+  .sub {{ color: #6b7280; margin-bottom: 28px; font-size: 14px; }}
+  .summary {{ background: #fafafa; border: 1px solid #eee; border-radius: 10px;
+             padding: 18px 20px; margin-bottom: 24px; }}
+  .row {{ display: flex; justify-content: space-between; padding: 6px 0;
+         font-size: 13px; border-bottom: 1px solid #f0f0f0; }}
+  .row:last-child {{ border-bottom: none; }}
+  .row .k {{ color: #6b7280; }}
+  .row .v {{ color: #1a1a1a; font-weight: 500; text-align: right; max-width: 60%; }}
+  .id {{ font-family: 'SF Mono', Consolas, monospace; font-size: 12px; color: #4b5563;
+        background: #f3f4f6; padding: 2px 8px; border-radius: 6px; }}
+  .handoff {{ background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+             padding: 16px 20px; margin-bottom: 24px; font-size: 13px; color: #1e3a8a; }}
+  .handoff strong {{ display: block; margin-bottom: 4px; font-size: 13px; }}
+  .actions {{ display: flex; gap: 10px; flex-wrap: wrap; }}
+  .btn {{ display: inline-block; padding: 10px 18px; border-radius: 8px;
+         text-decoration: none; font-size: 13px; font-weight: 500; cursor: pointer;
+         border: none; }}
+  .btn-primary {{ background: #1a1a1a; color: #fff; }}
+  .btn-primary:hover {{ background: #000; }}
+  .btn-secondary {{ background: #fff; color: #1a1a1a; border: 1px solid #d1d5db; }}
+  .btn-secondary:hover {{ background: #f9fafb; }}
+  .link-block {{ display: flex; gap: 6px; align-items: center; margin-top: 10px; }}
+  .link-block input {{ flex: 1; padding: 8px 10px; font-size: 12px;
+                       font-family: 'SF Mono', Consolas, monospace; border: 1px solid #d1d5db;
+                       border-radius: 6px; background: #fff; color: #4b5563; }}
+  .copy-btn {{ padding: 8px 14px; font-size: 12px; }}
+  .copied {{ color: #10b981; font-weight: 500; }}
+</style></head>
+<body><div class="card">
+  <div class="check">✓</div>
+  <h1>Order submitted</h1>
+  <div class="sub">Sprint <span class="id">{safe_sprint_id}</span> is queued and waiting at Gate 2 (Order + Refs review).</div>
+
+  <div class="summary">
+    <div class="row"><span class="k">Driver</span><span class="v">{driver}</span></div>
+    <div class="row"><span class="k">Platform / Format</span><span class="v">{platform} · {fmt}</span></div>
+    <div class="row"><span class="k">Targeting</span><span class="v">{targeting}</span></div>
+    <div class="row"><span class="k">Quantity</span><span class="v">{qty}</span></div>
+    <div class="row"><span class="k">Visual styles</span><span class="v">{styles_str}</span></div>
+    <div class="row"><span class="k">Delivery date</span><span class="v">{delivery}</span></div>
+  </div>
+
+  <div class="handoff">
+    <strong>Handoff to creative team</strong>
+    The creative team can pick up this sprint from the chat link below and walk it through Gates 2 → 6. Share this link with them (Slack notification coming soon):
+    <div class="link-block">
+      <input id="chat-link" type="text" readonly value="" />
+      <button class="btn btn-secondary copy-btn" onclick="copyLink()">Copy</button>
+    </div>
+  </div>
+
+  <div class="actions">
+    <a class="btn btn-primary" href="{chat_url}">Open chat & take it from here →</a>
+    <a class="btn btn-secondary" href="{status_url}">View sprint status</a>
+    <a class="btn btn-secondary" href="/adam">Submit another order</a>
+  </div>
+</div>
+<script>
+  document.getElementById('chat-link').value = window.location.origin + '{chat_url}';
+  function copyLink() {{
+    const inp = document.getElementById('chat-link');
+    inp.select();
+    navigator.clipboard.writeText(inp.value).then(() => {{
+      const btn = document.querySelector('.copy-btn');
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {{ btn.textContent = orig; btn.classList.remove('copied'); }}, 1500);
+    }});
+  }}
+</script>
+</body></html>"""
+    return HTMLResponse(html)
+
+
 @app.post("/sprints/{sprint_id}/approve/{gate_num}", dependencies=[Depends(require_api_key_or_session)])
 async def approve_gate(sprint_id: str, gate_num: int, request: Request):
     if gate_num not in GATE_HANDLERS:
