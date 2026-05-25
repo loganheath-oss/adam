@@ -469,6 +469,33 @@ PIPELINE_STATE_MESSAGES = {
 
 PIPELINE_TERMINAL_STATES = {"complete", "error", "interrupted"}
 
+# Rough wall-clock estimates per stage (seconds). Image gen scales with qty.
+PIPELINE_STAGE_ETAS = {
+    "queued":                   5,
+    "running":                  10,
+    "stage_01_load_refs":       15,
+    "stage_02_copy_gen":        60,
+    "stage_03_image_prompts":   30,
+    "stage_04_generate_images": 180,
+    "stage_05_figma_assembly":  30,
+    "stage_06_deliver":         15,
+    "resuming_gate_2":          5,
+    "resuming_gate_3":          5,
+    "resuming_gate_4":          5,
+    "resuming_gate_5":          5,
+    "resuming_gate_6":          5,
+}
+
+
+def _eta_for_state(state: str, order: dict) -> int:
+    base = PIPELINE_STAGE_ETAS.get(state, 0)
+    if state == "stage_04_generate_images":
+        # Image gen scales with total quantity — ~30s per image, min 60s.
+        batches = order.get("batches") or []
+        qty = sum(int(b.get("quantity", 0)) for b in batches) if batches else 1
+        return max(60, qty * 30)
+    return base
+
 
 @app.get("/sprints/{sprint_id}/pipeline-events")
 async def pipeline_events(sprint_id: str, request: Request):
@@ -483,6 +510,11 @@ async def pipeline_events(sprint_id: str, request: Request):
 
     async def gen():
         state_path = sprint_dir / "pipeline_state.json"
+        order_path = sprint_dir / "order.json"
+        try:
+            order = json.loads(order_path.read_text())
+        except Exception:
+            order = {}
         last_state: str | None = None
         # Hard cap: 20 min — image gen can be slow but anything longer is a hang.
         deadline = asyncio.get_event_loop().time() + 1200
@@ -499,7 +531,8 @@ async def pipeline_events(sprint_id: str, request: Request):
 
             if state != last_state:
                 msg = PIPELINE_STATE_MESSAGES.get(state, f"Pipeline state: {state}")
-                yield f"data: {json.dumps({'type':'status','state':state,'message':msg})}\n\n"
+                eta = _eta_for_state(state, order)
+                yield f"data: {json.dumps({'type':'status','state':state,'message':msg,'eta_seconds':eta})}\n\n"
                 last_state = state
                 # Close stream when we hit a gate or terminal state.
                 if state.startswith("awaiting_gate_") or state in PIPELINE_TERMINAL_STATES:

@@ -122,8 +122,9 @@
   }
   .tool-pill.running { background: #fef9c3; border-color: #fde047; color: #854d0e; }
   .tool-pill.done { background: #dcfce7; border-color: #86efac; color: #166534; }
-  .pipe-line { padding: 3px 0; font-size: 13px; line-height: 1.5; color: #374151; }
-  .pipe-line:not(:last-child) { color: #6b7280; }
+  .pipe-line { padding: 5px 0; font-size: 13px; line-height: 1.5; color: #6b7280; }
+  .pipe-line.active { color: #1a1a1a; font-weight: 500; }
+  .pipe-line .icon { display: inline-block; width: 14px; text-align: center; margin-right: 6px; color: #10b981; font-weight: 700; }
   .pulse-dot {
     display: inline-block; width: 8px; height: 8px; border-radius: 50%;
     background: #14a800; margin-right: 4px; vertical-align: middle;
@@ -133,6 +134,28 @@
     0%, 100% { box-shadow: 0 0 0 0 rgba(20,168,0,.7); opacity: 1; }
     50% { box-shadow: 0 0 0 6px rgba(20,168,0,0); opacity: .6; }
   }
+  .pipe-progress {
+    margin-top: 6px; margin-left: 20px; height: 6px; background: #f3f4f6;
+    border-radius: 4px; overflow: hidden; position: relative;
+  }
+  .pipe-progress-fill {
+    height: 100%; background: linear-gradient(90deg, #14a800, #10b981);
+    border-radius: 4px; transition: width 0.5s linear;
+  }
+  .pipe-progress-fill.indeterminate {
+    width: 30% !important; background: linear-gradient(90deg, transparent, #14a800, transparent);
+    animation: indet-slide 1.5s ease-in-out infinite;
+  }
+  @keyframes indet-slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+  .pipe-meta {
+    margin-top: 4px; margin-left: 20px; font-size: 11px; color: #9ca3af;
+    display: flex; justify-content: space-between;
+  }
+  .pipe-meta .eta { color: #6b7280; font-weight: 500; }
+  .pipe-meta .eta.overtime { color: #d97706; }
 
   /* quick actions */
   .quick-bar {
@@ -602,6 +625,15 @@ async function maybeStartPipelineNarration() {
   startPipelineNarration();
 }
 
+let progressTicker = null;
+
+function fmtSec(s) {
+  s = Math.max(0, Math.round(s));
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60), r = s % 60;
+  return r ? `${m}m ${r}s` : `${m}m`;
+}
+
 function startPipelineNarration() {
   if (pipelineStreaming) return;
   pipelineStreaming = true;
@@ -619,27 +651,63 @@ function startPipelineNarration() {
   msgs.appendChild(el);
   msgs.scrollTop = msgs.scrollHeight;
   const bubble = el.querySelector('.bubble-text');
+  // lines: [{ message, eta, startedAt }]
   const lines = [];
 
   const render = () => {
-    bubble.innerHTML = lines.map((l, i) => {
-      const dot = i === lines.length - 1 ? '<span class="pulse-dot"></span>' : '✓';
-      return `<div class="pipe-line">${dot} ${escHtml(l)}</div>`;
+    const lastIdx = lines.length - 1;
+    bubble.innerHTML = lines.map((line, i) => {
+      const isActive = i === lastIdx;
+      if (!isActive) {
+        return `<div class="pipe-line"><span class="icon">✓</span>${escHtml(line.message)}</div>`;
+      }
+      const elapsed = (Date.now() - line.startedAt) / 1000;
+      const eta = line.eta || 0;
+      let pct, etaLabel, etaClass = 'eta';
+      if (eta > 0) {
+        pct = Math.min(95, (elapsed / eta) * 100);
+        const remaining = eta - elapsed;
+        if (remaining > 0) {
+          etaLabel = `~${fmtSec(remaining)} remaining`;
+        } else {
+          etaLabel = `taking longer than expected (${fmtSec(elapsed)})`;
+          etaClass += ' overtime';
+          pct = 95;
+        }
+      } else {
+        pct = null;
+        etaLabel = `running for ${fmtSec(elapsed)}`;
+      }
+      const fillClass = pct === null ? 'pipe-progress-fill indeterminate' : 'pipe-progress-fill';
+      const fillStyle = pct === null ? '' : `width:${pct}%`;
+      return `<div class="pipe-line active">
+        <span class="pulse-dot"></span>${escHtml(line.message)}
+        <div class="pipe-progress"><div class="${fillClass}" style="${fillStyle}"></div></div>
+        <div class="pipe-meta">
+          <span>elapsed ${fmtSec(elapsed)}</span>
+          <span class="${etaClass}">${etaLabel}</span>
+        </div>
+      </div>`;
     }).join('');
     msgs.scrollTop = msgs.scrollHeight;
   };
 
   // Close any prior stream (defensive — shouldn't happen due to guards).
   if (activePipelineES) { try { activePipelineES.close(); } catch {} }
+  if (progressTicker) clearInterval(progressTicker);
+
   const es = new EventSource(`/sprints/${SPRINT_ID}/pipeline-events`);
   activePipelineES = es;
   let finalState = null;
+
+  // Tick every second so the progress bar and countdown update smoothly.
+  progressTicker = setInterval(() => { if (lines.length) render(); }, 1000);
 
   es.onmessage = (ev) => {
     let data;
     try { data = JSON.parse(ev.data); } catch { return; }
     if (data.type === 'status') {
-      lines.push(data.message);
+      lines.push({ message: data.message, eta: data.eta_seconds || 0, startedAt: Date.now() });
       render();
     } else if (data.type === 'done') {
       finalState = data.state;
@@ -650,8 +718,9 @@ function startPipelineNarration() {
   es.onerror = () => {
     es.close();
     if (activePipelineES === es) activePipelineES = null;
+    if (progressTicker) { clearInterval(progressTicker); progressTicker = null; }
     if (!finalState) {
-      lines.push('(connection to pipeline stream dropped — refresh to reconnect)');
+      lines.push({ message: '(connection to pipeline stream dropped — refresh to reconnect)', eta: 0, startedAt: Date.now() });
       render();
     }
     pipelineStreaming = false;
@@ -659,8 +728,9 @@ function startPipelineNarration() {
 }
 
 function finishNarration(bubble, lines, finalState) {
-  // Mark all lines complete.
-  bubble.innerHTML = lines.map(l => `<div class="pipe-line">✓ ${escHtml(l)}</div>`).join('');
+  if (progressTicker) { clearInterval(progressTicker); progressTicker = null; }
+  // Mark all lines complete — no more progress bar.
+  bubble.innerHTML = lines.map(l => `<div class="pipe-line"><span class="icon">✓</span>${escHtml(l.message || l)}</div>`).join('');
   bubble.className = 'bubble-text';
   pipelineStreaming = false;
   pollState();
@@ -709,6 +779,7 @@ async function boot() {
 window.addEventListener('DOMContentLoaded', boot);
 window.addEventListener('beforeunload', () => {
   clearInterval(statePoller);
+  if (progressTicker) clearInterval(progressTicker);
   if (activePipelineES) { try { activePipelineES.close(); } catch {} }
 });
 </script>
