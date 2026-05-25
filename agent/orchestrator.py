@@ -10,12 +10,25 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 import os
+import re
+import threading
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, AsyncGenerator
 
+_LOG = logging.getLogger("adam.orchestrator")
+_SPRINT_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
+_JSONL_LOCK = threading.Lock()
+
+
+def _is_safe_sprint_id(sprint_id: str) -> bool:
+    return bool(sprint_id and _SPRINT_ID_RE.match(sprint_id) and ".." not in sprint_id)
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 RUNS_DIR = BASE_DIR / "runs"
+LEARNINGS_PATH = BASE_DIR / "learnings.md"
 
 GATE_NAMES = {
     2: "Order + Refs Review",
@@ -48,6 +61,47 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
         return []
     with path.open(newline="") as f:
         return list(csv.DictReader(f))
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _append_jsonl(path: Path, record: dict) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with _JSONL_LOCK:
+            with path.open("a") as f:
+                f.write(json.dumps(record) + "\n")
+    except Exception as exc:
+        _LOG.warning("orchestrator jsonl append failed for %s: %s", path, exc)
+
+
+def _read_jsonl(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
+LEARNINGS_HEADER = (
+    "# ADAM Learnings\n\n"
+    "Institutional memory shared across every sprint. Edit this file directly "
+    "to add, refine, or remove guidance — Claude reads it at the start of every "
+    "chat session.\n\n"
+    "## Guidance\n\n"
+)
+
+
+def _ensure_learnings_file() -> None:
+    if not LEARNINGS_PATH.exists():
+        LEARNINGS_PATH.write_text(LEARNINGS_HEADER)
+
+
+def read_learnings_text() -> str:
+    """Public helper used by main.py to inject learnings elsewhere if needed."""
+    if not LEARNINGS_PATH.exists():
+        return ""
+    return LEARNINGS_PATH.read_text()
 
 
 # ── Tool implementations ──────────────────────────────────────────────────────
@@ -122,7 +176,7 @@ def tool_get_image_prompts(sprint_id: str) -> list[dict]:
     return _read_csv(path / "image_prompts.csv")
 
 
-def tool_approve_gate(sprint_id: str, gate: int) -> dict:
+def tool_approve_gate(sprint_id: str, gate: int, note: str = "") -> dict:
     if gate not in GATE_NAMES:
         return {"error": f"gate must be one of {sorted(GATE_NAMES)}; got {gate}"}
     path = RUNS_DIR / sprint_id
@@ -139,14 +193,89 @@ def tool_approve_gate(sprint_id: str, gate: int) -> dict:
         handlers = _get_gate_handlers()
         handlers[gate](sprint_id)
         new_state = _read_json(path / "pipeline_state.json") or {}
+        _append_jsonl(path / "gate_decisions.jsonl", {
+            "ts": _now(),
+            "sprint_id": sprint_id,
+            "gate": gate,
+            "gate_name": GATE_NAMES[gate],
+            "decision": "approved",
+            "note": (note or "").strip(),
+            "source": "agent",
+        })
         return {
             "ok": True,
             "gate": gate,
             "gate_name": GATE_NAMES[gate],
             "new_state": new_state.get("state", "unknown"),
+            "note_recorded": bool((note or "").strip()),
         }
     except Exception as exc:
         return {"error": str(exc)}
+
+
+def tool_get_chat_history(sprint_id: str, limit: int = 50) -> dict:
+    path = RUNS_DIR / sprint_id / "chat.jsonl"
+    history = _read_jsonl(path)
+    if limit and limit > 0:
+        history = history[-limit:]
+    return {"sprint_id": sprint_id, "count": len(history), "messages": history}
+
+
+def tool_get_gate_decisions(sprint_id: str) -> dict:
+    path = RUNS_DIR / sprint_id / "gate_decisions.jsonl"
+    return {"sprint_id": sprint_id, "decisions": _read_jsonl(path)}
+
+
+def tool_search_past_sprints(query: str, limit: int = 5) -> list[dict]:
+    """Keyword search across past sprint artifacts: orders, summaries,
+    chat transcripts, and gate decision notes. Case-insensitive substring match."""
+    if not RUNS_DIR.exists() or not query:
+        return []
+    q = query.lower().strip()
+    hits: list[dict] = []
+    search_files = ("order.json", "run_summary.json", "chat.jsonl", "gate_decisions.jsonl")
+    for p in sorted(RUNS_DIR.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True):
+        if not p.is_dir():
+            continue
+        matched_in = []
+        for fname in search_files:
+            f = p / fname
+            if f.exists() and q in f.read_text().lower():
+                matched_in.append(fname)
+        if not matched_in:
+            continue
+        order = _read_json(p / "order.json") or {}
+        state = _read_json(p / "pipeline_state.json") or {}
+        hits.append({
+            "sprint_id": p.name,
+            "state": state.get("state", ""),
+            "driver": order.get("driver", ""),
+            "platform": order.get("platform", ""),
+            "delivery_date": order.get("delivery_date", ""),
+            "matched_in": matched_in,
+        })
+        if len(hits) >= limit:
+            break
+    return hits
+
+
+def tool_get_learnings() -> dict:
+    _ensure_learnings_file()
+    return {"path": str(LEARNINGS_PATH), "content": LEARNINGS_PATH.read_text()}
+
+
+def tool_append_learning(text: str, source_sprint: str = "") -> dict:
+    text = (text or "").strip()
+    if not text:
+        return {"error": "text is required"}
+    _ensure_learnings_file()
+    entry = f"- **{_now()[:10]}**"
+    if source_sprint:
+        entry += f" _(from `{source_sprint}`)_"
+    entry += f": {text}\n"
+    with LEARNINGS_PATH.open("a") as f:
+        f.write(entry)
+    return {"ok": True, "appended": entry.strip(), "path": str(LEARNINGS_PATH)}
 
 
 # ── Tool schema for Claude ────────────────────────────────────────────────────
@@ -200,15 +329,84 @@ TOOLS = [
         "description": (
             "Approve a pipeline gate and resume the run. "
             "Gates: 2=Order+Refs, 3=Copy, 4=Image Prompts, 5=Assembly, 6=Final QA. "
-            "Only call this after reviewing the relevant outputs."
+            "Only call this after reviewing the relevant outputs. "
+            "Always pass `note` capturing the user's rationale (one or two sentences "
+            "explaining what they liked, what they changed, or any caveat) — this is "
+            "persisted to gate_decisions.jsonl and becomes training memory for "
+            "future sprints."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "sprint_id": {"type": "string"},
                 "gate": {"type": "integer", "enum": [2, 3, 4, 5, 6]},
+                "note": {
+                    "type": "string",
+                    "description": "User's rationale for approving (1–2 sentences). Required for institutional memory.",
+                },
             },
             "required": ["sprint_id", "gate"],
+        },
+    },
+    {
+        "name": "get_chat_history",
+        "description": "Read the persisted chat transcript for a sprint (user + assistant messages, oldest first).",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "sprint_id": {"type": "string"},
+                "limit": {"type": "integer", "description": "Max messages to return (default 50, 0 = all)", "default": 50},
+            },
+            "required": ["sprint_id"],
+        },
+    },
+    {
+        "name": "get_gate_decisions",
+        "description": "Read all recorded gate approval decisions and notes for a sprint.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"sprint_id": {"type": "string"}},
+            "required": ["sprint_id"],
+        },
+    },
+    {
+        "name": "search_past_sprints",
+        "description": (
+            "Keyword-search across past sprints (orders, summaries, chat transcripts, "
+            "gate decisions). Use this when the user asks 'have we done X before?' or "
+            "when you want to apply patterns from previous work."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Case-insensitive substring to search for"},
+                "limit": {"type": "integer", "default": 5},
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "get_learnings",
+        "description": "Read the full ADAM learnings doc (institutional memory shared across all sprints).",
+        "input_schema": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "append_learning",
+        "description": (
+            "Append a new entry to the ADAM learnings doc. Use this when the user "
+            "states a preference, a rule, or a lesson worth remembering across "
+            "future sprints (e.g. 'never use exclamation points in headlines', "
+            "'always include a price anchor for cold audiences'). Be concise and "
+            "specific. Confirm with the user before appending unless they explicitly "
+            "said 'remember this' or 'add to learnings'."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "text": {"type": "string", "description": "The learning, in one sentence."},
+                "source_sprint": {"type": "string", "description": "Sprint ID this learning came from (optional)."},
+            },
+            "required": ["text"],
         },
     },
 ]
@@ -219,6 +417,11 @@ TOOL_DISPATCH = {
     "get_copy_concepts": lambda args: tool_get_copy_concepts(**args),
     "get_image_prompts": lambda args: tool_get_image_prompts(**args),
     "approve_gate": lambda args: tool_approve_gate(**args),
+    "get_chat_history": lambda args: tool_get_chat_history(**args),
+    "get_gate_decisions": lambda args: tool_get_gate_decisions(**args),
+    "search_past_sprints": lambda args: tool_search_past_sprints(**args),
+    "get_learnings": lambda args: tool_get_learnings(),
+    "append_learning": lambda args: tool_append_learning(**args),
 }
 
 SYSTEM_PROMPT = """You are the ADAM Pipeline assistant — a hands-on production coordinator for Upwork's automated ad creative pipeline.
@@ -230,9 +433,16 @@ Available tools:
 - get_sprint — full details for a specific sprint
 - get_copy_concepts — ad copy and review scores at gate 3
 - get_image_prompts — visual prompts for each ad slot at gate 4
-- approve_gate — approve a gate and resume the pipeline
+- approve_gate — approve a gate and resume the pipeline (always pass `note` with the user's rationale)
+- get_chat_history — read the persisted transcript for a sprint
+- get_gate_decisions — read prior gate approvals + rationale for a sprint
+- search_past_sprints — keyword-search across all past sprint artifacts and transcripts
+- get_learnings — read the shared learnings doc
+- append_learning — add a new rule/preference to the learnings doc
 
-Be concise and action-oriented. When reviewing copy or prompts, summarise what you see before asking for approval. Always confirm gate approvals with the user before calling approve_gate unless they explicitly said to auto-approve."""
+You are operating with persistent memory. Every chat message is saved to the sprint's transcript, every gate approval captures the user's rationale, and the learnings doc is loaded into your context on every session. When the user expresses a preference that should apply to future sprints, offer to append it to learnings. When starting work on a new sprint, consider whether `search_past_sprints` would surface relevant prior decisions.
+
+Be concise and action-oriented. When reviewing copy or prompts, summarise what you see before asking for approval. Always confirm gate approvals with the user before calling approve_gate unless they explicitly said to auto-approve, and capture their rationale in the `note` parameter."""
 
 
 # ── Streaming Claude loop ─────────────────────────────────────────────────────
@@ -258,10 +468,19 @@ async def run_agent_turn(
     loop_messages = list(messages)
 
     system_prompt = SYSTEM_PROMPT
+
+    learnings_text = read_learnings_text().strip()
+    if learnings_text:
+        system_prompt += (
+            "\n\n# Institutional learnings\n\n"
+            "The following is the live `learnings.md` doc — apply this guidance "
+            "to every decision and recommendation in this session:\n\n"
+            f"{learnings_text}"
+        )
+
     if sprint_id:
-        system_prompt = (
-            SYSTEM_PROMPT
-            + f"\n\n# Sprint binding\n\nThis session is bound to sprint `{sprint_id}`. "
+        system_prompt += (
+            f"\n\n# Sprint binding\n\nThis session is bound to sprint `{sprint_id}`. "
             "Do not ask the user which sprint to work on. Default every tool call "
             f"to sprint_id=\"{sprint_id}\" unless the user explicitly references a different one."
         )

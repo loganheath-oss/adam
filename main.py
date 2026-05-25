@@ -9,9 +9,12 @@ import hashlib
 import hmac
 import html
 import json
+import logging
 import os
+import re
 import subprocess
 import sys
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -291,6 +294,44 @@ def _load_json(path: Path) -> dict:
     return json.loads(path.read_text()) if path.exists() else {}
 
 
+# ── sprint_id safety + concurrent-safe JSONL append ──────────────────────────
+_SPRINT_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
+_JSONL_LOCK = threading.Lock()
+_LOG = logging.getLogger("adam.main")
+
+
+def _validate_sprint_id(sprint_id: str) -> str:
+    """Reject sprint IDs that could escape RUNS_DIR. Returns the validated id."""
+    if not sprint_id or not _SPRINT_ID_RE.match(sprint_id) or ".." in sprint_id:
+        raise HTTPException(status_code=400, detail="Invalid sprint_id format")
+    return sprint_id
+
+
+def _safe_sprint_dir(sprint_id: str) -> Path:
+    """Validate sprint_id format AND verify the resolved path stays inside RUNS_DIR."""
+    _validate_sprint_id(sprint_id)
+    candidate = (RUNS_DIR / sprint_id).resolve()
+    runs_resolved = RUNS_DIR.resolve()
+    try:
+        candidate.relative_to(runs_resolved)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="sprint_id escapes runs directory")
+    return candidate
+
+
+def _append_jsonl_safe(path: Path, record: dict) -> bool:
+    """Append a JSON record to a JSONL file with a process-level lock. Returns success."""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with _JSONL_LOCK:
+            with path.open("a") as f:
+                f.write(json.dumps(record) + "\n")
+        return True
+    except Exception as exc:
+        _LOG.warning("jsonl append failed for %s: %s", path, exc)
+        return False
+
+
 def _sprint_data(sprint_id: str) -> dict:
     d = RUNS_DIR / sprint_id
     state_raw = _load_json(d / "pipeline_state.json")
@@ -389,6 +430,7 @@ async def root():
 async def submit_order(request: Request):
     payload = await request.json()
     sprint_id = payload.get("sprint_id") or _generate_sprint_id(payload)
+    _validate_sprint_id(sprint_id)
     payload["sprint_id"] = sprint_id
     sprint_dir = RUNS_DIR / sprint_id
     sprint_dir.mkdir(exist_ok=True)
@@ -402,10 +444,10 @@ async def submit_order(request: Request):
 
 
 @app.post("/sprints/{sprint_id}/approve/{gate_num}", dependencies=[Depends(require_api_key_or_session)])
-async def approve_gate(sprint_id: str, gate_num: int):
+async def approve_gate(sprint_id: str, gate_num: int, request: Request):
     if gate_num not in GATE_HANDLERS:
         return JSONResponse({"ok": False, "error": f"Unknown gate {gate_num}. Valid: 2–6"}, status_code=400)
-    sprint_dir = RUNS_DIR / sprint_id
+    sprint_dir = _safe_sprint_dir(sprint_id)
     if not sprint_dir.exists():
         return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
     state_path = sprint_dir / "pipeline_state.json"
@@ -417,13 +459,35 @@ async def approve_gate(sprint_id: str, gate_num: int):
             status_code=409,
             detail=f"Sprint is in state '{current_state}', expected '{expected_state}'",
         )
+
+    # Capture optional rationale note from request body (JSON or form).
+    note = ""
+    try:
+        body = await request.json()
+        if isinstance(body, dict):
+            note = str(body.get("note", "") or "").strip()
+    except Exception:
+        note = ""
+
+    # Persist the gate decision for cross-sprint memory.
+    GATE_NAMES_LOCAL = {2: "Order + Refs Review", 3: "Copy Review", 4: "Image Prompt Scan", 5: "Assembly Review", 6: "Final QA"}
+    _append_jsonl_safe(sprint_dir / "gate_decisions.jsonl", {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "sprint_id": sprint_id,
+        "gate": gate_num,
+        "gate_name": GATE_NAMES_LOCAL.get(gate_num, ""),
+        "decision": "approved",
+        "note": note,
+        "source": "http",
+    })
+
     state_path.write_text(json.dumps({
         "sprint_id": sprint_id,
         "state": f"resuming_gate_{gate_num}",
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }, indent=2))
     asyncio.create_task(_run_gate_task(sprint_id, gate_num))
-    return JSONResponse({"ok": True, "sprint_id": sprint_id, "gate": gate_num, "message": f"Gate {gate_num} approved, pipeline resuming"})
+    return JSONResponse({"ok": True, "sprint_id": sprint_id, "gate": gate_num, "note_recorded": bool(note), "message": f"Gate {gate_num} approved, pipeline resuming"})
 
 
 @app.post("/sprints/{sprint_id}/retry", dependencies=[Depends(require_api_key_or_session)])
@@ -593,13 +657,58 @@ async def sprint_chat_stream(sprint_id: str, request: Request):
             yield 'data: {"type":"done"}\n\n'
         return StreamingResponse(_no_key(), media_type="text/event-stream")
 
+    # Validate sprint_id BEFORE any disk activity (prevent path traversal).
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    chat_log_path = sprint_dir / "chat.jsonl"
+
+    def _append_chat(record: dict):
+        # Concurrent-safe; logs warning instead of silently swallowing.
+        _append_jsonl_safe(chat_log_path, record)
+
+    if messages and isinstance(messages[-1], dict) and messages[-1].get("role") == "user":
+        last = messages[-1]
+        content = last.get("content", "")
+        if isinstance(content, list):
+            text = "".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")
+        else:
+            text = str(content)
+        if text.strip():
+            _append_chat({
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "role": "user",
+                "text": text,
+            })
+
     async def _stream():
+        assistant_text_parts: list[str] = []
+        tool_events: list[dict] = []
         try:
             async for chunk in run_agent_turn(messages, api_key, sprint_id=sprint_id):
+                # Capture for persistence — chunks are SSE strings ('data: {...}\n\n').
+                try:
+                    if chunk.startswith("data: "):
+                        payload = json.loads(chunk[len("data: "):].strip())
+                        ptype = payload.get("type")
+                        if ptype == "text" and payload.get("text"):
+                            assistant_text_parts.append(payload["text"])
+                        elif ptype == "tool_call":
+                            tool_events.append({"kind": "call", "name": payload.get("name"), "input": payload.get("input")})
+                        elif ptype == "tool_result":
+                            tool_events.append({"kind": "result", "name": payload.get("name"), "result": payload.get("result")})
+                except Exception:
+                    pass
                 yield chunk
         except Exception as exc:
             yield f'data: {json.dumps({"type": "error", "message": str(exc)})}\n\n'
             yield 'data: {"type":"done"}\n\n'
+        finally:
+            if assistant_text_parts or tool_events:
+                _append_chat({
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                    "role": "assistant",
+                    "text": "".join(assistant_text_parts),
+                    "tool_events": tool_events,
+                })
 
     return StreamingResponse(
         _stream(),
@@ -1129,6 +1238,84 @@ async def sync_log_page(request: Request):
 </div>
 </body>
 </html>""")
+
+
+LEARNINGS_PATH = BASE_DIR / "learnings.md"
+LEARNINGS_HEADER = (
+    "# ADAM Learnings\n\n"
+    "Institutional memory shared across every sprint. Edit this file directly "
+    "to add, refine, or remove guidance — Claude reads it at the start of every "
+    "chat session.\n\n"
+    "## Guidance\n\n"
+)
+
+
+@app.get("/learnings", response_class=HTMLResponse)
+async def learnings_editor():
+    """Public, manually-editable institutional-memory doc."""
+    if not LEARNINGS_PATH.exists():
+        LEARNINGS_PATH.write_text(LEARNINGS_HEADER)
+    content = LEARNINGS_PATH.read_text()
+    # Minimal inline editor — no auth (sprint chat itself is public; this is a peer surface).
+    html = """<!doctype html>
+<html><head><meta charset="utf-8"><title>ADAM Learnings</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;max-width:880px;margin:2rem auto;padding:0 1rem;color:#1a1a1a;}
+  h1{margin-bottom:.25rem;}
+  .sub{color:#666;margin-bottom:1.5rem;}
+  textarea{width:100%;min-height:60vh;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;padding:1rem;border:1px solid #ccc;border-radius:6px;box-sizing:border-box;}
+  .row{display:flex;gap:.5rem;align-items:center;margin-top:.75rem;}
+  button{background:#1a1a1a;color:#fff;border:0;padding:.6rem 1.2rem;border-radius:6px;cursor:pointer;font-size:14px;}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+  .status{color:#0a7a3a;font-size:13px;}
+  .err{color:#b00;font-size:13px;}
+  a{color:#1a4fd1;}
+</style></head>
+<body>
+<h1>ADAM Learnings</h1>
+<div class="sub">Institutional memory shared across every sprint. Loaded into Claude's context on every chat. Edit freely — saves to <code>learnings.md</code> at the project root, also editable in the Replit file editor.</div>
+<form id="f">
+  <textarea id="t" name="content">__CONTENT__</textarea>
+  <div class="row">
+    <button type="submit">Save</button>
+    <span id="s" class="status"></span>
+  </div>
+</form>
+<p style="margin-top:2rem;"><a href="/">← Back to order form</a></p>
+<script>
+const f=document.getElementById('f'),t=document.getElementById('t'),s=document.getElementById('s');
+f.addEventListener('submit',async e=>{
+  e.preventDefault();s.textContent='Saving…';s.className='status';
+  try{
+    const r=await fetch('/learnings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:t.value})});
+    const j=await r.json();
+    if(j.ok){s.textContent='Saved '+new Date().toLocaleTimeString();}
+    else{s.textContent=j.error||'Save failed';s.className='err';}
+  }catch(err){s.textContent=String(err);s.className='err';}
+});
+</script>
+</body></html>"""
+    return HTMLResponse(html.replace("__CONTENT__", content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")))
+
+
+@app.post("/learnings", dependencies=[Depends(require_api_key_or_session)])
+async def learnings_save(request: Request):
+    try:
+        body = await request.json()
+        content = body.get("content", "")
+        if not isinstance(content, str):
+            return JSONResponse({"ok": False, "error": "content must be a string"}, status_code=400)
+        LEARNINGS_PATH.write_text(content)
+        return JSONResponse({"ok": True, "bytes": len(content)})
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+
+
+@app.get("/api/learnings")
+async def learnings_raw():
+    if not LEARNINGS_PATH.exists():
+        return JSONResponse({"content": "", "path": str(LEARNINGS_PATH)})
+    return JSONResponse({"content": LEARNINGS_PATH.read_text(), "path": str(LEARNINGS_PATH)})
 
 
 @app.get("/health")
