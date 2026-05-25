@@ -34,7 +34,7 @@ RUNS_DIR.mkdir(exist_ok=True)
 SYNC_LOG_PATH = BASE_DIR / "sync_log.jsonl"
 
 sys.path.insert(0, str(BASE_DIR / "pipeline"))
-from run_pipeline import run_pipeline_auto, resume_gate_2, resume_gate_3, resume_gate_4, resume_gate_5, resume_gate_6
+from run_pipeline import run_full_pipeline, run_pipeline_auto, resume_gate_2, resume_gate_3, resume_gate_4, resume_gate_5, resume_gate_6
 
 GATE_HANDLERS = {2: resume_gate_2, 3: resume_gate_3, 4: resume_gate_4, 5: resume_gate_5, 6: resume_gate_6}
 
@@ -334,9 +334,22 @@ async def _run_pipeline_task(payload: dict):
 
     _write_state("running")
     try:
-        result = await loop.run_in_executor(None, run_pipeline_auto, payload)
+        # Use the gated pipeline so the run pauses at Gate 2 (Order + Refs)
+        # for human approval before spending API credits on copy/image gen.
+        result = await loop.run_in_executor(None, run_full_pipeline, payload)
         if result is None:
-            _write_state("error", "Pipeline failed at intake — check order payload for validation errors")
+            # Only flag as error if the pipeline didn't already set a more
+            # specific state (e.g. awaiting_gate_2). run_full_pipeline writes
+            # awaiting_gate_2 to pipeline_state.json before returning None.
+            state_path = sprint_dir / "pipeline_state.json"
+            current = ""
+            if state_path.exists():
+                try:
+                    current = json.loads(state_path.read_text()).get("state", "")
+                except Exception:
+                    current = ""
+            if current in ("", "running"):
+                _write_state("error", "Pipeline failed at intake — check order payload for validation errors")
     except Exception as exc:
         _write_state("error", str(exc))
 
