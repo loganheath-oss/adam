@@ -553,6 +553,39 @@ async def pipeline_events(sprint_id: str, request: Request):
     })
 
 
+@app.get("/sprints/{sprint_id}/chat-history")
+async def sprint_chat_history(sprint_id: str):
+    """Return the persisted chat transcript for a sprint as JSON.
+    Used by the chat UI on boot to restore past conversations."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    chat_path = sprint_dir / "chat.jsonl"
+    if not chat_path.exists():
+        return JSONResponse({"sprint_id": sprint_id, "messages": []})
+    messages = []
+    try:
+        for line in chat_path.read_text().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except Exception:
+                continue
+            # Filter out the [auto] hidden prompts so users don't see them on revisit.
+            text = rec.get("text", "")
+            if rec.get("role") == "user" and isinstance(text, str) and text.startswith("[auto]"):
+                continue
+            messages.append({
+                "role": rec.get("role"),
+                "text": text,
+                "ts": rec.get("ts"),
+            })
+    except Exception as exc:
+        return JSONResponse({"sprint_id": sprint_id, "messages": [], "error": str(exc)})
+    return JSONResponse({"sprint_id": sprint_id, "messages": messages, "count": len(messages)})
+
+
 @app.get("/sprints/{sprint_id}/handoff", response_class=HTMLResponse)
 async def sprint_handoff(sprint_id: str):
     """Post-submit confirmation page. Shown to whoever submitted the order so
@@ -776,17 +809,17 @@ async def sprints_dashboard():
         bg, fg = _badge(s["state"])
         gate_btn = ""
         if s["gate"]:
-            g = s["gate"]
-            gate_btn = f'<a href="/sprints/{s["sprint_id"]}" style="display:inline-block;margin-left:10px;padding:4px 12px;background:#14a800;color:#fff;border-radius:4px;font-size:11px;text-decoration:none;font-weight:600;">Review →</a>'
+            gate_btn = f'<a href="/sprints/{s["sprint_id"]}/chat" onclick="event.stopPropagation()" style="display:inline-block;margin-left:10px;padding:4px 12px;background:#14a800;color:#fff;border-radius:4px;font-size:11px;text-decoration:none;font-weight:600;">Review →</a>'
+        chat_btn = f'<a href="/sprints/{s["sprint_id"]}/chat" onclick="event.stopPropagation()" style="display:inline-block;margin-left:6px;padding:4px 12px;background:#fff;color:#374151;border:1px solid #d1d5db;border-radius:4px;font-size:11px;text-decoration:none;font-weight:500;">💬 Chat</a>'
         rows += f"""
-        <tr onclick="location.href='/sprints/{s['sprint_id']}'" style="cursor:pointer">
+        <tr onclick="location.href='/sprints/{s['sprint_id']}/chat'" style="cursor:pointer">
           <td style="padding:12px 16px;font-size:12px;color:#6b7280">{s['updated_at'][:16].replace('T',' ') if s['updated_at'] else '—'}</td>
           <td style="padding:12px 16px;font-weight:600;font-size:13px">{s['sprint_id']}</td>
           <td style="padding:12px 16px;font-size:13px">{s['driver'] or '—'}</td>
           <td style="padding:12px 16px;font-size:13px">{s['platform'] or '—'}</td>
           <td style="padding:12px 16px">
             <span style="background:{bg};color:{fg};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">{s['state_label']}</span>
-            {gate_btn}
+            {gate_btn}{chat_btn}
           </td>
         </tr>"""
 

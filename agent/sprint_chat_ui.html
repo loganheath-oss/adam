@@ -767,9 +767,36 @@ async function boot() {
   // Show sprint state immediately
   await pollState();
 
-  // Auto-send bootstrap message so Claude loads the sprint and walks the user through whatever gate is open.
-  const bootstrap = `I just opened the chat for sprint ${SPRINT_ID}. I have never used this system before and don't know what files or gates exist. Please: (1) fetch the current state of this sprint, (2) figure out which gate is open (if any), (3) fetch the relevant artifact for that gate using the right tool, and (4) show me exactly what I need to approve, in plain English, with the data laid out clearly. End with a clear "reply approve to continue, or tell me what to change" prompt. Do not just tell me a gate is open — show me what's in it.`;
-  await doSend(bootstrap);
+  // Try to restore prior chat history before bootstrapping.
+  let priorMessages = [];
+  try {
+    const r = await fetch(`/sprints/${SPRINT_ID}/chat-history`);
+    if (r.ok) {
+      const data = await r.json();
+      priorMessages = data.messages || [];
+    }
+  } catch (_) { /* non-fatal — fall through to bootstrap */ }
+
+  if (priorMessages.length > 0) {
+    // Render the prior transcript and seed history for Claude.
+    const banner = document.createElement('div');
+    banner.style.cssText = 'text-align:center;font-size:11px;color:#9ca3af;padding:8px 0;border-bottom:1px solid #f3f4f6;margin-bottom:8px;';
+    banner.textContent = `— Restored ${priorMessages.length} message${priorMessages.length!==1?'s':''} from prior conversation —`;
+    document.getElementById('messages').appendChild(banner);
+    for (const m of priorMessages) {
+      if (!m.role || !m.text) continue;
+      addMessage(m.role, m.text);
+      history.push({ role: m.role, content: m.text });
+    }
+    document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+
+    // If the pipeline is mid-run, start narrating it. Otherwise wait for user input.
+    maybeStartPipelineNarration();
+  } else {
+    // Fresh chat — kick off the bootstrap so Claude shows the gate artifact.
+    const bootstrap = `I just opened the chat for sprint ${SPRINT_ID}. I have never used this system before and don't know what files or gates exist. Please: (1) fetch the current state of this sprint, (2) figure out which gate is open (if any), (3) fetch the relevant artifact for that gate using the right tool, and (4) show me exactly what I need to approve, in plain English, with the data laid out clearly. End with a clear "reply approve to continue, or tell me what to change" prompt. Do not just tell me a gate is open — show me what's in it.`;
+    await doSend(bootstrap);
+  }
 
   // Poll every 10 s while page is open
   statePoller = setInterval(pollState, 10000);
