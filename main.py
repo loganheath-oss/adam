@@ -413,6 +413,148 @@ async def _run_gate_task(sprint_id: str, gate_num: int):
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
+    """Landing page — two clear paths: start a new order or revisit past ones."""
+    # Pull a small preview of recent sprints so the user has one-click access.
+    # Each step is fault-tolerant so one malformed sprint dir cannot blank the homepage.
+    recent = []
+    if RUNS_DIR.exists():
+        dirs = []
+        try:
+            for d in RUNS_DIR.iterdir():
+                try:
+                    if d.is_dir():
+                        dirs.append((d, d.stat().st_mtime))
+                except Exception:
+                    continue
+            dirs.sort(key=lambda t: t[1], reverse=True)
+        except Exception:
+            dirs = []
+        for d, _ in dirs[:5]:
+            try:
+                recent.append(_sprint_data(d.name))
+            except Exception:
+                continue
+
+    import html as _h
+    def _state_color(state: str) -> tuple[str, str]:
+        s = state or ""
+        if "complete" in s: return ("#d1fae5", "#065f46")
+        if "error" in s: return ("#fee2e2", "#991b1b")
+        if "interrupted" in s: return ("#fce7f3", "#9d174d")
+        if "awaiting" in s: return ("#fef9c3", "#854d0e")
+        if "stage_" in s or "resuming_" in s or s == "running": return ("#dbeafe", "#1e40af")
+        return ("#f3f4f6", "#374151")
+
+    if recent:
+        rows = ""
+        for s in recent:
+            bg, fg = _state_color(s["state"])
+            sid = _h.escape(s["sprint_id"])
+            driver = _h.escape(s.get("driver") or "—")
+            updated = (s["updated_at"][:16].replace("T", " ") if s.get("updated_at") else "—")
+            state_label = _h.escape(s.get("state_label") or s.get("state") or "—")
+            rows += f"""
+            <a href="/sprints/{sid}/chat" class="recent-row">
+              <div class="recent-meta">
+                <div class="recent-id">{sid}</div>
+                <div class="recent-sub">{driver} · {updated}</div>
+              </div>
+              <span class="recent-badge" style="background:{bg};color:{fg}">{state_label}</span>
+            </a>"""
+        recent_block = f"""
+        <div class="recent-card">
+          <div class="recent-head">
+            <h3>Recent sprints</h3>
+            <a href="/sprints" class="all-link">View all →</a>
+          </div>
+          {rows}
+        </div>"""
+    else:
+        recent_block = """
+        <div class="recent-card empty">
+          <p>No sprints yet. Submit your first order to get started.</p>
+        </div>"""
+
+    return HTMLResponse(f"""<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ADAM Pipeline</title>
+<style>
+  *{{box-sizing:border-box;margin:0;padding:0}}
+  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f7f5;color:#111827;min-height:100vh}}
+  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
+  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
+  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
+  .nav a:hover{{background:#f3f4f6;color:#111}}
+  .nav a.active{{color:#111;font-weight:600}}
+  .container{{max-width:980px;margin:0 auto;padding:56px 24px 80px}}
+  .hero{{text-align:center;margin-bottom:48px}}
+  .hero h1{{font-size:32px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;color:#111}}
+  .hero p{{font-size:15px;color:#6b7280;max-width:520px;margin:0 auto}}
+  .actions{{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:36px}}
+  @media(max-width:680px){{.actions{{grid-template-columns:1fr}}}}
+  .action-card{{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px 26px;
+    text-decoration:none;color:#111;display:block;
+    transition:border-color .15s,box-shadow .15s,transform .15s;}}
+  .action-card:hover{{border-color:#14a800;box-shadow:0 4px 14px rgba(20,168,0,.08);transform:translateY(-1px)}}
+  .action-card.primary{{background:linear-gradient(135deg,#14a800,#0f8500);color:#fff;border-color:transparent}}
+  .action-card.primary:hover{{box-shadow:0 6px 20px rgba(20,168,0,.25)}}
+  .action-card .icon{{font-size:24px;margin-bottom:14px;display:inline-block}}
+  .action-card h2{{font-size:18px;font-weight:600;margin-bottom:4px}}
+  .action-card p{{font-size:13px;opacity:.85;line-height:1.5}}
+  .action-card .arrow{{font-size:14px;margin-top:14px;opacity:.7}}
+
+  .recent-card{{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px 22px}}
+  .recent-card.empty{{text-align:center;color:#9ca3af;font-size:14px;padding:36px 22px}}
+  .recent-head{{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}}
+  .recent-head h3{{font-size:14px;font-weight:600;color:#374151;letter-spacing:0.03em;text-transform:uppercase}}
+  .all-link{{font-size:12px;color:#14a800;text-decoration:none;font-weight:500}}
+  .all-link:hover{{text-decoration:underline}}
+  .recent-row{{display:flex;justify-content:space-between;align-items:center;padding:12px 8px;
+    margin:0 -8px;border-radius:8px;text-decoration:none;color:#111;
+    transition:background .12s;}}
+  .recent-row:hover{{background:#f9fafb}}
+  .recent-row + .recent-row{{border-top:1px solid #f3f4f6}}
+  .recent-id{{font-weight:600;font-size:13px;font-family:'SF Mono',Consolas,monospace}}
+  .recent-sub{{font-size:11px;color:#6b7280;margin-top:2px}}
+  .recent-badge{{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}}
+</style>
+</head><body>
+<nav class="nav">
+  <span class="nav-logo">ADAM Pipeline</span>
+  <a href="/" class="active">Home</a>
+  <a href="/new">New Order</a>
+  <a href="/sprints">Sprints</a>
+  <a href="/sync-log">Sync Log</a>
+</nav>
+<div class="container">
+  <div class="hero">
+    <h1>ADAM Ad Creative Pipeline</h1>
+    <p>Generate Upwork ad creative end-to-end. Submit a new order, or pick up a sprint in progress.</p>
+  </div>
+  <div class="actions">
+    <a class="action-card primary" href="/new">
+      <span class="icon">＋</span>
+      <h2>Start a new order</h2>
+      <p>Open the order form. The creative team will be notified and can pick it up from the handoff page.</p>
+      <div class="arrow">Go to form →</div>
+    </a>
+    <a class="action-card" href="/sprints">
+      <span class="icon">📋</span>
+      <h2>Revisit past orders</h2>
+      <p>Browse every sprint, resume an in-progress chat, or review what was delivered.</p>
+      <div class="arrow">View sprints →</div>
+    </a>
+  </div>
+  {recent_block}
+</div>
+</body></html>""")
+
+
+@app.get("/new", response_class=HTMLResponse)
+@app.get("/adam", response_class=HTMLResponse)
+async def order_form_page():
+    """The order intake form — moved off of `/` so the root can be a hub."""
     if not ORDER_FORM_PATH.exists():
         return HTMLResponse("<h1>Order form not found</h1><p>Expected at <code>order-form/order-form-local.html</code>.</p>", status_code=500)
     return FileResponse(
@@ -853,7 +995,8 @@ async def sprints_dashboard():
 <body>
 <nav class="nav">
   <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Order Form</a>
+  <a href="/">Home</a>
+  <a href="/new">New Order</a>
   <a href="/sprints" style="color:#111;font-weight:600">Sprints</a>
   <a href="/sync-log">Sync Log</a>
 </nav>
@@ -1276,7 +1419,8 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
 <body>
 <nav class="nav">
   <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Order Form</a>
+  <a href="/">Home</a>
+  <a href="/new">New Order</a>
   <a href="/sprints">Sprints</a>
   <span style="font-size:13px;color:#111;font-weight:600">› {sprint_id}</span>
 </nav>
@@ -1488,7 +1632,8 @@ async def sync_log_page(request: Request):
 <body>
 <nav class="nav">
   <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Order Form</a>
+  <a href="/">Home</a>
+  <a href="/new">New Order</a>
   <a href="/sprints">Sprints</a>
   <a href="/sync-log" style="color:#111;font-weight:600">Sync Log</a>
 </nav>
@@ -1545,7 +1690,7 @@ async def learnings_editor():
     <span id="s" class="status"></span>
   </div>
 </form>
-<p style="margin-top:2rem;"><a href="/">← Back to order form</a></p>
+<p style="margin-top:2rem;"><a href="/">← Back to home</a></p>
 <script>
 const f=document.getElementById('f'),t=document.getElementById('t'),s=document.getElementById('s');
 f.addEventListener('submit',async e=>{
