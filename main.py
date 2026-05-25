@@ -393,6 +393,10 @@ async def _run_pipeline_task(payload: dict):
                 _write_state("error", "Pipeline failed at intake — check order payload for validation errors")
     except Exception as exc:
         _write_state("error", str(exc))
+    finally:
+        # Push a proactive notification into the chat so the user sees the
+        # new gate / completion / error without having to ask.
+        _record_state_notification(sprint_id)
 
 
 async def _run_gate_task(sprint_id: str, gate_num: int):
@@ -407,6 +411,8 @@ async def _run_gate_task(sprint_id: str, gate_num: int):
             "error": str(exc),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }, indent=2))
+    finally:
+        _record_state_notification(sprint_id)
 
 
 # ── ROUTES ───────────────────────────────────────────────────────────────────
@@ -611,6 +617,66 @@ PIPELINE_STATE_MESSAGES = {
 
 PIPELINE_TERMINAL_STATES = {"complete", "error", "interrupted"}
 
+# Templated proactive notifications written to chat.jsonl when the pipeline
+# reaches a new "stop" state. These show up in the chat unprompted so the user
+# doesn't have to guess when to check in.
+PIPELINE_CHAT_NOTIFICATIONS = {
+    "awaiting_gate_2": "🔔 Gate 2 is open — your order and references are ready for review. Hit \"Show me what's in it\" to see the brief, or \"Approve gate 2\" to start copy generation.",
+    "awaiting_gate_3": "🔔 Copy concepts are ready (Gate 3). Hit \"Show me what's in it\" to read the concepts, or \"Approve gate 3\" to move on to image prompts.",
+    "awaiting_gate_4": "🔔 Image prompts are ready (Gate 4). Hit \"Show me what's in it\" to scan the prompts, or \"Approve gate 4\" to start image generation.",
+    "awaiting_gate_5": "🔔 Assembly is ready (Gate 5). Hit \"Show me what's in it\" to review images and the manifest, or \"Approve gate 5\" for final QA.",
+    "awaiting_gate_6": "🔔 Final QA is ready (Gate 6). Hit \"Show me what's in it\" for the pre-delivery check, or \"Approve gate 6\" to complete the sprint.",
+    "complete":        "✅ Sprint complete — all gates approved and outputs are delivered.",
+    "error":           "⚠️ The pipeline hit an error. Ask me what went wrong or check the sync log.",
+    "interrupted":     "⚠️ The pipeline was interrupted. You can retry it from the sprint detail page.",
+}
+
+
+def _record_state_notification(sprint_id: str) -> None:
+    """If the current pipeline state warrants a proactive chat notification
+    (gate opened, sprint complete, error, etc.) and we haven't already
+    notified about that exact state, append an assistant message to chat.jsonl.
+
+    Dedupe markers live in their own `notified_states.json` to avoid racing
+    with concurrent writers of `pipeline_state.json`. Safe to call from
+    anywhere — failures are swallowed so they can't break the pipeline."""
+    try:
+        sprint_dir = RUNS_DIR / sprint_id
+        state_path = sprint_dir / "pipeline_state.json"
+        if not state_path.exists():
+            return
+        try:
+            ps = json.loads(state_path.read_text())
+        except Exception:
+            return
+        state = str(ps.get("state", ""))
+        msg = PIPELINE_CHAT_NOTIFICATIONS.get(state)
+        if not msg:
+            return
+        notified_path = sprint_dir / "notified_states.json"
+        notified: list[str] = []
+        if notified_path.exists():
+            try:
+                notified = list(json.loads(notified_path.read_text()) or [])
+            except Exception:
+                notified = []
+        if state in notified:
+            return
+        chat_log = sprint_dir / "chat.jsonl"
+        _append_jsonl_safe(chat_log, {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "role": "assistant",
+            "text": msg,
+            "auto_notification": True,
+        })
+        notified.append(state)
+        try:
+            notified_path.write_text(json.dumps(notified, indent=2))
+        except Exception:
+            pass
+    except Exception:
+        pass
+
 # Rough wall-clock estimates per stage (seconds). Image gen scales with qty.
 PIPELINE_STAGE_ETAS = {
     "queued":                   5,
@@ -706,7 +772,10 @@ async def sprint_chat_history(sprint_id: str):
         return JSONResponse({"sprint_id": sprint_id, "messages": []})
     messages = []
     try:
-        for line in chat_path.read_text().splitlines():
+        # seq = line index in chat.jsonl — a monotonic, server-issued cursor
+        # that the client can use to ask for only-new-messages reliably,
+        # independent of any clock skew between client and server.
+        for idx, line in enumerate(chat_path.read_text().splitlines()):
             line = line.strip()
             if not line:
                 continue
@@ -719,6 +788,7 @@ async def sprint_chat_history(sprint_id: str):
             if rec.get("role") == "user" and isinstance(text, str) and text.startswith("[auto]"):
                 continue
             messages.append({
+                "seq": idx,
                 "role": rec.get("role"),
                 "text": text,
                 "ts": rec.get("ts"),

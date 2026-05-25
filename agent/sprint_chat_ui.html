@@ -180,6 +180,15 @@
   .quick-btn:hover { background: #f3f4f6; border-color: #9ca3af; }
   .quick-btn.primary { background: #14a800; color: #fff; border-color: #14a800; }
   .quick-btn.primary:hover { background: #128400; }
+  .quick-btn.gate-ready {
+    box-shadow: 0 0 0 0 rgba(20,168,0,0.6);
+    animation: gate-pulse 1.6s ease-out infinite;
+  }
+  @keyframes gate-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(20,168,0,0.55); }
+    70%  { box-shadow: 0 0 0 8px rgba(20,168,0,0); }
+    100% { box-shadow: 0 0 0 0 rgba(20,168,0,0); }
+  }
 
   /* input */
   .input-row {
@@ -321,6 +330,7 @@
       <button class="quick-btn" onclick="sendQuick('Show me the copy concepts')">Show copy</button>
       <button class="quick-btn" onclick="sendQuick('Show me the image prompts')">Show prompts</button>
       <button class="quick-btn primary" id="approve-btn" onclick="sendQuick('approve')" style="display:none">✓ Approve gate</button>
+      <button class="quick-btn" id="show-artifact-btn" onclick="sendQuick(&quot;Show me what's in it&quot;)" style="display:none">👁 Show me what's in it</button>
     </div>
 
     <div class="input-row">
@@ -430,9 +440,19 @@ function updateGates(sprintState) {
     item.className  = `gate-item ${itemClass}`;
   });
 
-  // Show approve button only when a gate is waiting
+  // Show approve + show-artifact buttons only when a gate is waiting.
   const approveBtn = document.getElementById('approve-btn');
-  approveBtn.style.display = currentGate ? 'block' : 'none';
+  const showBtn = document.getElementById('show-artifact-btn');
+  if (currentGate) {
+    approveBtn.textContent = `✓ Approve gate ${currentGate}`;
+    approveBtn.style.display = 'inline-block';
+    approveBtn.classList.add('gate-ready');
+    if (showBtn) showBtn.style.display = 'inline-block';
+  } else {
+    approveBtn.style.display = 'none';
+    approveBtn.classList.remove('gate-ready');
+    if (showBtn) showBtn.style.display = 'none';
+  }
 }
 
 async function pollState() {
@@ -589,6 +609,17 @@ async function doSend(text, opts) {
   streaming = false;
   setSendEnabled(true);
   pollState();
+  // Re-baseline the chat-history cursor from the server (NOT the client clock)
+  // so the next poll won't re-render the turn we just streamed, but will
+  // still pick up any server-pushed notification that lands after this point.
+  try {
+    const r = await fetch(`/sprints/${SPRINT_ID}/chat-history`);
+    if (r.ok) {
+      const data = await r.json();
+      const msgs = data.messages || [];
+      if (msgs.length) lastChatSeq = msgs[msgs.length - 1].seq ?? lastChatSeq;
+    }
+  } catch (_) {}
 
   // After every Claude turn, check if the pipeline is actively processing.
   // If so, open the live narration stream and (when it reaches the next gate)
@@ -763,6 +794,42 @@ function autoResize(el) {
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
+// ── Proactive chat polling ────────────────────────────────────────────────────
+// Server writes auto-notifications into chat.jsonl when the pipeline reaches a
+// new gate / completes / errors. We poll every 5s and append any messages we
+// haven't seen, so the user sees updates without having to ask.
+
+// Use the server-issued monotonic `seq` cursor (line index in chat.jsonl)
+// instead of timestamps — that way no clock skew between client and server
+// can ever drop a proactive notification.
+let lastChatSeq = -1;
+let chatPoller = null;
+
+async function pollChatHistory() {
+  if (streaming) return;  // never interrupt an in-flight assistant turn
+  try {
+    const r = await fetch(`/sprints/${SPRINT_ID}/chat-history`);
+    if (!r.ok) return;
+    const data = await r.json();
+    const msgs = data.messages || [];
+    if (lastChatSeq < 0) {
+      // First call — set baseline to whatever's already on screen.
+      lastChatSeq = msgs.length ? (msgs[msgs.length - 1].seq ?? -1) : -1;
+      return;
+    }
+    const fresh = msgs.filter(m => typeof m.seq === 'number' && m.seq > lastChatSeq);
+    if (fresh.length) {
+      for (const m of fresh) {
+        if (!m.role || !m.text) continue;
+        addMessage(m.role, m.text);
+        history.push({ role: m.role, content: m.text });
+        lastChatSeq = m.seq;
+      }
+      pollState();
+    }
+  } catch (_) {}
+}
+
 async function boot() {
   // Show sprint state immediately
   await pollState();
@@ -800,12 +867,18 @@ async function boot() {
 
   // Poll every 10 s while page is open
   statePoller = setInterval(pollState, 10000);
+
+  // Seed the chat-history baseline to whatever's already on screen, then
+  // start polling for server-pushed updates every 5 s.
+  await pollChatHistory();
+  chatPoller = setInterval(pollChatHistory, 5000);
 }
 
 // Kick off
 window.addEventListener('DOMContentLoaded', boot);
 window.addEventListener('beforeunload', () => {
   clearInterval(statePoller);
+  if (chatPoller) clearInterval(chatPoller);
   if (progressTicker) clearInterval(progressTicker);
   if (activePipelineES) { try { activePipelineES.close(); } catch {} }
 });
