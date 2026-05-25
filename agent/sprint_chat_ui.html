@@ -122,6 +122,17 @@
   }
   .tool-pill.running { background: #fef9c3; border-color: #fde047; color: #854d0e; }
   .tool-pill.done { background: #dcfce7; border-color: #86efac; color: #166534; }
+  .pipe-line { padding: 3px 0; font-size: 13px; line-height: 1.5; color: #374151; }
+  .pipe-line:not(:last-child) { color: #6b7280; }
+  .pulse-dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: #14a800; margin-right: 4px; vertical-align: middle;
+    animation: pulse-glow 1s ease-in-out infinite;
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(20,168,0,.7); opacity: 1; }
+    50% { box-shadow: 0 0 0 6px rgba(20,168,0,0); opacity: .6; }
+  }
 
   /* quick actions */
   .quick-bar {
@@ -471,11 +482,14 @@ function sendQuick(text) {
   doSend(text);
 }
 
-async function doSend(text) {
+async function doSend(text, opts) {
+  opts = opts || {};
   streaming = true;
   setSendEnabled(false);
 
-  addMessage('user', text);
+  if (!opts.hidden) {
+    addMessage('user', text);
+  }
   history.push({ role: 'user', content: text });
 
   // Streaming assistant bubble — get reference directly (do NOT use id, which
@@ -552,6 +566,115 @@ async function doSend(text) {
   streaming = false;
   setSendEnabled(true);
   pollState();
+
+  // After every Claude turn, check if the pipeline is actively processing.
+  // If so, open the live narration stream and (when it reaches the next gate)
+  // auto-prompt Claude to show the artifacts.
+  maybeStartPipelineNarration();
+}
+
+// ── Live pipeline narration ───────────────────────────────────────────────────
+
+let pipelineStreaming = false;
+let activePipelineES = null;
+
+const ACTIVE_PIPELINE_STATES = new Set([
+  'queued', 'running',
+  'stage_01_load_refs', 'stage_02_copy_gen', 'stage_03_image_prompts',
+  'stage_04_generate_images', 'stage_05_figma_assembly', 'stage_06_deliver',
+  'resuming_gate_2', 'resuming_gate_3', 'resuming_gate_4',
+  'resuming_gate_5', 'resuming_gate_6',
+]);
+
+async function maybeStartPipelineNarration() {
+  if (pipelineStreaming || streaming) return;
+  let state;
+  try {
+    const r = await fetch(STATE_URL);
+    if (!r.ok) return;
+    const d = await r.json();
+    state = d.state;
+  } catch { return; }
+  // Re-check guards AFTER the await — a new chat turn may have started while
+  // we were fetching, in which case we must not open a parallel SSE.
+  if (pipelineStreaming || streaming) return;
+  if (!ACTIVE_PIPELINE_STATES.has(state)) return;
+  startPipelineNarration();
+}
+
+function startPipelineNarration() {
+  if (pipelineStreaming) return;
+  pipelineStreaming = true;
+
+  // Live status bubble — looks like ADAM typing.
+  const msgs = document.getElementById('messages');
+  const el = document.createElement('div');
+  el.className = 'message';
+  el.innerHTML = `
+    <div class="avatar avatar-adam">A</div>
+    <div class="bubble">
+      <div class="bubble-name">ADAM · live pipeline</div>
+      <div class="bubble-text streaming"></div>
+    </div>`;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  const bubble = el.querySelector('.bubble-text');
+  const lines = [];
+
+  const render = () => {
+    bubble.innerHTML = lines.map((l, i) => {
+      const dot = i === lines.length - 1 ? '<span class="pulse-dot"></span>' : '✓';
+      return `<div class="pipe-line">${dot} ${escHtml(l)}</div>`;
+    }).join('');
+    msgs.scrollTop = msgs.scrollHeight;
+  };
+
+  // Close any prior stream (defensive — shouldn't happen due to guards).
+  if (activePipelineES) { try { activePipelineES.close(); } catch {} }
+  const es = new EventSource(`/sprints/${SPRINT_ID}/pipeline-events`);
+  activePipelineES = es;
+  let finalState = null;
+
+  es.onmessage = (ev) => {
+    let data;
+    try { data = JSON.parse(ev.data); } catch { return; }
+    if (data.type === 'status') {
+      lines.push(data.message);
+      render();
+    } else if (data.type === 'done') {
+      finalState = data.state;
+      es.close();
+      finishNarration(bubble, lines, finalState);
+    }
+  };
+  es.onerror = () => {
+    es.close();
+    if (activePipelineES === es) activePipelineES = null;
+    if (!finalState) {
+      lines.push('(connection to pipeline stream dropped — refresh to reconnect)');
+      render();
+    }
+    pipelineStreaming = false;
+  };
+}
+
+function finishNarration(bubble, lines, finalState) {
+  // Mark all lines complete.
+  bubble.innerHTML = lines.map(l => `<div class="pipe-line">✓ ${escHtml(l)}</div>`).join('');
+  bubble.className = 'bubble-text';
+  pipelineStreaming = false;
+  pollState();
+
+  // If we reached a gate, automatically re-engage Claude so the user sees the
+  // artifacts without having to ping the chat themselves.
+  if (typeof finalState === 'string' && finalState.startsWith('awaiting_gate_')) {
+    const gateNum = finalState.replace('awaiting_gate_', '');
+    const autoPrompt = `[auto] The pipeline just reached ${finalState}. Use the right tool for Gate ${gateNum} (per the gate→tool table in your system prompt) and SHOW me the artifact in plain English right now — do not just announce it, display the contents. End with a clear approve/change prompt.`;
+    setTimeout(() => { if (!streaming) doSend(autoPrompt, { hidden: true }); }, 400);
+  } else if (finalState === 'complete') {
+    const autoPrompt = `[auto] The pipeline just completed. Use get_sprint to fetch the run_summary and available_files, then show me what was delivered.`;
+    setTimeout(() => { if (!streaming) doSend(autoPrompt, { hidden: true }); }, 400);
+  }
 }
 
 function setSendEnabled(on) {
@@ -584,7 +707,10 @@ async function boot() {
 
 // Kick off
 window.addEventListener('DOMContentLoaded', boot);
-window.addEventListener('beforeunload', () => clearInterval(statePoller));
+window.addEventListener('beforeunload', () => {
+  clearInterval(statePoller);
+  if (activePipelineES) { try { activePipelineES.close(); } catch {} }
+});
 </script>
 </body>
 </html>

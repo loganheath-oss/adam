@@ -443,6 +443,83 @@ async def submit_order(request: Request):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "status_url": f"/sprints/{sprint_id}"})
 
 
+PIPELINE_STATE_MESSAGES = {
+    "queued":                  "Order queued. Kicking off intake…",
+    "running":                  "Pipeline is running…",
+    "stage_01_load_refs":       "Loading brand references and targeting examples from Drive…",
+    "stage_02_copy_gen":        "Generating ad copy concepts with Claude (usually ~30s)…",
+    "stage_03_image_prompts":   "Building image prompts for each ad slot…",
+    "stage_04_generate_images": "Generating images — this is the slow one, can take a few minutes…",
+    "stage_05_figma_assembly":  "Assembling the layouts in Figma…",
+    "stage_06_deliver":         "Packaging the final delivery (renders + manifest)…",
+    "resuming_gate_2":          "Gate 2 approved — kicking off copy generation…",
+    "resuming_gate_3":          "Gate 3 approved — kicking off image prompt build…",
+    "resuming_gate_4":          "Gate 4 approved — kicking off image generation…",
+    "resuming_gate_5":          "Gate 5 approved — kicking off Figma assembly…",
+    "resuming_gate_6":          "Gate 6 approved — kicking off final delivery…",
+    "awaiting_gate_2":          "Reached Gate 2 — Order + References ready for review.",
+    "awaiting_gate_3":          "Reached Gate 3 — Copy concepts ready for review.",
+    "awaiting_gate_4":          "Reached Gate 4 — Image prompts ready for review.",
+    "awaiting_gate_5":          "Reached Gate 5 — Assembly manifest ready for review.",
+    "awaiting_gate_6":          "Reached Gate 6 — Final QA ready for review.",
+    "complete":                 "Pipeline complete — everything is rendered and delivered.",
+    "error":                    "Pipeline hit an error. Check the sprint detail page for the traceback.",
+    "interrupted":              "Pipeline was interrupted. You can retry from the sprint detail page.",
+}
+
+PIPELINE_TERMINAL_STATES = {"complete", "error", "interrupted"}
+
+
+@app.get("/sprints/{sprint_id}/pipeline-events")
+async def pipeline_events(sprint_id: str, request: Request):
+    """Server-Sent Events stream that watches pipeline_state.json and pushes
+    a human-readable narration whenever the state changes. Closes as soon as
+    the pipeline reaches an awaiting_gate_* state or a terminal state, so the
+    chat UI knows it's time to re-engage Claude."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    if not sprint_dir.exists():
+        raise HTTPException(status_code=404, detail="Sprint not found")
+
+    async def gen():
+        state_path = sprint_dir / "pipeline_state.json"
+        last_state: str | None = None
+        # Hard cap: 20 min — image gen can be slow but anything longer is a hang.
+        deadline = asyncio.get_event_loop().time() + 1200
+        # Heartbeat every ~15s to keep proxies from closing the connection.
+        last_heartbeat = asyncio.get_event_loop().time()
+        while asyncio.get_event_loop().time() < deadline:
+            if await request.is_disconnected():
+                return
+            try:
+                data = json.loads(state_path.read_text())
+                state = str(data.get("state", "unknown"))
+            except Exception:
+                state = "unknown"
+
+            if state != last_state:
+                msg = PIPELINE_STATE_MESSAGES.get(state, f"Pipeline state: {state}")
+                yield f"data: {json.dumps({'type':'status','state':state,'message':msg})}\n\n"
+                last_state = state
+                # Close stream when we hit a gate or terminal state.
+                if state.startswith("awaiting_gate_") or state in PIPELINE_TERMINAL_STATES:
+                    yield f"data: {json.dumps({'type':'done','state':state})}\n\n"
+                    return
+
+            now = asyncio.get_event_loop().time()
+            if now - last_heartbeat > 15:
+                yield f": heartbeat\n\n"
+                last_heartbeat = now
+            await asyncio.sleep(0.5)
+
+        yield f"data: {json.dumps({'type':'done','state':'timeout'})}\n\n"
+
+    return StreamingResponse(gen(), media_type="text/event-stream", headers={
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
+    })
+
+
 @app.get("/sprints/{sprint_id}/handoff", response_class=HTMLResponse)
 async def sprint_handoff(sprint_id: str):
     """Post-submit confirmation page. Shown to whoever submitted the order so
