@@ -62,6 +62,22 @@ VALID_STYLES = {
 
 DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
+# Case-insensitive lookup of canonical style names
+_STYLE_LOOKUP = {s.lower(): s for s in VALID_STYLES}
+
+
+def normalize_style(raw: str) -> str | None:
+    """Normalize a form-supplied visual style to a canonical pipeline style.
+
+    Strips parenthetical descriptors (e.g. "Lifestyle Photo (full bleed)" ->
+    "Lifestyle Photo") and matches case-insensitively. Returns the canonical
+    name, or None if no match.
+    """
+    if not isinstance(raw, str):
+        return None
+    base = re.sub(r"\s*\([^)]*\)\s*$", "", raw).strip()
+    return _STYLE_LOOKUP.get(base.lower())
+
 
 def validate_payload(payload: dict) -> list[str]:
     """
@@ -113,14 +129,36 @@ def validate_payload(payload: dict) -> list[str]:
         if not batch.get("format"):
             errors.append(f"{prefix}: missing format")
 
-        # Visual styles
+        # Visual styles — normalize form-supplied names (e.g. strip
+        # "(full bleed)" suffix, fix casing) before validating, and write
+        # the canonical names back so downstream stages see values they know.
         styles = batch.get("visual_styles", [])
         if not styles:
             errors.append(f"{prefix}: at least one visual_style is required")
         else:
+            normalized: list[str] = []
             for style in styles:
-                if style not in VALID_STYLES:
+                canonical = normalize_style(style)
+                if canonical is None:
                     errors.append(f"{prefix}: unknown visual_style {style!r}")
+                    normalized.append(style)
+                else:
+                    normalized.append(canonical)
+            batch["visual_styles"] = normalized
+
+            # Canonicalize style_quantities keys so downstream lookups by
+            # canonical style name find the right quantity.
+            raw_qtys = batch.get("style_quantities") or {}
+            if isinstance(raw_qtys, dict) and raw_qtys:
+                merged: dict[str, int] = {}
+                for k, v in raw_qtys.items():
+                    canonical = normalize_style(k) or k
+                    try:
+                        qty = int(v)
+                    except (TypeError, ValueError):
+                        qty = 0
+                    merged[canonical] = merged.get(canonical, 0) + qty
+                batch["style_quantities"] = merged
 
         # Resolutions
         resolutions = batch.get("resolutions", [])
