@@ -203,6 +203,137 @@ def tool_get_manifest(sprint_id: str) -> dict:
     return {"sprint_id": sprint_id, "rows": rows, "count": len(rows)}
 
 
+EDITABLE_TOP_LEVEL_FIELDS = ("brief", "delivery_date", "driver", "targeting")
+
+
+def tool_edit_order(sprint_id: str, updates: dict) -> dict:
+    """Modify the order BEFORE Gate 2 is approved. Supports changing:
+      - brief (str)
+      - delivery_date (YYYY-MM-DD)
+      - driver (str)
+      - targeting ("Prospecting" | "Retargeting" | "Both")
+      - quantity (int) — total ads in the (single) batch; updates batches[0].quantity
+        and rebalances style_quantities
+
+    Only allowed while state == 'awaiting_gate_2' (before any AI generation).
+    If brief or targeting changes, references are re-loaded automatically so the
+    user sees the updated context at Gate 2.
+    """
+    if not isinstance(updates, dict) or not updates:
+        return {"error": "updates must be a non-empty dict"}
+
+    sprint_dir = RUNS_DIR / sprint_id
+    if not sprint_dir.exists():
+        return {"error": f"Sprint not found: {sprint_id}"}
+
+    state_data = _read_json(sprint_dir / "pipeline_state.json") or {}
+    current = state_data.get("state", "unknown")
+    if current not in ("awaiting_gate_2", "queued"):
+        return {
+            "error": (
+                f"Cannot edit order while sprint is in state '{current}'. "
+                "Edits are only safe before Gate 2 is approved. Tell the user "
+                "they would need to start a new order to change anything now."
+            )
+        }
+
+    order_path = sprint_dir / "order.json"
+    order = _read_json(order_path) or {}
+    if not order:
+        return {"error": "order.json not found or empty"}
+
+    applied: dict = {}
+    rejected: dict = {}
+
+    # Top-level field updates
+    for field in EDITABLE_TOP_LEVEL_FIELDS:
+        if field in updates:
+            new_val = updates[field]
+            if not isinstance(new_val, str):
+                rejected[field] = f"must be a string, got {type(new_val).__name__}"
+                continue
+            order[field] = new_val
+            applied[field] = new_val
+
+    # Quantity edit — single-batch only for v1
+    if "quantity" in updates:
+        try:
+            qty = int(updates["quantity"])
+            if qty < 1 or qty > 50:
+                raise ValueError("quantity must be between 1 and 50")
+        except (TypeError, ValueError) as exc:
+            rejected["quantity"] = str(exc)
+        else:
+            batches = order.get("batches") or []
+            if len(batches) != 1:
+                rejected["quantity"] = (
+                    f"quantity edits only supported for single-batch orders "
+                    f"(this order has {len(batches)} batches); start a new order instead"
+                )
+            else:
+                b = batches[0]
+                old_qty = b.get("quantity", 0)
+                b["quantity"] = qty
+                # Rebalance style_quantities — distribute new total across existing styles.
+                styles = list((b.get("style_quantities") or {}).keys()) or list(b.get("visual_styles") or [])
+                if len(styles) == 1:
+                    b["style_quantities"] = {styles[0]: qty}
+                elif len(styles) > 1:
+                    # Even split, remainder on first style.
+                    base, extra = divmod(qty, len(styles))
+                    sq = {s: base for s in styles}
+                    sq[styles[0]] += extra
+                    b["style_quantities"] = sq
+                applied["quantity"] = {"old": old_qty, "new": qty, "rebalanced_styles": b.get("style_quantities")}
+
+    # Reject any unsupported keys explicitly
+    for k in updates:
+        if k not in (*EDITABLE_TOP_LEVEL_FIELDS, "quantity") and k not in applied and k not in rejected:
+            rejected[k] = "unsupported field — only brief, delivery_date, driver, targeting, quantity are editable"
+
+    if not applied:
+        return {"error": "no valid updates were applied", "rejected": rejected}
+
+    # Write the order back.
+    order_path.write_text(json.dumps(order, indent=2))
+
+    # If brief or targeting changed, refresh references so context.json matches.
+    refs_reloaded = False
+    refs_error = ""
+    if any(k in applied for k in ("brief", "targeting")):
+        try:
+            import sys
+            sys.path.insert(0, str(BASE_DIR / "pipeline"))
+            from run_pipeline import stage_01_load_refs  # type: ignore
+            context = stage_01_load_refs(sprint_id, order)
+            (sprint_dir / "context.json").write_text(json.dumps(context, indent=2))
+            refs_reloaded = True
+        except Exception as exc:
+            refs_error = f"refs reload failed: {exc}"
+
+    # Audit trail in gate_decisions.jsonl so the edit shows up in memory.
+    _append_jsonl(sprint_dir / "gate_decisions.jsonl", {
+        "ts": _now(),
+        "sprint_id": sprint_id,
+        "gate": 2,
+        "decision": "order_edited",
+        "applied": applied,
+        "rejected": rejected,
+        "refs_reloaded": refs_reloaded,
+        "source": "agent",
+    })
+
+    return {
+        "ok": True,
+        "sprint_id": sprint_id,
+        "applied": applied,
+        "rejected": rejected,
+        "refs_reloaded": refs_reloaded,
+        "refs_error": refs_error,
+        "note": "Order updated. Show the user the new order summary and ask if they'd like to approve Gate 2 now, edit further, or cancel.",
+    }
+
+
 def tool_approve_gate(sprint_id: str, gate: int, note: str = "") -> dict:
     if gate not in GATE_NAMES:
         return {"error": f"gate must be one of {sorted(GATE_NAMES)}; got {gate}"}
@@ -370,6 +501,37 @@ TOOLS = [
         },
     },
     {
+        "name": "edit_order",
+        "description": (
+            "Modify the order while a sprint is still at Gate 2 (before any AI generation). "
+            "Use this when the user wants to change the brief, delivery date, driver, targeting, "
+            "or total ad quantity. Editable keys: brief, delivery_date (YYYY-MM-DD), driver, "
+            "targeting (Prospecting|Retargeting|Both), quantity (int). If brief or targeting "
+            "changes, references are auto-reloaded. After calling, always re-fetch the order "
+            "(get_sprint / get_references) and show the updated summary to the user. Errors "
+            "out cleanly if the sprint has already passed Gate 2 — in that case tell the user "
+            "they need to start a new order."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "sprint_id": {"type": "string"},
+                "updates": {
+                    "type": "object",
+                    "description": "Dict of {field: new_value}. Only listed fields are accepted.",
+                    "properties": {
+                        "brief": {"type": "string"},
+                        "delivery_date": {"type": "string"},
+                        "driver": {"type": "string"},
+                        "targeting": {"type": "string"},
+                        "quantity": {"type": "integer"},
+                    },
+                },
+            },
+            "required": ["sprint_id", "updates"],
+        },
+    },
+    {
         "name": "approve_gate",
         "description": (
             "Approve a pipeline gate and resume the run. "
@@ -463,6 +625,7 @@ TOOL_DISPATCH = {
     "get_image_prompts": lambda args: tool_get_image_prompts(**args),
     "get_references": lambda args: tool_get_references(**args),
     "get_manifest": lambda args: tool_get_manifest(**args),
+    "edit_order": lambda args: tool_edit_order(**args),
     "approve_gate": lambda args: tool_approve_gate(**args),
     "get_chat_history": lambda args: tool_get_chat_history(**args),
     "get_gate_decisions": lambda args: tool_get_gate_decisions(**args),
@@ -495,7 +658,7 @@ When a sprint is in `awaiting_gate_N`, you must:
 
 | Gate | Name | Tool to call FIRST | What to show |
 |------|------|--------------------|--------------|
-| 2 | Order + Refs | `get_sprint` + `get_references` | The order summary (driver, platform, format, quantity, styles, audience, due date) AND the reference context (how many refs were loaded, brand voice, targeting examples). Frame it: "Before we spend any AI credits, let's make sure I got the order right and loaded the right references." |
+| 2 | Order + Refs | `get_sprint` + `get_references` | The order summary (driver, platform, format, quantity, styles, audience, due date) AND the reference context (how many refs were loaded, brand voice, targeting examples). Frame it: "Before we spend any AI credits, let's make sure I got the order right and loaded the right references." **If the user asks to change the brief, quantity, delivery date, driver, or targeting at this gate, call `edit_order` to apply the change, then re-show the updated summary. Do NOT tell them you can't change it — you can.** |
 | 3 | Copy Review | `get_copy_concepts` | Every concept as a numbered list with **Headline** and **Body** in bold. Mark which ones the auto-reviewer selected/scored highest. Frame it: "Here are the ad copy concepts. Tell me which you want to ship, or approve all and we'll move to images." |
 | 4 | Image Prompts | `get_image_prompts` | Each ad slot with its visual prompt as a numbered list. Frame it: "Here's what we'll send to the image model for each ad. Last chance to tweak the visual direction." |
 | 5 | Assembly | `get_manifest` | The asset manifest rows showing which copy + image combos will be assembled. Frame it: "This is the final pairing of copy and visuals before we render the layouts." |
