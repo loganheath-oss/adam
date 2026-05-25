@@ -761,6 +761,32 @@ async def pipeline_events(sprint_id: str, request: Request):
     })
 
 
+@app.get("/sprints/{sprint_id}/state")
+async def sprint_state_public(sprint_id: str):
+    """Public sprint-state lookup for the chat UI. sprint_id is the access
+    token, so this is safe to expose without an API key — same posture as the
+    chat itself."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    if not sprint_dir.exists():
+        raise HTTPException(status_code=404, detail="Sprint not found")
+    try:
+        ps = json.loads((sprint_dir / "pipeline_state.json").read_text())
+    except Exception:
+        ps = {}
+    try:
+        order = json.loads((sprint_dir / "order.json").read_text())
+    except Exception:
+        order = {}
+    return JSONResponse({
+        "sprint_id": sprint_id,
+        "state": ps.get("state", ""),
+        "updated_at": ps.get("updated_at", ""),
+        "driver": order.get("driver", ""),
+        "platform": order.get("platform", ""),
+    })
+
+
 @app.get("/sprints/{sprint_id}/chat-history")
 async def sprint_chat_history(sprint_id: str):
     """Return the persisted chat transcript for a sprint as JSON.
@@ -1115,7 +1141,10 @@ async def sprint_chat_ui(sprint_id: str):
     """Sprint-bound chat UI — public (no API key required, sprint_id is the access token)."""
     if not _SPRINT_CHAT_UI.exists():
         return HTMLResponse("<h1>sprint_chat_ui.html not found</h1>", status_code=500)
-    return HTMLResponse(_SPRINT_CHAT_UI.read_text().replace("__SPRINT_ID__", sprint_id))
+    return HTMLResponse(
+        _SPRINT_CHAT_UI.read_text().replace("__SPRINT_ID__", sprint_id),
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+    )
 
 
 @app.post("/sprints/{sprint_id}/chat/stream")
