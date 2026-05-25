@@ -478,7 +478,8 @@ async function doSend(text) {
   addMessage('user', text);
   history.push({ role: 'user', content: text });
 
-  // Streaming assistant bubble
+  // Streaming assistant bubble — get reference directly (do NOT use id, which
+  // would collide with prior streaming bubbles still in the DOM).
   const msgs = document.getElementById('messages');
   const el = document.createElement('div');
   el.className = 'message';
@@ -486,12 +487,12 @@ async function doSend(text) {
     <div class="avatar avatar-adam">A</div>
     <div class="bubble">
       <div class="bubble-name">ADAM</div>
-      <div class="bubble-text streaming" id="streaming-bubble"></div>
+      <div class="bubble-text streaming"></div>
     </div>`;
   msgs.appendChild(el);
   msgs.scrollTop = msgs.scrollHeight;
 
-  const bubble = document.getElementById('streaming-bubble');
+  const bubble = el.querySelector('.bubble-text');
   let fullText = '';
   let lastToolPill = null;
 
