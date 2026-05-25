@@ -470,6 +470,8 @@ const GATE_ACTIONS = {
   ],
   6: [
     { label: '👁 Show me the final delivery', text: 'Show me the final QA package' },
+    { label: '⬇ Download ZIP',                href: `/sprints/${SPRINT_ID}/download` },
+    { label: '⬇ Download manifest (CSV)',     href: `/sprints/${SPRINT_ID}/download/manifest` },
   ],
 };
 
@@ -488,6 +490,8 @@ function renderQuickBar(state, currentGate, isComplete, isError, isRunning) {
     });
     for (const a of (GATE_ACTIONS[currentGate] || [])) actions.push(a);
   } else if (isComplete) {
+    actions.push({ label: '⬇ Download ZIP',                href: `/sprints/${SPRINT_ID}/download`, primary: true });
+    actions.push({ label: '⬇ Download manifest (CSV)',     href: `/sprints/${SPRINT_ID}/download/manifest` });
     actions.push({ label: '📂 Show me the final outputs', text: 'Show me the final deliverables and where they are' });
     actions.push({ label: '📊 Run a post-mortem',          text: 'Walk me through what worked and what to improve next time' });
   } else if (isError) {
@@ -505,12 +509,23 @@ function renderQuickBar(state, currentGate, isComplete, isError, isRunning) {
 
   bar.innerHTML = '';
   for (const a of actions) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'quick-btn' + (a.primary ? ' primary' : '') + (a.pulse ? ' gate-ready' : '');
-    btn.textContent = a.label;
-    btn.addEventListener('click', () => sendQuick(a.text));
-    bar.appendChild(btn);
+    // Download actions render as <a> so the browser handles the file save
+    // natively (with the Content-Disposition filename from the server).
+    if (a.href) {
+      const link = document.createElement('a');
+      link.href = a.href;
+      link.download = '';  // hint to browser: treat as download, not navigate
+      link.className = 'quick-btn' + (a.primary ? ' primary' : '');
+      link.textContent = a.label;
+      bar.appendChild(link);
+    } else {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'quick-btn' + (a.primary ? ' primary' : '') + (a.pulse ? ' gate-ready' : '');
+      btn.textContent = a.label;
+      btn.addEventListener('click', () => sendQuick(a.text));
+      bar.appendChild(btn);
+    }
   }
 }
 

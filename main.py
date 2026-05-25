@@ -6,6 +6,8 @@ Serves the order form, runs the pipeline, and provides a sprint dashboard.
 import asyncio
 import csv
 import hashlib
+import tempfile
+import zipfile
 import hmac
 import html
 import json
@@ -286,7 +288,11 @@ def _generate_sprint_id(payload: dict) -> str:
         .replace(" / ", "-").replace("/", "-").replace(" ", "-").replace("3rd-party", "affiliate")
     )
     now = datetime.now(timezone.utc)
-    uid = uuid.uuid4().hex[:4]
+    # 12 hex chars = 48 bits of randomness. Sprint IDs are the bearer token
+    # for public chat + download endpoints, so we need them to be hard to
+    # guess by external parties. (Existing 4-char IDs remain valid because
+    # _SPRINT_ID_RE accepts any length up to 128.)
+    uid = uuid.uuid4().hex[:12]
     return f"{now.strftime('%Y-%m')}-{platform_slug}-{uid}"
 
 
@@ -785,6 +791,128 @@ async def sprint_state_public(sprint_id: str):
         "driver": order.get("driver", ""),
         "platform": order.get("platform", ""),
     })
+
+
+# ── Sprint deliverable downloads ─────────────────────────────────────────────
+# Public (sprint_id-as-bearer-token, same posture as chat). Lets reviewers on
+# any machine pull the final output locally — either as a single ZIP package
+# or as the headline asset_manifest.csv on its own.
+
+# Files at the root of a sprint dir that belong in the downloadable package.
+_DELIVERABLE_FILES = {
+    "asset_manifest.csv",
+    "copy_review.csv",
+    "image_prompts.csv",
+    "copy_outputs.json",
+    "run_summary.json",
+    "order.json",
+    "context.json",
+    "pipeline_state.json",
+    "gate_decisions.jsonl",
+    "chat.jsonl",
+}
+# Subdirectories whose entire contents go into the ZIP.
+_DELIVERABLE_DIRS = ("exports", "images")
+# Hard cap on per-file size we'll stuff into the ZIP, to keep a stray giant
+# file from blowing up the response. Generated PNGs are well under this.
+_MAX_FILE_BYTES = 50 * 1024 * 1024  # 50 MB
+
+
+def _safe_under(path: Path, root: Path) -> bool:
+    """True iff `path` resolves to a real file under `root` (no symlinks
+    escaping the sprint directory)."""
+    try:
+        resolved = path.resolve(strict=True)
+        resolved.relative_to(root.resolve())
+        return True
+    except (ValueError, OSError):
+        return False
+
+
+def _write_sprint_zip(sprint_dir: Path, fp) -> None:
+    """Write a sprint's deliverable files into an open file-like `fp` as a
+    ZIP. Streams through a temp file rather than holding the whole archive
+    in memory. Symlinks are rejected to prevent exfiltration."""
+    top = sprint_dir.name
+    root = sprint_dir.resolve()
+    with zipfile.ZipFile(fp, "w", zipfile.ZIP_DEFLATED) as zf:
+        for name in sorted(_DELIVERABLE_FILES):
+            p = sprint_dir / name
+            if (
+                p.is_file()
+                and not p.is_symlink()
+                and _safe_under(p, root)
+                and p.stat().st_size <= _MAX_FILE_BYTES
+            ):
+                zf.write(p, arcname=f"{top}/{name}")
+        for dname in _DELIVERABLE_DIRS:
+            d = sprint_dir / dname
+            if not d.is_dir() or d.is_symlink():
+                continue
+            for f in sorted(d.rglob("*")):
+                if (
+                    not f.is_file()
+                    or f.is_symlink()
+                    or not _safe_under(f, root)
+                    or f.stat().st_size > _MAX_FILE_BYTES
+                ):
+                    continue
+                rel = f.relative_to(sprint_dir)
+                zf.write(f, arcname=f"{top}/{rel.as_posix()}")
+
+
+@app.get("/sprints/{sprint_id}/download")
+async def sprint_download_zip(sprint_id: str):
+    """Download the full sprint deliverable as a ZIP. Public — sprint_id is
+    the access token, same as the chat UI. Built into a spooled temp file
+    so we don't hold the whole archive in memory."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    if not sprint_dir.exists():
+        raise HTTPException(status_code=404, detail="Sprint not found")
+    # SpooledTemporaryFile keeps small archives in memory and spills larger
+    # ones to disk automatically — best of both worlds.
+    spool = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
+    _write_sprint_zip(sprint_dir, spool)
+    size = spool.tell()
+    spool.seek(0)
+
+    def _iter():
+        try:
+            while True:
+                chunk = spool.read(64 * 1024)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            spool.close()
+
+    return StreamingResponse(
+        _iter(),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{sprint_id}.zip"',
+            "Content-Length": str(size),
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+@app.get("/sprints/{sprint_id}/download/manifest")
+async def sprint_download_manifest(sprint_id: str):
+    """Download just the headline asset_manifest.csv. Public — sprint_id is
+    the access token."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    manifest = sprint_dir / "asset_manifest.csv"
+    if not manifest.is_file():
+        raise HTTPException(status_code=404, detail="asset_manifest.csv not found for this sprint")
+    return FileResponse(
+        manifest,
+        media_type="text/csv",
+        filename=f"{sprint_id}_asset_manifest.csv",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @app.get("/sprints/{sprint_id}/chat-history")
