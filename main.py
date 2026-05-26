@@ -6,6 +6,7 @@ Serves the order form, runs the pipeline, and provides a sprint dashboard.
 import asyncio
 import csv
 import hashlib
+import io
 import tempfile
 import zipfile
 import hmac
@@ -812,10 +813,12 @@ _DELIVERABLE_FILES = {
     "chat.jsonl",
 }
 # Subdirectories whose entire contents go into the ZIP.
-_DELIVERABLE_DIRS = ("exports", "images")
-# Hard cap on per-file size we'll stuff into the ZIP, to keep a stray giant
-# file from blowing up the response. Generated PNGs are well under this.
-_MAX_FILE_BYTES = 50 * 1024 * 1024  # 50 MB
+# `finals/` contains designer-uploaded final ads (post-Figma assembly).
+_DELIVERABLE_DIRS = ("finals", "exports", "images")
+# Hard cap on per-file size we'll stuff into the sprint ZIP. Matches the
+# finals upload cap so a 100MB final ad doesn't silently get dropped from
+# the download package.
+_MAX_FILE_BYTES = 100 * 1024 * 1024  # 100 MB
 
 
 def _safe_under(path: Path, root: Path) -> bool:
@@ -895,6 +898,303 @@ async def sprint_download_zip(sprint_id: str):
             "Content-Length": str(size),
             "Cache-Control": "no-store",
         },
+    )
+
+
+# ── Final-ad uploads (post-Figma handoff) ────────────────────────────────────
+# After the designer assembles ads in Figma and exports them, they upload the
+# resulting PNG/JPG/PDF files here so the paid-acquisition team can review
+# the final deliverables in one place and download them from any computer.
+# Public posture (sprint_id-as-token), same as chat/download — uploads from
+# any browser without an API key.
+
+_FINALS_DIR_NAME = "finals"
+_FINALS_ALLOWED_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf", ".mp4", ".mov"}
+_FINALS_MAX_FILE_BYTES = 100 * 1024 * 1024     # 100 MB per file
+_FINALS_MAX_DIR_BYTES = 2 * 1024 * 1024 * 1024  # 2 GB per sprint
+_FINALS_MAX_FILES = 200                         # per sprint
+_FINALS_FILENAME_RE = re.compile(r"^[A-Za-z0-9._ ()\-]{1,200}$")
+_FINALS_MIME = {
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".gif": "image/gif", ".webp": "image/webp", ".pdf": "application/pdf",
+    ".mp4": "video/mp4", ".mov": "video/quicktime",
+}
+
+
+def _safe_final_name(raw: str) -> str | None:
+    """Strip any path components and return a sanitized filename, or None
+    if the name isn't acceptable."""
+    if not raw:
+        return None
+    # Strip directory parts (handles both / and \) so a Windows-style path
+    # from a ZIP entry can't escape.
+    name = raw.replace("\\", "/").split("/")[-1].strip()
+    if not name or name in (".", ".."):
+        return None
+    if not _FINALS_FILENAME_RE.match(name):
+        return None
+    if Path(name).suffix.lower() not in _FINALS_ALLOWED_EXTS:
+        return None
+    return name
+
+
+def _finals_dir_size(d: Path) -> int:
+    return sum(f.stat().st_size for f in d.iterdir() if f.is_file())
+
+
+def _list_finals(sprint_dir: Path) -> list[dict]:
+    fdir = sprint_dir / _FINALS_DIR_NAME
+    if not fdir.is_dir():
+        return []
+    items = []
+    for f in sorted(fdir.iterdir()):
+        if not f.is_file() or f.is_symlink():
+            continue
+        st = f.stat()
+        ext = f.suffix.lower()
+        items.append({
+            "name": f.name,
+            "size": st.st_size,
+            "uploaded_at": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),
+            "url": f"/sprints/{sprint_dir.name}/finals/{f.name}",
+            "is_image": ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"},
+            "mime": _FINALS_MIME.get(ext, "application/octet-stream"),
+        })
+    return items
+
+
+@app.get("/sprints/{sprint_id}/finals")
+async def sprint_finals_list(sprint_id: str):
+    """JSON list of uploaded finals for this sprint."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    if not sprint_dir.exists():
+        raise HTTPException(status_code=404, detail="Sprint not found")
+    return JSONResponse({"sprint_id": sprint_id, "finals": _list_finals(sprint_dir)})
+
+
+from fastapi import UploadFile, File as FFile  # for the upload route below
+
+
+_FINALS_ZIP_MAX_BYTES = 400 * 1024 * 1024   # 400 MB ceiling on the uploaded zip itself
+_STREAM_CHUNK = 1 * 1024 * 1024             # 1 MB read chunks for streaming
+
+
+def _stream_to_path(src, target: Path, max_bytes: int) -> int | None:
+    """Copy `src` (a file-like with .read) to `target` in bounded chunks.
+    Returns total bytes written, or None if the size cap was exceeded
+    (in which case the partial file is removed)."""
+    total = 0
+    with target.open("wb") as out:
+        while True:
+            chunk = src.read(_STREAM_CHUNK)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > max_bytes:
+                out.close()
+                try:
+                    target.unlink()
+                except OSError:
+                    pass
+                return None
+            out.write(chunk)
+    return total
+
+
+@app.post("/sprints/{sprint_id}/finals/upload")
+async def sprint_finals_upload(
+    sprint_id: str,
+    files: list[UploadFile] = FFile(...),
+):
+    """Accept multipart upload of one or more files. Each file is one of:
+      - An image (PNG/JPG/GIF/WebP), PDF, or short video → stored as-is.
+      - A ZIP from Figma's "Export selected" batch export → extracted in
+        place, with each safe entry stored individually.
+
+    Files are streamed through bounded-chunk copies so a 100MB upload
+    doesn't sit in memory all at once; ZIPs are spooled to a temp file
+    and then extracted entry-by-entry."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    if not sprint_dir.exists():
+        raise HTTPException(status_code=404, detail="Sprint not found")
+    fdir = sprint_dir / _FINALS_DIR_NAME
+    fdir.mkdir(exist_ok=True)
+    root = sprint_dir.resolve()
+
+    stored: list[str] = []
+    skipped: list[dict] = []
+
+    def _check_capacity() -> str | None:
+        """Return a reason string if we're at capacity, else None."""
+        count = sum(1 for _ in fdir.iterdir() if _.is_file())
+        if count + 1 > _FINALS_MAX_FILES:
+            return f"sprint already has {_FINALS_MAX_FILES} finals (max)"
+        if _finals_dir_size(fdir) >= _FINALS_MAX_DIR_BYTES:
+            return "sprint finals directory at 2GB cap"
+        return None
+
+    def _unique_target(name: str) -> Path:
+        """Return a path inside fdir that doesn't collide with anything
+        existing (suffix -1, -2, … on collision)."""
+        target = fdir / name
+        if not target.exists():
+            return target
+        stem, ext = target.stem, target.suffix
+        i = 1
+        while (fdir / f"{stem}-{i}{ext}").exists():
+            i += 1
+        return fdir / f"{stem}-{i}{ext}"
+
+    def _safe_under_root(p: Path) -> bool:
+        try:
+            p.resolve().relative_to(root)
+            return True
+        except ValueError:
+            return False
+
+    for upload in (files or []):
+        raw_name = upload.filename or ""
+        ext = Path(raw_name).suffix.lower()
+
+        # Case A: a ZIP from Figma's batch export.
+        if ext == ".zip":
+            # Spool the upload to a temp file so we don't hold the full
+            # zip in memory, and so zipfile can mmap/seek it efficiently.
+            with tempfile.NamedTemporaryFile(suffix=".zip", delete=True) as tmp:
+                copied = _stream_to_path(upload.file, Path(tmp.name), _FINALS_ZIP_MAX_BYTES)
+                await upload.close()
+                if copied is None:
+                    skipped.append({"name": raw_name, "reason": "zip exceeds 400MB cap", "source": "zip"})
+                    continue
+                try:
+                    with zipfile.ZipFile(tmp.name) as zf:
+                        infos = zf.infolist()
+                        if len(infos) > _FINALS_MAX_FILES:
+                            skipped.append({"name": raw_name, "reason": "too many entries in zip", "source": "zip"})
+                            continue
+                        for info in infos:
+                            if info.is_dir():
+                                continue
+                            # Reject zip-slip outright instead of silently
+                            # renaming attacker paths to their basename —
+                            # makes operator behaviour explicit/auditable.
+                            if (
+                                "/" in info.filename
+                                or "\\" in info.filename
+                                or info.filename.startswith("..")
+                            ):
+                                skipped.append({"name": info.filename, "reason": "zip entry contains a path (rejected)", "source": "zip"})
+                                continue
+                            if info.file_size > _FINALS_MAX_FILE_BYTES:
+                                skipped.append({"name": info.filename, "reason": "zip entry exceeds 100MB", "source": "zip"})
+                                continue
+                            safe = _safe_final_name(info.filename)
+                            if not safe:
+                                skipped.append({"name": info.filename, "reason": "unsupported file type or unsafe name", "source": "zip"})
+                                continue
+                            cap_reason = _check_capacity()
+                            if cap_reason:
+                                skipped.append({"name": safe, "reason": cap_reason, "source": "zip"})
+                                continue
+                            target = _unique_target(safe)
+                            if not _safe_under_root(target):
+                                skipped.append({"name": safe, "reason": "resolved outside sprint dir", "source": "zip"})
+                                continue
+                            with zf.open(info) as ef:
+                                written = _stream_to_path(ef, target, _FINALS_MAX_FILE_BYTES)
+                            if written is None:
+                                skipped.append({"name": safe, "reason": "exceeds 100MB cap (stream)", "source": "zip"})
+                                continue
+                            stored.append(target.name)
+                except zipfile.BadZipFile:
+                    skipped.append({"name": raw_name, "reason": "not a valid zip", "source": "zip"})
+            continue
+
+        # Case B: plain file upload — stream to disk.
+        safe = _safe_final_name(raw_name)
+        if not safe:
+            skipped.append({"name": raw_name, "reason": "unsupported file type or unsafe name", "source": "file"})
+            await upload.close()
+            continue
+        cap_reason = _check_capacity()
+        if cap_reason:
+            skipped.append({"name": safe, "reason": cap_reason, "source": "file"})
+            await upload.close()
+            continue
+        target = _unique_target(safe)
+        if not _safe_under_root(target):
+            skipped.append({"name": safe, "reason": "resolved outside sprint dir", "source": "file"})
+            await upload.close()
+            continue
+        written = _stream_to_path(upload.file, target, _FINALS_MAX_FILE_BYTES)
+        await upload.close()
+        if written is None:
+            skipped.append({"name": safe, "reason": "exceeds 100MB cap", "source": "file"})
+            continue
+        stored.append(target.name)
+
+    return JSONResponse({
+        "sprint_id": sprint_id,
+        "stored": stored,
+        "skipped": skipped,
+        "finals_count": sum(1 for _ in fdir.iterdir() if _.is_file()),
+    })
+
+
+@app.get("/sprints/{sprint_id}/finals/{filename}")
+async def sprint_finals_get(sprint_id: str, filename: str):
+    """Serve a single uploaded final. Public — sprint_id is the access token."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    safe = _safe_final_name(filename)
+    if not safe:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    f = sprint_dir / _FINALS_DIR_NAME / safe
+    if not f.is_file() or f.is_symlink():
+        raise HTTPException(status_code=404, detail="Final not found")
+    # Defence in depth: confirm we didn't escape the sprint dir.
+    try:
+        f.resolve().relative_to(sprint_dir.resolve())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Resolved path escapes sprint dir")
+    return FileResponse(f, media_type=_FINALS_MIME.get(f.suffix.lower(), "application/octet-stream"))
+
+
+@app.delete("/sprints/{sprint_id}/finals/{filename}")
+async def sprint_finals_delete(sprint_id: str, filename: str):
+    """Remove a previously-uploaded final. Useful for fixing mis-uploads.
+    Public, same posture as upload."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    safe = _safe_final_name(filename)
+    if not safe:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    f = sprint_dir / _FINALS_DIR_NAME / safe
+    if not f.is_file() or f.is_symlink():
+        raise HTTPException(status_code=404, detail="Final not found")
+    try:
+        f.resolve().relative_to(sprint_dir.resolve())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Resolved path escapes sprint dir")
+    f.unlink()
+    return JSONResponse({"ok": True, "deleted": safe})
+
+
+_SPRINT_FINALS_UI = BASE_DIR / "agent" / "sprint_finals_ui.html"
+
+
+@app.get("/sprints/{sprint_id}/finals-ui", response_class=HTMLResponse)
+async def sprint_finals_ui(sprint_id: str):
+    """Gallery page for uploading and browsing final ads. Public — sprint_id
+    is the access token."""
+    _validate_sprint_id(sprint_id)
+    if not _SPRINT_FINALS_UI.exists():
+        return HTMLResponse("<h1>sprint_finals_ui.html not found</h1>", status_code=500)
+    return HTMLResponse(
+        _SPRINT_FINALS_UI.read_text().replace("__SPRINT_ID__", sprint_id),
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
     )
 
 

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Final ads · __SPRINT_ID__ · ADAM</title>
+<style>
+  :root { --bg:#fafafa; --ink:#111; --muted:#666; --border:#e5e5e5;
+          --brand:#10b981; --brand-ink:#065f46; --danger:#dc2626;
+          --warn-bg:#fef3c7; --warn-ink:#92400e; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+         color: var(--ink); background: var(--bg); }
+  .nav { display: flex; align-items: center; gap: 18px; padding: 12px 24px;
+         border-bottom: 1px solid var(--border); background: #fff; }
+  .nav-logo { font-weight: 700; color: var(--brand); }
+  .nav-sprint { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+                color: var(--muted); font-size: 12px; }
+  .nav-spacer { flex: 1; }
+  .nav a { color: var(--ink); text-decoration: none; font-size: 13px; }
+  .nav a:hover { text-decoration: underline; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 6px; }
+  .lede { color: var(--muted); margin: 0 0 24px; }
+
+  .drop {
+    border: 2px dashed var(--border); border-radius: 12px; padding: 32px;
+    text-align: center; background: #fff; transition: background 0.15s, border-color 0.15s;
+  }
+  .drop.dragover { border-color: var(--brand); background: #f0fdf4; }
+  .drop h2 { margin: 0 0 8px; font-size: 16px; }
+  .drop p { margin: 4px 0; color: var(--muted); font-size: 13px; }
+  .drop .btn {
+    display: inline-block; margin-top: 12px; padding: 10px 20px; border-radius: 8px;
+    background: var(--brand); color: white; font-weight: 600; cursor: pointer; border: none;
+    font-size: 14px;
+  }
+  .drop .btn:hover { filter: brightness(1.05); }
+  .drop input[type=file] { display: none; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+  .progress { margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .progress.error { color: var(--danger); }
+  .progress.success { color: var(--brand-ink); }
+
+  .warn { margin-top: 12px; padding: 10px 14px; border-radius: 8px;
+          background: var(--warn-bg); color: var(--warn-ink); font-size: 13px; }
+  .warn ul { margin: 6px 0 0; padding-left: 18px; }
+
+  .section-title { display:flex; align-items:baseline; justify-content:space-between;
+                   margin: 32px 0 12px; }
+  .section-title h2 { margin: 0; font-size: 16px; }
+  .section-title .count { color: var(--muted); font-size: 13px; }
+  .download-all { font-size: 13px; }
+
+  .empty { text-align: center; color: var(--muted); padding: 48px 12px;
+           border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 16px; }
+  .card { background: #fff; border: 1px solid var(--border); border-radius: 10px;
+          overflow: hidden; display: flex; flex-direction: column; }
+  .card .thumb { background: #f3f4f6; aspect-ratio: 1; display: flex;
+                 align-items: center; justify-content: center; overflow: hidden; }
+  .card .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .card .thumb .placeholder { color: var(--muted); font-size: 12px; padding: 12px; text-align:center; }
+  .card .meta { padding: 10px 12px; flex: 1; }
+  .card .name { font-size: 13px; font-weight: 600; word-break: break-all; }
+  .card .sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .card .actions { display: flex; gap: 6px; padding: 0 12px 12px; }
+  .card .actions a, .card .actions button {
+    flex: 1; font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border);
+    background: #fff; color: var(--ink); text-decoration: none; text-align: center; cursor: pointer;
+    font-family: inherit;
+  }
+  .card .actions a:hover, .card .actions button:hover { background: #f9fafb; }
+  .card .actions .del { color: var(--danger); border-color: #fecaca; }
+  .card .actions .del:hover { background: #fef2f2; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="nav-logo">ADAM</span>
+  <span class="nav-sprint">__SPRINT_ID__</span>
+  <span class="nav-spacer"></span>
+  <a href="/sprints/__SPRINT_ID__/chat">← Back to chat</a>
+  <a href="/sprints">All sprints</a>
+</nav>
+
+<div class="container">
+  <h1>Final ads</h1>
+  <p class="lede">Upload the assembled ad files from your Figma export so the
+    paid-acquisition team can review and download them in one place.</p>
+
+  <!-- Upload zone -->
+  <div class="drop" id="drop">
+    <h2>Drop your Figma exports here</h2>
+    <p>PNG, JPG, GIF, WebP, PDF, MP4 — or a ZIP from Figma's "Export selected"</p>
+    <p>Up to 100 MB per file · 200 files per sprint</p>
+    <label class="btn" for="file-input">Choose files</label>
+    <input id="file-input" type="file" multiple
+           accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.mp4,.mov,.zip" />
+    <div class="hint">
+      Tip in Figma: select all final ad frames, then File → Export (or ⇧⌘E).
+      Name each frame to match its <code>asset_id</code> from the manifest so
+      reviewers can trace each file back to a row in <code>asset_manifest.csv</code>.
+    </div>
+    <div class="progress" id="progress"></div>
+    <div id="skipped"></div>
+  </div>
+
+  <!-- Gallery -->
+  <div class="section-title">
+    <h2>Uploaded finals <span class="count" id="count"></span></h2>
+    <a class="download-all" href="/sprints/__SPRINT_ID__/download">⬇ Download whole sprint as ZIP</a>
+  </div>
+  <div id="gallery"></div>
+</div>
+
+<script>
+const SPRINT_ID = '__SPRINT_ID__';
+const LIST_URL   = `/sprints/${SPRINT_ID}/finals`;
+const UPLOAD_URL = `/sprints/${SPRINT_ID}/finals/upload`;
+
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+function fmtDate(iso) {
+  try { return new Date(iso).toLocaleString(); }
+  catch (_) { return iso; }
+}
+
+async function loadGallery() {
+  const gallery = document.getElementById('gallery');
+  const count = document.getElementById('count');
+  try {
+    const r = await fetch(LIST_URL);
+    if (!r.ok) throw new Error('list failed');
+    const data = await r.json();
+    const finals = data.finals || [];
+    count.textContent = finals.length ? `(${finals.length})` : '';
+    if (finals.length === 0) {
+      gallery.innerHTML = `<div class="empty">No finals uploaded yet — drop your Figma exports above.</div>`;
+      return;
+    }
+    gallery.innerHTML = `<div class="grid">${finals.map(renderCard).join('')}</div>`;
+    // Wire up delete buttons (event delegation is fine but inline handlers
+    // are simpler here since the gallery re-renders fully on each change).
+    gallery.querySelectorAll('button[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => deleteFinal(btn.dataset.del));
+    });
+  } catch (e) {
+    gallery.innerHTML = `<div class="empty">Couldn't load finals (${e.message}).</div>`;
+  }
+}
+
+function renderCard(f) {
+  const safeName = f.name.replace(/</g, '&lt;');
+  const thumb = f.is_image
+    ? `<img src="${f.url}" alt="${safeName}" loading="lazy" />`
+    : `<div class="placeholder">${f.mime.split('/')[1].toUpperCase()}<br>${safeName}</div>`;
+  return `
+    <div class="card">
+      <div class="thumb">${thumb}</div>
+      <div class="meta">
+        <div class="name">${safeName}</div>
+        <div class="sub">${fmtSize(f.size)} · ${fmtDate(f.uploaded_at)}</div>
+      </div>
+      <div class="actions">
+        <a href="${f.url}" download="${safeName}">⬇ Download</a>
+        <a href="${f.url}" target="_blank" rel="noopener">Open</a>
+        <button class="del" data-del="${safeName}" type="button">Delete</button>
+      </div>
+    </div>`;
+}
+
+async function deleteFinal(name) {
+  if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+  try {
+    const r = await fetch(`/sprints/${SPRINT_ID}/finals/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    if (!r.ok) {
+      const t = await r.text();
+      alert('Delete failed: ' + t);
+      return;
+    }
+    await loadGallery();
+  } catch (e) {
+    alert('Delete failed: ' + e.message);
+  }
+}
+
+async function uploadFiles(fileList) {
+  if (!fileList || fileList.length === 0) return;
+  const progress = document.getElementById('progress');
+  const skipped = document.getElementById('skipped');
+  skipped.innerHTML = '';
+  progress.className = 'progress';
+  progress.textContent = `Uploading ${fileList.length} file${fileList.length === 1 ? '' : 's'}…`;
+
+  const fd = new FormData();
+  for (const f of fileList) fd.append('files', f, f.name);
+
+  try {
+    const r = await fetch(UPLOAD_URL, { method: 'POST', body: fd });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      progress.className = 'progress error';
+      progress.textContent = `Upload failed (HTTP ${r.status}): ${data.detail || 'unknown error'}`;
+      return;
+    }
+    const stored = (data.stored || []).length;
+    const skippedItems = data.skipped || [];
+    progress.className = 'progress success';
+    progress.textContent = `Stored ${stored} file${stored === 1 ? '' : 's'}.` +
+      (skippedItems.length ? ` Skipped ${skippedItems.length}.` : '');
+    if (skippedItems.length) {
+      skipped.innerHTML = `<div class="warn"><strong>Skipped:</strong><ul>` +
+        skippedItems.map(s => `<li><code>${(s.name || '').replace(/</g,'&lt;')}</code> — ${s.reason}</li>`).join('') +
+        `</ul></div>`;
+    }
+    await loadGallery();
+  } catch (e) {
+    progress.className = 'progress error';
+    progress.textContent = 'Upload failed: ' + e.message;
+  }
+}
+
+// ── Wire up drop zone + file input ──────────────────────────────────────────
+const drop = document.getElementById('drop');
+const input = document.getElementById('file-input');
+
+input.addEventListener('change', () => {
+  uploadFiles(input.files);
+  input.value = '';  // reset so picking the same file again still fires change
+});
+
+['dragenter', 'dragover'].forEach(ev => {
+  drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('dragover'); });
+});
+['dragleave', 'drop'].forEach(ev => {
+  drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('dragover'); });
+});
+drop.addEventListener('drop', e => {
+  if (e.dataTransfer && e.dataTransfer.files) uploadFiles(e.dataTransfer.files);
+});
+
+loadGallery();
+</script>
+</body>
+</html>

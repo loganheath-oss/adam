@@ -470,6 +470,7 @@ const GATE_ACTIONS = {
   ],
   6: [
     { label: '👁 Show me the final delivery', text: 'Show me the final QA package' },
+    { label: '🖼 Upload / view final ads',    navHref: `/sprints/${SPRINT_ID}/finals-ui` },
     { label: '⬇ Download ZIP',                href: `/sprints/${SPRINT_ID}/download` },
     { label: '⬇ Download manifest (CSV)',     href: `/sprints/${SPRINT_ID}/download/manifest` },
   ],
@@ -490,9 +491,9 @@ function renderQuickBar(state, currentGate, isComplete, isError, isRunning) {
     });
     for (const a of (GATE_ACTIONS[currentGate] || [])) actions.push(a);
   } else if (isComplete) {
-    actions.push({ label: '⬇ Download ZIP',                href: `/sprints/${SPRINT_ID}/download`, primary: true });
+    actions.push({ label: '🖼 Final ads',                  navHref: `/sprints/${SPRINT_ID}/finals-ui`, primary: true });
+    actions.push({ label: '⬇ Download ZIP',                href: `/sprints/${SPRINT_ID}/download` });
     actions.push({ label: '⬇ Download manifest (CSV)',     href: `/sprints/${SPRINT_ID}/download/manifest` });
-    actions.push({ label: '📂 Show me the final outputs', text: 'Show me the final deliverables and where they are' });
     actions.push({ label: '📊 Run a post-mortem',          text: 'Walk me through what worked and what to improve next time' });
   } else if (isError) {
     actions.push({ label: '❓ What went wrong?', text: 'What went wrong with the pipeline?', primary: true });
@@ -509,12 +510,13 @@ function renderQuickBar(state, currentGate, isComplete, isError, isRunning) {
 
   bar.innerHTML = '';
   for (const a of actions) {
-    // Download actions render as <a> so the browser handles the file save
-    // natively (with the Content-Disposition filename from the server).
-    if (a.href) {
+    // Download actions render as <a download> so the browser handles the
+    // file save natively. Navigation actions (navHref) render as plain <a>
+    // so they open the linked page.
+    if (a.href || a.navHref) {
       const link = document.createElement('a');
-      link.href = a.href;
-      link.download = '';  // hint to browser: treat as download, not navigate
+      link.href = a.href || a.navHref;
+      if (a.href) link.download = '';  // hint to browser: save, don't navigate
       link.className = 'quick-btn' + (a.primary ? ' primary' : '');
       link.textContent = a.label;
       bar.appendChild(link);
