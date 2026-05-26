@@ -24,7 +24,7 @@ from pathlib import Path
 
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, Security
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, Response, Security
 from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -942,16 +942,64 @@ def _finals_dir_size(d: Path) -> int:
     return sum(f.stat().st_size for f in d.iterdir() if f.is_file())
 
 
+_REVIEW_STATUSES = {"pending", "approved", "changes_requested"}
+_REVIEWS_FILENAME = "finals_reviews.json"
+_REVIEW_MAX_COMMENT_LEN = 2000
+_REVIEW_MAX_AUTHOR_LEN = 80
+_REVIEW_MAX_COMMENTS_PER_FILE = 200
+_REVIEWS_LOCK = threading.Lock()
+
+
+def _reviews_path(sprint_dir: Path) -> Path:
+    return sprint_dir / _REVIEWS_FILENAME
+
+
+def _load_reviews(sprint_dir: Path) -> dict:
+    """Read the per-sprint reviews blob. Tolerant of missing or corrupted
+    files — those return an empty dict so the gallery still renders."""
+    p = _reviews_path(sprint_dir)
+    if not p.is_file():
+        return {}
+    try:
+        data = json.loads(p.read_text())
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_reviews(sprint_dir: Path, reviews: dict) -> None:
+    """Atomic write of the reviews blob (write to .tmp, then rename)."""
+    p = _reviews_path(sprint_dir)
+    tmp = p.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(reviews, indent=2, sort_keys=True))
+    tmp.replace(p)
+
+
+def _blank_review() -> dict:
+    return {"status": "pending", "decided_by": None, "decided_at": None, "comments": []}
+
+
+def _clean_text(s: str | None, max_len: int) -> str:
+    """Trim, length-cap, and strip control chars from a free-text field."""
+    if not s:
+        return ""
+    s = str(s).strip()
+    s = "".join(ch for ch in s if ch == "\n" or ch == "\t" or ord(ch) >= 0x20)
+    return s[:max_len]
+
+
 def _list_finals(sprint_dir: Path) -> list[dict]:
     fdir = sprint_dir / _FINALS_DIR_NAME
     if not fdir.is_dir():
         return []
+    reviews = _load_reviews(sprint_dir)
     items = []
     for f in sorted(fdir.iterdir()):
         if not f.is_file() or f.is_symlink():
             continue
         st = f.stat()
         ext = f.suffix.lower()
+        rev = reviews.get(f.name) or _blank_review()
         items.append({
             "name": f.name,
             "size": st.st_size,
@@ -959,18 +1007,137 @@ def _list_finals(sprint_dir: Path) -> list[dict]:
             "url": f"/sprints/{sprint_dir.name}/finals/{f.name}",
             "is_image": ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"},
             "mime": _FINALS_MIME.get(ext, "application/octet-stream"),
+            "review": {
+                "status": rev.get("status", "pending"),
+                "decided_by": rev.get("decided_by"),
+                "decided_at": rev.get("decided_at"),
+                "comment_count": len(rev.get("comments") or []),
+            },
         })
     return items
 
 
+def _review_summary(finals: list[dict]) -> dict:
+    out = {"approved": 0, "changes_requested": 0, "pending": 0, "total": len(finals)}
+    for f in finals:
+        s = (f.get("review") or {}).get("status", "pending")
+        if s in out:
+            out[s] += 1
+    return out
+
+
 @app.get("/sprints/{sprint_id}/finals")
 async def sprint_finals_list(sprint_id: str):
-    """JSON list of uploaded finals for this sprint."""
+    """JSON list of uploaded finals for this sprint, each with its review
+    state and a top-level summary count for the Paid Acquisition team."""
     _validate_sprint_id(sprint_id)
     sprint_dir = _safe_sprint_dir(sprint_id)
     if not sprint_dir.exists():
         raise HTTPException(status_code=404, detail="Sprint not found")
-    return JSONResponse({"sprint_id": sprint_id, "finals": _list_finals(sprint_dir)})
+    finals = _list_finals(sprint_dir)
+    return JSONResponse({
+        "sprint_id": sprint_id,
+        "finals": finals,
+        "summary": _review_summary(finals),
+    })
+
+
+@app.get("/sprints/{sprint_id}/finals/{filename}/review")
+async def sprint_finals_review_get(sprint_id: str, filename: str):
+    """Return the full review record (status + all comments) for one final."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    safe = _safe_final_name(filename)
+    if not safe:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    f = sprint_dir / _FINALS_DIR_NAME / safe
+    if not f.is_file() or f.is_symlink():
+        raise HTTPException(status_code=404, detail="Final not found")
+    reviews = _load_reviews(sprint_dir)
+    rev = reviews.get(safe) or _blank_review()
+    return JSONResponse({"sprint_id": sprint_id, "filename": safe, "review": rev})
+
+
+@app.post("/sprints/{sprint_id}/finals/{filename}/review")
+async def sprint_finals_review_set(sprint_id: str, filename: str, payload: dict = Body(...)):
+    """Set the approval status of a single final.
+    Body: {"reviewer": "Jane (Paid Acq)", "status": "approved" | "changes_requested" | "pending"}
+    The reviewer name is auto-appended as a system comment so the thread shows the audit trail."""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    if not sprint_dir.exists():
+        raise HTTPException(status_code=404, detail="Sprint not found")
+    safe = _safe_final_name(filename)
+    if not safe:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    f = sprint_dir / _FINALS_DIR_NAME / safe
+    if not f.is_file() or f.is_symlink():
+        raise HTTPException(status_code=404, detail="Final not found")
+
+    status = (payload or {}).get("status")
+    if status not in _REVIEW_STATUSES:
+        raise HTTPException(status_code=400, detail=f"status must be one of {sorted(_REVIEW_STATUSES)}")
+    reviewer = _clean_text((payload or {}).get("reviewer"), _REVIEW_MAX_AUTHOR_LEN) or "Anonymous"
+    note = _clean_text((payload or {}).get("note"), _REVIEW_MAX_COMMENT_LEN)
+    now = datetime.now(tz=timezone.utc).isoformat()
+
+    with _REVIEWS_LOCK:
+        reviews = _load_reviews(sprint_dir)
+        rev = reviews.get(safe) or _blank_review()
+        prev_status = rev.get("status", "pending")
+        rev["status"] = status
+        rev["decided_by"] = reviewer if status != "pending" else None
+        rev["decided_at"] = now if status != "pending" else None
+        # System comment so the thread tells the story of what happened.
+        if status != prev_status or note:
+            label = {
+                "approved": "✓ Approved",
+                "changes_requested": "✗ Requested changes",
+                "pending": "↺ Reset to pending",
+            }[status]
+            text = f"{label}" + (f" — {note}" if note else "")
+            rev.setdefault("comments", []).append({
+                "author": reviewer, "text": text, "at": now, "kind": "status",
+            })
+            rev["comments"] = rev["comments"][-_REVIEW_MAX_COMMENTS_PER_FILE:]
+        reviews[safe] = rev
+        _save_reviews(sprint_dir, reviews)
+
+    return JSONResponse({"sprint_id": sprint_id, "filename": safe, "review": rev})
+
+
+@app.post("/sprints/{sprint_id}/finals/{filename}/comment")
+async def sprint_finals_comment_add(sprint_id: str, filename: str, payload: dict = Body(...)):
+    """Append a comment to a final's review thread (no status change).
+    Body: {"author": "Jane", "text": "love it, ship it"}"""
+    _validate_sprint_id(sprint_id)
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    if not sprint_dir.exists():
+        raise HTTPException(status_code=404, detail="Sprint not found")
+    safe = _safe_final_name(filename)
+    if not safe:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+    f = sprint_dir / _FINALS_DIR_NAME / safe
+    if not f.is_file() or f.is_symlink():
+        raise HTTPException(status_code=404, detail="Final not found")
+
+    author = _clean_text((payload or {}).get("author"), _REVIEW_MAX_AUTHOR_LEN) or "Anonymous"
+    text = _clean_text((payload or {}).get("text"), _REVIEW_MAX_COMMENT_LEN)
+    if not text:
+        raise HTTPException(status_code=400, detail="Comment text is required")
+    now = datetime.now(tz=timezone.utc).isoformat()
+
+    with _REVIEWS_LOCK:
+        reviews = _load_reviews(sprint_dir)
+        rev = reviews.get(safe) or _blank_review()
+        rev.setdefault("comments", []).append({
+            "author": author, "text": text, "at": now, "kind": "comment",
+        })
+        rev["comments"] = rev["comments"][-_REVIEW_MAX_COMMENTS_PER_FILE:]
+        reviews[safe] = rev
+        _save_reviews(sprint_dir, reviews)
+
+    return JSONResponse({"sprint_id": sprint_id, "filename": safe, "review": rev})
 
 
 from fastapi import UploadFile, File as FFile  # for the upload route below

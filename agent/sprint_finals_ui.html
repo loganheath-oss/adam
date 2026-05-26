@@ -6,8 +6,10 @@
 <title>Final ads · __SPRINT_ID__ · ADAM</title>
 <style>
   :root { --bg:#fafafa; --ink:#111; --muted:#666; --border:#e5e5e5;
-          --brand:#10b981; --brand-ink:#065f46; --danger:#dc2626;
-          --warn-bg:#fef3c7; --warn-ink:#92400e; }
+          --brand:#10b981; --brand-ink:#065f46; --brand-bg:#ecfdf5;
+          --danger:#dc2626; --danger-bg:#fef2f2; --danger-ink:#991b1b;
+          --warn-bg:#fef3c7; --warn-ink:#92400e;
+          --pending-bg:#f3f4f6; --pending-ink:#4b5563; }
   * { box-sizing: border-box; }
   body { margin: 0; font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
          color: var(--ink); background: var(--bg); }
@@ -16,6 +18,9 @@
   .nav-logo { font-weight: 700; color: var(--brand); }
   .nav-sprint { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
                 color: var(--muted); font-size: 12px; }
+  .nav-reviewer { font-size: 12px; color: var(--muted); }
+  .nav-reviewer input { font: inherit; padding: 4px 8px; border: 1px solid var(--border);
+                        border-radius: 6px; width: 180px; margin-left: 6px; }
   .nav-spacer { flex: 1; }
   .nav a { color: var(--ink); text-decoration: none; font-size: 13px; }
   .nav a:hover { text-decoration: underline; }
@@ -25,7 +30,7 @@
   .lede { color: var(--muted); margin: 0 0 24px; }
 
   .drop {
-    border: 2px dashed var(--border); border-radius: 12px; padding: 32px;
+    border: 2px dashed var(--border); border-radius: 12px; padding: 24px;
     text-align: center; background: #fff; transition: background 0.15s, border-color 0.15s;
   }
   .drop.dragover { border-color: var(--brand); background: #f0fdf4; }
@@ -48,8 +53,16 @@
           background: var(--warn-bg); color: var(--warn-ink); font-size: 13px; }
   .warn ul { margin: 6px 0 0; padding-left: 18px; }
 
+  .summary { display: flex; gap: 12px; flex-wrap: wrap; margin: 24px 0 0; }
+  .summary .pill { padding: 8px 14px; border-radius: 999px; font-size: 13px;
+                   border: 1px solid var(--border); background: #fff; }
+  .summary .pill strong { font-size: 15px; margin-right: 4px; }
+  .summary .pill.approved { background: var(--brand-bg); border-color: #a7f3d0; color: var(--brand-ink); }
+  .summary .pill.changes  { background: var(--danger-bg); border-color: #fecaca; color: var(--danger-ink); }
+  .summary .pill.pending  { background: var(--pending-bg); border-color: #e5e7eb; color: var(--pending-ink); }
+
   .section-title { display:flex; align-items:baseline; justify-content:space-between;
-                   margin: 32px 0 12px; }
+                   margin: 24px 0 12px; }
   .section-title h2 { margin: 0; font-size: 16px; }
   .section-title .count { color: var(--muted); font-size: 13px; }
   .download-all { font-size: 13px; }
@@ -60,29 +73,93 @@
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
           gap: 16px; }
   .card { background: #fff; border: 1px solid var(--border); border-radius: 10px;
-          overflow: hidden; display: flex; flex-direction: column; }
+          overflow: hidden; display: flex; flex-direction: column; position: relative;
+          transition: border-color 0.15s; }
+  .card.approved { border-color: #a7f3d0; }
+  .card.changes_requested { border-color: #fecaca; }
   .card .thumb { background: #f3f4f6; aspect-ratio: 1; display: flex;
-                 align-items: center; justify-content: center; overflow: hidden; }
+                 align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
   .card .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
   .card .thumb .placeholder { color: var(--muted); font-size: 12px; padding: 12px; text-align:center; }
+  .badge { position: absolute; top: 8px; left: 8px; padding: 4px 8px;
+           border-radius: 6px; font-size: 11px; font-weight: 600;
+           background: var(--pending-bg); color: var(--pending-ink); }
+  .badge.approved { background: var(--brand); color: white; }
+  .badge.changes_requested { background: var(--danger); color: white; }
   .card .meta { padding: 10px 12px; flex: 1; }
   .card .name { font-size: 13px; font-weight: 600; word-break: break-all; }
   .card .sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
-  .card .actions { display: flex; gap: 6px; padding: 0 12px 12px; }
+  .card .comment-count { color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .card .actions { display: flex; gap: 6px; padding: 0 12px 12px; flex-wrap: wrap; }
   .card .actions a, .card .actions button {
     flex: 1; font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border);
     background: #fff; color: var(--ink); text-decoration: none; text-align: center; cursor: pointer;
-    font-family: inherit;
+    font-family: inherit; min-width: 60px;
   }
   .card .actions a:hover, .card .actions button:hover { background: #f9fafb; }
+  .card .actions .review { color: var(--brand-ink); border-color: #a7f3d0; background: var(--brand-bg); font-weight: 600; flex-basis: 100%; }
+  .card .actions .review:hover { background: #d1fae5; }
   .card .actions .del { color: var(--danger); border-color: #fecaca; }
-  .card .actions .del:hover { background: #fef2f2; }
+  .card .actions .del:hover { background: var(--danger-bg); }
+
+  /* Review modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none;
+              align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+  .modal-bg.open { display: flex; }
+  .modal { background: #fff; border-radius: 12px; max-width: 720px; width: 100%;
+           max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border);
+                  display: flex; align-items: center; gap: 12px; }
+  .modal-header h3 { margin: 0; font-size: 16px; flex: 1; word-break: break-all; }
+  .modal-header .close { background: none; border: none; font-size: 22px; cursor: pointer;
+                        color: var(--muted); padding: 0 4px; }
+  .modal-body { padding: 20px; }
+  .modal-preview { background: #f3f4f6; border-radius: 8px; max-height: 320px; overflow: hidden;
+                   display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+  .modal-preview img { max-width: 100%; max-height: 320px; object-fit: contain; }
+  .modal-preview .placeholder { padding: 40px; color: var(--muted); }
+
+  .review-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .review-row .status-btn { flex: 1; min-width: 120px; padding: 10px; border-radius: 8px;
+                            border: 1px solid var(--border); background: #fff;
+                            cursor: pointer; font: inherit; font-weight: 600; }
+  .review-row .status-btn.approve { color: var(--brand-ink); border-color: #a7f3d0; }
+  .review-row .status-btn.approve:hover, .review-row .status-btn.approve.active { background: var(--brand); color: white; border-color: var(--brand); }
+  .review-row .status-btn.changes { color: var(--danger-ink); border-color: #fecaca; }
+  .review-row .status-btn.changes:hover, .review-row .status-btn.changes.active { background: var(--danger); color: white; border-color: var(--danger); }
+  .review-row .status-btn.reset { color: var(--pending-ink); }
+  .review-row .status-btn.reset:hover, .review-row .status-btn.reset.active { background: var(--pending-bg); }
+
+  .decision { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+
+  .comments { border-top: 1px solid var(--border); padding-top: 16px; }
+  .comments h4 { margin: 0 0 12px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .comment { padding: 10px 12px; margin-bottom: 8px; background: #f9fafb; border-radius: 8px; font-size: 13px; }
+  .comment.status { background: #f0f9ff; }
+  .comment .author { font-weight: 600; }
+  .comment .when { color: var(--muted); font-size: 11px; margin-left: 8px; }
+  .comment .text { margin-top: 4px; white-space: pre-wrap; word-wrap: break-word; }
+  .comment-empty { color: var(--muted); font-size: 13px; font-style: italic; padding: 8px 0; }
+
+  .comment-form { margin-top: 12px; }
+  .comment-form textarea { width: 100%; min-height: 70px; padding: 8px 10px; border: 1px solid var(--border);
+                           border-radius: 8px; font: inherit; resize: vertical; }
+  .comment-form .row { display: flex; gap: 8px; margin-top: 8px; }
+  .comment-form .row input { flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font: inherit; }
+  .comment-form .row button { padding: 8px 16px; background: var(--brand); color: white; border: none;
+                              border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+  .comment-form .row button:hover { filter: brightness(1.05); }
+  .comment-form .row button:disabled { background: var(--muted); cursor: not-allowed; }
 </style>
 </head>
 <body>
 <nav class="nav">
   <span class="nav-logo">ADAM</span>
   <span class="nav-sprint">__SPRINT_ID__</span>
+  <span class="nav-reviewer">
+    Reviewing as:
+    <input id="reviewer-name" placeholder="Your name" maxlength="80" />
+  </span>
   <span class="nav-spacer"></span>
   <a href="/sprints/__SPRINT_ID__/chat">← Back to chat</a>
   <a href="/sprints">All sprints</a>
@@ -90,8 +167,9 @@
 
 <div class="container">
   <h1>Final ads</h1>
-  <p class="lede">Upload the assembled ad files from your Figma export so the
-    paid-acquisition team can review and download them in one place.</p>
+  <p class="lede">Upload the assembled ad files from Figma so the paid-acquisition team can review,
+    comment on, and approve each one — then download the whole sprint in one click.
+    <br><small style="color:#92400e;">Note: anyone with this sprint link can post and approve under any name — treat reviewer attribution as informal, not authenticated.</small></p>
 
   <!-- Upload zone -->
   <div class="drop" id="drop">
@@ -110,6 +188,9 @@
     <div id="skipped"></div>
   </div>
 
+  <!-- Review summary -->
+  <div class="summary" id="summary"></div>
+
   <!-- Gallery -->
   <div class="section-title">
     <h2>Uploaded finals <span class="count" id="count"></span></h2>
@@ -118,62 +199,100 @@
   <div id="gallery"></div>
 </div>
 
+<!-- Review modal -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-header">
+      <h3 id="modal-title"></h3>
+      <button class="close" id="modal-close" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
 <script>
 const SPRINT_ID = '__SPRINT_ID__';
 const LIST_URL   = `/sprints/${SPRINT_ID}/finals`;
 const UPLOAD_URL = `/sprints/${SPRINT_ID}/finals/upload`;
+const REVIEWER_KEY = 'adam.reviewer.name';
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function fmtSize(b) {
   if (b < 1024) return b + ' B';
   if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
   return (b / 1024 / 1024).toFixed(1) + ' MB';
 }
-
-function fmtDate(iso) {
-  try { return new Date(iso).toLocaleString(); }
-  catch (_) { return iso; }
+function fmtDate(iso) { try { return new Date(iso).toLocaleString(); } catch (_) { return iso; } }
+function statusLabel(s) {
+  return s === 'approved' ? '✓ Approved' :
+         s === 'changes_requested' ? '✗ Changes requested' : 'Pending';
+}
+function getReviewer() {
+  return (document.getElementById('reviewer-name').value || '').trim();
 }
 
+// ── Reviewer name persistence ───────────────────────────────────────────────
+const reviewerInput = document.getElementById('reviewer-name');
+reviewerInput.value = localStorage.getItem(REVIEWER_KEY) || '';
+reviewerInput.addEventListener('input', () => {
+  localStorage.setItem(REVIEWER_KEY, reviewerInput.value);
+});
+
+// ── Gallery + summary ───────────────────────────────────────────────────────
 async function loadGallery() {
   const gallery = document.getElementById('gallery');
   const count = document.getElementById('count');
+  const summary = document.getElementById('summary');
   try {
     const r = await fetch(LIST_URL);
     if (!r.ok) throw new Error('list failed');
     const data = await r.json();
     const finals = data.finals || [];
+    const s = data.summary || { approved: 0, changes_requested: 0, pending: 0, total: 0 };
     count.textContent = finals.length ? `(${finals.length})` : '';
+    summary.innerHTML = finals.length ? `
+      <div class="pill approved"><strong>${s.approved}</strong> approved</div>
+      <div class="pill changes"><strong>${s.changes_requested}</strong> changes requested</div>
+      <div class="pill pending"><strong>${s.pending}</strong> pending</div>
+    ` : '';
     if (finals.length === 0) {
       gallery.innerHTML = `<div class="empty">No finals uploaded yet — drop your Figma exports above.</div>`;
       return;
     }
     gallery.innerHTML = `<div class="grid">${finals.map(renderCard).join('')}</div>`;
-    // Wire up delete buttons (event delegation is fine but inline handlers
-    // are simpler here since the gallery re-renders fully on each change).
+    gallery.querySelectorAll('[data-review]').forEach(el => {
+      el.addEventListener('click', () => openReview(el.dataset.review));
+    });
     gallery.querySelectorAll('button[data-del]').forEach(btn => {
-      btn.addEventListener('click', () => deleteFinal(btn.dataset.del));
+      btn.addEventListener('click', e => { e.stopPropagation(); deleteFinal(btn.dataset.del); });
     });
   } catch (e) {
-    gallery.innerHTML = `<div class="empty">Couldn't load finals (${e.message}).</div>`;
+    gallery.innerHTML = `<div class="empty">Couldn't load finals (${esc(e.message)}).</div>`;
   }
 }
 
 function renderCard(f) {
-  const safeName = f.name.replace(/</g, '&lt;');
+  const name = esc(f.name);
+  const status = (f.review && f.review.status) || 'pending';
   const thumb = f.is_image
-    ? `<img src="${f.url}" alt="${safeName}" loading="lazy" />`
-    : `<div class="placeholder">${f.mime.split('/')[1].toUpperCase()}<br>${safeName}</div>`;
+    ? `<img src="${esc(f.url)}" alt="${name}" loading="lazy" />`
+    : `<div class="placeholder">${esc(f.mime.split('/')[1].toUpperCase())}<br>${name}</div>`;
+  const cc = (f.review && f.review.comment_count) || 0;
   return `
-    <div class="card">
-      <div class="thumb">${thumb}</div>
+    <div class="card ${status}">
+      <span class="badge ${status}">${statusLabel(status)}</span>
+      <div class="thumb" data-review="${name}">${thumb}</div>
       <div class="meta">
-        <div class="name">${safeName}</div>
+        <div class="name">${name}</div>
         <div class="sub">${fmtSize(f.size)} · ${fmtDate(f.uploaded_at)}</div>
+        ${cc ? `<div class="comment-count">💬 ${cc} comment${cc === 1 ? '' : 's'}</div>` : ''}
       </div>
       <div class="actions">
-        <a href="${f.url}" download="${safeName}">⬇ Download</a>
-        <a href="${f.url}" target="_blank" rel="noopener">Open</a>
-        <button class="del" data-del="${safeName}" type="button">Delete</button>
+        <button class="review" data-review="${name}" type="button">Review & comment</button>
+        <a href="${esc(f.url)}" download="${name}">⬇</a>
+        <a href="${esc(f.url)}" target="_blank" rel="noopener">Open</a>
+        <button class="del" data-del="${name}" type="button">Delete</button>
       </div>
     </div>`;
 }
@@ -182,17 +301,142 @@ async function deleteFinal(name) {
   if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
   try {
     const r = await fetch(`/sprints/${SPRINT_ID}/finals/${encodeURIComponent(name)}`, { method: 'DELETE' });
-    if (!r.ok) {
-      const t = await r.text();
-      alert('Delete failed: ' + t);
-      return;
-    }
+    if (!r.ok) { alert('Delete failed: ' + (await r.text())); return; }
     await loadGallery();
+  } catch (e) { alert('Delete failed: ' + e.message); }
+}
+
+// ── Review modal ────────────────────────────────────────────────────────────
+const modalBg = document.getElementById('modal-bg');
+const modalTitle = document.getElementById('modal-title');
+const modalBody = document.getElementById('modal-body');
+let currentFinal = null;  // filename being reviewed
+
+document.getElementById('modal-close').addEventListener('click', closeReview);
+modalBg.addEventListener('click', e => { if (e.target === modalBg) closeReview(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && modalBg.classList.contains('open')) closeReview(); });
+
+function closeReview() {
+  modalBg.classList.remove('open');
+  currentFinal = null;
+}
+
+async function openReview(name) {
+  currentFinal = name;
+  modalTitle.textContent = name;
+  modalBody.innerHTML = '<p style="color:var(--muted)">Loading…</p>';
+  modalBg.classList.add('open');
+  try {
+    const [listR, revR] = await Promise.all([
+      fetch(LIST_URL),
+      fetch(`/sprints/${SPRINT_ID}/finals/${encodeURIComponent(name)}/review`),
+    ]);
+    const listData = await listR.json();
+    const revData = await revR.json();
+    const meta = (listData.finals || []).find(x => x.name === name) || {};
+    renderModal(meta, revData.review || {});
   } catch (e) {
-    alert('Delete failed: ' + e.message);
+    modalBody.innerHTML = `<p style="color:var(--danger)">Couldn't load: ${esc(e.message)}</p>`;
   }
 }
 
+function renderModal(meta, rev) {
+  const status = rev.status || 'pending';
+  const comments = rev.comments || [];
+  const preview = meta.is_image
+    ? `<img src="${esc(meta.url)}" alt="${esc(meta.name)}" />`
+    : `<div class="placeholder">Preview not available for ${esc(meta.mime || 'this file type')}.<br><a href="${esc(meta.url)}" target="_blank" rel="noopener">Open file</a></div>`;
+  const decision = (status !== 'pending' && rev.decided_by)
+    ? `<div class="decision">${statusLabel(status)} by <strong>${esc(rev.decided_by)}</strong> on ${fmtDate(rev.decided_at)}</div>`
+    : `<div class="decision">No decision recorded yet.</div>`;
+  const commentsHtml = comments.length
+    ? comments.map(c => `
+        <div class="comment ${c.kind === 'status' ? 'status' : ''}">
+          <span class="author">${esc(c.author)}</span><span class="when">${fmtDate(c.at)}</span>
+          <div class="text">${esc(c.text)}</div>
+        </div>`).join('')
+    : `<div class="comment-empty">No comments yet — be the first to weigh in.</div>`;
+
+  modalBody.innerHTML = `
+    <div class="modal-preview">${preview}</div>
+    ${decision}
+    <div class="review-row">
+      <button class="status-btn approve ${status === 'approved' ? 'active' : ''}" data-set-status="approved">✓ Approve</button>
+      <button class="status-btn changes ${status === 'changes_requested' ? 'active' : ''}" data-set-status="changes_requested">✗ Request changes</button>
+      <button class="status-btn reset ${status === 'pending' ? 'active' : ''}" data-set-status="pending">↺ Reset</button>
+    </div>
+    <div class="comments">
+      <h4>Comments (${comments.length})</h4>
+      <div id="comment-list">${commentsHtml}</div>
+      <div class="comment-form">
+        <textarea id="comment-text" placeholder="Add a comment for the team…" maxlength="2000"></textarea>
+        <div class="row">
+          <input id="comment-author" placeholder="Your name" maxlength="80" value="${esc(getReviewer())}" />
+          <button id="comment-submit" type="button">Post comment</button>
+        </div>
+      </div>
+    </div>
+  `;
+  modalBody.querySelectorAll('[data-set-status]').forEach(btn => {
+    btn.addEventListener('click', () => setStatus(btn.dataset.setStatus));
+  });
+  document.getElementById('comment-submit').addEventListener('click', submitComment);
+  // Keep reviewer name in sync when user types it in the modal.
+  document.getElementById('comment-author').addEventListener('input', e => {
+    reviewerInput.value = e.target.value;
+    localStorage.setItem(REVIEWER_KEY, e.target.value);
+  });
+}
+
+async function setStatus(status) {
+  if (!currentFinal) return;
+  const reviewer = getReviewer();
+  if (!reviewer) {
+    alert('Please enter your name at the top of the page first so we know who made this decision.');
+    reviewerInput.focus();
+    return;
+  }
+  try {
+    const r = await fetch(`/sprints/${SPRINT_ID}/finals/${encodeURIComponent(currentFinal)}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reviewer, status }),
+    });
+    if (!r.ok) { alert('Failed: ' + (await r.text())); return; }
+    const data = await r.json();
+    // Refresh modal contents + gallery (badges/summary).
+    const listR = await fetch(LIST_URL);
+    const listData = await listR.json();
+    const meta = (listData.finals || []).find(x => x.name === currentFinal) || {};
+    renderModal(meta, data.review || {});
+    loadGallery();
+  } catch (e) { alert('Failed: ' + e.message); }
+}
+
+async function submitComment() {
+  if (!currentFinal) return;
+  const author = (document.getElementById('comment-author').value || '').trim() || 'Anonymous';
+  const text = (document.getElementById('comment-text').value || '').trim();
+  if (!text) { alert('Comment cannot be empty.'); return; }
+  const btn = document.getElementById('comment-submit');
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/sprints/${SPRINT_ID}/finals/${encodeURIComponent(currentFinal)}/comment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ author, text }),
+    });
+    if (!r.ok) { alert('Failed: ' + (await r.text())); btn.disabled = false; return; }
+    const data = await r.json();
+    const listR = await fetch(LIST_URL);
+    const listData = await listR.json();
+    const meta = (listData.finals || []).find(x => x.name === currentFinal) || {};
+    renderModal(meta, data.review || {});
+    loadGallery();
+  } catch (e) { alert('Failed: ' + e.message); btn.disabled = false; }
+}
+
+// ── Upload ──────────────────────────────────────────────────────────────────
 async function uploadFiles(fileList) {
   if (!fileList || fileList.length === 0) return;
   const progress = document.getElementById('progress');
@@ -219,7 +463,7 @@ async function uploadFiles(fileList) {
       (skippedItems.length ? ` Skipped ${skippedItems.length}.` : '');
     if (skippedItems.length) {
       skipped.innerHTML = `<div class="warn"><strong>Skipped:</strong><ul>` +
-        skippedItems.map(s => `<li><code>${(s.name || '').replace(/</g,'&lt;')}</code> — ${s.reason}</li>`).join('') +
+        skippedItems.map(s => `<li><code>${esc(s.name || '')}</code> — ${esc(s.reason)}</li>`).join('') +
         `</ul></div>`;
     }
     await loadGallery();
@@ -229,15 +473,9 @@ async function uploadFiles(fileList) {
   }
 }
 
-// ── Wire up drop zone + file input ──────────────────────────────────────────
 const drop = document.getElementById('drop');
 const input = document.getElementById('file-input');
-
-input.addEventListener('change', () => {
-  uploadFiles(input.files);
-  input.value = '';  // reset so picking the same file again still fires change
-});
-
+input.addEventListener('change', () => { uploadFiles(input.files); input.value = ''; });
 ['dragenter', 'dragover'].forEach(ev => {
   drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('dragover'); });
 });
