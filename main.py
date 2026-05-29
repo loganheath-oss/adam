@@ -598,6 +598,187 @@ async def submit_order(request: Request):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "status_url": f"/sprints/{sprint_id}"})
 
 
+# ── Hightouch inbound integration ────────────────────────────────────────────
+# Hightouch (reverse ETL) syncs rows from Upwork's data warehouse to operational
+# tools. This exposes ADAM as one such destination: when a warehouse row signals
+# "produce creative for this brief", Hightouch POSTs to /integrations/hightouch/
+# brief and ADAM creates a sprint and starts the (gated) pipeline — exactly the
+# same flow as a form submission to /submit.
+#
+# Auth: a shared bearer token (HIGHTOUCH_API_KEY secret). If it's unset every
+# endpoint returns 503 so the integration fails closed.
+# Idempotency: Hightouch delivers at-least-once, so each row carries a stable
+# external_id. We keep an external_id → sprint_id index and return the existing
+# sprint (200) on a repeat instead of creating a duplicate.
+
+_HIGHTOUCH_INDEX_PATH = RUNS_DIR / "_hightouch_index.json"
+_HIGHTOUCH_LOCK = threading.Lock()
+_HIGHTOUCH_EXTERNAL_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+_HIGHTOUCH_TARGETING = {"Prospecting", "Retargeting", "Prospecting and Retargeting"}
+_HIGHTOUCH_DELIVERABLE = {"images-copy", "images-only", "copy-only"}
+
+
+def _hightouch_check_auth(request: Request) -> None:
+    """Fail closed: 503 if no key configured, 401 if the bearer token is wrong."""
+    expected = os.environ.get("HIGHTOUCH_API_KEY") or ""
+    if not expected:
+        raise HTTPException(
+            status_code=503,
+            detail="Hightouch integration not configured (HIGHTOUCH_API_KEY is unset)",
+        )
+    auth = request.headers.get("authorization", "")
+    token = auth[7:].strip() if auth[:7].lower() == "bearer " else ""
+    if not token or not hmac.compare_digest(token, expected):
+        raise HTTPException(status_code=401, detail="Invalid or missing bearer token")
+
+
+def _hightouch_load_index_unlocked() -> dict:
+    if not _HIGHTOUCH_INDEX_PATH.exists():
+        return {}
+    try:
+        data = json.loads(_HIGHTOUCH_INDEX_PATH.read_text())
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _hightouch_save_index_unlocked(index: dict) -> None:
+    tmp = _HIGHTOUCH_INDEX_PATH.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(index, indent=2, sort_keys=True))
+    tmp.replace(_HIGHTOUCH_INDEX_PATH)
+
+
+def _hightouch_to_order(body: dict, external_id: str, targeting: str, deliverable: str) -> dict:
+    """Map Hightouch's flat warehouse-row payload onto the nested order.json
+    shape the ADAM pipeline expects (driver/targeting/platform + batches[])."""
+    platform = (str(body.get("platform") or "Meta")).strip()
+    fmt = (str(body.get("format") or "Feed")).strip()
+
+    vs = body.get("visual_styles")
+    if isinstance(vs, str):
+        visual_styles = [s.strip() for s in vs.split(",") if s.strip()]
+    elif isinstance(vs, list):
+        visual_styles = [str(s).strip() for s in vs if str(s).strip()]
+    else:
+        visual_styles = []
+    if not visual_styles:
+        visual_styles = ["Lifestyle Photo"]
+
+    size = (str(body.get("resolution") or body.get("size") or "1:1")).strip()
+    try:
+        quantity = max(1, int(body.get("quantity") or 1))
+    except (TypeError, ValueError):
+        quantity = 1
+
+    return {
+        "driver": (str(body.get("driver") or "hightouch-auto")).strip(),
+        "targeting": targeting,
+        "platform": platform,
+        "delivery_date": (str(body.get("delivery_date") or "")).strip(),
+        "deliverable": deliverable,
+        "audience": (str(body.get("audience_segment") or body.get("audience") or "")).strip(),
+        "brief": (str(body.get("brief") or "")).strip(),
+        "source": "hightouch",
+        "external_id": external_id,
+        "batches": [{
+            "platform": platform,
+            "format": fmt,
+            "visual_styles": visual_styles,
+            "resolutions": [{"size": size}],
+            "quantity": quantity,
+        }],
+    }
+
+
+@app.post("/integrations/hightouch/brief")
+async def hightouch_brief(request: Request):
+    """Accept a brief from Hightouch and kick off a sprint.
+    Returns 201 (new sprint) / 200 (duplicate external_id) / 400 (invalid) /
+    401 (bad token) / 503 (integration not configured)."""
+    _hightouch_check_auth(request)
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Body must be valid JSON")
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="Body must be a JSON object")
+
+    external_id = str(body.get("external_id") or "").strip()
+    if not external_id or not _HIGHTOUCH_EXTERNAL_ID_RE.match(external_id):
+        raise HTTPException(status_code=400, detail="external_id is required (1-128 chars of [A-Za-z0-9._:-])")
+    if not str(body.get("delivery_date") or "").strip():
+        raise HTTPException(status_code=400, detail="delivery_date is required")
+    targeting = str(body.get("targeting") or "Prospecting").strip()
+    if targeting not in _HIGHTOUCH_TARGETING:
+        raise HTTPException(status_code=400, detail=f"targeting must be one of {sorted(_HIGHTOUCH_TARGETING)}")
+    deliverable = str(body.get("deliverable") or "images-copy").strip()
+    if deliverable not in _HIGHTOUCH_DELIVERABLE:
+        raise HTTPException(status_code=400, detail=f"deliverable must be one of {sorted(_HIGHTOUCH_DELIVERABLE)}")
+
+    # Idempotent create: do the lookup-and-register under one lock so two
+    # concurrent deliveries of the same external_id can't both create a sprint.
+    order = None
+    with _HIGHTOUCH_LOCK:
+        index = _hightouch_load_index_unlocked()
+        existing = index.get(external_id)
+        if existing and (RUNS_DIR / existing).is_dir():
+            return JSONResponse({
+                "ok": True, "duplicate": True, "external_id": external_id,
+                "sprint_id": existing, "status_url": f"/sprints/{existing}",
+                "chat_url": f"/sprints/{existing}/chat",
+            }, status_code=200)
+        order = _hightouch_to_order(body, external_id, targeting, deliverable)
+        sprint_id = _generate_sprint_id(order)
+        _validate_sprint_id(sprint_id)
+        order["sprint_id"] = sprint_id
+        sprint_dir = RUNS_DIR / sprint_id
+        sprint_dir.mkdir(parents=True, exist_ok=True)
+        (sprint_dir / "order.json").write_text(json.dumps(order, indent=2))
+        (sprint_dir / "pipeline_state.json").write_text(json.dumps({
+            "sprint_id": sprint_id, "state": "queued",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }, indent=2))
+        index[external_id] = sprint_id
+        _hightouch_save_index_unlocked(index)
+
+    # Fire the pipeline outside the lock (it only schedules a task).
+    asyncio.create_task(_run_pipeline_task(order))
+    return JSONResponse({
+        "ok": True, "duplicate": False, "external_id": external_id,
+        "sprint_id": sprint_id, "status_url": f"/sprints/{sprint_id}",
+        "chat_url": f"/sprints/{sprint_id}/chat",
+    }, status_code=201)
+
+
+@app.get("/integrations/hightouch/health")
+async def hightouch_health(request: Request):
+    """Auth-probe endpoint Hightouch can hit while configuring the destination."""
+    _hightouch_check_auth(request)
+    return JSONResponse({
+        "ok": True, "service": "adam", "integration": "hightouch",
+        "time": datetime.now(timezone.utc).isoformat(),
+    })
+
+
+@app.get("/integrations/hightouch/by-external-id/{external_id}")
+async def hightouch_by_external_id(external_id: str, request: Request):
+    """Reconcile from the warehouse side: look up the sprint created for a row."""
+    _hightouch_check_auth(request)
+    if not _HIGHTOUCH_EXTERNAL_ID_RE.match(external_id):
+        raise HTTPException(status_code=400, detail="Invalid external_id")
+    with _HIGHTOUCH_LOCK:
+        index = _hightouch_load_index_unlocked()
+    sprint_id = index.get(external_id)
+    if not sprint_id or not (RUNS_DIR / sprint_id).is_dir():
+        raise HTTPException(status_code=404, detail="No sprint found for that external_id")
+    data = _sprint_data(sprint_id)
+    return JSONResponse({
+        "ok": True, "external_id": external_id, "sprint_id": sprint_id,
+        "state": data.get("state"), "state_label": data.get("state_label"),
+        "status_url": f"/sprints/{sprint_id}", "chat_url": f"/sprints/{sprint_id}/chat",
+    })
+
+
 PIPELINE_STATE_MESSAGES = {
     "queued":                  "Order queued. Kicking off intake…",
     "running":                  "Pipeline is running…",
