@@ -33,6 +33,12 @@ try:
 except Exception as _agent_import_err:  # noqa: F841
     agent_router = None
 
+# Integrations (Hightouch, etc.). Same lazy-import pattern.
+try:
+    from integrations.hightouch import router as hightouch_router
+except Exception as _ht_import_err:  # noqa: F841
+    hightouch_router = None
+
 
 BASE_DIR = Path(__file__).parent
 ORDER_FORM_PATH = BASE_DIR / "order-form" / "order-form-local.html"
@@ -50,6 +56,9 @@ if FONTS_DIR.exists():
 
 if agent_router is not None:
     app.include_router(agent_router)
+
+if hightouch_router is not None:
+    app.include_router(hightouch_router)
 
 
 # ── Pipeline subprocess launcher ────────────────────────────────────────────

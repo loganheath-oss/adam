@@ -1,0 +1,17 @@
+{
+  "external_id": "ht_demo_local_test_001",
+  "delivery_date": "2026-06-15",
+  "driver": "hightouch-auto",
+  "targeting": "Prospecting",
+  "deliverable": "images-copy",
+  "audience_segment": "Q2 prospecting parents 25-40, US",
+  "brief": "Position Upwork as the platform that gives parents control over their schedule. Lead with autonomy, not income.",
+  "platform": "Meta",
+  "format": "Static Feed",
+  "visual_styles": ["Lifestyle Photo", "Testimonial"],
+  "resolutions": [
+    {"size": "1440x1440", "ratio": "1:1"},
+    {"size": "1080x1350", "ratio": "4:5"}
+  ],
+  "quantity": 3
+}
