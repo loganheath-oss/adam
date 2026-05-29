@@ -1,0 +1,194 @@
+❯ I need to make progress connecting the app to hightouch                                                                                                                                                                                                     
+
+⏺ Got it. Concrete deliverable: an authenticated POST endpoint Hightouch can hit, with a clean payload contract, that kicks off a real sprint. Plus a spec doc you can send to whoever at Upwork owns the Hightouch instance.
+
+  First checking the existing order schema so the mapping matches what the pipeline already expects.
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+⏺ Have the schema. Building the integration now.
+
+⏺ Bash(mkdir -p integrations docs)
+  ⎿  Done
+
+⏺ Write(integrations/__init__.py)
+  ⎿  Wrote 7 lines to integrations/__init__.py
+      1 """External integrations (Hightouch, Slack, etc.).
+      2 
+      3 Each integration exposes a FastAPI router. Plug into app.py via:
+      4 
+      5     from integrations.hightouch import router as hightouch_router
+      6     app.include_router(hightouch_router)
+      7 """
+
+⏺ Write(integrations/hightouch.py)
+  ⎿  Wrote 263 lines to integrations/hightouch.py
+       1 """Hightouch → ADAM integration.
+       2 
+       3 Hightouch (reverse ETL) syncs rows from Upwork's data warehouse to operational
+       4 tools. This module exposes ADAM as one of those destinations: when a row in
+       5 the warehouse signals "produce creative for this brief," Hightouch POSTs to
+       6 /integrations/hightouch/brief and ADAM creates a sprint.
+       7
+       8 Design choices:
+       9 - **Simplified payload shape.** Hightouch users map warehouse columns to
+      10   fields; we keep the schema flat and shallow so column mapping is obvious.
+     … +253 lines (ctrl+o to expand)
+
+⏺ Wiring the router into app.py.
+
+⏺ Update(app.py)
+  ⎿  Added 6 lines
+      33  except Exception as _agent_import_err:  # noqa: F841
+      34      agent_router = None
+      35  
+      36 +# Integrations (Hightouch, etc.). Same lazy-import pattern.                                                                                                                                                                                  
+      37 +try:                                                                                                                                                                                                                                         
+      38 +    from integrations.hightouch import router as hightouch_router                                                                                                                                                                            
+      39 +except Exception as _ht_import_err:  # noqa: F841                                                                                                                                                                                            
+      40 +    hightouch_router = None                                                                                                                                                                                                                  
+      41  
+      42 +                                                                                                                                                                                                                                             
+      43  BASE_DIR = Path(__file__).parent
+      44  ORDER_FORM_PATH = BASE_DIR / "order-form" / "order-form-local.html"
+      45  LEGACY_FORM_PATH = BASE_DIR / "order-form" / "upwork-order-form.html"
+
+⏺ Update(app.py)
+  ⎿  Added 3 lines
+      57  if agent_router is not None:
+      58      app.include_router(agent_router)
+      59  
+      60 +if hightouch_router is not None:                                                                                                                                                                                                             
+      61 +    app.include_router(hightouch_router)                                                                                                                                                                                                     
+      62  
+      63 +                                                                                                                                                                                                                                             
+      64  # ── Pipeline subprocess launcher ────────────────────────────────────────────
+      65  
+      66  async def _launch_pipeline(sprint_id: str, order_json_path: Path) -> None:
+
+⏺ Now the spec doc for Upwork's data team.
+
+⏺ Write(docs/hightouch_integration.md)
+  ⎿  Wrote 200 lines to docs/hightouch_integration.md
+       1 # ADAM ← Hightouch Integration Spec
+       2 
+       3 Last updated: 2026-05-29
+       4 
+       5 This is the spec for connecting Upwork's Hightouch instance to ADAM as a
+       6 **custom HTTP destination**. When a row in your warehouse signals "produce
+       7 creative for this brief," Hightouch POSTs to ADAM, ADAM creates a sprint,
+       8 and the pipeline starts running.
+       9
+      10 ## TL;DR for the data team
+     … +190 lines (ctrl+o to expand)
+
+⏺ Write(docs/hightouch_sample_brief.json)
+  ⎿  Wrote 17 lines to docs/hightouch_sample_brief.json
+       1 {
+       2   "external_id": "ht_demo_local_test_001",
+       3   "delivery_date": "2026-06-15",
+       4   "driver": "hightouch-auto",
+       5   "targeting": "Prospecting",
+       6   "deliverable": "images-copy",
+       7   "audience_segment": "Q2 prospecting parents 25-40, US",
+       8   "brief": "Position Upwork as the platform that gives parents control over their schedule. Lead with autonomy, not income.",
+       9   "platform": "Meta",
+      10   "format": "Static Feed",
+     … +7 lines (ctrl+o to expand)
+
+⏺ Validating and pushing.
+
+⏺ Bash(python3 -c "
+      compile(open('app.py').read(), 'app.py', 'exec')…)
+  ⎿  ✓ python compiles
+     ✓ sample brief is valid JSON
+     … +12 lines (ctrl+o to expand)
+  
+⏺ Pushed. Here's what's now on main:
+
+  What landed in loganheath-oss/adam (commit 1bc303b)
+
+  integrations/
+  ├── __init__.py
+  └── hightouch.py        ← bearer-authed inbound endpoint + idempotency
+  docs/
+  ├── hightouch_integration.md    ← spec for Upwork's data team
+  └── hightouch_sample_brief.json ← curl test payload
+  app.py                  ← includes the hightouch_router
+
+  Three new routes on the Replit app:
+
+  ┌────────┬─────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Method │                    Path                     │                                                        What it does                                                        │
+  ├────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ POST   │ /integrations/hightouch/brief               │ Accept a brief, create a sprint, fire the pipeline. 201 new / 200 duplicate / 400 invalid / 401 unauth / 503 unconfigured. │
+  ├────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ GET    │ /integrations/hightouch/health              │ Auth-probe Hightouch can hit during destination setup                                                                      │
+  ├────────┼─────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ GET    │ /integrations/hightouch/by-external-id/{id} │ Reconcile from the warehouse side                                                                                          │
+  └────────┴─────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  Three concrete next moves, in priority order
+
+  1. Pull and add the secret in Replit (5 min).
+
+  Open the Repl shell:
+  git fetch origin main && git reset --hard origin/main
+  
+  Then in Replit Secrets, add HIGHTOUCH_API_KEY with any strong random value (e.g., openssl rand -hex 32 in your local terminal). Restart the workflow. The integration is now live on your public Replit URL.
+
+  2. Smoke test locally (5 min).
+
+  export HIGHTOUCH_API_KEY="<the_secret>"
+  curl -s -X POST https://<your-repl-url>/integrations/hightouch/brief \
+    -H "Authorization: Bearer <the_secret>" \
+    -H "Content-Type: application/json" \
+    -d @docs/hightouch_sample_brief.json | jq
+
+  You should get a 201 with a new sprint_id. Hit it again with the same payload and you get a 200 with duplicate: true and the same sprint_id — proving idempotency works. Then visit /sprints/<id>/chat and the chat UI loads bound to that sprint, exactly
+  like a form-submitted one.
+
+  3. Send the spec doc to Upwork's data team (15 min).
+
+  docs/hightouch_integration.md is written to be sent verbatim. It tells them:
+  - What endpoint to configure (custom HTTP destination in Hightouch)
+  - What auth to use (Bearer + the shared HIGHTOUCH_API_KEY you generate)
+  - Exact payload schema (every field, every enum value, every required vs optional)
+  - Example payloads (minimal + realistic)
+  - Response shapes for each status code
+  - The four things they need to coordinate with you (API key sharing, host URL, rate limits, notification path)
+  
+  That doc is the actual "make progress connecting" deliverable. Once they have it, they can scope the warehouse-side work on their end (audience-table models, sync schedule, column mapping). Until they do that, the endpoint just waits.
+
+  What's deliberately NOT in scope here
+
+  - Outbound (ADAM → Hightouch). Today's integration is one-way: warehouse triggers a sprint. The reverse (ADAM sprint output flowing back to the warehouse for performance attribution) is a separate piece — needs a database write or a queryable API
+  endpoint. Add later if/when Upwork wants closed-loop reporting.
+  - HMAC request signing. Bearer token is sufficient for v1. If Upwork's security team requires per-row signature verification, we add it.
+  - Job queue. Pipeline still runs in a subprocess from the request handler. Fine at <1 sprint/min. At higher volume the host needs a real queue (Redis, Celery, etc.). Hightouch's rate limit can throttle until that's built.
+
+  Tell me when you've pulled + tested locally, and I can help word the message to the data team if useful.
+
+✻ Cooked for 3m 44s
+  
+※ recap: You're connecting ADAM to Hightouch so warehouse triggers create sprints automatically. The inbound `/integrations/hightouch/brief` endpoint + spec doc are pushed to GitHub; next action is pulling into Replit and adding `HIGHTOUCH_API_KEY` to 
+  Secrets, then smoke-testing with the sample brief.
+
+❯ is this live in replic?                                                                                                                                                                                                                                     
+
+⏺ No. I pushed to GitHub (commit 1bc303b), but the Repl is still running whatever code was there before my push. The Repl doesn't auto-sync from GitHub.
+
+  One command makes it live. In the Repl's Shell tab:
+
+  git fetch origin main && git reset --hard origin/main
+  
+  That pulls the new integrations/ directory, the docs, and the updated app.py. Then:
+
+  1. Add HIGHTOUCH_API_KEY to Replit Secrets (lock icon, left sidebar). Any strong random string. Without it the endpoint returns 503.
+  2. Restart the workflow so the new env var loads and the new routes register.
+  3. Verify by hitting GET /integrations/hightouch/health with the bearer header — should return {"ok": true, ...}. Or visit the public Repl URL + /docs (FastAPI's auto-generated Swagger UI) and you'll see all three integration routes listed under
+  "integrations".
+
+  If you want me to give you the exact curl command to test from your terminal once it's pulled, send me your current Repl's public URL and the secret you'll set, and I'll write a one-liner you can paste.
+
+✻ Worked for 19s
