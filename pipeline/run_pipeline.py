@@ -121,6 +121,14 @@ def _extract_chart_pct(concept: dict, row: dict) -> str:
     except Exception:
         return ""
 
+
+def _join_bullets(val) -> str:
+    """Flatten a bullet list (or string) into a '|'-joined manifest cell. The
+    plugin splits on '|' to fill each bullet layer."""
+    if isinstance(val, list):
+        return "|".join(str(x).strip() for x in val if str(x).strip())
+    return str(val or "").strip()
+
 # =============================================================================
 # STAGE 00: INTAKE (local version)
 # =============================================================================
@@ -342,6 +350,31 @@ def _generate_real_copy(order, context, api_key):
             order_brief = context.get("order_brief", order.get("brief", ""))
             priority_note = context.get("_priority_note", "")
 
+            # Multi-field styles need extra structured copy beyond headline/body/cta.
+            _sl = style.strip().lower().replace(" ", "")
+            multi_field_instructions = ""
+            multi_field_keys = ""
+            if _sl == "usvsthem":
+                multi_field_instructions = (
+                    "\n===== EXTRA FIELDS FOR \"Us vs Them\" =====\n"
+                    "This is a side-by-side comparison ad. ALSO provide:\n"
+                    "- us_headline (max 18 chars — the Upwork/positive side label)\n"
+                    "- them_headline (max 18 chars — the old-way/negative side label)\n"
+                    "- us_bullets (array of EXACTLY 3 strings, max 28 chars each — Upwork-side wins)\n"
+                    "- them_bullets (array of EXACTLY 3 strings, max 28 chars each — old-way pains)\n"
+                )
+                multi_field_keys = ", us_headline, them_headline, us_bullets, them_bullets"
+            elif _sl == "stickynote":
+                multi_field_instructions = (
+                    "\n===== EXTRA FIELDS FOR \"Sticky Note\" =====\n"
+                    "This is a two-column sticky-note ad. ALSO provide:\n"
+                    "- left_headline (max 12 chars — left column title)\n"
+                    "- right_headline (max 12 chars — right column title)\n"
+                    "- left_bullets (array of EXACTLY 2 strings, max 30 chars each)\n"
+                    "- right_bullets (array of EXACTLY 2 strings, max 30 chars each)\n"
+                )
+                multi_field_keys = ", left_headline, right_headline, left_bullets, right_bullets"
+
             prompt = f"""You are writing paid acquisition ad copy for Upwork. Follow every brand rule below exactly.
 
 ===== ORDER BRIEF (HIGHEST PRIORITY) =====
@@ -401,7 +434,7 @@ For each concept provide these exact fields:
 - description (max 25 characters — ad platform description field)
 - cta (max 20 characters — this goes on the CTA button in the creative)
 - concept_tag (short slug like "talent-speed-v1")
-
+{multi_field_instructions}
 RULES:
 - Match the brand voice exactly — clear, concise, supportive, professional
 - Use only approved claims and statistics from the section above
@@ -410,7 +443,7 @@ RULES:
 - No generic marketing speak — be specific about what Upwork offers
 - Headlines should follow the 95/5 rule: 95% informative, 5% personality
 
-Return as JSON array of objects with exactly these keys: headline, body_short, body_long, description, cta, concept_tag. No other text."""
+Return as JSON array of objects with exactly these keys: headline, body_short, body_long, description, cta, concept_tag{multi_field_keys}. No other text."""
 
             try:
                 response = httpx.post(
@@ -1460,6 +1493,16 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             # angle + center callout in the plugin. Empty for non-chart styles.
             "Chart_Pct": _extract_chart_pct(concept, row)
                 if str(row.get("visual_style", "")).strip().lower().replace(" ", "") == "piechart" else "",
+            # Multi-field copy (Us vs Them / Sticky Note). Empty for other styles;
+            # bullet lists flattened with "|" (plugin splits them).
+            "Us_Headline": concept.get("us_headline", ""),
+            "Them_Headline": concept.get("them_headline", ""),
+            "Us_Bullets": _join_bullets(concept.get("us_bullets")),
+            "Them_Bullets": _join_bullets(concept.get("them_bullets")),
+            "Left_Headline": concept.get("left_headline", ""),
+            "Right_Headline": concept.get("right_headline", ""),
+            "Left_Bullets": _join_bullets(concept.get("left_bullets")),
+            "Right_Bullets": _join_bullets(concept.get("right_bullets")),
             # Review fields
             "rank": concept.get("rank", ""),
             "selected": concept.get("selected", ""),

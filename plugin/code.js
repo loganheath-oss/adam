@@ -711,6 +711,28 @@ async function fillPieChartValue(clone, pct) {
   }
 }
 
+function splitPipe(s) {
+  return String(s || "").split("|").map(function (x) { return x.trim(); }).filter(Boolean);
+}
+
+// Us vs Them: a side-by-side comparison. Fill the two side headlines and the
+// three bullets per side (us → Bullet1-3, them → Bullet4-6).
+async function fillUsVsThemCopy(clone, row) {
+  var usHead = row.Us_Headline || row.us_headline || row.Headline || row.headline || "";
+  var themHead = row.Them_Headline || row.them_headline || "";
+  var usB = splitPipe(row.Us_Bullets || row.us_bullets);
+  var themB = splitPipe(row.Them_Bullets || row.them_bullets);
+  if (usHead) await setFirstTextByCandidates(clone, ["UsVsThem_headline_text", "headline_text"], usHead);
+  if (themHead) await setFirstTextByCandidates(clone, ["UsVsThem_headlinethem_text"], themHead);
+  for (var i = 0; i < 3; i++) {
+    if (usB[i]) await setFirstTextByCandidates(clone, ["UsVsThem_Bullet" + (i + 1)], usB[i]);
+  }
+  for (var k = 0; k < 3; k++) {
+    if (themB[k]) await setFirstTextByCandidates(clone, ["UsVsThem_Bullet" + (k + 4)], themB[k]);
+  }
+  return true;
+}
+
 // ── Styled-per-row mode ─────────────────────────────────────────────────────
 
 function findStyledTemplate(searchRoot, visualStyle, w, h) {
@@ -912,10 +934,23 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
 
       // Sticky Note: also try to fill the right-side headline if we have a body
       if (key === "sticky note") {
-        var rightCandidates = STYLE_BULLET_LAYERS[key] || [];
-        var rightText = row.Primary_Text_Short || row.body_short || "";
-        if (rightText) {
-          await setFirstTextByCandidates(clone, rightCandidates, rightText);
+        // Prefer the structured two-column copy (Left/Right headline + 2 bullets each).
+        var lh = row.Left_Headline || row.left_headline || headlineText || "";
+        var rh = row.Right_Headline || row.right_headline || "";
+        var lb = splitPipe(row.Left_Bullets || row.left_bullets);
+        var rb = splitPipe(row.Right_Bullets || row.right_bullets);
+        if (lh) await setFirstTextByCandidates(clone, ["Left_Headline_Text"], lh);
+        if (rh) await setFirstTextByCandidates(clone, ["right_headline_text", "Right_Headline_Text"], rh);
+        if (lb[0]) await setFirstTextByCandidates(clone, ["Left_Bullet_Text1", "Left_Bullet_Text_1"], lb[0]);
+        if (lb[1]) await setFirstTextByCandidates(clone, ["Left_Bullet_Text2", "Left_Bullet_Text_2"], lb[1]);
+        if (rb[0]) await setFirstTextByCandidates(clone, ["Right_Bullet_Text1", "Right_Bullet_Text_1"], rb[0]);
+        if (rb[1]) await setFirstTextByCandidates(clone, ["Right_Bullet_Text2", "Right_Bullet_Text_2"], rb[1]);
+        if (lh || rh || lb.length || rb.length) {
+          log("  ✓ sticky-note columns filled (structured)");
+        } else {
+          // Fallback: mirror the short body into the right-side layer (legacy behavior).
+          var rightText = row.Primary_Text_Short || row.body_short || "";
+          if (rightText) await setFirstTextByCandidates(clone, STYLE_BULLET_LAYERS[key] || [], rightText);
         }
       }
     }
@@ -931,6 +966,12 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
       } else {
         log("  (pie chart: no Chart_Pct in row — slice left as-is)");
       }
+    }
+
+    // Us vs Them: fill both side headlines + the three bullets per side.
+    if (key === "us vs them") {
+      await fillUsVsThemCopy(clone, row);
+      log("  ✓ us-vs-them copy filled (us/them headlines + bullets)");
     }
 
     // Position next clone in a flexible grid (8 per row)
