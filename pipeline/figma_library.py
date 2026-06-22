@@ -241,6 +241,8 @@ VISUAL_STYLE_TO_TAG = {
     # from the lifestyle_photo pool. Caller is responsible for invoking
     # pick_photo_for_asset twice with exclude_ids to guarantee distinct picks.
     "Split Screen":      "lifestyle_photo",
+    # Hybrid (2026-06-22): dashboard mock with a photo_with_text-style image slot.
+    "Hybrid":            "photo_with_text",
     # Aliases for styles that reuse a photo template
     "Social Media Profile": "testimonial",
     "Talent Profile":       "testimonial",

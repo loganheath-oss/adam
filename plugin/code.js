@@ -58,6 +58,14 @@ var STYLE_TEMPLATE_PREFIXES = {
   // SplitScreen skeleton). Container scoping (STYLE_ADTYPE_CONTAINERS)
   // keeps Meme from colliding with the real Split Screen adtype.
   "meme":            ["Template_SplitScreen"],
+  // ── New styles (2026-06-22): rebuilt on reused base skeletons; the Adtype
+  // container (STYLE_ADTYPE_CONTAINERS) disambiguates the shared prefixes.
+  "poll":            ["Template_SplitScreen"],
+  "us vs them":      ["Template_TestimonialC"],
+  "platform ui":     ["Template_ChatBubble"],
+  "search results":  ["Template_ChatBubble", "Template_TestimonialC"],
+  "device ui":       ["Template_TestimonialC"],
+  "hybrid":          ["Template_PhotoWithTextB", "Template_PhotoWithText"],
   // Aliases handled by normalize()
 };
 
@@ -77,6 +85,14 @@ var STYLE_ADTYPE_CONTAINERS = {
   "split screen":    ["Adtype: Split Screen"],
   "reminder":        ["Adtype: Reminder"],
   "meme":            ["Adtype: Meme"],
+  // New styles (2026-06-22) — container scoping is what isolates these, since
+  // several share the Template_TestimonialC / Template_ChatBubble bases.
+  "poll":            ["Adtype: Poll"],
+  "us vs them":      ["AdType: UsVsThem"],
+  "platform ui":     ["AdType_PlatformUI"],
+  "search results":  ["AdType_SearchResults"],
+  "device ui":       ["Upwork - Mobile Homepage"],
+  "hybrid":          ["AdType: Hybrid"],
 };
 
 // When a template is a COMPONENT_SET, prefer variants whose name contains one
@@ -115,10 +131,21 @@ var STYLE_HEADLINE_LAYERS = {
   // documentation / fallback safety net — the special branch returns before
   // the generic STYLE_HEADLINE_LAYERS flow runs.
   "reminder":        ["Notification_Headline_Text", "headline_text"],
+  // New styles (2026-06-22) — exact headline layer names from the live file.
+  "poll":            ["SplitScreen_Headline_Text", "headline_text"],
+  "us vs them":      ["UsVsThem_headline_text", "headline_text"],
+  "platform ui":     ["TextOnly_headline_text", "headline_text"],
+  "search results":  ["TextOnly_headline_text", "headline_text"],
+  "device ui":       ["TextOnly_headline_text", "headline_text"],
+  "hybrid":          ["PhotoWithText_Headline_Text", "headline_text"],
 };
 
 var STYLE_BULLET_LAYERS = {
   "sticky note": ["right_headline_text", "Right_Headline_Text"],
+  // Us vs Them: six comparison bullets (3 "us" + 3 "them") + the "them" headline.
+  // Generic flow fills the primary headline + cta; full bullet fill is follow-up.
+  "us vs them": ["UsVsThem_Bullet1", "UsVsThem_Bullet2", "UsVsThem_Bullet3",
+                 "UsVsThem_Bullet4", "UsVsThem_Bullet5", "UsVsThem_Bullet6"],
 };
 
 // Styles where the manifest's library photo should NOT overwrite template
@@ -135,6 +162,15 @@ var STYLES_THAT_SKIP_IMAGE = {
   // specific meme handle, e.g. "this-is-fine 1"). Pipeline never supplies
   // an image for Meme — adding a new meme requires a new template family.
   "meme":             true,
+  // New styles (2026-06-22) that are graphic/UI only (no photo slot to fill).
+  // Hybrid is NOT here — it has a real image_placeholder.
+  "us vs them":       true,
+  "platform ui":      true,
+  "search results":   true,
+  "device ui":        true,
+  // Poll has a right_image_placeholder but ships with built imagery; keep it
+  // until library routing for Poll is confirmed.
+  "poll":             true,
 };
 
 // Styles whose template has MORE THAN ONE image placeholder. Today's filler

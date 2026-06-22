@@ -775,6 +775,9 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
         # Split Screen pulls TWO library photos — one per placeholder. The dual
         # pick is handled below by branching on DUAL_PHOTO_LIBRARY_STYLES.
         "Split Screen",
+        # Hybrid (2026-06-22): dashboard mock with a real image_placeholder — fed
+        # a library photo like Photo with Text.
+        "Hybrid",
     }
 
     # Styles that only need a background (no scene generation)
@@ -789,7 +792,10 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
     # image baked into the template (e.g. "this-is-fine 1"); pipeline supplies
     # caption only. Adding a new meme requires a new template family from
     # Brandon, not a new pipeline-generated image.
-    SKIP_IMAGE = {"Platform UI", "Meme"}
+    SKIP_IMAGE = {"Platform UI", "Meme",
+                  # New graphic/UI-only styles (2026-06-22) — no photo slot; the
+                  # plugin keeps their built imagery (STYLES_THAT_SKIP_IMAGE).
+                  "Us vs Them", "Device UI"}
 
     # Pre-fetch the Figma library once if any photo-based style is in the order.
     # Cached for the duration of this stage.
