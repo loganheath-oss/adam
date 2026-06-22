@@ -26,6 +26,7 @@ Version: 1.0
 import json
 import csv
 import os
+import re
 import sys
 import time
 import uuid
@@ -97,6 +98,28 @@ def _variant_frame_id(template_name: str, variant_name: str) -> str:
         if v.get("variant_name") == variant_name:
             return v.get("figma_frame_id", "") or ""
     return ""
+
+
+# Pie Chart: pull the data percentage from the concept copy so the plugin can
+# size the chart slice + fill the center callout (Elise's Figma comment #8).
+_CHART_PCT_RE = re.compile(r"(\d{1,3}(?:\.\d+)?)\s*%")
+
+def _extract_chart_pct(concept: dict, row: dict) -> str:
+    """First percentage found in the concept copy, as a plain number string
+    ('73'), or '' if none. The slice angle = pct/100 of a full circle."""
+    text = " ".join(str(concept.get(k, "")) for k in
+                     ("headline", "body", "body_short", "body_long", "stat", "description"))
+    text += " " + str(row.get("headline", ""))
+    m = _CHART_PCT_RE.search(text)
+    if not m:
+        return ""
+    try:
+        v = float(m.group(1))
+        if not (0 <= v <= 100):
+            return ""
+        return str(int(v)) if v == int(v) else str(v)
+    except Exception:
+        return ""
 
 # =============================================================================
 # STAGE 00: INTAKE (local version)
@@ -1433,6 +1456,10 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Headline": concept.get("headline", row.get("headline", "")),
             "Description": concept.get("description", ""),
             "CTA": concept.get("cta", ""),
+            # Pie Chart data value (0-100) parsed from the copy — drives the slice
+            # angle + center callout in the plugin. Empty for non-chart styles.
+            "Chart_Pct": _extract_chart_pct(concept, row)
+                if str(row.get("visual_style", "")).strip().lower().replace(" ", "") == "piechart" else "",
             # Review fields
             "rank": concept.get("rank", ""),
             "selected": concept.get("selected", ""),

@@ -66,6 +66,7 @@ var STYLE_TEMPLATE_PREFIXES = {
   "search results":  ["Template_ChatBubble", "Template_TestimonialC"],
   "device ui":       ["Template_TestimonialC"],
   "hybrid":          ["Template_PhotoWithTextB", "Template_PhotoWithText"],
+  "pie chart":       ["Template_TestimonialC"],
   // Aliases handled by normalize()
 };
 
@@ -93,6 +94,7 @@ var STYLE_ADTYPE_CONTAINERS = {
   "search results":  ["AdType_SearchResults"],
   "device ui":       ["Upwork - Mobile Homepage"],
   "hybrid":          ["AdType: Hybrid"],
+  "pie chart":       ["AdType: PieChart"],
 };
 
 // When a template is a COMPONENT_SET, prefer variants whose name contains one
@@ -171,6 +173,9 @@ var STYLES_THAT_SKIP_IMAGE = {
   // Poll has a right_image_placeholder but ships with built imagery; keep it
   // until library routing for Poll is confirmed.
   "poll":             true,
+  // Pie Chart is a vector/gradient graphic — no photo; the slice is drawn by
+  // fillPieChartValue() from the manifest's Chart_Pct.
+  "pie chart":        true,
 };
 
 // Styles whose template has MORE THAN ONE image placeholder. Today's filler
@@ -651,6 +656,61 @@ async function fillStickyNoteCopy(clone, headline, bodyShort, bodyLong) {
   await setFirstTextByCandidates(clone, ["Right_Bullet_Text2", "Right_Bullet_Text_2"], rightBullet2);
 }
 
+// Pie Chart: draw the data slice + fill the center callout. `pct` is 0-100.
+// Figma ELLIPSE nodes expose arcData {startingAngle, endingAngle, innerRadius};
+// setting endingAngle to pct/100 of a full turn renders the filled wedge. The
+// "value" arc is the top colored ("Dark Gradient"/"value"/"slice") ellipse; the
+// background ellipse(s) stay full circles. Center text = "<pct>%".
+// (Answers Elise's Figma comment #8: "reflect a % from a data set".)
+async function fillPieChartValue(clone, pct) {
+  var p = Number(pct);
+  if (!isFinite(p)) return false;
+  p = Math.max(0, Math.min(100, p));
+  var TWO_PI = Math.PI * 2;
+  var START = -Math.PI / 2; // 12 o'clock
+
+  // Center callout = the percentage.
+  await setFirstTextByCandidates(
+    clone,
+    ["Center_Callout_Text", "chart_center_text", "TextOnly_Subhead_Text", "headline_text"],
+    String(Math.round(p)) + "%"
+  );
+
+  // Collect every ellipse in the clone.
+  var ellipses = [];
+  (function collect(n) {
+    if (n.type === "ELLIPSE") ellipses.push(n);
+    var ch = n.children;
+    if (ch) for (var i = 0; i < ch.length; i++) collect(ch[i]);
+  })(clone);
+  if (!ellipses.length) return false;
+
+  // Prefer an explicitly-named value arc; else the first colored ("dark") arc;
+  // else the first ellipse. (A future template rename to "Chart_Value_Arc"
+  // makes this unambiguous.)
+  var valueArc = null;
+  for (var i = 0; i < ellipses.length; i++) {
+    var nm = (ellipses[i].name || "").toLowerCase();
+    if (nm.indexOf("value") >= 0 || nm.indexOf("slice") >= 0 || nm.indexOf("chart_value") >= 0) { valueArc = ellipses[i]; break; }
+  }
+  if (!valueArc) {
+    for (var j = 0; j < ellipses.length; j++) {
+      if ((ellipses[j].name || "").toLowerCase().indexOf("dark") >= 0) { valueArc = ellipses[j]; break; }
+    }
+  }
+  if (!valueArc) valueArc = ellipses[0];
+
+  try {
+    var inner = (valueArc.arcData && typeof valueArc.arcData.innerRadius === "number")
+      ? valueArc.arcData.innerRadius : 0;
+    valueArc.arcData = { startingAngle: START, endingAngle: START + (p / 100) * TWO_PI, innerRadius: inner };
+    return true;
+  } catch (e) {
+    log("  ⚠ pie chart arc set failed: " + e);
+    return false;
+  }
+}
+
 // ── Styled-per-row mode ─────────────────────────────────────────────────────
 
 function findStyledTemplate(searchRoot, visualStyle, w, h) {
@@ -857,6 +917,19 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
         if (rightText) {
           await setFirstTextByCandidates(clone, rightCandidates, rightText);
         }
+      }
+    }
+
+    // Pie Chart: size the slice from the data % and fill the center callout.
+    if (key === "pie chart") {
+      var chartPct = row.Chart_Pct || row.chart_pct || row.Chart_Pct_Value || "";
+      if (chartPct !== "" && chartPct !== null && chartPct !== undefined) {
+        var chartOk = await fillPieChartValue(clone, chartPct);
+        log(chartOk
+          ? "  ✓ pie chart slice → " + chartPct + "% (center callout filled)"
+          : "  ⚠ pie chart: no arc ellipse found to size");
+      } else {
+        log("  (pie chart: no Chart_Pct in row — slice left as-is)");
       }
     }
 
