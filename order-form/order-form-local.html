@@ -80,7 +80,14 @@
   .card-body { padding:22px; }
 
   /* ── BASE INPUTS ─────────────────────────────────────────────────────────── */
-  select, input[type="date"], input[type="text"], input[type="number"], textarea {
+  /* Shared control height so text inputs and custom triggers line up exactly. */
+  select, input[type="date"], input[type="text"], input[type="number"] {
+    width:100%; height:46px; font-family:var(--font-sans); font-size:14px; color:var(--ink);
+    background:var(--paper); border:1px solid var(--rule-strong); border-radius:var(--radius-lg);
+    padding:0 14px; outline:none; transition:border-color .15s, box-shadow .15s;
+    -webkit-appearance:none; appearance:none;
+  }
+  textarea {
     width:100%; font-family:var(--font-sans); font-size:14px; color:var(--ink);
     background:var(--paper); border:1px solid var(--rule-strong); border-radius:var(--radius-lg);
     padding:12px 14px; outline:none; transition:border-color .15s, box-shadow .15s;
@@ -416,10 +423,10 @@
      these widgets just drive them. */
   .cui-picker { position:relative; }
   .cui-trigger {
-    width:100%; display:flex; align-items:center; gap:10px;
+    width:100%; height:46px; display:flex; align-items:center; gap:10px;
     font-family:var(--font-sans); font-size:14px; color:var(--ink); text-align:left;
     background:var(--paper); border:1px solid var(--rule-strong); border-radius:var(--radius-lg);
-    padding:11px 13px; cursor:pointer; transition:border-color .15s, box-shadow .15s, background .15s;
+    padding:0 14px; cursor:pointer; transition:border-color .15s, box-shadow .15s, background .15s;
   }
   .cui-trigger:hover { border-color:var(--brand-green-soft); }
   .cui-trigger[aria-expanded="true"] {
@@ -430,7 +437,8 @@
   .cui-trigger-icon svg { width:16px; height:16px; }
   .cui-trigger-label { flex:1; line-height:1.3; }
   .cui-trigger-label.cui-placeholder { color:var(--ink-dim); }
-  .cui-trigger-arrow { color:var(--ink-dim); font-size:11px; transition:transform .2s, color .15s; }
+  .cui-trigger-arrow { display:inline-flex; align-items:center; color:var(--ink-dim); flex-shrink:0; transition:transform .2s, color .15s; }
+  .cui-trigger-arrow svg { width:11px; height:11px; display:block; }
   .cui-trigger[aria-expanded="true"] .cui-trigger-arrow { transform:rotate(180deg); color:var(--brand-green); }
 
   .cui-pop {
@@ -729,7 +737,7 @@
               <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M2 6h12M5.5 1.5v3M10.5 1.5v3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
             </span>
             <span class="cui-trigger-label cui-placeholder" id="date-label">Select a date…</span>
-            <span class="cui-trigger-arrow" aria-hidden="true">▾</span>
+            <span class="cui-trigger-arrow" aria-hidden="true"><svg viewBox="0 0 12 8" fill="none"><path d="M1 1.5l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           </button>
           <div class="cui-pop cui-cal" id="date-popover" role="dialog" aria-label="Choose delivery date" hidden></div>
         </div>
@@ -744,10 +752,10 @@
           <option>Retargeting</option>
           <option>Prospecting and Retargeting</option>
         </select>
-        <div class="cui-picker" style="max-width:340px;">
+        <div class="cui-picker">
           <button type="button" class="cui-trigger" id="targeting-trigger" onclick="toggleSelect(event,'targeting')" aria-haspopup="listbox" aria-expanded="false">
             <span class="cui-trigger-label cui-placeholder" id="targeting-label">Select audience segment…</span>
-            <span class="cui-trigger-arrow" aria-hidden="true">▾</span>
+            <span class="cui-trigger-arrow" aria-hidden="true"><svg viewBox="0 0 12 8" fill="none"><path d="M1 1.5l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           </button>
           <div class="cui-pop cui-list" id="targeting-popover" role="listbox" aria-label="Audience segment" hidden></div>
         </div>
