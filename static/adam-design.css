@@ -1,0 +1,313 @@
+/* ============================================================================
+   ADAM — Design System
+   ----------------------------------------------------------------------------
+   Single source of truth for the ADAM (Upwork Paid Acquisition) interface.
+   Light mode only. Upwork green used as a restrained accent on a white canvas.
+   Typeface: PP Neue Montreal (self-hosted, served at /fonts).
+
+   Brand rules (Brandon, May 2026 — keep):
+     • Palette below is the approved Upwork ramp. Do not introduce new hues.
+     • Font weight is capped at Regular/400. Build hierarchy with SIZE, COLOR,
+       LETTER-SPACING and SPACE — never weight.
+
+   Design language adapted from the "Quiet Instrument" base: soft white cards,
+   layered low-contrast shadows, one accent used rarely, tabular numerics,
+   restrained fixed radii, whisper motion (reduced-motion safe).
+
+   This file is documented in /DESIGN.md. Every ADAM page should link it:
+     <link rel="stylesheet" href="/static/adam-design.css">
+   ============================================================================ */
+
+/* ── Fonts ─────────────────────────────────────────────────────────────────
+   Absolute /fonts paths so any page (static or server-rendered) resolves them. */
+@font-face { font-family:'PP Neue Montreal'; src:url('/fonts/PPNeueMontreal-Light.woff2')        format('woff2'); font-weight:300; font-style:normal; font-display:swap; }
+@font-face { font-family:'PP Neue Montreal'; src:url('/fonts/PPNeueMontreal-Regular.woff2')      format('woff2'); font-weight:400; font-style:normal; font-display:swap; }
+@font-face { font-family:'PP Neue Montreal'; src:url('/fonts/PPNeueMontreal-Italic.woff2')       format('woff2'); font-weight:400; font-style:italic; font-display:swap; }
+@font-face { font-family:'PP Neue Montreal'; src:url('/fonts/PPNeueMontreal-Medium.woff2')       format('woff2'); font-weight:500; font-style:normal; font-display:swap; }
+@font-face { font-family:'PP Neue Montreal'; src:url('/fonts/PPNeueMontreal-SemiBold.woff2')     format('woff2'); font-weight:600; font-style:normal; font-display:swap; }
+@font-face { font-family:'PP Neue Montreal'; src:url('/fonts/PPNeueMontreal-Bold.woff2')         format('woff2'); font-weight:700; font-style:normal; font-display:swap; }
+
+/* ── Tokens ────────────────────────────────────────────────────────────── */
+:root {
+  /* Canvas + ink (neutral; the accent carries all signal) */
+  --bg:#FFFFFF;
+  --paper:#FFFFFF;
+  --ink:#0A0A0A;            /* primary text */
+  --ink-mid:#5C5C5C;        /* secondary text */
+  --ink-dim:#9A9A9A;        /* tertiary / metadata */
+  --rule:#ECECEC;           /* hairline borders */
+  --rule-strong:#E0E0E0;    /* slightly stronger divider */
+  --hover:#F7F8F6;          /* subtle row/control hover wash */
+  --tint:#F4FAF1;           /* faintest green-tinted surface */
+
+  /* Upwork green ramp (Brandon's approved swatches — the only hues we use) */
+  --brand-green:#14A800;        /* THE accent */
+  --brand-green-deep:#108700;   /* pressed / hover-darken for solid greens */
+  --brand-hero:#67DC12;
+  --brand-green-bright:#41D131;
+  --brand-green-medium:#2EBE1B;
+  --brand-green-soft:#9ED79B;
+  --brand-green-light:#C4F4C0;
+  --brand-green-cream:#E0F5C3;
+  --brand-green-yellow:#E9F899;
+  --brand-black:#000000;
+  --brand-white:#FFFFFF;
+
+  /* Status — solid = dot/fill, *-fg = readable text on a soft tint */
+  --good:#14A800;  --good-fg:#0F7A00;
+  --warn:#D97706;  --warn-fg:#B45309;
+  --bad:#E11D48;   --bad-fg:#BE123C;
+  --neutral:#9A9A9A;
+
+  /* Soft layered elevation (light) */
+  --shadow-soft-sm: 0 1px 2px rgba(16,24,40,.04), 0 2px 8px -4px rgba(16,24,40,.06);
+  --shadow-soft:    0 1px 2px rgba(16,24,40,.04), 0 8px 24px -10px rgba(16,24,40,.10);
+  --shadow-pop:     0 12px 40px -10px rgba(16,24,40,.18), 0 2px 10px -6px rgba(16,24,40,.10);
+
+  /* Restrained, fixed radii */
+  --radius-sm:4px; --radius-md:6px; --radius-lg:8px;
+  --radius-xl:12px; --radius-2xl:14px; --radius-3xl:16px; --radius-pill:999px;
+
+  /* Type */
+  --font-sans:'PP Neue Montreal', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Layout */
+  --page-max:1080px;
+  --nav-h:60px;
+}
+
+/* ── Reset + base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+html {
+  background:var(--bg);
+  scrollbar-gutter:stable;
+  scrollbar-width:thin;
+  scrollbar-color:var(--rule-strong) transparent;
+  -webkit-text-size-adjust:100%;
+}
+
+body {
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-sans);
+  font-size:14px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+}
+
+/* Brand rule: cap weight at Regular/400 everywhere. Hierarchy comes from
+   size, color, tracking and space. Remove ONLY with Brandon's sign-off. */
+body, body * { font-weight:400 !important; }
+
+a { color:var(--brand-green); text-decoration:none; }
+a:hover { color:var(--brand-green-deep); }
+
+/* Hand cursor on everything actionable */
+button:not(:disabled), [role="button"]:not([aria-disabled="true"]), a[href],
+summary, label[for], select:not(:disabled), .clickable { cursor:pointer; }
+
+/* Themed, subtle scrollbars */
+::-webkit-scrollbar { width:11px; height:11px; }
+::-webkit-scrollbar-thumb {
+  background-color:var(--rule-strong); border-radius:var(--radius-pill);
+  border:3px solid transparent; background-clip:padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background-color:var(--ink-dim); }
+
+/* Accessible focus ring (green) */
+:focus-visible { outline:2px solid var(--brand-green); outline-offset:2px; border-radius:3px; }
+
+::selection { background:var(--brand-green-light); color:var(--ink); }
+
+/* ── Typography utilities ─────────────────────────────────────────────────── */
+
+/* Uppercase micro-label. Reads as a "quiet label" using tracking + size +
+   muted color (NOT weight, per the 400 cap). */
+.adam-label {
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  font-size:11px;
+  color:var(--ink-mid);
+  line-height:1.4;
+}
+.adam-label--dim { color:var(--ink-dim); }
+
+/* Tabular numerics — every metric, table number, quantity, id */
+.font-num { font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
+
+/* Display title — large, tight, confident. Weight stays 400; scale does the work. */
+.adam-display {
+  font-size:clamp(2.4rem, 5vw, 3.4rem);
+  line-height:.96;
+  letter-spacing:-.01em;
+}
+
+/* ── Page frame ───────────────────────────────────────────────────────────── */
+.adam-page { min-height:100dvh; display:flex; flex-direction:column; }
+.adam-container { width:100%; max-width:var(--page-max); margin-inline:auto; padding-inline:clamp(16px,4vw,40px); }
+.adam-main { flex:1; padding-block:36px 96px; }
+
+/* Whisper accent wash — fixed, pointer-none, very-low-alpha green radials.
+   Depth without tint. Replaces any animated background. */
+.adam-wash {
+  position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden;
+  background:
+    radial-gradient(900px 480px at 84% -8%, color-mix(in srgb, var(--brand-green) 7%, transparent), transparent 60%),
+    radial-gradient(760px 420px at 6% 108%, color-mix(in srgb, var(--brand-hero) 6%, transparent), transparent 62%);
+}
+
+/* ── Surfaces ─────────────────────────────────────────────────────────────── */
+.card-soft {
+  background:var(--paper);
+  border:1px solid var(--rule);
+  border-radius:var(--radius-2xl);
+  box-shadow:var(--shadow-soft);
+}
+.shadow-soft    { box-shadow:var(--shadow-soft); }
+.shadow-soft-sm { box-shadow:var(--shadow-soft-sm); }
+.shadow-pop     { box-shadow:var(--shadow-pop); }
+
+.hairline { border:1px solid var(--rule); }
+.divider  { height:1px; background:var(--rule); border:0; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-family:var(--font-sans); font-size:14px; letter-spacing:.02em;
+  border-radius:var(--radius-lg); padding:11px 20px; border:1px solid transparent;
+  background:var(--paper); color:var(--ink);
+  transition:background .16s ease, color .16s ease, border-color .16s ease, transform .1s ease, box-shadow .16s ease;
+}
+.btn:active { transform:translateY(1px); }
+
+.btn-primary {
+  background:var(--brand-green); color:#fff; border-color:var(--brand-green);
+  box-shadow:var(--shadow-soft-sm);
+}
+.btn-primary:hover { background:var(--brand-green-deep); border-color:var(--brand-green-deep); color:#fff; }
+
+.btn-secondary {
+  background:var(--paper); color:var(--ink); border-color:var(--rule-strong);
+}
+.btn-secondary:hover { border-color:var(--ink); background:var(--hover); }
+
+.btn-ghost { background:transparent; color:var(--ink-mid); }
+.btn-ghost:hover { background:var(--hover); color:var(--ink); }
+
+.btn-pill { border-radius:var(--radius-pill); padding-inline:28px; }
+.btn-lg   { font-size:16px; padding:14px 30px; }
+
+/* ── Form controls ───────────────────────────────────────────────────────── */
+.input, input.input, select.input, textarea.input,
+.field input[type="text"], .field input[type="date"], .field input[type="number"],
+.field select, .field textarea {
+  width:100%; font-family:var(--font-sans); font-size:14px; color:var(--ink);
+  background:var(--paper); border:1px solid var(--rule-strong); border-radius:var(--radius-lg);
+  padding:10px 12px; outline:none; transition:border-color .15s, box-shadow .15s, background .15s;
+  -webkit-appearance:none; appearance:none;
+}
+.input:focus, .field input:focus, .field select:focus, .field textarea:focus {
+  border-color:var(--brand-green);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--brand-green) 14%, transparent);
+}
+.input::placeholder, .field input::placeholder, .field textarea::placeholder { color:var(--ink-dim); }
+
+/* Chevron for selects */
+.select-chevron, select.input, .field select {
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239A9A9A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center; padding-right:32px;
+}
+
+/* ── Chips / status ──────────────────────────────────────────────────────── */
+.chip {
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+  padding:3px 9px; border-radius:var(--radius-pill);
+  background:var(--hover); color:var(--ink-mid); border:1px solid var(--rule);
+}
+.chip-good    { background:color-mix(in srgb, var(--good) 12%, transparent);    color:var(--good-fg);    border-color:color-mix(in srgb, var(--good) 22%, transparent); }
+.chip-warn    { background:color-mix(in srgb, var(--warn) 14%, transparent);    color:var(--warn-fg);    border-color:color-mix(in srgb, var(--warn) 24%, transparent); }
+.chip-bad     { background:color-mix(in srgb, var(--bad) 12%, transparent);     color:var(--bad-fg);     border-color:color-mix(in srgb, var(--bad) 22%, transparent); }
+.chip-neutral { background:var(--hover); color:var(--ink-mid); border-color:var(--rule); }
+
+.dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; background:var(--neutral); }
+.dot-good { background:var(--good); }
+.dot-warn { background:var(--warn); }
+.dot-bad  { background:var(--bad); }
+
+/* ── Navigation (shared chrome) ──────────────────────────────────────────── */
+.adam-nav {
+  position:sticky; top:0; z-index:50;
+  height:var(--nav-h);
+  display:flex; align-items:center; gap:28px;
+  padding-inline:clamp(16px,4vw,40px);
+  background:color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter:saturate(180%) blur(16px);
+  -webkit-backdrop-filter:saturate(180%) blur(16px);
+  border-bottom:1px solid var(--rule);
+}
+.adam-nav-brand {
+  display:inline-flex; align-items:center; gap:10px;
+  color:var(--ink); flex-shrink:0;
+}
+.adam-nav-brand .adam-logo {
+  font-size:19px; letter-spacing:.18em; color:var(--ink);
+  /* ADAM wordmark — tracked caps. The dot is the only green moment in the mark. */
+}
+.adam-nav-brand .adam-logo b { color:var(--brand-green); font-weight:400 !important; }
+.adam-nav-brand .adam-sub {
+  font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-dim);
+  border-left:1px solid var(--rule-strong); padding-left:10px;
+}
+.adam-nav-links { display:flex; align-items:center; gap:4px; margin-left:auto; }
+.adam-nav-links a {
+  position:relative; font-size:13.5px; letter-spacing:.01em; color:var(--ink-mid);
+  padding:7px 12px; border-radius:var(--radius-md); transition:color .15s, background .15s;
+}
+.adam-nav-links a:hover { color:var(--ink); background:var(--hover); }
+.adam-nav-links a.active { color:var(--ink); }
+.adam-nav-links a.active::after {
+  content:""; position:absolute; left:12px; right:12px; bottom:-1px; height:2px;
+  background:var(--brand-green); border-radius:2px;
+}
+@media (max-width:640px) {
+  .adam-nav { gap:14px; }
+  .adam-nav-brand .adam-sub { display:none; }
+  .adam-nav-links { gap:0; }
+  .adam-nav-links a { padding:7px 9px; font-size:12.5px; }
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+/* Staggered fade + slide-up as content mounts. Put .stagger on a container;
+   direct children animate in sequence (delays clamp out). */
+@keyframes reveal-up { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+.stagger > * { opacity:0; animation:reveal-up .5s cubic-bezier(.4,0,.2,1) both; }
+.stagger > *:nth-child(1){animation-delay:.03s}
+.stagger > *:nth-child(2){animation-delay:.08s}
+.stagger > *:nth-child(3){animation-delay:.13s}
+.stagger > *:nth-child(4){animation-delay:.18s}
+.stagger > *:nth-child(5){animation-delay:.23s}
+.stagger > *:nth-child(6){animation-delay:.28s}
+.stagger > *:nth-child(7){animation-delay:.33s}
+.stagger > *:nth-child(n+8){animation-delay:.38s}
+
+.reveal-up { animation:reveal-up .5s cubic-bezier(.4,0,.2,1) both; }
+
+/* Popups / dialogs — small scale + lift pop */
+@keyframes menuPop { from { opacity:0; transform:scale(.97) translateY(6px); } to { opacity:1; transform:scale(1) translateY(0); } }
+.menu-pop { animation:menuPop .2s cubic-bezier(.4,0,.2,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stagger > *, .reveal-up, .menu-pop { opacity:1 !important; animation:none !important; transform:none !important; }
+  html { scroll-behavior:auto; }
+}
+
+/* ── Helpers ─────────────────────────────────────────────────────────────── */
+.hidden { display:none !important; }
+.visually-hidden { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.text-mid { color:var(--ink-mid); }
+.text-dim { color:var(--ink-dim); }
+.text-green { color:var(--brand-green); }

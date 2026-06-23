@@ -158,42 +158,44 @@ def _sync_mini_panel() -> str:
     rows = ""
     for e in entries:
         status = e.get("status", "")
-        dot_color = "#16a34a" if status == "ok" else "#dc2626"
+        dot_color = "var(--good)" if status == "ok" else "var(--bad)"
         ts = e.get("ts", "").replace("T", " ").replace("+00:00", " UTC")[:19] + " UTC"
         pusher = html.escape(e.get("pusher", "—"))
         sha = html.escape(e.get("sha", "—"))
         detail = html.escape(e.get("detail", ""))
         detail_txt = detail[:60] + ("…" if len(detail) > 60 else "") if detail else ""
         rows += f"""<tr>
-          <td style="padding:6px 14px;font-size:11px;color:#6b7280;white-space:nowrap">{ts}</td>
-          <td style="padding:6px 14px;font-size:12px;font-weight:600">{pusher}</td>
-          <td style="padding:6px 14px;font-family:monospace;font-size:11px">{sha}</td>
-          <td style="padding:6px 14px;font-size:11px"><span style="color:{dot_color};font-weight:700">{"✓" if status=="ok" else "✗"} {status}</span></td>
-          <td style="padding:6px 14px;font-size:11px;color:#6b7280;font-family:monospace">{detail_txt}</td>
+          <td style="padding:8px 14px;font-size:11px;color:var(--ink-mid);white-space:nowrap;font-variant-numeric:tabular-nums">{ts}</td>
+          <td style="padding:8px 14px;font-size:12px;color:var(--ink)">{pusher}</td>
+          <td style="padding:8px 14px;font-size:11px;letter-spacing:.02em;font-variant-numeric:tabular-nums">{sha}</td>
+          <td style="padding:8px 14px;font-size:11px"><span style="color:{dot_color}">{"✓" if status=="ok" else "✗"} {status}</span></td>
+          <td style="padding:8px 14px;font-size:11px;color:var(--ink-mid)">{detail_txt}</td>
         </tr>"""
     ok_count = counts["ok"]
     err_count = counts["errors"]
-    return f"""<div style="margin-top:28px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-    <span style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.05em">Recent GitHub Syncs</span>
-    <a href="/sync-log" style="font-size:12px;color:#14a800;text-decoration:none">View all →</a>
+    return f"""<div style="margin-top:32px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+    <span style="font-size:11px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.12em">Recent GitHub Syncs</span>
+    <a href="/sync-log" style="font-size:12px;color:var(--brand-green)">View all →</a>
   </div>
-  <div style="margin-bottom:10px;font-size:12px;color:#6b7280">
-    <span style="color:#16a34a;font-weight:600">{ok_count} ok</span>
-    <span style="margin:0 4px">/</span>
-    <span style="color:#dc2626;font-weight:600">{err_count} error{"s" if err_count != 1 else ""}</span>
-    <span style="color:#9ca3af;margin-left:2px">total</span>
+  <div style="margin-bottom:12px;font-size:12px;color:var(--ink-mid)">
+    <span style="color:var(--good-fg)">{ok_count} ok</span>
+    <span style="margin:0 5px;color:var(--ink-dim)">/</span>
+    <span style="color:var(--bad-fg)">{err_count} error{"s" if err_count != 1 else ""}</span>
+    <span style="color:var(--ink-dim);margin-left:3px">total</span>
   </div>
-  <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)">
-    <thead><tr style="background:#f9fafb;border-bottom:1px solid #e5e7eb">
-      <th style="padding:7px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">Time</th>
-      <th style="padding:7px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">Pusher</th>
-      <th style="padding:7px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">SHA</th>
-      <th style="padding:7px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">Status</th>
-      <th style="padding:7px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">Detail</th>
+  <div style="background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-soft-sm)">
+  <table style="width:100%;border-collapse:collapse">
+    <thead><tr style="background:var(--hover);border-bottom:1px solid var(--rule)">
+      <th style="padding:9px 14px;text-align:left;font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em">Time</th>
+      <th style="padding:9px 14px;text-align:left;font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em">Pusher</th>
+      <th style="padding:9px 14px;text-align:left;font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em">SHA</th>
+      <th style="padding:9px 14px;text-align:left;font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em">Status</th>
+      <th style="padding:9px 14px;text-align:left;font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em">Detail</th>
     </tr></thead>
     <tbody>{rows}</tbody>
   </table>
+  </div>
 </div>"""
 
 
@@ -278,6 +280,59 @@ app.include_router(agent_router, dependencies=[Depends(require_api_key)])
 
 if FONTS_DIR.exists():
     app.mount("/fonts", StaticFiles(directory=FONTS_DIR), name="fonts")
+
+STATIC_DIR = BASE_DIR / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+# ── SHARED UI SHELL ────────────────────────────────────────────────────────────
+# The ADAM design system lives in /static/adam-design.css and is documented in
+# /DESIGN.md. These helpers render the shared <head> and nav bar so every
+# server-rendered (f-string) page stays consistent. Static HTML files
+# (order form, chat/finals UIs) inline the equivalent markup — keep them in sync
+# with nav_html() below; DESIGN.md is the canonical reference.
+
+# Nav links: (href, label, key). `key` matches the `active` argument.
+_NAV_LINKS = [
+    ("/new", "New Order", "new"),
+    ("/sprints", "Sprints", "sprints"),
+    ("/sync-log", "Sync Log", "sync"),
+    ("/learnings", "Learnings", "learnings"),
+]
+
+
+def nav_html(active: str = "") -> str:
+    """Shared ADAM nav bar. `active` is one of: new, sprints, sync, learnings."""
+    links = "".join(
+        '<a href="{}"{}>{}</a>'.format(
+            href, ' class="active"' if key == active else "", label
+        )
+        for href, label, key in _NAV_LINKS
+    )
+    return (
+        '<nav class="adam-nav">'
+        '<a class="adam-nav-brand" href="/" aria-label="ADAM home">'
+        '<span class="adam-logo">ADAM<b>.</b></span>'
+        '<span class="adam-sub">Upwork Paid Acquisition</span>'
+        '</a>'
+        f'<div class="adam-nav-links">{links}</div>'
+        '</nav>'
+    )
+
+
+def page_head(title: str, extra_css: str = "") -> str:
+    """Shared <head> + opening <body>. Links the design system; pages add their
+    own page-local <style> via `extra_css` (a full <style>…</style> block)."""
+    return (
+        '<!DOCTYPE html><html lang="en"><head>'
+        '<meta charset="UTF-8">'
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+        f'<title>{title}</title>'
+        '<link rel="stylesheet" href="/static/adam-design.css">'
+        f'{extra_css}'
+        '</head><body><div class="adam-wash" aria-hidden="true"></div>'
+    )
 
 
 # ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -451,12 +506,12 @@ async def root():
     import html as _h
     def _state_color(state: str) -> tuple[str, str]:
         s = state or ""
-        if "complete" in s: return ("#d1fae5", "#065f46")
-        if "error" in s: return ("#fee2e2", "#991b1b")
-        if "interrupted" in s: return ("#fce7f3", "#9d174d")
-        if "awaiting" in s: return ("#fef9c3", "#854d0e")
-        if "stage_" in s or "resuming_" in s or s == "running": return ("#dbeafe", "#1e40af")
-        return ("#f3f4f6", "#374151")
+        if "complete" in s: return ("#EAF7E3", "#0F7A00")
+        if "error" in s: return ("#FDE7EC", "#BE123C")
+        if "interrupted" in s: return ("#FBEAD7", "#B45309")
+        if "awaiting" in s: return ("#FBF3D9", "#B45309")
+        if "stage_" in s or "resuming_" in s or s == "running": return ("#E9F4E6", "#108700")
+        return ("#F4F4F4", "#5C5C5C")
 
     if recent:
         rows = ""
@@ -488,79 +543,65 @@ async def root():
           <p>No sprints yet. Submit your first order to get started.</p>
         </div>"""
 
-    return HTMLResponse(f"""<!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ADAM Pipeline</title>
-<style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f7f5;color:#111827;min-height:100vh}}
-  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
-  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
-  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
-  .nav a:hover{{background:#f3f4f6;color:#111}}
-  .nav a.active{{color:#111;font-weight:600}}
-  .container{{max-width:980px;margin:0 auto;padding:56px 24px 80px}}
-  .hero{{text-align:center;margin-bottom:48px}}
-  .hero h1{{font-size:32px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;color:#111}}
-  .hero p{{font-size:15px;color:#6b7280;max-width:520px;margin:0 auto}}
-  .actions{{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:36px}}
-  @media(max-width:680px){{.actions{{grid-template-columns:1fr}}}}
-  .action-card{{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px 26px;
-    text-decoration:none;color:#111;display:block;
-    transition:border-color .15s,box-shadow .15s,transform .15s;}}
-  .action-card:hover{{border-color:#14a800;box-shadow:0 4px 14px rgba(20,168,0,.08);transform:translateY(-1px)}}
-  .action-card.primary{{background:linear-gradient(135deg,#14a800,#0f8500);color:#fff;border-color:transparent}}
-  .action-card.primary:hover{{box-shadow:0 6px 20px rgba(20,168,0,.25)}}
-  .action-card .icon{{font-size:24px;margin-bottom:14px;display:inline-block}}
-  .action-card h2{{font-size:18px;font-weight:600;margin-bottom:4px}}
-  .action-card p{{font-size:13px;opacity:.85;line-height:1.5}}
-  .action-card .arrow{{font-size:14px;margin-top:14px;opacity:.7}}
-
-  .recent-card{{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px 22px}}
-  .recent-card.empty{{text-align:center;color:#9ca3af;font-size:14px;padding:36px 22px}}
-  .recent-head{{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}}
-  .recent-head h3{{font-size:14px;font-weight:600;color:#374151;letter-spacing:0.03em;text-transform:uppercase}}
-  .all-link{{font-size:12px;color:#14a800;text-decoration:none;font-weight:500}}
-  .all-link:hover{{text-decoration:underline}}
-  .recent-row{{display:flex;justify-content:space-between;align-items:center;padding:12px 8px;
-    margin:0 -8px;border-radius:8px;text-decoration:none;color:#111;
-    transition:background .12s;}}
-  .recent-row:hover{{background:#f9fafb}}
-  .recent-row + .recent-row{{border-top:1px solid #f3f4f6}}
-  .recent-id{{font-weight:600;font-size:13px;font-family:'SF Mono',Consolas,monospace}}
-  .recent-sub{{font-size:11px;color:#6b7280;margin-top:2px}}
-  .recent-badge{{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}}
-</style>
-</head><body>
-<nav class="nav">
-  <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/" class="active">Home</a>
-  <a href="/new">New Order</a>
-  <a href="/sprints">Sprints</a>
-  <a href="/sync-log">Sync Log</a>
-</nav>
-<div class="container">
-  <div class="hero">
-    <h1>ADAM Ad Creative Pipeline</h1>
-    <p>Generate Upwork ad creative end-to-end. Submit a new order, or pick up a sprint in progress.</p>
+    extra_css = """<style>
+  .home-hero{margin:8px 0 40px;}
+  .home-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-green);margin-bottom:14px;}
+  .home-hero h1{font-size:clamp(2.4rem,5.5vw,3.4rem);line-height:.98;letter-spacing:-.015em;color:var(--ink);}
+  .home-hero p{font-size:15px;color:var(--ink-mid);max-width:540px;margin-top:14px;line-height:1.6;}
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px;}
+  @media(max-width:680px){.actions{grid-template-columns:1fr}}
+  .action-card{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
+    padding:28px 26px;color:var(--ink);display:block;box-shadow:var(--shadow-soft-sm);
+    transition:border-color .15s,box-shadow .2s,transform .15s;}
+  .action-card:hover{border-color:var(--brand-green-soft);box-shadow:var(--shadow-soft);transform:translateY(-2px);}
+  .action-card.primary{background:linear-gradient(135deg,var(--brand-green),var(--brand-green-deep));color:#fff;border-color:transparent;}
+  .action-card.primary:hover{box-shadow:var(--shadow-pop);border-color:transparent;}
+  .action-card.primary h2,.action-card.primary p,.action-card.primary .arrow,.action-card.primary .icon{color:#fff;}
+  .action-card .icon{font-size:22px;margin-bottom:14px;display:inline-block;}
+  .action-card h2{font-size:19px;letter-spacing:-.01em;margin-bottom:6px;color:var(--ink);}
+  .action-card p{font-size:13px;color:var(--ink-mid);line-height:1.55;}
+  .action-card.primary p{color:rgba(255,255,255,.86);}
+  .action-card .arrow{font-size:13px;margin-top:16px;color:var(--brand-green);}
+  .recent-card{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
+    padding:22px 24px;box-shadow:var(--shadow-soft-sm);}
+  .recent-card.empty{text-align:center;color:var(--ink-dim);font-size:14px;padding:40px 24px;}
+  .recent-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+  .recent-head h3{font-size:11px;color:var(--ink-mid);letter-spacing:.12em;text-transform:uppercase;}
+  .all-link{font-size:12px;color:var(--brand-green);}
+  .recent-row{display:flex;justify-content:space-between;align-items:center;padding:13px 10px;
+    margin:0 -10px;border-radius:var(--radius-lg);color:var(--ink);transition:background .12s;}
+  .recent-row:hover{background:var(--hover);}
+  .recent-row + .recent-row{border-top:1px solid var(--rule);}
+  .recent-id{font-size:13px;font-variant-numeric:tabular-nums;letter-spacing:.01em;}
+  .recent-sub{font-size:11px;color:var(--ink-mid);margin-top:3px;}
+  .recent-badge{padding:3px 11px;border-radius:var(--radius-pill);font-size:11px;letter-spacing:.04em;white-space:nowrap;}
+</style>"""
+    return HTMLResponse(
+        page_head("ADAM · Paid Acquisition", extra_css)
+        + nav_html("")
+        + f"""
+<main class="adam-main"><div class="adam-container stagger">
+  <div class="home-hero">
+    <div class="home-eyebrow">ADAM · Upwork Paid Acquisition</div>
+    <h1>Ad creative, produced end&#8209;to&#8209;end.</h1>
+    <p>Submit a new order or pick up a sprint in progress. ADAM takes the brief and produces copy and assembled creative across every size and style.</p>
   </div>
   <div class="actions">
     <a class="action-card primary" href="/new">
       <span class="icon">＋</span>
       <h2>Start a new order</h2>
-      <p>Open the order form. The creative team will be notified and can pick it up from the handoff page.</p>
+      <p>Open the order form. The creative team is notified and can pick it up from the handoff page.</p>
       <div class="arrow">Go to form →</div>
     </a>
     <a class="action-card" href="/sprints">
-      <span class="icon">📋</span>
+      <span class="icon">▦</span>
       <h2>Revisit past orders</h2>
       <p>Browse every sprint, resume an in-progress chat, or review what was delivered.</p>
       <div class="arrow">View sprints →</div>
     </a>
   </div>
   {recent_block}
-</div>
+</div></main>
 </body></html>""")
 
 
@@ -1634,47 +1675,38 @@ async def sprint_handoff(sprint_id: str):
     chat_url = f"/sprints/{sprint_id}/chat"
     status_url = f"/sprints/{sprint_id}"
 
-    html = f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Order submitted — {safe_sprint_id}</title>
-<style>
-  body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-         background: #f7f7f5; color: #1a1a1a; margin: 0; padding: 48px 24px; }}
-  .card {{ max-width: 640px; margin: 0 auto; background: #fff; border-radius: 14px;
-          box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 8px 28px rgba(0,0,0,.04);
-          padding: 36px 40px; }}
-  .check {{ width: 48px; height: 48px; border-radius: 999px; background: #10b981;
-           color: #fff; display: flex; align-items: center; justify-content: center;
-           font-size: 26px; font-weight: 600; margin-bottom: 18px; }}
-  h1 {{ margin: 0 0 6px; font-size: 22px; }}
-  .sub {{ color: #6b7280; margin-bottom: 28px; font-size: 14px; }}
-  .summary {{ background: #fafafa; border: 1px solid #eee; border-radius: 10px;
-             padding: 18px 20px; margin-bottom: 24px; }}
-  .row {{ display: flex; justify-content: space-between; padding: 6px 0;
-         font-size: 13px; border-bottom: 1px solid #f0f0f0; }}
-  .row:last-child {{ border-bottom: none; }}
-  .row .k {{ color: #6b7280; }}
-  .row .v {{ color: #1a1a1a; font-weight: 500; text-align: right; max-width: 60%; }}
-  .id {{ font-family: 'SF Mono', Consolas, monospace; font-size: 12px; color: #4b5563;
-        background: #f3f4f6; padding: 2px 8px; border-radius: 6px; }}
-  .handoff {{ background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
-             padding: 16px 20px; margin-bottom: 24px; font-size: 13px; color: #1e3a8a; }}
-  .handoff strong {{ display: block; margin-bottom: 4px; font-size: 13px; }}
-  .actions {{ display: flex; gap: 10px; flex-wrap: wrap; }}
-  .btn {{ display: inline-block; padding: 10px 18px; border-radius: 8px;
-         text-decoration: none; font-size: 13px; font-weight: 500; cursor: pointer;
-         border: none; }}
-  .btn-primary {{ background: #1a1a1a; color: #fff; }}
-  .btn-primary:hover {{ background: #000; }}
-  .btn-secondary {{ background: #fff; color: #1a1a1a; border: 1px solid #d1d5db; }}
-  .btn-secondary:hover {{ background: #f9fafb; }}
-  .link-block {{ display: flex; gap: 6px; align-items: center; margin-top: 10px; }}
-  .link-block input {{ flex: 1; padding: 8px 10px; font-size: 12px;
-                       font-family: 'SF Mono', Consolas, monospace; border: 1px solid #d1d5db;
-                       border-radius: 6px; background: #fff; color: #4b5563; }}
-  .copy-btn {{ padding: 8px 14px; font-size: 12px; }}
-  .copied {{ color: #10b981; font-weight: 500; }}
-</style></head>
-<body><div class="card">
+    extra_css = """<style>
+  .ho-wrap{max-width:660px;}
+  .ho-card{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-3xl);
+    box-shadow:var(--shadow-soft);padding:38px 40px;}
+  .check{width:56px;height:56px;border-radius:999px;background:var(--tint);border:1.5px solid var(--brand-green);
+    color:var(--brand-green);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:20px;}
+  .ho-card h1{font-size:28px;letter-spacing:-.015em;margin-bottom:8px;color:var(--ink);}
+  .sub{color:var(--ink-mid);margin-bottom:28px;font-size:14px;line-height:1.6;}
+  .id{font-size:12px;color:var(--ink);background:var(--hover);padding:2px 9px;border-radius:var(--radius-md);
+    font-variant-numeric:tabular-nums;letter-spacing:.01em;}
+  .summary{background:var(--hover);border:1px solid var(--rule);border-radius:var(--radius-xl);
+    padding:18px 22px;margin-bottom:24px;}
+  .row{display:flex;justify-content:space-between;gap:16px;padding:8px 0;font-size:13px;border-bottom:1px solid var(--rule);}
+  .row:last-child{border-bottom:none;}
+  .row .k{color:var(--ink-mid);}
+  .row .v{color:var(--ink);text-align:right;max-width:62%;}
+  .handoff{background:var(--tint);border:1px solid color-mix(in srgb,var(--brand-green) 24%,transparent);
+    border-radius:var(--radius-xl);padding:18px 22px;margin-bottom:26px;font-size:13px;color:var(--ink);line-height:1.6;}
+  .handoff strong{display:block;margin-bottom:6px;color:var(--brand-green-deep);}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .link-block{display:flex;gap:8px;align-items:center;margin-top:12px;}
+  .link-block input{flex:1;padding:10px 12px;font-size:12px;border:1px solid var(--rule-strong);
+    border-radius:var(--radius-md);background:var(--paper);color:var(--ink-mid);font-variant-numeric:tabular-nums;}
+  .copy-btn{padding:10px 16px;font-size:12px;}
+  .copied{color:var(--brand-green);}
+</style>"""
+    html = (
+        page_head(f"Order submitted — {safe_sprint_id}", extra_css)
+        + nav_html("")
+        + f"""
+<main class="adam-main"><div class="adam-container ho-wrap stagger">
+<div class="ho-card">
   <div class="check">✓</div>
   <h1>Order submitted</h1>
   <div class="sub">Sprint <span class="id">{safe_sprint_id}</span> is queued and waiting at Gate 2 (Order + Refs review).</div>
@@ -1683,9 +1715,9 @@ async def sprint_handoff(sprint_id: str):
     <div class="row"><span class="k">Driver</span><span class="v">{driver}</span></div>
     <div class="row"><span class="k">Platform / Format</span><span class="v">{platform} · {fmt}</span></div>
     <div class="row"><span class="k">Targeting</span><span class="v">{targeting}</span></div>
-    <div class="row"><span class="k">Quantity</span><span class="v">{qty}</span></div>
+    <div class="row"><span class="k">Quantity</span><span class="v font-num">{qty}</span></div>
     <div class="row"><span class="k">Visual styles</span><span class="v">{styles_str}</span></div>
-    <div class="row"><span class="k">Delivery date</span><span class="v">{delivery}</span></div>
+    <div class="row"><span class="k">Delivery date</span><span class="v font-num">{delivery}</span></div>
   </div>
 
   <div class="handoff">
@@ -1703,6 +1735,7 @@ async def sprint_handoff(sprint_id: str):
     <a class="btn btn-secondary" href="/adam">Submit another order</a>
   </div>
 </div>
+</div></main>
 <script>
   document.getElementById('chat-link').value = window.location.origin + '{chat_url}';
   function copyLink() {{
@@ -1717,7 +1750,7 @@ async def sprint_handoff(sprint_id: str):
     }});
   }}
 </script>
-</body></html>"""
+</body></html>""")
     return HTMLResponse(html)
 
 
@@ -1805,85 +1838,81 @@ async def sprints_dashboard():
 
     def _badge(state):
         colors = {
-            "complete": ("#d1fae5", "#065f46"),
-            "error": ("#fee2e2", "#991b1b"),
-            "interrupted": ("#fce7f3", "#9d174d"),
-            "running": ("#dbeafe", "#1e40af"),
-            "queued": ("#f3f4f6", "#374151"),
+            "complete": ("#EAF7E3", "#0F7A00"),
+            "error": ("#FDE7EC", "#BE123C"),
+            "interrupted": ("#FBEAD7", "#B45309"),
+            "running": ("#E9F4E6", "#108700"),
+            "queued": ("#F4F4F4", "#5C5C5C"),
         }
         for key, (bg, fg) in colors.items():
             if key in state:
                 return bg, fg
         if "awaiting" in state:
-            return ("#fef9c3", "#854d0e")
-        return ("#f3f4f6", "#374151")
+            return ("#FBF3D9", "#B45309")
+        return ("#F4F4F4", "#5C5C5C")
 
     rows = ""
     for s in sprints:
         bg, fg = _badge(s["state"])
         gate_btn = ""
         if s["gate"]:
-            gate_btn = f'<a href="/sprints/{s["sprint_id"]}/chat" onclick="event.stopPropagation()" style="display:inline-block;margin-left:10px;padding:4px 12px;background:#14a800;color:#fff;border-radius:4px;font-size:11px;text-decoration:none;font-weight:600;">Review →</a>'
-        chat_btn = f'<a href="/sprints/{s["sprint_id"]}/chat" onclick="event.stopPropagation()" style="display:inline-block;margin-left:6px;padding:4px 12px;background:#fff;color:#374151;border:1px solid #d1d5db;border-radius:4px;font-size:11px;text-decoration:none;font-weight:500;">💬 Chat</a>'
+            gate_btn = f'<a href="/sprints/{s["sprint_id"]}/chat" onclick="event.stopPropagation()" class="row-btn row-btn-primary">Review →</a>'
+        chat_btn = f'<a href="/sprints/{s["sprint_id"]}/chat" onclick="event.stopPropagation()" class="row-btn">💬 Chat</a>'
         rows += f"""
-        <tr onclick="location.href='/sprints/{s['sprint_id']}/chat'" style="cursor:pointer">
-          <td style="padding:12px 16px;font-size:12px;color:#6b7280">{s['updated_at'][:16].replace('T',' ') if s['updated_at'] else '—'}</td>
-          <td style="padding:12px 16px;font-weight:600;font-size:13px">{s['sprint_id']}</td>
-          <td style="padding:12px 16px;font-size:13px">{s['driver'] or '—'}</td>
-          <td style="padding:12px 16px;font-size:13px">{s['platform'] or '—'}</td>
-          <td style="padding:12px 16px">
-            <span style="background:{bg};color:{fg};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">{s['state_label']}</span>
+        <tr onclick="location.href='/sprints/{s['sprint_id']}/chat'">
+          <td class="c-time font-num">{s['updated_at'][:16].replace('T',' ') if s['updated_at'] else '—'}</td>
+          <td class="c-id font-num">{s['sprint_id']}</td>
+          <td>{s['driver'] or '—'}</td>
+          <td>{s['platform'] or '—'}</td>
+          <td>
+            <span class="status-badge" style="background:{bg};color:{fg}">{s['state_label']}</span>
             {gate_btn}{chat_btn}
           </td>
         </tr>"""
 
-    empty = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#9ca3af;font-size:14px">No sprints yet — submit an order to get started</td></tr>' if not sprints else ""
+    empty = '<tr><td colspan="5" class="empty-cell">No sprints yet — submit an order to get started</td></tr>' if not sprints else ""
 
-    return HTMLResponse(f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ADAM Pipeline — Sprints</title>
-<style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;color:#111827}}
-  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
-  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
-  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
-  .nav a:hover{{background:#f3f4f6;color:#111}}
-  .container{{max-width:1100px;margin:0 auto;padding:32px 24px}}
-  h1{{font-size:22px;font-weight:700;margin-bottom:4px}}
-  .sub{{font-size:13px;color:#6b7280;margin-bottom:24px}}
-  table{{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)}}
-  thead tr{{background:#f9fafb;border-bottom:1px solid #e5e7eb}}
-  th{{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;letter-spacing:0.05em;text-transform:uppercase}}
-  tbody tr{{border-bottom:1px solid #f3f4f6}}
-  tbody tr:last-child{{border-bottom:none}}
-  tbody tr:hover{{background:#f9fafb}}
-  .refresh{{float:right;padding:6px 14px;background:#fff;border:1px solid #d1d5db;border-radius:6px;font-size:12px;cursor:pointer;color:#374151}}
-  .refresh:hover{{background:#f9fafb}}
-</style>
-</head>
-<body>
-<nav class="nav">
-  <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Home</a>
-  <a href="/new">New Order</a>
-  <a href="/sprints" style="color:#111;font-weight:600">Sprints</a>
-  <a href="/sync-log">Sync Log</a>
-</nav>
-<div class="container">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    extra_css = """<style>
+  .sprints-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:6px;}
+  .sprints-head h1{font-size:clamp(2rem,4vw,2.6rem);letter-spacing:-.015em;color:var(--ink);}
+  .sub{font-size:13px;color:var(--ink-mid);margin-bottom:24px;}
+  .table-wrap{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
+    box-shadow:var(--shadow-soft);overflow:hidden;}
+  table{width:100%;border-collapse:collapse;}
+  thead tr{background:var(--hover);border-bottom:1px solid var(--rule);}
+  th{padding:12px 18px;text-align:left;font-size:10px;color:var(--ink-mid);letter-spacing:.12em;text-transform:uppercase;}
+  tbody tr{border-bottom:1px solid var(--rule);cursor:pointer;transition:background .12s;}
+  tbody tr:last-child{border-bottom:none;}
+  tbody tr:hover{background:var(--hover);}
+  td{padding:14px 18px;font-size:13px;color:var(--ink);}
+  td.c-time{font-size:12px;color:var(--ink-mid);}
+  td.c-id{letter-spacing:.01em;}
+  .empty-cell{padding:44px;text-align:center;color:var(--ink-dim);font-size:14px;}
+  .status-badge{padding:3px 11px;border-radius:var(--radius-pill);font-size:11px;letter-spacing:.04em;white-space:nowrap;}
+  .row-btn{display:inline-block;margin-left:8px;padding:5px 12px;background:var(--paper);color:var(--ink-mid);
+    border:1px solid var(--rule-strong);border-radius:var(--radius-md);font-size:11px;}
+  .row-btn:hover{border-color:var(--ink);color:var(--ink);}
+  .row-btn-primary{background:var(--brand-green);color:#fff;border-color:var(--brand-green);}
+  .row-btn-primary:hover{background:var(--brand-green-deep);color:#fff;}
+</style>"""
+    return HTMLResponse(
+        page_head("ADAM · Sprints", extra_css)
+        + nav_html("sprints")
+        + f"""
+<main class="adam-main"><div class="adam-container stagger">
+  <div class="sprints-head">
     <h1>Sprint Runs</h1>
-    <button class="refresh" onclick="location.reload()">↻ Refresh</button>
+    <button class="btn btn-secondary" onclick="location.reload()">↻ Refresh</button>
   </div>
   <p class="sub">{len(sprints)} sprint{"s" if len(sprints)!=1 else ""} · click any row to view details</p>
-  <table>
-    <thead><tr><th>Time</th><th>Sprint ID</th><th>Driver</th><th>Platform</th><th>Status</th></tr></thead>
-    <tbody>{rows}{empty}</tbody>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Time</th><th>Sprint ID</th><th>Driver</th><th>Platform</th><th>Status</th></tr></thead>
+      <tbody>{rows}{empty}</tbody>
+    </table>
+  </div>
   <div id="sync-mini-panel">{_sync_mini_panel()}</div>
-</div>
+</div></main>
 <script>
 (function() {{
   var INTERVAL = 30000;
@@ -2028,20 +2057,25 @@ async def sprint_detail(sprint_id: str, request: Request, auth_error: str = ""):
 
     # Show inline auth form if not logged in via session cookie
     if not _valid_session(request.cookies.get(_SESSION_COOKIE)):
-        err_msg = '<p style="color:#dc2626;font-size:13px;margin-bottom:12px">Incorrect key — try again.</p>' if auth_error else ""
-        return HTMLResponse(f"""<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ADAM — {sprint_id}</title>
-<style>*{{box-sizing:border-box;margin:0;padding:0}}
-body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;display:flex;align-items:center;justify-content:center;min-height:100vh}}
-.box{{background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.1);padding:32px;width:100%;max-width:360px}}
-h2{{font-size:16px;font-weight:700;margin-bottom:4px}}
-.sub{{font-size:13px;color:#6b7280;margin-bottom:20px}}
-input{{width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;margin-bottom:12px}}
-button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer}}
-</style></head>
-<body><div class="box">
-  <h2>ADAM Pipeline</h2>
+        err_msg = '<p style="color:var(--bad-fg);font-size:13px;margin-bottom:12px">Incorrect key — try again.</p>' if auth_error else ""
+        extra_css = """<style>
+  body{display:flex;align-items:center;justify-content:center;min-height:100dvh;}
+  .auth-box{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
+    box-shadow:var(--shadow-soft);padding:34px;width:100%;max-width:380px;}
+  .auth-box .adam-logo{font-size:18px;letter-spacing:.18em;color:var(--ink);}
+  .auth-box .adam-logo b{color:var(--brand-green);}
+  .auth-box .sub{font-size:13px;color:var(--ink-mid);margin:8px 0 20px;}
+  .auth-box input{width:100%;padding:11px 13px;border:1px solid var(--rule-strong);border-radius:var(--radius-lg);
+    font-size:14px;margin-bottom:14px;font-family:var(--font-sans);}
+  .auth-box input:focus{outline:none;border-color:var(--brand-green);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-green) 14%,transparent);}
+  .auth-box button{width:100%;padding:12px;background:var(--brand-green);color:#fff;border:none;
+    border-radius:var(--radius-lg);font-size:14px;cursor:pointer;font-family:var(--font-sans);}
+  .auth-box button:hover{background:var(--brand-green-deep);}
+</style>"""
+        return HTMLResponse(
+            page_head(f"ADAM — {sprint_id}", extra_css)
+            + f"""<div class="auth-box">
+  <div class="adam-logo">ADAM<b>.</b></div>
   <p class="sub">Enter your API key to view this sprint.</p>
   {err_msg}
   <form method="POST" action="/sprints/{sprint_id}/auth">
@@ -2053,12 +2087,12 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
     s = _sprint_data(sprint_id)
 
     def _badge(state):
-        if state == "complete": return "#d1fae5", "#065f46"
-        if state == "error": return "#fee2e2", "#991b1b"
-        if state == "interrupted": return "#fce7f3", "#9d174d"
-        if "awaiting" in state: return "#fef9c3", "#854d0e"
-        if state in ("running", "queued") or state.startswith("stage_"): return "#dbeafe", "#1e40af"
-        return "#f3f4f6", "#374151"
+        if state == "complete": return "#EAF7E3", "#0F7A00"
+        if state == "error": return "#FDE7EC", "#BE123C"
+        if state == "interrupted": return "#FBEAD7", "#B45309"
+        if "awaiting" in state: return "#FBF3D9", "#B45309"
+        if state in ("running", "queued") or state.startswith("stage_"): return "#E9F4E6", "#108700"
+        return "#F4F4F4", "#5C5C5C"
 
     bg, fg = _badge(s["state"])
 
@@ -2154,18 +2188,18 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
     summary_stat = ""
     if run_sum:
         summary_stat = f"""
-        <div style="display:flex;gap:16px;margin:16px 0">
-          <div style="padding:12px 20px;background:#f0fdf4;border-radius:6px;text-align:center">
-            <div style="font-size:22px;font-weight:700;color:#14a800">{run_sum.get('total_assets',0)}</div>
-            <div style="font-size:11px;color:#6b7280">Assets</div>
+        <div style="display:flex;gap:14px;margin:18px 0">
+          <div style="flex:1;padding:16px 20px;background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-xl);box-shadow:var(--shadow-soft-sm);text-align:center">
+            <div style="font-size:28px;color:var(--brand-green);font-variant-numeric:tabular-nums;line-height:1">{run_sum.get('total_assets',0)}</div>
+            <div style="font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em;margin-top:6px">Assets</div>
           </div>
-          <div style="padding:12px 20px;background:#eff6ff;border-radius:6px;text-align:center">
-            <div style="font-size:22px;font-weight:700;color:#1d4ed8">{run_sum.get('concepts_selected',0)}</div>
-            <div style="font-size:11px;color:#6b7280">Concepts</div>
+          <div style="flex:1;padding:16px 20px;background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-xl);box-shadow:var(--shadow-soft-sm);text-align:center">
+            <div style="font-size:28px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1">{run_sum.get('concepts_selected',0)}</div>
+            <div style="font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em;margin-top:6px">Concepts</div>
           </div>
-          <div style="padding:12px 20px;background:#fefce8;border-radius:6px;text-align:center">
-            <div style="font-size:22px;font-weight:700;color:#854d0e">{run_sum.get('images_generated',0)}</div>
-            <div style="font-size:11px;color:#6b7280">Images</div>
+          <div style="flex:1;padding:16px 20px;background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-xl);box-shadow:var(--shadow-soft-sm);text-align:center">
+            <div style="font-size:28px;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1">{run_sum.get('images_generated',0)}</div>
+            <div style="font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em;margin-top:6px">Images</div>
           </div>
         </div>"""
 
@@ -2272,38 +2306,28 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
         except Exception as exc:
             manifest_section = f'<div class="card"><div style="padding:16px;font-size:13px;color:#991b1b">Could not parse asset_manifest.csv: {_e(exc)}</div></div>'
 
-    return HTMLResponse(f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ADAM — {sprint_id}</title>
-<style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;color:#111827}}
-  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
-  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
-  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
-  .nav a:hover{{background:#f3f4f6;color:#111}}
-  .container{{max-width:900px;margin:0 auto;padding:32px 24px}}
-  .card{{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden}}
-  .card-head{{padding:14px 16px;border-bottom:1px solid #f3f4f6;font-size:12px;font-weight:600;color:#6b7280;letter-spacing:0.05em;text-transform:uppercase}}
-  table{{width:100%;border-collapse:collapse}}
-  tbody tr:not(:last-child){{border-bottom:1px solid #f9fafb}}
-</style>
-</head>
-<body>
-<nav class="nav">
-  <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Home</a>
-  <a href="/new">New Order</a>
-  <a href="/sprints">Sprints</a>
-  <span style="font-size:13px;color:#111;font-weight:600">› {sprint_id}</span>
-</nav>
-<div class="container">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-    <h1 style="font-size:20px;font-weight:700">{sprint_id}</h1>
-    <span style="background:{bg};color:{fg};padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">{s['state_label']}</span>
-    <a href="/sprints/{sprint_id}/log" target="_blank" style="margin-left:auto;font-size:12px;color:#6b7280;text-decoration:none">View log →</a>
+    extra_css = """<style>
+  .detail-head{display:flex;align-items:center;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+  .detail-head h1{font-size:clamp(1.6rem,3.5vw,2.1rem);letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--ink);}
+  .detail-head .status-badge{padding:4px 12px;border-radius:var(--radius-pill);font-size:12px;letter-spacing:.04em;}
+  .detail-head .log-link{margin-left:auto;font-size:12px;color:var(--ink-mid);}
+  .card{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
+    box-shadow:var(--shadow-soft-sm);margin-bottom:20px;overflow:hidden;}
+  .card-head{padding:14px 18px;border-bottom:1px solid var(--rule);font-size:11px;color:var(--ink-mid);
+    letter-spacing:.12em;text-transform:uppercase;}
+  table{width:100%;border-collapse:collapse;}
+  tbody tr:not(:last-child){border-bottom:1px solid var(--rule);}
+  td{color:var(--ink);}
+</style>"""
+    return HTMLResponse(
+        page_head(f"ADAM — {sprint_id}", extra_css)
+        + nav_html("sprints")
+        + f"""
+<main class="adam-main"><div class="adam-container stagger">
+  <div class="detail-head">
+    <h1>{sprint_id}</h1>
+    <span class="status-badge" style="background:{bg};color:{fg}">{s['state_label']}</span>
+    <a href="/sprints/{sprint_id}/log" target="_blank" class="log-link">View log →</a>
   </div>
 
   {sync_notice}
@@ -2322,7 +2346,7 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
 
   {copy_section}
   {manifest_section}
-</div>
+</div></main>
 
 <script>
 async function approveGate(num) {{
@@ -2428,11 +2452,21 @@ async def sprint_file(sprint_id: str, filename: str):
 async def sprint_log(sprint_id: str):
     log_path = RUNS_DIR / sprint_id / "pipeline.log"
     content = log_path.read_text() if log_path.exists() else "(no log yet)"
-    return HTMLResponse(f"""<!DOCTYPE html><html><head><meta charset="UTF-8">
+    return HTMLResponse(f"""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Log — {sprint_id}</title>
-<style>body{{background:#0f172a;color:#e2e8f0;font-family:monospace;font-size:12px;padding:24px;line-height:1.6}}
-pre{{white-space:pre-wrap;word-break:break-all}}</style></head>
-<body><pre>{content}</pre></body></html>""")
+<link rel="stylesheet" href="/static/adam-design.css">
+<style>
+  body{{padding:28px;}}
+  .log-title{{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mid);margin-bottom:12px;}}
+  .log-title b{{color:var(--ink);font-variant-numeric:tabular-nums;}}
+  pre{{white-space:pre-wrap;word-break:break-all;font-family:var(--font-sans);font-size:12.5px;line-height:1.7;
+    color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-xl);
+    box-shadow:var(--shadow-soft-sm);padding:20px 22px;}}
+</style></head>
+<body>
+<div class="log-title">Pipeline log · <b>{sprint_id}</b></div>
+<pre>{content}</pre></body></html>""")
 
 
 @app.get("/api/sprints", dependencies=[Depends(require_api_key)])
@@ -2464,64 +2498,50 @@ async def sync_log_page(request: Request):
     rows = ""
     for e in entries:
         status = e.get("status", "")
-        bg = "#d1fae5" if status == "ok" else "#fee2e2"
-        fg = "#065f46" if status == "ok" else "#991b1b"
+        bg = "#EAF7E3" if status == "ok" else "#FDE7EC"
+        fg = "#0F7A00" if status == "ok" else "#BE123C"
         label = "ok" if status == "ok" else "error"
         sha = html.escape(e.get("sha", "—"))
         pusher = html.escape(e.get("pusher", "—"))
         ts = html.escape(e.get("ts", "—").replace("T", " ").replace("+00:00", " UTC"))
         detail = html.escape(e.get("detail", ""))
-        detail_cell = f'<span title="{detail}" style="font-size:11px;color:#6b7280;font-family:monospace">{detail[:80] + ("…" if len(detail) > 80 else "")}</span>' if detail else "—"
+        detail_cell = f'<span title="{detail}" style="font-size:11px;color:var(--ink-mid)">{detail[:80] + ("…" if len(detail) > 80 else "")}</span>' if detail else "—"
         rows += f"""<tr>
-          <td style="padding:10px 16px;font-size:12px;color:#6b7280;white-space:nowrap">{ts}</td>
-          <td style="padding:10px 16px;font-size:13px;font-weight:600">{pusher}</td>
-          <td style="padding:10px 16px;font-family:monospace;font-size:12px">{sha}</td>
-          <td style="padding:10px 16px"><span style="background:{bg};color:{fg};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">{label}</span></td>
-          <td style="padding:10px 16px">{detail_cell}</td>
+          <td style="padding:12px 16px;font-size:12px;color:var(--ink-mid);white-space:nowrap;font-variant-numeric:tabular-nums">{ts}</td>
+          <td style="padding:12px 16px;font-size:13px;color:var(--ink)">{pusher}</td>
+          <td style="padding:12px 16px;font-size:12px;letter-spacing:.02em;font-variant-numeric:tabular-nums">{sha}</td>
+          <td style="padding:12px 16px"><span style="background:{bg};color:{fg};padding:3px 11px;border-radius:var(--radius-pill);font-size:11px;letter-spacing:.04em">{label}</span></td>
+          <td style="padding:12px 16px">{detail_cell}</td>
         </tr>"""
 
-    empty = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#9ca3af;font-size:14px">No syncs recorded yet</td></tr>' if not entries else ""
+    empty = '<tr><td colspan="5" style="padding:44px;text-align:center;color:var(--ink-dim);font-size:14px">No syncs recorded yet</td></tr>' if not entries else ""
 
-    return HTMLResponse(f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ADAM — Sync History</title>
-<style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;color:#111827}}
-  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
-  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
-  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
-  .nav a:hover{{background:#f3f4f6;color:#111}}
-  .container{{max-width:1100px;margin:0 auto;padding:32px 24px}}
-  h1{{font-size:22px;font-weight:700;margin-bottom:4px}}
-  .sub{{font-size:13px;color:#6b7280;margin-bottom:24px}}
-  table{{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)}}
-  thead tr{{background:#f9fafb;border-bottom:1px solid #e5e7eb}}
-  th{{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;letter-spacing:0.05em;text-transform:uppercase}}
-  tbody tr{{border-bottom:1px solid #f3f4f6}}
-  tbody tr:last-child{{border-bottom:none}}
-</style>
-</head>
-<body>
-<nav class="nav">
-  <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Home</a>
-  <a href="/new">New Order</a>
-  <a href="/sprints">Sprints</a>
-  <a href="/sync-log" style="color:#111;font-weight:600">Sync Log</a>
-</nav>
-<div class="container">
-  <h1>GitHub Sync History</h1>
+    extra_css = """<style>
+  .sync-head h1{font-size:clamp(2rem,4vw,2.6rem);letter-spacing:-.015em;color:var(--ink);}
+  .sub{font-size:13px;color:var(--ink-mid);margin:6px 0 24px;}
+  .table-wrap{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
+    box-shadow:var(--shadow-soft);overflow:hidden;}
+  table{width:100%;border-collapse:collapse;}
+  thead tr{background:var(--hover);border-bottom:1px solid var(--rule);}
+  th{padding:12px 16px;text-align:left;font-size:10px;color:var(--ink-mid);letter-spacing:.12em;text-transform:uppercase;}
+  tbody tr{border-bottom:1px solid var(--rule);}
+  tbody tr:last-child{border-bottom:none;}
+</style>"""
+    return HTMLResponse(
+        page_head("ADAM · Sync History", extra_css)
+        + nav_html("sync")
+        + f"""
+<main class="adam-main"><div class="adam-container stagger">
+  <div class="sync-head"><h1>GitHub Sync History</h1></div>
   <p class="sub">Showing {len(entries)} of {total} total event{"s" if total != 1 else ""} (capped at {SYNC_LOG_MAX_ENTRIES}) · {ok_count} ok, {err_count} error{"s" if err_count != 1 else ""} · newest first</p>
-  <table>
-    <thead><tr><th>Time (UTC)</th><th>Pusher</th><th>Commit SHA</th><th>Status</th><th>Detail</th></tr></thead>
-    <tbody>{rows}{empty}</tbody>
-  </table>
-</div>
-</body>
-</html>""")
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Time (UTC)</th><th>Pusher</th><th>Commit SHA</th><th>Status</th><th>Detail</th></tr></thead>
+      <tbody>{rows}{empty}</tbody>
+    </table>
+  </div>
+</div></main>
+</body></html>""")
 
 
 LEARNINGS_PATH = BASE_DIR / "learnings.md"
@@ -2541,31 +2561,30 @@ async def learnings_editor():
         LEARNINGS_PATH.write_text(LEARNINGS_HEADER)
     content = LEARNINGS_PATH.read_text()
     # Minimal inline editor — no auth (sprint chat itself is public; this is a peer surface).
-    html = """<!doctype html>
-<html><head><meta charset="utf-8"><title>ADAM Learnings</title>
-<style>
-  body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;max-width:880px;margin:2rem auto;padding:0 1rem;color:#1a1a1a;}
-  h1{margin-bottom:.25rem;}
-  .sub{color:#666;margin-bottom:1.5rem;}
-  textarea{width:100%;min-height:60vh;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;padding:1rem;border:1px solid #ccc;border-radius:6px;box-sizing:border-box;}
-  .row{display:flex;gap:.5rem;align-items:center;margin-top:.75rem;}
-  button{background:#1a1a1a;color:#fff;border:0;padding:.6rem 1.2rem;border-radius:6px;cursor:pointer;font-size:14px;}
-  button:disabled{opacity:.5;cursor:not-allowed;}
-  .status{color:#0a7a3a;font-size:13px;}
-  .err{color:#b00;font-size:13px;}
-  a{color:#1a4fd1;}
-</style></head>
-<body>
-<h1>ADAM Learnings</h1>
+    extra_css = """<style>
+  .learn-head h1{font-size:clamp(2rem,4vw,2.6rem);letter-spacing:-.015em;color:var(--ink);}
+  .sub{color:var(--ink-mid);margin:8px 0 22px;font-size:13px;line-height:1.6;}
+  .sub code{background:var(--hover);padding:1px 6px;border-radius:var(--radius-sm);font-size:12px;}
+  textarea{width:100%;min-height:58vh;font-family:var(--font-sans);font-size:14px;line-height:1.6;padding:18px;
+    border:1px solid var(--rule-strong);border-radius:var(--radius-xl);background:var(--paper);color:var(--ink);
+    box-sizing:border-box;box-shadow:var(--shadow-soft-sm);}
+  textarea:focus{outline:none;border-color:var(--brand-green);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-green) 14%,transparent);}
+  .row{display:flex;gap:12px;align-items:center;margin-top:14px;}
+  .status{color:var(--brand-green);font-size:13px;}
+  .err{color:var(--bad-fg);font-size:13px;}
+</style>"""
+    html = """__HEAD____NAV__
+<main class="adam-main"><div class="adam-container stagger">
+<div class="learn-head"><h1>ADAM Learnings</h1></div>
 <div class="sub">Institutional memory shared across every sprint. Loaded into Claude's context on every chat. Edit freely — saves to <code>learnings.md</code> at the project root, also editable in the Replit file editor.</div>
 <form id="f">
   <textarea id="t" name="content">__CONTENT__</textarea>
   <div class="row">
-    <button type="submit">Save</button>
+    <button type="submit" class="btn btn-primary">Save</button>
     <span id="s" class="status"></span>
   </div>
 </form>
-<p style="margin-top:2rem;"><a href="/">← Back to home</a></p>
+</div></main>
 <script>
 const f=document.getElementById('f'),t=document.getElementById('t'),s=document.getElementById('s');
 f.addEventListener('submit',async e=>{
@@ -2579,7 +2598,12 @@ f.addEventListener('submit',async e=>{
 });
 </script>
 </body></html>"""
-    return HTMLResponse(html.replace("__CONTENT__", content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")))
+    html = (
+        html.replace("__HEAD__", page_head("ADAM · Learnings", extra_css))
+        .replace("__NAV__", nav_html("learnings"))
+        .replace("__CONTENT__", content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+    )
+    return HTMLResponse(html)
 
 
 @app.post("/learnings", dependencies=[Depends(require_api_key_or_session)])
