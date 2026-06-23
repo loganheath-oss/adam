@@ -69,6 +69,11 @@ var STYLE_TEMPLATE_PREFIXES = {
   "pie chart":       ["Template_TestimonialC"],
   "social media profile": ["Template_TestimonialC"],
   "talent profile":  ["Template_TestimonialC"],
+  // Mockup is a multi-row notification mock on the Reminder base. Its 6 body
+  // layers all share the name Notification_Headline_Text, so only the primary
+  // one fills (via the reminder branch); per-row copy needs distinct layer
+  // names in Figma.
+  "tweet / post mockup":          ["Template_Reminder"],
   // Aliases handled by normalize()
 };
 
@@ -99,6 +104,7 @@ var STYLE_ADTYPE_CONTAINERS = {
   "pie chart":       ["AdType: PieChart"],
   "social media profile": ["AdType: SocialMediaProfile"],
   "talent profile":  ["AdType: TalentProfile"],
+  "tweet / post mockup":          ["Adtype: Mockup"],
 };
 
 // When a template is a COMPONENT_SET, prefer variants whose name contains one
@@ -196,6 +202,8 @@ var STYLES_THAT_SKIP_IMAGE = {
   // Profile mocks ship with their own avatar/UI; no library photo slot.
   "social media profile": true,
   "talent profile":   true,
+  // Mockup is a notification graphic — no photo slot.
+  "tweet / post mockup":           true,
 };
 
 // Styles whose template has MORE THAN ONE image placeholder. Today's filler
@@ -918,7 +926,10 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
     // label with the headline copy. Handle Reminder explicitly by index.
     var ctaText = row.CTA || row.cta || "";
 
-    if (key === "reminder") {
+    if (key === "reminder" || key === "tweet / post mockup") {
+      // Mockup reuses the Reminder base; same Notification_Headline_Text layers
+      // (index 0 = label, index 1 = body). Mockup has 6 of them — only the
+      // primary body fills here; per-row copy needs distinct Figma layer names.
       // Layer order inside Reminder templates (from inspect_templates.py,
       // verified across both variants 5355:454 / 5355:480):
       //   [0] Notification_Headline_Text — "Reminder" label (static; do not write)
