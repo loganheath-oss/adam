@@ -825,7 +825,6 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
     # Brandon's curated 2026 library.
     PHOTO_LIBRARY_STYLES = {
         "Lifestyle Photo", "Photo with Text", "Testimonial",
-        "Social Media Profile", "Talent Profile",
         "Notification",  # template has a small portrait slot we fill from library
         "Image Library",  # legacy name — same routing
         # Split Screen pulls TWO library photos — one per placeholder. The dual
@@ -851,7 +850,9 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
     SKIP_IMAGE = {"Platform UI", "Meme",
                   # New graphic/UI-only styles (2026-06-22) — no photo slot; the
                   # plugin keeps their built imagery (STYLES_THAT_SKIP_IMAGE).
-                  "Us vs Them", "Device UI"}
+                  "Us vs Them", "Device UI", "Pie Chart",
+                  # Profile mocks: avatar/UI baked in, no library photo slot.
+                  "Social Media Profile", "Talent Profile"}
 
     # Pre-fetch the Figma library once if any photo-based style is in the order.
     # Cached for the duration of this stage.

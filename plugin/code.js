@@ -67,6 +67,8 @@ var STYLE_TEMPLATE_PREFIXES = {
   "device ui":       ["Template_TestimonialC"],
   "hybrid":          ["Template_PhotoWithTextB", "Template_PhotoWithText"],
   "pie chart":       ["Template_TestimonialC"],
+  "social media profile": ["Template_TestimonialC"],
+  "talent profile":  ["Template_TestimonialC"],
   // Aliases handled by normalize()
 };
 
@@ -95,6 +97,8 @@ var STYLE_ADTYPE_CONTAINERS = {
   "device ui":       ["Upwork - Mobile Homepage"],
   "hybrid":          ["AdType: Hybrid"],
   "pie chart":       ["AdType: PieChart"],
+  "social media profile": ["AdType: SocialMediaProfile"],
+  "talent profile":  ["AdType: TalentProfile"],
 };
 
 // When a template is a COMPONENT_SET, prefer variants whose name contains one
@@ -140,6 +144,11 @@ var STYLE_HEADLINE_LAYERS = {
   "search results":  ["TextOnly_headline_text", "headline_text"],
   "device ui":       ["TextOnly_headline_text", "headline_text"],
   "hybrid":          ["PhotoWithText_Headline_Text", "headline_text"],
+  // Social Media Profile: the ad message lives in "Subhead-Text" (no separate
+  // headline layer). Talent Profile has no message layer yet — only its CTA
+  // fills; the profile content is static mock until a copy layer is added.
+  "social media profile": ["Subhead-Text", "headline_text"],
+  "talent profile":  ["headline_text"],
 };
 
 var STYLE_BULLET_LAYERS = {
@@ -148,6 +157,14 @@ var STYLE_BULLET_LAYERS = {
   // Generic flow fills the primary headline + cta; full bullet fill is follow-up.
   "us vs them": ["UsVsThem_Bullet1", "UsVsThem_Bullet2", "UsVsThem_Bullet3",
                  "UsVsThem_Bullet4", "UsVsThem_Bullet5", "UsVsThem_Bullet6"],
+};
+
+// Per-style secondary copy layer (subhead / stat line) — filled with the short
+// copy after the headline + CTA. Exact layer names from the live file.
+var STYLE_SUBHEAD_LAYERS = {
+  "photo with text": ["PhotoWithText_SubHeadline_Text"],
+  "hybrid":          ["PhotoWithText_SubHeadline_Text"],
+  "poll":            ["Stat Block Text"],
 };
 
 // Styles where the manifest's library photo should NOT overwrite template
@@ -176,6 +193,9 @@ var STYLES_THAT_SKIP_IMAGE = {
   // Pie Chart is a vector/gradient graphic — no photo; the slice is drawn by
   // fillPieChartValue() from the manifest's Chart_Pct.
   "pie chart":        true,
+  // Profile mocks ship with their own avatar/UI; no library photo slot.
+  "social media profile": true,
+  "talent profile":   true,
 };
 
 // Styles whose template has MORE THAN ONE image placeholder. Today's filler
@@ -930,6 +950,18 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
       if (ctaText && !STYLES_THAT_SKIP_CTA[key]) {
         var ctaOk = await setFirstTextByCandidates(clone, ["cta_text", "CTA_Text", "CTA", "cta"], ctaText);
         if (ctaOk) log("  ✓ cta filled");
+      }
+
+      // Subhead / stat line — the secondary on-creative copy for styles that have
+      // one (Photo with Text, Hybrid, Poll's stat block, etc.). Short copy fits
+      // best, so prefer description, then body_short.
+      var subLayers = STYLE_SUBHEAD_LAYERS[key];
+      if (subLayers) {
+        var subText = row.Description || row.description || row.Primary_Text_Short || row.body_short || "";
+        if (subText) {
+          var subOk = await setFirstTextByCandidates(clone, subLayers, subText);
+          if (subOk) log("  ✓ subhead/stat filled");
+        }
       }
 
       // Sticky Note: also try to fill the right-side headline if we have a body
