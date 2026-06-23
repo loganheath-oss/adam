@@ -425,6 +425,90 @@
     .confirm-footer { flex-direction:column; align-items:stretch; }
     .confirm-footer-actions { justify-content:flex-end; }
   }
+
+  /* ── TAB CARD ────────────────────────────────────────────────── */
+  .tab-card { border:1px solid var(--rule); border-radius:var(--radius-2xl); box-shadow:var(--shadow-soft); background:var(--paper); }
+  .tab-nav { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--rule); background:var(--hover); border-radius:var(--radius-2xl) var(--radius-2xl) 0 0; overflow:hidden; }
+  .tab-btn {
+    display:flex; align-items:center; gap:12px;
+    padding:18px 24px 16px; background:none; border:none;
+    border-bottom:2px solid transparent; border-right:1px solid var(--rule);
+    cursor:pointer; font-family:var(--font-sans); text-align:left;
+    transition:background .15s, border-color .15s; color:var(--ink-mid);
+  }
+  .tab-btn:last-child { border-right:none; }
+  .tab-btn:hover { background:var(--paper); color:var(--ink); }
+  .tab-btn.active { background:var(--paper); border-bottom-color:var(--brand-green); color:var(--ink); }
+  .tab-btn-inner { display:flex; flex-direction:column; gap:3px; }
+  .tab-step { font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-dim); }
+  .tab-btn.active .tab-step { color:var(--brand-green); }
+  .tab-name { font-size:14px; letter-spacing:.01em; }
+  .tab-check { width:18px; height:18px; border-radius:50%; border:1.5px solid var(--rule-strong); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:10px; color:transparent; transition:all .2s; }
+  .tab-btn.done .tab-check { background:var(--brand-green); border-color:var(--brand-green); color:#fff; }
+
+  .tab-panel { display:none; padding:36px 40px 0; }
+  .tab-panel.active { display:block; }
+  .tab-footer { display:flex; align-items:center; justify-content:flex-end; gap:12px; padding:28px 40px 32px; border-top:1px solid var(--rule); margin-top:32px; }
+  .tab-footer-back { font-family:var(--font-sans); font-size:13px; color:var(--ink-mid); background:none; border:1px solid var(--rule-strong); border-radius:var(--radius-lg); padding:10px 18px; cursor:pointer; transition:border-color .12s, color .12s; }
+  .tab-footer-back:hover { border-color:var(--ink); color:var(--ink); }
+  .tab-footer-next { font-family:var(--font-sans); font-size:15px; letter-spacing:.02em; color:#fff; background:var(--brand-green); border:1px solid var(--brand-green); border-radius:var(--radius-pill); padding:13px 36px; cursor:pointer; box-shadow:var(--shadow-soft-sm); transition:background .15s, transform .1s; }
+  .tab-footer-next:hover { background:var(--brand-green-deep); transform:translateY(-1px); }
+
+  /* ── FIELDS (Tab 1 — no cards, just clean labels) ────────────── */
+  .fields-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .fields-grid .field-full { grid-column:1/-1; }
+  .field { display:flex; flex-direction:column; gap:7px; }
+  .field-label { font-size:13px; color:var(--ink); letter-spacing:.01em; }
+
+  /* ── WIZARD STEPS (Tab 2) ────────────────────────────────────── */
+  .wizard-step { margin-bottom:32px; }
+  .wizard-step:last-child { margin-bottom:0; }
+  .wizard-step-head { display:flex; align-items:baseline; gap:14px; padding-bottom:13px; border-bottom:1px solid var(--rule); margin-bottom:18px; }
+  .wizard-step-title { font-size:16px; letter-spacing:-.005em; color:var(--ink); }
+  .wizard-step-desc { font-size:12px; color:var(--ink-dim); margin-left:auto; }
+
+  /* Deliverable type — 3-column visual cards */
+  .del-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .del-card {
+    border:1px solid var(--rule-strong); border-radius:var(--radius-xl); padding:18px 16px;
+    cursor:pointer; background:var(--paper); position:relative; display:block;
+    transition:border-color .15s, background .15s, box-shadow .15s;
+  }
+  .del-card input[type="radio"] { position:absolute; opacity:0; width:0; height:0; }
+  .del-card:hover { transform:translateY(-1px); box-shadow:var(--shadow-soft); border-color:var(--brand-green-soft); }
+  .del-card.selected { border-color:var(--brand-green); background:var(--tint); box-shadow:0 0 0 1px var(--brand-green) inset; }
+  .del-card-name { font-size:15px; letter-spacing:-.005em; color:var(--ink); margin-bottom:5px; line-height:1.2; }
+  .del-card.selected .del-card-name { color:var(--brand-green-deep); }
+  .del-card-desc { font-size:11px; color:var(--ink-dim); line-height:1.5; }
+  .del-card-check { position:absolute; top:12px; right:12px; width:18px; height:18px; border-radius:50%; border:1.5px solid var(--rule-strong); background:var(--paper); transition:all .15s; display:flex; align-items:center; justify-content:center; }
+  .del-card.selected .del-card-check { background:var(--brand-green); border-color:var(--brand-green); color:#fff; font-size:10px; }
+  .del-card.selected .del-card-check::after { content:'✓'; }
+
+  /* ── TAB 3 SUMMARY ───────────────────────────────────────────── */
+  .summ-card { border:1px solid var(--rule); border-radius:var(--radius-xl); overflow:hidden; margin-bottom:28px; }
+  .summ-head { padding:11px 18px; background:var(--hover); border-bottom:1px solid var(--rule); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-mid); }
+  .summ-body { padding:16px 18px; display:flex; flex-direction:column; gap:13px; }
+  .summ-row { display:flex; align-items:baseline; gap:16px; }
+  .summ-key { font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-dim); min-width:90px; flex-shrink:0; }
+  .summ-val { font-size:14px; color:var(--ink); flex:1; }
+  .summ-val-dim { color:var(--ink-dim); font-style:italic; }
+  .summ-edit { font-size:11.5px; color:var(--brand-green); cursor:pointer; text-decoration:underline; text-underline-offset:2px; margin-left:auto; flex-shrink:0; }
+  .brief-field { margin-bottom:0; }
+  .brief-label { font-size:13px; color:var(--ink); letter-spacing:.01em; margin-bottom:8px; display:flex; align-items:center; gap:10px; }
+  .brief-label-opt { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-dim); }
+
+  /* Upwork wordmark in nav */
+  .upwork-wordmark { height:16px; width:auto; color:var(--ink); flex-shrink:0; display:block; }
+  .nav-sep { display:inline-block; width:1px; height:14px; background:var(--rule-strong); flex-shrink:0; }
+
+  @media (max-width:640px) {
+    .tab-panel { padding:20px 18px 0; }
+    .tab-footer { padding:18px; }
+    .tab-btn { padding:14px 14px 12px; gap:8px; }
+    .tab-name { font-size:12px; }
+    .del-cards { grid-template-columns:1fr; }
+    .fields-grid { grid-template-columns:1fr; }
+  }
 </style>
 </head>
 <body>
@@ -454,8 +538,15 @@
 <!-- Shared ADAM nav (keep in sync with nav_html() in main.py / DESIGN.md) -->
 <nav class="adam-nav">
   <a class="adam-nav-brand" href="/" aria-label="ADAM home">
+    <svg class="upwork-wordmark" viewBox="0 0 296 83" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Upwork">
+      <path d="M81.1484 55.8323C72.8926 55.8323 67.4271 49.4463 65.9025 46.9725C67.8586 31.3239 73.583 26.3761 81.1484 26.3761C88.7138 26.3761 94.4382 32.3594 94.4382 41.1042C94.4382 49.849 88.6275 55.8323 81.1484 55.8323ZM81.1484 16.7684C67.686 16.7684 60.1493 25.5419 57.9919 34.5744C55.5468 29.9719 53.7345 23.816 52.325 18.0916H33.7135V41.2481C33.7135 49.6477 29.8877 55.8611 22.4086 55.8611C14.9295 55.8611 10.6434 49.6477 10.6434 41.2481L10.7296 18.0916H0V41.2481C0 48.008 2.1862 54.1352 6.18465 58.5076C10.2982 63.0238 15.9075 65.3826 22.4086 65.3826C35.3532 65.3826 44.3857 55.4584 44.3857 41.2481V25.6858C45.7376 30.8061 48.9594 40.644 55.1153 49.2737L49.3621 82.038H60.2644L64.0615 58.824C65.2984 59.8595 66.6216 60.7801 68.0312 61.6143C71.6844 63.9155 75.8555 65.21 80.1703 65.3538C80.1703 65.3538 80.832 65.3826 81.1771 65.3826C94.5245 65.3826 105.139 55.0557 105.139 41.1042C105.139 27.1528 94.4957 16.7684 81.1484 16.7684Z" fill="currentColor"/>
+      <path d="M235.305 23.0389V18.0912H224.776V63.9151H235.449V45.9652C235.449 34.9192 236.455 26.9798 251.27 28.0154V17.5446C244.366 17.0268 238.987 18.4651 235.305 23.0389Z" fill="currentColor"/>
+      <path d="M161.204 18.0931L153.466 50.1382L145.21 18.0931H131.632L123.348 50.1382L115.639 18.0931H104.823L116.674 63.9458H129.504L138.421 31.3829L147.252 63.9458H160.082L172.624 18.0931H161.204Z" fill="currentColor"/>
+      <path d="M196.128 55.8611C188.534 55.8611 182.838 49.8778 182.838 41.1042C182.838 32.3307 188.562 26.3761 196.128 26.3761C203.693 26.3761 209.418 32.3594 209.418 41.1042C209.418 49.849 203.607 55.8611 196.128 55.8611ZM196.128 16.7684C182.694 16.7684 172.166 27.1816 172.166 41.1042C172.166 55.0269 182.694 65.3538 196.128 65.3538C209.561 65.3538 220.09 55.0269 220.09 41.1042C220.09 27.1816 209.504 16.7684 196.128 16.7684Z" fill="currentColor"/>
+      <path d="M266.572 41.394H269.046L283.946 63.9464H295.999L278.855 38.9489C287.168 35.6984 292.749 27.2125 292.749 18.0937H282.105C282.105 27.9891 274.31 31.7287 266.572 31.7287V0H255.871V63.9464H266.543L266.572 41.394Z" fill="currentColor"/>
+    </svg>
+    <span class="nav-sep" aria-hidden="true"></span>
     <span class="adam-logo">ADAM<b>.</b></span>
-    <span class="adam-sub">Upwork Paid Acquisition</span>
   </a>
   <div class="adam-nav-links">
     <a href="/new" class="active">New Order</a>
@@ -470,129 +561,141 @@
 
 <!-- HERO -->
 <div class="header">
-  <div class="header-eyebrow">Upwork Paid Acquisition &middot; v2.0</div>
-  <div><h1>Ad Creative<span>Order Form</span></h1></div>
+  <h1>Ad Creative<br>Request</h1>
 </div>
 
-<!-- ── SECTION 01: REQUEST DETAILS ── -->
-<div class="section-header">
-  <div class="section-num">01</div>
-  <div><div class="section-title">Request Details</div><div class="section-desc">Delivery date, submitter, and audience targeting</div></div>
-  <div class="section-rule"></div>
-</div>
+<!-- TAB CARD -->
+<div class="tab-card reveal-up">
 
-<div class="two-col">
-  <div class="form-card store">
-    <div class="card-head"><div class="card-label">Requested Delivery Date<span class="req">*</span></div><div class="card-badge">Input</div></div>
-    <div class="card-body">
-      <input type="date" id="delivery-date" required>
-      <div class="field-hint">Date you need the deliverables completed by.</div>
-    </div>
+  <!-- Tab navigation -->
+  <div class="tab-nav" role="tablist">
+    <button class="tab-btn active" id="tab-btn-1" type="button" onclick="goTab(1)" role="tab" aria-selected="true" aria-controls="tab-1">
+      <span class="tab-check" id="tab-check-1"></span>
+      <span class="tab-btn-inner"><span class="tab-step">01</span><span class="tab-name">Details</span></span>
+    </button>
+    <button class="tab-btn" id="tab-btn-2" type="button" onclick="goTab(2)" role="tab" aria-selected="false" aria-controls="tab-2">
+      <span class="tab-check" id="tab-check-2"></span>
+      <span class="tab-btn-inner"><span class="tab-step">02</span><span class="tab-name">Creative</span></span>
+    </button>
+    <button class="tab-btn" id="tab-btn-3" type="button" onclick="goTab(3)" role="tab" aria-selected="false" aria-controls="tab-3">
+      <span class="tab-check" id="tab-check-3"></span>
+      <span class="tab-btn-inner"><span class="tab-step">03</span><span class="tab-name">Review</span></span>
+    </button>
   </div>
-  <div class="form-card store">
-    <div class="card-head"><div class="card-label">Driver<span class="req">*</span></div><div class="card-badge">Submitted By</div></div>
-    <div class="card-body">
-      <input type="text" id="driver" placeholder="Enter your name..." required autocomplete="name">
-      <div class="field-hint">Type your full name as the person submitting this request.</div>
-    </div>
-  </div>
-</div>
 
-<div class="form-card api">
-  <div class="card-head"><div class="card-label">Audience Segment<span class="req">*</span></div><div class="card-badge">Audience</div></div>
-  <div class="card-body">
-    <select id="targeting" required style="max-width:300px;" onchange="updateBatchTargetingRows()">
-      <option value="" disabled selected>Select targeting...</option>
-      <option>Prospecting</option>
-      <option>Retargeting</option>
-      <option>Prospecting and Retargeting</option>
-    </select>
-  </div>
-</div>
-
-<!-- ── SECTION 02: DELIVERABLE TYPE ── -->
-<div class="section-header">
-  <div class="section-num">02</div>
-  <div><div class="section-title">Deliverable</div><div class="section-desc">Select what should be produced for this order</div></div>
-  <div class="section-rule"></div>
-</div>
-
-<div class="form-card process">
-  <div class="card-head"><div class="card-label">Deliverable Type<span class="req">*</span></div><div class="card-badge">Select One</div></div>
-  <div class="card-body">
-    <div class="radio-group">
-      <div class="radio-option">
-        <input type="radio" id="del-images-copy" name="deliverable" value="images-copy" onchange="handleDeliverableChange()">
-        <label class="radio-label" for="del-images-copy"><span class="label-main">Images &amp; Copy</span><span class="label-sub">Both image assets and written copy produced together</span></label>
+  <!-- ── TAB 1: DETAILS ── -->
+  <div class="tab-panel active" id="tab-1" role="tabpanel">
+    <div class="fields-grid">
+      <div class="field">
+        <label class="field-label" for="driver">Your Name<span class="req">*</span></label>
+        <input type="text" id="driver" placeholder="Full name" required autocomplete="name">
       </div>
-      <div class="radio-option">
-        <input type="radio" id="del-images-only" name="deliverable" value="images-only" onchange="handleDeliverableChange()">
-        <label class="radio-label" for="del-images-only"><span class="label-main">Just Images</span><span class="label-sub">Image assets only, no copy production</span></label>
+      <div class="field">
+        <label class="field-label" for="delivery-date">Delivery Date<span class="req">*</span></label>
+        <input type="date" id="delivery-date" required>
+        <div class="field-hint">Minimum 5 business days out.</div>
       </div>
-      <div class="radio-option">
-        <input type="radio" id="del-copy-only" name="deliverable" value="copy-only" onchange="handleDeliverableChange()">
-        <label class="radio-label" for="del-copy-only"><span class="label-main">Just Copy</span><span class="label-sub">Written copy only, no image production</span></label>
+      <div class="field field-full">
+        <label class="field-label" for="targeting">Audience<span class="req">*</span></label>
+        <select id="targeting" required style="max-width:320px;" onchange="updateBatchTargetingRows()">
+          <option value="" disabled selected>Select audience segment…</option>
+          <option>Prospecting</option>
+          <option>Retargeting</option>
+          <option>Prospecting and Retargeting</option>
+        </select>
       </div>
     </div>
-    <div id="warn-images-only" class="inline-warning">⚠ <strong>Are you sure you only want images?</strong> Orders without copy may require a separate request later.</div>
-    <div id="warn-copy-only" class="inline-warning">⚠ <strong>Are you sure you only want copy?</strong> Orders without images may require a separate request later.</div>
-  </div>
-</div>
-
-<!-- ── SECTION 03: PLATFORM ── -->
-<div id="section-platform" class="hidden">
-  <div class="section-header">
-    <div class="section-num">03</div>
-    <div><div class="section-title">Platform</div><div class="section-desc">Select the platform this order is for — one platform per order</div></div>
-    <div class="section-rule"></div>
-  </div>
-  <div class="platform-cards" id="platform-cards">
-    <!-- injected by JS -->
-  </div>
-</div>
-
-<!-- ── SECTION 04: AD FORMATS & BATCH CONFIGURATION ── -->
-<div id="section-formats" class="hidden">
-  <div class="section-header">
-    <div class="section-num">04</div>
-    <div><div class="section-title">Ad Formats</div><div class="section-desc">Select the formats needed — a batch card will appear for each</div></div>
-    <div class="section-rule"></div>
+    <div class="tab-footer">
+      <button class="tab-footer-next" type="button" onclick="nextTab()">Configure Creative →</button>
+    </div>
   </div>
 
-  <div class="form-card store">
-    <div class="card-head"><div class="card-label">Formats<span class="req">*</span></div><div class="card-badge" id="platform-name-badge"></div></div>
-    <div class="card-body">
+  <!-- ── TAB 2: CREATIVE ── -->
+  <div class="tab-panel" id="tab-2" role="tabpanel">
+
+    <!-- Deliverable type -->
+    <div class="wizard-step">
+      <div class="wizard-step-head">
+        <span class="wizard-step-title">What are you requesting?</span>
+      </div>
+      <div class="del-cards">
+        <label class="del-card" id="del-card-images-copy" onclick="selectDel(this,'images-copy')">
+          <input type="radio" id="del-images-copy" name="deliverable" value="images-copy">
+          <span class="del-card-check"></span>
+          <div class="del-card-name">Images &amp; Copy</div>
+          <div class="del-card-desc">Visual assets and written copy produced together</div>
+        </label>
+        <label class="del-card" id="del-card-images-only" onclick="selectDel(this,'images-only')">
+          <input type="radio" id="del-images-only" name="deliverable" value="images-only">
+          <span class="del-card-check"></span>
+          <div class="del-card-name">Images Only</div>
+          <div class="del-card-desc">Visual assets without copy production</div>
+        </label>
+        <label class="del-card" id="del-card-copy-only" onclick="selectDel(this,'copy-only')">
+          <input type="radio" id="del-copy-only" name="deliverable" value="copy-only">
+          <span class="del-card-check"></span>
+          <div class="del-card-name">Copy Only</div>
+          <div class="del-card-desc">Written copy without image production</div>
+        </label>
+      </div>
+      <div id="warn-images-only" class="inline-warning" style="margin-top:12px">⚠ <strong>Are you sure you only want images?</strong> Orders without copy may require a separate request later.</div>
+      <div id="warn-copy-only" class="inline-warning" style="margin-top:12px">⚠ <strong>Are you sure you only want copy?</strong> Orders without images may require a separate request later.</div>
+    </div>
+
+    <!-- Platform — shown when deliverable includes images -->
+    <div id="section-platform" class="hidden wizard-step">
+      <div class="wizard-step-head">
+        <span class="wizard-step-title">Platform</span>
+        <span class="wizard-step-desc">One platform per request</span>
+      </div>
+      <div class="platform-cards" id="platform-cards">
+        <!-- injected by JS -->
+      </div>
+    </div>
+
+    <!-- Formats — shown after platform selected -->
+    <div id="section-formats" class="hidden wizard-step">
+      <div class="wizard-step-head">
+        <span class="wizard-step-title">Ad Formats</span>
+        <span class="wizard-step-desc" id="platform-name-badge"></span>
+      </div>
       <div class="format-list" id="format-list"></div>
+      <div id="batch-cards-container" style="margin-top:14px"></div>
+    </div>
+
+    <div class="tab-footer">
+      <button class="tab-footer-back" type="button" onclick="goTab(1)">← Back</button>
+      <button class="tab-footer-next" type="button" onclick="nextTab()">Review Request →</button>
     </div>
   </div>
 
-  <div id="batch-cards-container"></div>
-</div>
+  <!-- ── TAB 3: REVIEW & SUBMIT ── -->
+  <div class="tab-panel" id="tab-3" role="tabpanel">
+    <div class="summ-card">
+      <div class="summ-head">Request Summary</div>
+      <div id="tab3-summary" class="summ-body">
+        <span class="summ-val-dim">Complete the previous steps to see your summary.</span>
+      </div>
+    </div>
 
-<!-- ── SECTION 03/04/05: ADDITIONAL INFO ── -->
-<div class="section-header">
-  <div class="section-num" id="section-additional-num">03</div>
-  <div><div class="section-title">Additional Info</div><div class="section-desc">Creative brief, CTAs, URLs, SRT files, and any other direction</div></div>
-  <div class="section-rule"></div>
-</div>
+    <div class="brief-field field">
+      <label class="brief-label field-label" for="brief">
+        Additional Context
+        <span class="brief-label-opt">Optional</span>
+      </label>
+      <textarea id="brief" placeholder="Include copy guidance, context, CTAs, destination URLs, etc." style="min-height:110px;"></textarea>
+    </div>
 
-<div class="form-card human">
-  <div class="card-head"><div class="card-label">Additional Specs / Deliverable Info / Creative Brief</div><div class="card-badge">Optional</div></div>
-  <div class="card-body">
-    <textarea id="brief" placeholder="Include any of the following that apply:&#10;&#10;&#xB7; Copy guidance or spec detail&#10;&#xB7; CTAs (if applicable)&#10;&#xB7; Destination URLs&#10;&#xB7; SRT file requirements&#10;&#xB7; Any other creative direction or context"></textarea>
-    <div class="field-hint">The more detail here, the better the output. Don't leave the team guessing.</div>
+    <div class="tab-footer">
+      <button class="tab-footer-back" type="button" onclick="goTab(2)">← Back</button>
+      <button class="btn-submit" type="button" onclick="handleSubmit()">Submit Request</button>
+    </div>
   </div>
-</div>
 
-<!-- SUBMIT -->
-<div class="submit-zone">
-  <div class="submit-note">
-    ALL REQUIRED FIELDS MARKED WITH <span style="color:var(--brand-green)">*</span><br>
-    ORDERS ARE ROUTED AUTOMATICALLY ON SUBMIT<br>
-    REACH OUT TO THE WORKSHOP PRODUCER IF CHANGES ARE NEEDED
-  </div>
-  <button class="btn-submit" type="button" onclick="handleSubmit()">Submit Order</button>
-</div>
+</div><!-- /.tab-card -->
+
+<!-- Keeps JS's updateSectionNumbers() from erroring -->
+<span id="section-additional-num" style="display:none" aria-hidden="true">03</span>
 
 </div><!-- /.adam-container -->
 </main>
@@ -604,7 +707,7 @@
     <div id="review-state">
       <div class="confirm-header">
         <div class="confirm-header-top">
-          <div class="confirm-eyebrow">Step 2 of 2 · Before you submit</div>
+          <div class="confirm-eyebrow">Before you submit</div>
         </div>
         <div class="confirm-title">Review Your Order</div>
         <div class="confirm-subtitle">
@@ -620,7 +723,7 @@
         <p class="confirm-footer-note">Once confirmed, this order is routed automatically to the workflow pipeline.</p>
         <div class="confirm-footer-actions">
           <button class="btn-go-back" onclick="closeConfirm()">← Go Back &amp; Edit</button>
-          <button class="btn-confirm-submit" onclick="confirmSubmit()">Confirm &amp; Submit Order</button>
+          <button class="btn-confirm-submit" onclick="confirmSubmit()">Confirm &amp; Submit</button>
         </div>
       </div>
     </div>
@@ -1039,16 +1142,7 @@ function esc(s) {
 }
 
 // ── SECTION NUMBERS ──────────────────────────────────────────────────────────
-function updateSectionNumbers() {
-  const hasImages = ['images-copy','images-only'].includes(
-    document.querySelector('input[name="deliverable"]:checked')?.value
-  );
-  const hasBatches = document.querySelectorAll('.batch-card').length > 0;
-  const el = document.getElementById('section-additional-num');
-  if (!hasImages) el.textContent = '03';
-  else if (!hasBatches) el.textContent = '05';
-  else el.textContent = '05';
-}
+function updateSectionNumbers() { /* tabs replace numbered sections */ }
 
 // ── SUBMIT ───────────────────────────────────────────────────────────────────
 function handleSubmit() {
@@ -1634,6 +1728,111 @@ function setMinDeliveryDate() {
   const dd = String(minDate.getDate()).padStart(2, '0');
   const input = document.getElementById('delivery-date');
   input.min = `${yyyy}-${mm}-${dd}`;
+}
+
+// ── TAB NAVIGATION ─────────────────────────────────────────────────────────
+let currentTab = 1;
+
+function goTab(n) {
+  document.querySelectorAll('.tab-panel').forEach((p, i) => {
+    p.classList.toggle('active', i + 1 === n);
+  });
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', i + 1 === n);
+    b.setAttribute('aria-selected', String(i + 1 === n));
+  });
+  currentTab = n;
+  if (n === 3) buildTab3Summary();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextTab() {
+  if (currentTab === 1) {
+    const driver = document.getElementById('driver').value.trim();
+    const date = document.getElementById('delivery-date').value;
+    const targeting = document.getElementById('targeting').value;
+    if (!driver) { document.getElementById('driver').focus(); highlightField('driver'); return; }
+    if (!date) { document.getElementById('delivery-date').focus(); highlightField('delivery-date'); return; }
+    if (!targeting) { document.getElementById('targeting').focus(); highlightField('targeting'); return; }
+    document.getElementById('tab-check-1').textContent = '✓';
+    document.getElementById('tab-btn-1').classList.add('done');
+    goTab(2);
+  } else if (currentTab === 2) {
+    const deliverable = document.querySelector('input[name="deliverable"]:checked');
+    if (!deliverable) { alert('Please select what you are requesting.'); return; }
+    const hasImages = ['images-copy', 'images-only'].includes(deliverable.value);
+    if (hasImages && !selectedPlatform) { alert('Please select a platform.'); return; }
+    if (hasImages && document.querySelectorAll('.batch-card').length === 0) {
+      alert('Please select at least one ad format.'); return;
+    }
+    document.getElementById('tab-check-2').textContent = '✓';
+    document.getElementById('tab-btn-2').classList.add('done');
+    goTab(3);
+  }
+}
+
+function highlightField(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.borderColor = 'var(--bad)';
+  el.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--bad) 14%, transparent)';
+  el.addEventListener('input', function clear() {
+    el.style.borderColor = '';
+    el.style.boxShadow = '';
+    el.removeEventListener('input', clear);
+  }, { once: true });
+}
+
+function selectDel(labelEl, value) {
+  document.querySelectorAll('.del-card').forEach(c => c.classList.remove('selected'));
+  labelEl.classList.add('selected');
+  const radio = document.getElementById('del-' + value.replace('-', '-'));
+  if (radio) { radio.checked = true; }
+  handleDeliverableChange();
+}
+
+function buildTab3Summary() {
+  const el = document.getElementById('tab3-summary');
+  if (!el) return;
+  const dateVal = document.getElementById('delivery-date').value;
+  const formattedDate = dateVal
+    ? new Date(dateVal + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    : null;
+  const driver = document.getElementById('driver').value.trim();
+  const targeting = document.getElementById('targeting').value;
+  const deliverable = document.querySelector('input[name="deliverable"]:checked');
+  const delivLabels = { 'images-copy': 'Images & Copy', 'images-only': 'Images Only', 'copy-only': 'Copy Only' };
+  const delivText = deliverable ? delivLabels[deliverable.value] : null;
+  const hasImages = deliverable && ['images-copy', 'images-only'].includes(deliverable.value);
+
+  const rows = [
+    ['Submitter', driver || null],
+    ['Delivery', formattedDate],
+    ['Audience', targeting || null],
+    ['Deliverable', delivText],
+  ];
+
+  if (hasImages && selectedPlatform) {
+    rows.push(['Platform', selectedPlatform]);
+    const formats = [];
+    document.querySelectorAll('.batch-card').forEach(bc => {
+      const fmt = bc.querySelector('.batch-card-format')?.textContent.trim();
+      const styles = [];
+      bc.querySelectorAll('.style-row input[type="hidden"]').forEach(h => { if (h.value) styles.push(h.value); });
+      if (fmt) formats.push(styles.length ? fmt + ' · ' + styles.join(', ') : fmt);
+    });
+    if (formats.length) rows.push(['Formats', formats.join('<br>')]);
+  }
+
+  const hasAny = rows.some(([, v]) => v);
+  if (!hasAny) {
+    el.innerHTML = '<span class="summ-val-dim">Complete the previous steps to see your summary.</span>';
+    return;
+  }
+  el.innerHTML = rows
+    .filter(([, v]) => v)
+    .map(([k, v]) => `<div class="summ-row"><span class="summ-key">${k}</span><span class="summ-val">${v}</span></div>`)
+    .join('');
 }
 
 buildPlatformCards();
