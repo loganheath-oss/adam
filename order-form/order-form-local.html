@@ -15,7 +15,7 @@
      form's JavaScript contract is preserved.
      =========================================================================== */
 
-  .of-wrap { max-width:940px; }
+  .of-wrap { max-width:1040px; }
   .adam-main { padding-block:0 100px; }
 
   /* ── HERO ────────────────────────────────────────────────────────────────── */
@@ -503,39 +503,78 @@
     .confirm-footer-actions { justify-content:flex-end; }
   }
 
-  /* ── TAB CARD ────────────────────────────────────────────────── */
+  /* ── TAB CARD — split: gradient rail (wayfinding) + form panel (work) ─────
+     The card is the hero. The left rail carries the Upwork brand moment: a
+     soft green→lime gradient (their signature) holding the step progress and
+     a faint wordmark watermark. The right panel is the quiet work surface. */
+  /* No overflow:hidden on the card — the date/audience popovers must be able
+     to extend past its edges. The rail clips its own gradient/watermark via
+     its own radius instead. */
   .tab-card { border:1px solid var(--rule); border-radius:var(--radius-2xl); box-shadow:var(--shadow-soft); background:var(--paper); }
-  .tab-nav { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--rule); background:var(--hover); border-radius:var(--radius-2xl) var(--radius-2xl) 0 0; overflow:hidden; }
-  .tab-btn {
-    display:flex; align-items:center; gap:12px;
-    padding:20px 30px 18px; background:none; border:none;
-    border-bottom:2px solid transparent; border-right:1px solid var(--rule);
-    cursor:pointer; font-family:var(--font-sans); text-align:left;
-    transition:background .15s, border-color .15s; color:var(--ink-mid);
-  }
-  .tab-btn:last-child { border-right:none; }
-  .tab-btn:not(.locked):hover { background:var(--paper); color:var(--ink); }
-  .tab-btn.active { background:var(--paper); border-bottom-color:var(--brand-green); color:var(--ink); }
-  /* Locked steps can't be reached until prior steps are valid. */
-  .tab-btn.locked { cursor:not-allowed; opacity:.5; }
-  .tab-btn-inner { display:flex; flex-direction:column; gap:3px; }
-  .tab-step { font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-dim); }
-  .tab-btn.active .tab-step { color:var(--brand-green); }
-  .tab-name { font-size:14px; letter-spacing:.01em; }
-  .tab-check {
-    position:relative; width:18px; height:18px; border-radius:50%;
-    border:1.5px solid var(--rule-strong); display:flex; align-items:center; justify-content:center;
-    flex-shrink:0; font-size:10px; color:transparent; transition:all .2s;
-  }
-  .tab-btn.done .tab-check { background:var(--brand-green); border-color:var(--brand-green); color:#fff; }
-  /* Locked steps read as a plain dimmed ring — the whole tab is already dimmed. */
-  .tab-btn.locked .tab-check { border-color:var(--rule-strong); border-style:dashed; }
+  .tab-shell { display:flex; align-items:stretch; }
 
-  .tab-panel { display:none; padding:40px 48px 0; }
+  /* Left rail */
+  .tab-rail {
+    flex:0 0 300px; position:relative; overflow:hidden;
+    border-radius:var(--radius-2xl) 0 0 var(--radius-2xl);
+    padding:40px 32px 34px; color:#fff;
+    /* Vivid Upwork green so white text holds contrast; the lime is a contained
+       top-left sheen, not a pale wash. */
+    background:
+      radial-gradient(120% 80% at 12% 4%, rgba(150,235,70,.34), transparent 55%),
+      linear-gradient(158deg, #2FA908 0%, #14A800 42%, #0A6E00 100%);
+    text-shadow:0 1px 1px rgba(0,0,0,.10);
+  }
+  .rail-eyebrow {
+    display:flex; align-items:center; gap:11px; margin-bottom:34px;
+    font-size:10.5px; letter-spacing:.22em; text-transform:uppercase; color:rgba(255,255,255,.82);
+  }
+  .rail-eyebrow::before { content:''; width:18px; height:1.5px; background:rgba(255,255,255,.7); flex-shrink:0; }
+
+  /* Vertical stepper (same IDs/classes the JS drives — restyled for the rail) */
+  .tab-nav { display:flex; flex-direction:column; gap:6px; position:relative; z-index:1; }
+  .tab-btn {
+    display:flex; align-items:center; gap:14px; width:100%;
+    padding:13px 14px; background:none; border:none; border-radius:var(--radius-lg);
+    cursor:pointer; font-family:var(--font-sans); text-align:left;
+    color:rgba(255,255,255,.74); transition:background .18s, color .18s;
+  }
+  .tab-btn:not(.locked):hover { background:rgba(255,255,255,.12); color:#fff; }
+  .tab-btn.active { background:rgba(255,255,255,.17); color:#fff; }
+  .tab-btn.locked { cursor:not-allowed; color:rgba(255,255,255,.46); }
+  .tab-btn-inner { display:flex; flex-direction:column; gap:2px; }
+  .tab-step { font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:rgba(255,255,255,.62); font-variant-numeric:tabular-nums; }
+  .tab-btn.active .tab-step { color:rgba(255,255,255,.92); }
+  .tab-name { font-size:14.5px; letter-spacing:.005em; }
+  .tab-check {
+    width:23px; height:23px; border-radius:50%;
+    border:1.5px solid rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; font-size:11px; color:transparent; transition:all .2s;
+  }
+  .tab-btn.active .tab-check { border-color:rgba(255,255,255,.92); }
+  .tab-btn.done .tab-check { background:#fff; border-color:#fff; color:var(--brand-green-deep); }
+  .tab-btn.locked .tab-check { border-color:rgba(255,255,255,.34); border-style:dashed; }
+
+  .rail-note {
+    position:relative; z-index:1; margin-top:24px; max-width:30ch;
+    font-size:12px; line-height:1.65; color:rgba(255,255,255,.84);
+  }
+  .rail-watermark {
+    position:absolute; left:28px; bottom:-16px; pointer-events:none; user-select:none;
+    font-size:64px; line-height:1; letter-spacing:.05em; color:rgba(255,255,255,.12);
+  }
+  .rail-watermark b { color:rgba(255,255,255,.26); }
+
+  /* Right form panel */
+  .tab-main { flex:1; min-width:0; }
+  .tab-panel { display:none; padding:44px 46px 0; }
   .tab-panel.active { display:block; }
-  .tab-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:28px 48px 36px; border-top:1px solid var(--rule); margin-top:32px; }
-  .tab-footer-step { font-size:11px; color:var(--ink-dim); letter-spacing:.06em; }
-  .tab-footer-back { font-family:var(--font-sans); font-size:13px; color:var(--ink-mid); background:none; border:1px solid var(--rule-strong); border-radius:var(--radius-lg); padding:10px 18px; cursor:pointer; transition:border-color .12s, color .12s; }
+  .tab-footer {
+    display:flex; align-items:center; justify-content:flex-end; gap:12px;
+    padding:28px 46px 34px; border-top:1px solid var(--rule); margin-top:34px;
+  }
+  /* Back sits hard-left, the primary action stays flush-right with the inputs. */
+  .tab-footer-back { margin-right:auto; font-family:var(--font-sans); font-size:13px; color:var(--ink-mid); background:none; border:1px solid var(--rule-strong); border-radius:var(--radius-lg); padding:10px 18px; cursor:pointer; transition:border-color .12s, color .12s; }
   .tab-footer-back:hover { border-color:var(--ink); color:var(--ink); }
   .tab-footer-next { font-family:var(--font-sans); font-size:15px; letter-spacing:.02em; color:#fff; background:var(--brand-green); border:1px solid var(--brand-green); border-radius:var(--radius-pill); padding:13px 36px; cursor:pointer; box-shadow:var(--shadow-soft-sm); transition:background .15s, transform .1s; }
   .tab-footer-next:hover { background:var(--brand-green-deep); transform:translateY(-1px); }
@@ -545,6 +584,10 @@
   .fields-grid .field-full { grid-column:1/-1; }
   .field { display:flex; flex-direction:column; gap:7px; }
   .field-label { font-size:13px; color:var(--ink); letter-spacing:.01em; }
+  /* Label + an inline constraint note on the same baseline (keeps hints out
+     of the vertical flow so the form stays compact). */
+  .field-label-row { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+  .field-note { font-size:11px; color:var(--ink-dim); letter-spacing:.01em; white-space:nowrap; }
 
   /* ── WIZARD STEPS (Tab 2) ────────────────────────────────────── */
   .wizard-step { margin-bottom:32px; }
@@ -667,11 +710,21 @@
   .brief-feature-hint { font-size:11px; color:var(--ink-dim); letter-spacing:.04em; margin-top:9px; }
   /* .upwork-wordmark / .nav-sep are defined once in /static/adam-design.css */
 
+  /* Below the split threshold the rail folds to a top bar with the steps
+     laid out horizontally; the form panel drops underneath. */
+  @media (max-width:860px) {
+    .tab-shell { flex-direction:column; }
+    .tab-rail { flex:none; padding:22px 22px 18px; border-radius:var(--radius-2xl) var(--radius-2xl) 0 0; }
+    .rail-eyebrow { margin-bottom:18px; }
+    .tab-nav { flex-direction:row; gap:6px; }
+    .tab-btn { flex:1; padding:11px 12px; }
+    .rail-note, .rail-watermark { display:none; }
+  }
   @media (max-width:640px) {
-    .tab-panel { padding:22px 20px 0; }
-    .tab-footer { padding:18px 20px; }
-    .tab-btn { padding:14px 16px 12px; gap:8px; }
-    .tab-name { font-size:12px; }
+    .tab-panel { padding:26px 20px 0; }
+    .tab-footer { padding:20px; }
+    .tab-btn { flex-direction:column; align-items:flex-start; gap:8px; }
+    .tab-name { font-size:12.5px; }
     .del-cards { grid-template-columns:1fr; }
     .fields-grid { grid-template-columns:1fr; }
   }
@@ -732,22 +785,31 @@
 
 <!-- TAB CARD -->
 <div class="tab-card reveal-up">
+ <div class="tab-shell">
 
-  <!-- Tab navigation -->
-  <div class="tab-nav" role="tablist">
-    <button class="tab-btn active" id="tab-btn-1" type="button" onclick="goTab(1)" role="tab" aria-selected="true" aria-controls="tab-1">
-      <span class="tab-check" id="tab-check-1"></span>
-      <span class="tab-btn-inner"><span class="tab-step">01</span><span class="tab-name">Details</span></span>
-    </button>
-    <button class="tab-btn" id="tab-btn-2" type="button" onclick="goTab(2)" role="tab" aria-selected="false" aria-controls="tab-2">
-      <span class="tab-check" id="tab-check-2"></span>
-      <span class="tab-btn-inner"><span class="tab-step">02</span><span class="tab-name">Creative</span></span>
-    </button>
-    <button class="tab-btn" id="tab-btn-3" type="button" onclick="goTab(3)" role="tab" aria-selected="false" aria-controls="tab-3">
-      <span class="tab-check" id="tab-check-3"></span>
-      <span class="tab-btn-inner"><span class="tab-step">03</span><span class="tab-name">Review</span></span>
-    </button>
-  </div>
+  <!-- Left rail: the brand moment + step progress -->
+  <aside class="tab-rail">
+    <div class="rail-eyebrow">New brief</div>
+    <div class="tab-nav" role="tablist">
+      <button class="tab-btn active" id="tab-btn-1" type="button" onclick="goTab(1)" role="tab" aria-selected="true" aria-controls="tab-1">
+        <span class="tab-check" id="tab-check-1"></span>
+        <span class="tab-btn-inner"><span class="tab-step">Step 01</span><span class="tab-name">Details</span></span>
+      </button>
+      <button class="tab-btn" id="tab-btn-2" type="button" onclick="goTab(2)" role="tab" aria-selected="false" aria-controls="tab-2">
+        <span class="tab-check" id="tab-check-2"></span>
+        <span class="tab-btn-inner"><span class="tab-step">Step 02</span><span class="tab-name">Creative</span></span>
+      </button>
+      <button class="tab-btn" id="tab-btn-3" type="button" onclick="goTab(3)" role="tab" aria-selected="false" aria-controls="tab-3">
+        <span class="tab-check" id="tab-check-3"></span>
+        <span class="tab-btn-inner"><span class="tab-step">Step 03</span><span class="tab-name">Review</span></span>
+      </button>
+    </div>
+    <p class="rail-note">Three quick steps — the essentials, your formats, then a final review. We route the brief to the creative team and deliver by your date.</p>
+    <div class="rail-watermark" aria-hidden="true">ADAM<b>.</b></div>
+  </aside>
+
+  <!-- Right column: the form work surface -->
+  <div class="tab-main">
 
   <!-- ── TAB 1: DETAILS ── -->
   <div class="tab-panel active" id="tab-1" role="tabpanel">
@@ -757,7 +819,10 @@
         <input type="text" id="driver" placeholder="Full name" required autocomplete="name">
       </div>
       <div class="field">
-        <label class="field-label" for="date-trigger">Delivery Date<span class="req">*</span></label>
+        <div class="field-label-row">
+          <label class="field-label" for="date-trigger">Delivery Date<span class="req">*</span></label>
+          <span class="field-note">5 business days minimum</span>
+        </div>
         <!-- Real value lives on the hidden native input (id preserved for the
              data contract); the custom calendar writes to it. -->
         <input type="date" id="delivery-date" required class="visually-hidden" tabindex="-1" aria-hidden="true">
@@ -771,7 +836,6 @@
           </button>
           <div class="cui-pop cui-cal" id="date-popover" role="dialog" aria-label="Choose delivery date" hidden></div>
         </div>
-        <div class="field-hint">Minimum 5 business days out.</div>
       </div>
       <div class="field field-full">
         <label class="field-label" for="targeting-trigger">Audience<span class="req">*</span></label>
@@ -792,7 +856,6 @@
       </div>
     </div>
     <div class="tab-footer">
-      <span class="tab-footer-step">Step 1 of 3</span>
       <button class="tab-footer-next" type="button" onclick="nextTab()">Configure Creative →</button>
     </div>
   </div>
@@ -884,6 +947,8 @@
     </div>
   </div>
 
+  </div><!-- /.tab-main -->
+ </div><!-- /.tab-shell -->
 </div><!-- /.tab-card -->
 
 <!-- Keeps JS's updateSectionNumbers() from erroring -->

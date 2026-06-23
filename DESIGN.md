@@ -121,19 +121,38 @@ Set `class="active"` on the link for the current page. `.upwork-wordmark` and
 
 ### Multi-step forms (tabs / wizard)
 
-The order form is the reference pattern: a single `.tab-card` with a `.tab-nav`
-of `.tab-btn` steps and one `.tab-panel` per step. Rules:
+The order form is the reference pattern: a single `.tab-card` laid out as a
+**split** (`.tab-shell`) — a green gradient **rail** on the left and the form
+**panel** on the right. The card is the page's hero. Rules:
 
+- **The rail is the brand moment.** `.tab-rail` carries the one sanctioned use
+  of a full green gradient on the whole product: a vivid Upwork-green base
+  (`#2FA908 → #14A800 → #0A6E00`) with a contained lime sheen top-left, white
+  text, and a faint `ADAM.` wordmark watermark bleeding off the bottom edge —
+  echoing Upwork's own gradient hero cards. It holds the `.tab-nav` as a
+  **vertical** stepper and a one-line `.rail-note`. Everything else on the page
+  stays neutral so this reads as *the* accent. Don't add a second gradient.
+- **Wayfinding lives in the rail; work lives in the panel.** The gradient is
+  functional — it separates "where am I / what's this step" (rail) from the
+  work surface (`.tab-main` → `.tab-panel`). The primary action sits in a
+  `.tab-footer` flush-right with the inputs (`justify-content:flex-end`); a Back
+  button, when present, is pushed hard-left with `margin-right:auto`.
 - **Gate forward progress.** A step is only reachable once every earlier
   required step validates. Implement one `validateStep(n)` per step; derive both
   the *furthest reachable* tab and the per-tab `done`/`locked` styling from it
   (`refreshTabState()`), recomputed on every `input`/`change`. Backward
   navigation is always allowed.
-- **Locked steps** get `.tab-btn.locked` (dimmed, lock glyph, no pointer).
-  Completed steps get `.tab-btn.done` (green check).
+- **Step states** (restyled for the gradient rail): `.tab-btn.active` gets a
+  translucent-white pill; `.tab-btn.done` a solid white check circle with a
+  green tick; `.tab-btn.locked` a dashed dim ring, no pointer.
+- **Field constraints ride the label**, not a line below it: pair the label and
+  a right-aligned `.field-note` in a `.field-label-row` (e.g. "5 business days
+  minimum" next to *Delivery Date*) to keep the form vertically compact.
 - **Headline treatment:** page title is `<h1>` with the second line in a dim
   `<span>` (e.g. "Ad Creative" in `--ink`, "Request" in `--ink-dim`). Keep the
   hero tight to the nav — minimal top padding, no heavy divider rule.
+- **Below ~860px** the shell stacks: the rail folds to a top bar with the steps
+  laid out horizontally, the panel drops underneath, and the watermark/note hide.
 
 ---
 
