@@ -87,11 +87,18 @@ All provided by `adam-design.css`:
 
 ### Canonical nav markup (keep static files in sync with `nav_html()`)
 
+The brand lockup is **Upwork ∣ ADAM.** — the Upwork wordmark SVG, a 1px pipe
+separator, then the `ADAM.` lockup (the dot is the only green in the mark). This
+is the single consistent header treatment on every page; do not add a second
+per-page logo. The full SVG path data lives in `nav_html()` (`main.py`) and in
+the order form's inlined nav — keep the two in sync.
+
 ```html
 <nav class="adam-nav">
   <a class="adam-nav-brand" href="/" aria-label="ADAM home">
+    <svg class="upwork-wordmark" viewBox="0 0 296 83" aria-label="Upwork"><!-- paths --></svg>
+    <span class="nav-sep" aria-hidden="true"></span>
     <span class="adam-logo">ADAM<b>.</b></span>
-    <span class="adam-sub">Upwork Paid Acquisition</span>
   </a>
   <div class="adam-nav-links">
     <a href="/new" class="active">New Order</a>
@@ -102,7 +109,24 @@ All provided by `adam-design.css`:
 </nav>
 ```
 
-Set `class="active"` on the link for the current page.
+Set `class="active"` on the link for the current page. `.upwork-wordmark` and
+`.nav-sep` are sized once in `adam-design.css` — never re-declare them per page.
+
+### Multi-step forms (tabs / wizard)
+
+The order form is the reference pattern: a single `.tab-card` with a `.tab-nav`
+of `.tab-btn` steps and one `.tab-panel` per step. Rules:
+
+- **Gate forward progress.** A step is only reachable once every earlier
+  required step validates. Implement one `validateStep(n)` per step; derive both
+  the *furthest reachable* tab and the per-tab `done`/`locked` styling from it
+  (`refreshTabState()`), recomputed on every `input`/`change`. Backward
+  navigation is always allowed.
+- **Locked steps** get `.tab-btn.locked` (dimmed, lock glyph, no pointer).
+  Completed steps get `.tab-btn.done` (green check).
+- **Headline treatment:** page title is `<h1>` with the second line in a dim
+  `<span>` (e.g. "Ad Creative" in `--ink`, "Request" in `--ink-dim`). Keep the
+  hero tight to the nav — minimal top padding, no heavy divider rule.
 
 ---
 

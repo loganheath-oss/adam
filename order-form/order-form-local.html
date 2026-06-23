@@ -15,32 +15,30 @@
      form's JavaScript contract is preserved.
      =========================================================================== */
 
-  .of-wrap { max-width:900px; }
-  .adam-main { padding-block:0 120px; }
+  .of-wrap { max-width:760px; }
+  .adam-main { padding-block:0 100px; }
 
   /* ── HERO ────────────────────────────────────────────────────────────────── */
   .header {
     display:flex; flex-direction:column;
-    padding:80px 0 72px;
-    border-bottom:1px solid var(--rule);
-    margin-bottom:72px;
+    padding:40px 0 26px;
   }
   .header-logo { display:none; }
   .header-eyebrow {
     font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-dim);
-    display:flex; align-items:center; gap:14px; margin-bottom:32px;
+    display:flex; align-items:center; gap:14px; margin-bottom:20px;
   }
   .header-eyebrow::before {
     content:''; display:block; width:22px; height:1.5px;
     background:var(--brand-green); flex-shrink:0;
   }
   h1 {
-    font-size:clamp(56px, 10vw, 100px); line-height:.88;
-    letter-spacing:-.03em; color:var(--ink); margin:0;
+    font-size:clamp(38px, 6vw, 56px); line-height:.96;
+    letter-spacing:-.025em; color:var(--ink); margin:0;
   }
   h1 span {
-    display:block; color:var(--ink-dim); font-size:.70em;
-    letter-spacing:-.025em; margin-top:.10em;
+    display:block; color:var(--ink-dim); font-weight:400;
+    letter-spacing:-.022em;
   }
   .header-meta { display:none; }
 
@@ -414,8 +412,8 @@
 
   /* ── RESPONSIVE ──────────────────────────────────────────────────────────── */
   @media (max-width:640px) {
-    h1 { font-size:clamp(44px, 12vw, 64px); }
-    .header { padding:56px 0 48px; }
+    h1 { font-size:clamp(34px, 11vw, 46px); }
+    .header { padding:28px 0 22px; }
     .section-header { margin:56px 0 22px; }
     .two-col { grid-template-columns:1fr; }
     .platform-cards { grid-template-columns:1fr 1fr; }
@@ -437,14 +435,26 @@
     transition:background .15s, border-color .15s; color:var(--ink-mid);
   }
   .tab-btn:last-child { border-right:none; }
-  .tab-btn:hover { background:var(--paper); color:var(--ink); }
+  .tab-btn:not(.locked):hover { background:var(--paper); color:var(--ink); }
   .tab-btn.active { background:var(--paper); border-bottom-color:var(--brand-green); color:var(--ink); }
+  /* Locked steps can't be reached until prior steps are valid. */
+  .tab-btn.locked { cursor:not-allowed; opacity:.5; }
   .tab-btn-inner { display:flex; flex-direction:column; gap:3px; }
   .tab-step { font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-dim); }
   .tab-btn.active .tab-step { color:var(--brand-green); }
   .tab-name { font-size:14px; letter-spacing:.01em; }
-  .tab-check { width:18px; height:18px; border-radius:50%; border:1.5px solid var(--rule-strong); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:10px; color:transparent; transition:all .2s; }
+  .tab-check {
+    position:relative; width:18px; height:18px; border-radius:50%;
+    border:1.5px solid var(--rule-strong); display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; font-size:10px; color:transparent; transition:all .2s;
+  }
   .tab-btn.done .tab-check { background:var(--brand-green); border-color:var(--brand-green); color:#fff; }
+  /* Tiny lock glyph on locked steps (drawn with a pseudo-element, no asset). */
+  .tab-btn.locked .tab-check::after {
+    content:''; position:absolute; width:7px; height:5px; border:1.5px solid var(--ink-dim);
+    border-bottom:none; border-radius:3px 3px 0 0; top:3px;
+  }
+  .tab-btn.locked .tab-check { border-color:var(--rule-strong); }
 
   .tab-panel { display:none; padding:36px 40px 0; }
   .tab-panel.active { display:block; }
@@ -496,10 +506,7 @@
   .brief-field { margin-bottom:0; }
   .brief-label { font-size:13px; color:var(--ink); letter-spacing:.01em; margin-bottom:8px; display:flex; align-items:center; gap:10px; }
   .brief-label-opt { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-dim); }
-
-  /* Upwork wordmark in nav */
-  .upwork-wordmark { height:16px; width:auto; color:var(--ink); flex-shrink:0; display:block; }
-  .nav-sep { display:inline-block; width:1px; height:14px; background:var(--rule-strong); flex-shrink:0; }
+  /* .upwork-wordmark / .nav-sep are defined once in /static/adam-design.css */
 
   @media (max-width:640px) {
     .tab-panel { padding:20px 18px 0; }
@@ -561,7 +568,7 @@
 
 <!-- HERO -->
 <div class="header">
-  <h1>Ad Creative<br>Request</h1>
+  <h1>Ad Creative<span>Request</span></h1>
 </div>
 
 <!-- TAB CARD -->
@@ -1731,9 +1738,64 @@ function setMinDeliveryDate() {
 }
 
 // ── TAB NAVIGATION ─────────────────────────────────────────────────────────
+// Steps are gated: a tab can only be reached once every earlier required step
+// is valid. Going backward is always allowed; jumping ahead is not.
 let currentTab = 1;
 
+// Returns true if step `n` is satisfied. `focusFirst` highlights/focuses the
+// first offending field (used when the user tries to advance).
+function validateStep(n, focusFirst = false) {
+  if (n === 1) {
+    const driver = document.getElementById('driver').value.trim();
+    const date = document.getElementById('delivery-date').value;
+    const targeting = document.getElementById('targeting').value;
+    if (!driver) { if (focusFirst) { document.getElementById('driver').focus(); highlightField('driver'); } return false; }
+    if (!date) { if (focusFirst) { document.getElementById('delivery-date').focus(); highlightField('delivery-date'); } return false; }
+    if (!targeting) { if (focusFirst) { document.getElementById('targeting').focus(); highlightField('targeting'); } return false; }
+    return true;
+  }
+  if (n === 2) {
+    const deliverable = document.querySelector('input[name="deliverable"]:checked');
+    if (!deliverable) { if (focusFirst) alert('Please select what you are requesting.'); return false; }
+    const hasImages = ['images-copy', 'images-only'].includes(deliverable.value);
+    if (hasImages && !selectedPlatform) { if (focusFirst) alert('Please select a platform.'); return false; }
+    if (hasImages && document.querySelectorAll('.batch-card').length === 0) {
+      if (focusFirst) alert('Please select at least one ad format.'); return false;
+    }
+    return true;
+  }
+  return true;
+}
+
+// The furthest tab the user is currently allowed to open. Recomputed from
+// validity so editing an earlier step can re-lock later ones.
+function furthestUnlocked() {
+  if (!validateStep(1)) return 1;
+  if (!validateStep(2)) return 2;
+  return 3;
+}
+
+// Sync done-checks and locked styling to current validity.
+function refreshTabState() {
+  const reach = furthestUnlocked();
+  [1, 2, 3].forEach(n => {
+    const btn = document.getElementById('tab-btn-' + n);
+    const chk = document.getElementById('tab-check-' + n);
+    const done = n < 3 && validateStep(n);   // step 3 is the submit step, never "done"
+    btn.classList.toggle('done', done);
+    btn.classList.toggle('locked', n > reach && n !== currentTab);
+    if (chk) chk.textContent = done ? '✓' : '';
+  });
+}
+
 function goTab(n) {
+  // Block jumping ahead past the furthest valid step. If the user clicks a
+  // locked tab, route them to the first incomplete step and flag it.
+  if (n > currentTab) {
+    for (let s = currentTab; s < n; s++) {
+      if (!validateStep(s, true)) { n = s; break; }
+    }
+  }
   document.querySelectorAll('.tab-panel').forEach((p, i) => {
     p.classList.toggle('active', i + 1 === n);
   });
@@ -1743,32 +1805,13 @@ function goTab(n) {
   });
   currentTab = n;
   if (n === 3) buildTab3Summary();
+  refreshTabState();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function nextTab() {
-  if (currentTab === 1) {
-    const driver = document.getElementById('driver').value.trim();
-    const date = document.getElementById('delivery-date').value;
-    const targeting = document.getElementById('targeting').value;
-    if (!driver) { document.getElementById('driver').focus(); highlightField('driver'); return; }
-    if (!date) { document.getElementById('delivery-date').focus(); highlightField('delivery-date'); return; }
-    if (!targeting) { document.getElementById('targeting').focus(); highlightField('targeting'); return; }
-    document.getElementById('tab-check-1').textContent = '✓';
-    document.getElementById('tab-btn-1').classList.add('done');
-    goTab(2);
-  } else if (currentTab === 2) {
-    const deliverable = document.querySelector('input[name="deliverable"]:checked');
-    if (!deliverable) { alert('Please select what you are requesting.'); return; }
-    const hasImages = ['images-copy', 'images-only'].includes(deliverable.value);
-    if (hasImages && !selectedPlatform) { alert('Please select a platform.'); return; }
-    if (hasImages && document.querySelectorAll('.batch-card').length === 0) {
-      alert('Please select at least one ad format.'); return;
-    }
-    document.getElementById('tab-check-2').textContent = '✓';
-    document.getElementById('tab-btn-2').classList.add('done');
-    goTab(3);
-  }
+  if (!validateStep(currentTab, true)) return;
+  goTab(currentTab + 1);
 }
 
 function highlightField(id) {
@@ -1837,6 +1880,11 @@ function buildTab3Summary() {
 
 buildPlatformCards();
 setMinDeliveryDate();
+
+// Keep tab lock/done states in sync as the user fills things in.
+document.addEventListener('input', refreshTabState);
+document.addEventListener('change', refreshTabState);
+refreshTabState();
 </script>
 
 <script>

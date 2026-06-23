@@ -255,9 +255,12 @@ summary, label[for], select:not(:disabled), .clickable { cursor:pointer; }
   border-bottom:1px solid var(--rule);
 }
 .adam-nav-brand {
-  display:inline-flex; align-items:center; gap:10px;
+  display:inline-flex; align-items:center; gap:11px;
   color:var(--ink); flex-shrink:0;
 }
+/* Upwork wordmark + pipe separator, sitting before the ADAM lockup. */
+.adam-nav-brand .upwork-wordmark { height:15px; width:auto; color:var(--ink); display:block; flex-shrink:0; }
+.adam-nav-brand .nav-sep { display:inline-block; width:1px; height:15px; background:var(--rule-strong); flex-shrink:0; }
 .adam-nav-brand .adam-logo {
   font-size:20px; letter-spacing:.20em; color:var(--ink);
   /* ADAM wordmark — tracked caps. The dot is the only green moment in the mark. */
