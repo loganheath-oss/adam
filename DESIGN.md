@@ -84,6 +84,13 @@ All provided by `adam-design.css`:
 - **Motion** — `.stagger` (container; children fade up in sequence), `.reveal-up`,
   `.menu-pop` (dialogs). All disabled under reduced-motion.
 - **Display title** — `.adam-display`.
+- **Icons** — [Lucide](https://lucide.dev) (ISC), inlined as SVG path data (no
+  runtime dependency). In the order form they live in an `ICONS` map with an
+  `ic(name, size)` helper; base class `.lic` (inherits `currentColor`,
+  `vertical-align:middle`). Stroke style: `viewBox 0 0 24 24`, `fill none`,
+  `stroke-width 2`, round caps/joins. Use one consistent set everywhere; icons
+  are an accent — color them `--ink-dim`/`--ink-mid`, or `--brand-green` only
+  when the icon itself is the signal (e.g. resolution crop marks).
 
 ### Canonical nav markup (keep static files in sync with `nav_html()`)
 

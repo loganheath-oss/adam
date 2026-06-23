@@ -584,12 +584,16 @@
   .summ-edit { font-size:11.5px; color:var(--brand-green); cursor:pointer; text-decoration:underline; text-underline-offset:2px; margin-left:auto; flex-shrink:0; }
 
   /* ── RICH REVIEW SUMMARY (Tab 3) ─────────────────────────────── */
+  /* Lucide icon base — inherits color, aligns on the text baseline-ish. */
+  .lic { display:inline-block; vertical-align:middle; flex-shrink:0; }
+
   .rsum { display:flex; flex-direction:column; gap:16px; margin-bottom:28px; }
   .rsum-card { border:1px solid var(--rule); border-radius:var(--radius-xl); overflow:hidden; background:var(--paper); }
   .rsum-head {
-    display:flex; align-items:center; padding:12px 18px;
-    background:var(--hover); border-bottom:1px solid var(--rule);
+    display:flex; align-items:center; gap:9px; padding:12px 18px;
+    background:var(--hover); border-bottom:1px solid var(--rule); color:var(--ink-mid);
   }
+  .rsum-head .lic { color:var(--ink-dim); }
   .rsum-head-label { font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-mid); }
   .rsum-edit {
     margin-left:auto; display:inline-flex; align-items:center; gap:6px;
@@ -601,9 +605,10 @@
 
   .rsum-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px 28px; padding:18px; }
   .rsum-grid--one { grid-template-columns:1fr; padding-bottom:6px; }
-  .rsum-cell { display:flex; flex-direction:column; gap:5px; min-width:0; }
-  .rsum-k { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-dim); }
-  .rsum-v { font-size:14.5px; color:var(--ink); letter-spacing:-.005em; line-height:1.35; }
+  .rsum-cell { display:flex; flex-direction:column; gap:6px; min-width:0; }
+  .rsum-k { display:flex; align-items:center; gap:7px; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-dim); }
+  .rsum-k .lic { color:var(--ink-dim); }
+  .rsum-v { font-size:14.5px; color:var(--ink); letter-spacing:-.005em; line-height:1.35; padding-left:23px; }
 
   .rsum-batches { padding:4px 18px 18px; display:flex; flex-direction:column; gap:12px; }
   .rsum-batch { border:1px solid var(--rule); border-radius:var(--radius-lg); background:var(--tint); padding:14px 16px; }
@@ -611,9 +616,11 @@
   .rsum-batch-fmt { font-size:14px; color:var(--ink); letter-spacing:-.005em; }
   .rsum-batch-tags { margin-left:auto; display:flex; gap:6px; }
   .rsum-tag {
+    display:inline-flex; align-items:center; gap:5px;
     font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-mid);
     background:var(--paper); border:1px solid var(--rule); border-radius:var(--radius-pill); padding:3px 9px; white-space:nowrap;
   }
+  .rsum-tag .lic { color:var(--ink-dim); }
 
   .rsum-styles { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
   .rsum-style {
@@ -628,13 +635,39 @@
 
   .rsum-pills { display:flex; flex-wrap:wrap; gap:6px; }
   .rsum-pill {
-    font-size:11px; letter-spacing:.01em; color:var(--ink-mid); font-variant-numeric:tabular-nums;
-    background:var(--paper); border:1px solid var(--rule); border-radius:var(--radius-pill); padding:4px 10px;
+    display:inline-flex; align-items:center; gap:7px;
+    font-size:11.5px; color:var(--ink-mid);
+    background:var(--paper); border:1px solid var(--rule); border-radius:var(--radius-pill); padding:5px 11px;
   }
+  .rsum-pill .lic { color:var(--brand-green); }
+  .rsum-pill-ratio { color:var(--ink); letter-spacing:.02em; }
+  .rsum-pill-dim { color:var(--ink-mid); font-variant-numeric:tabular-nums; }
 
-  .brief-field { margin-bottom:0; }
-  .brief-label { font-size:13px; color:var(--ink); letter-spacing:.01em; margin-bottom:8px; display:flex; align-items:center; gap:10px; }
-  .brief-label-opt { font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-dim); }
+  /* Brief shown inside the confirm modal */
+  .rsum-brief-body { padding:16px 18px; font-size:13.5px; color:var(--ink); line-height:1.7; white-space:pre-wrap; }
+
+  /* Section label above the summary on the Review tab */
+  .rsum-section-label { font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim); margin:6px 0 12px; }
+
+  /* ── FEATURED ADDITIONAL CONTEXT (Review tab hero block) ─────── */
+  .brief-feature {
+    border:1px solid color-mix(in srgb, var(--brand-green) 32%, var(--rule));
+    border-radius:var(--radius-2xl); background:var(--tint);
+    padding:22px; margin-bottom:32px; box-shadow:var(--shadow-soft-sm);
+  }
+  .brief-feature-head { display:flex; align-items:flex-start; gap:14px; margin-bottom:16px; }
+  .brief-feature-icon {
+    width:40px; height:40px; flex-shrink:0; border-radius:var(--radius-lg);
+    background:var(--paper); border:1px solid color-mix(in srgb, var(--brand-green) 26%, var(--rule));
+    display:flex; align-items:center; justify-content:center; color:var(--brand-green);
+  }
+  .brief-feature-title { font-size:18px; letter-spacing:-.01em; color:var(--ink); line-height:1.2; }
+  .brief-feature-sub { font-size:12.5px; color:var(--ink-mid); line-height:1.55; margin-top:5px; max-width:54ch; }
+  .brief-feature textarea {
+    min-height:128px; background:var(--paper);
+    border-color:color-mix(in srgb, var(--brand-green) 22%, var(--rule-strong));
+  }
+  .brief-feature-hint { font-size:11px; color:var(--ink-dim); letter-spacing:.04em; margin-top:9px; }
   /* .upwork-wordmark / .nav-sep are defined once in /static/adam-design.css */
 
   @media (max-width:640px) {
@@ -827,16 +860,24 @@
 
   <!-- ── TAB 3: REVIEW & SUBMIT ── -->
   <div class="tab-panel" id="tab-3" role="tabpanel">
-    <div id="tab3-summary" class="rsum">
-      <span class="summ-val-dim">Complete the previous steps to see your summary.</span>
+
+    <!-- Featured: Additional Context — the most important thing on this step. -->
+    <div class="brief-feature">
+      <div class="brief-feature-head">
+        <span class="brief-feature-icon" id="brief-feature-icon"></span>
+        <div>
+          <div class="brief-feature-title">Add your creative context</div>
+          <div class="brief-feature-sub">The single biggest lever on output quality. The more direction you give, the sharper the work comes back.</div>
+        </div>
+      </div>
+      <textarea id="brief" placeholder="Include copy guidance, context, CTAs, destination URLs, tone, must-haves, things to avoid, reference links — anything that helps the team nail it."></textarea>
+      <div class="brief-feature-hint">Optional, but strongly encouraged.</div>
     </div>
 
-    <div class="brief-field field">
-      <label class="brief-label field-label" for="brief">
-        Additional Context
-        <span class="brief-label-opt">Optional</span>
-      </label>
-      <textarea id="brief" placeholder="Include copy guidance, context, CTAs, destination URLs, etc." style="min-height:110px;"></textarea>
+    <!-- Supporting: the request summary -->
+    <div class="rsum-section-label">Your request</div>
+    <div id="tab3-summary" class="rsum">
+      <span class="summ-val-dim">Complete the previous steps to see your summary.</span>
     </div>
 
     <div class="tab-footer">
@@ -1394,112 +1435,18 @@ function handleSubmit() {
 // ── REVIEW & CONFIRM MODAL ────────────────────────────────────────────────────
 function buildReviewPanel() {
   const body = document.getElementById('confirm-body');
-  body.innerHTML = '';
-
-  const dateVal = document.getElementById('delivery-date').value;
-  const formattedDate = dateVal
-    ? new Date(dateVal + 'T00:00:00').toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'})
-    : '—';
-  const deliverable = document.querySelector('input[name="deliverable"]:checked');
-  const delivLabels = {'images-copy':'Images & Copy', 'images-only':'Just Images', 'copy-only':'Just Copy'};
-
-  // ── Section 1: Order Details
-  const sec1 = makeSect('Order Details', 'var(--brand-green)', 'var(--hover)', 'var(--rule)');
-  sec1.addHTML(`
-    <div class="review-field-grid">
-      <div class="review-field"><span class="review-field-key">Delivery Date</span><span class="review-field-val">${formattedDate}</span></div>
-      <div class="review-field"><span class="review-field-key">Driver</span><span class="review-field-val">${esc(document.getElementById('driver').value) || '—'}</span></div>
-      <div class="review-field"><span class="review-field-key">Targeting</span><span class="review-field-val">${esc(document.getElementById('targeting').value) || '—'}</span></div>
-      <div class="review-field"><span class="review-field-key">Deliverable Type</span><span class="review-field-val">${delivLabels[deliverable ? deliverable.value : ''] || '—'}</span></div>
-    </div>`);
-  body.appendChild(sec1);
-
-  // ── Section 2: Platform & Ad Formats (images only)
-  const hasImages = deliverable && ['images-copy','images-only'].includes(deliverable.value);
-  if (hasImages && selectedPlatform) {
-    const sec2 = makeSect('Platform & Ad Formats', 'var(--brand-green)', 'var(--hover)', 'var(--rule)');
-    const platformRow = document.createElement('div');
-    platformRow.className = 'review-field';
-    platformRow.style.marginBottom = '14px';
-    platformRow.innerHTML = `<span class="review-field-key">Platform</span><span class="review-field-val">${esc(selectedPlatform)}</span>`;
-    sec2.appendChild(platformRow);
-
-    const batches = document.querySelectorAll('.batch-card');
-    batches.forEach(bc => {
-      const cid = bc.id.replace('bc-','');
-      const fmtEl = bc.querySelector('.batch-card-format');
-      const platEl = bc.querySelector('.batch-card-platform');
-      const fmt = fmtEl ? fmtEl.textContent.trim() : '—';
-
-      // Styles with per-style qty
-      const styleVals = [];
-      bc.querySelectorAll('.style-row').forEach(row => {
-        const hidden = row.querySelector('input[type="hidden"]');
-        const qtyInput = row.querySelector('.style-qty-input');
-        if (!hidden || !hidden.value) return;
-        const qty = qtyInput ? qtyInput.value : '1';
-        styleVals.push({ name: hidden.value, qty: qty });
-      });
-
-      // Resolutions
-      const resPills = [];
-      bc.querySelectorAll('.res-check-item').forEach(item => {
-        const chk = item.querySelector('input[type="checkbox"]');
-        if (chk && chk.checked) {
-          const ratio = item.querySelector('.res-check-ratio');
-          const size = item.querySelector('.res-check-size');
-          if (ratio) resPills.push((ratio.textContent + ' ' + (size ? size.textContent : '')).trim());
-        }
-      });
-
-      // Carousel slides
-      const carouselEl = bc.querySelector('.carousel-number');
-      const carouselInfo = carouselEl ? ` · ${carouselEl.value || '—'} slides` : '';
-
-      const batchDiv = document.createElement('div');
-      batchDiv.className = 'review-batch';
-      batchDiv.innerHTML = `
-        <div class="review-batch-header">
-          <span class="review-batch-name">${esc(fmt)}</span>
-          ${carouselInfo ? `<span class="review-batch-qty">${esc(carouselInfo.trim().replace(' · ',''))}</span>` : ''}
-        </div>
-        <div class="review-batch-meta">
-          <div class="review-batch-meta-item"><strong>Visual Style${styleVals.length > 1 ? 's' : ''}</strong>${styleVals.length ? styleVals.map(s => `${esc(s.name)} <span style="color:var(--ink-dim)">×${esc(s.qty)}</span>`).join(', ') : '—'}</div>
-        </div>
-        ${resPills.length ? `<div class="review-res-pills">${resPills.map(r => `<span class="review-res-pill">${esc(r)}</span>`).join('')}</div>` : ''}`;
-      sec2.appendChild(batchDiv);
-    });
-    body.appendChild(sec2);
-  }
-
-  // ── Section 3: Additional Notes (if filled)
+  // The confirm modal reuses the exact same rich summary as the Review tab
+  // (minus the Edit buttons), then appends the brief if the user wrote one.
+  let html = `<div class="rsum">${renderRequestSummary(false)}</div>`;
   const brief = document.getElementById('brief').value.trim();
   if (brief) {
-    const sec3 = makeSect('Additional Specs / Creative Brief', 'var(--brand-green)', 'var(--hover)', 'var(--rule)');
-    const notesEl = document.createElement('div');
-    notesEl.className = 'review-notes';
-    notesEl.textContent = brief;
-    sec3.appendChild(notesEl);
-    body.appendChild(sec3);
+    html += `
+      <div class="rsum-card rsum-brief">
+        <div class="rsum-head">${ic('sparkles', 14)}<span class="rsum-head-label">Additional Context</span></div>
+        <div class="rsum-brief-body">${esc(brief)}</div>
+      </div>`;
   }
-}
-
-function makeSect(label, dotColor, bgColor, borderColor) {
-  const wrap = document.createElement('div');
-  wrap.className = 'review-section';
-  wrap.style.borderColor = borderColor;
-  wrap.innerHTML = `
-    <div class="review-section-head" style="background:${bgColor};border-bottom-color:${borderColor}">
-      <span class="review-section-dot" style="background:${dotColor}"></span>
-      <span class="review-section-label" style="color:${dotColor}">${label}</span>
-    </div>
-    <div class="review-section-body"></div>`;
-  // Patch appendChild to target the inner body div
-  const bodyEl = wrap.querySelector('.review-section-body');
-  wrap.appendChild = function(child) { bodyEl.appendChild(child); };
-  // Also allow innerHTML += on the body via a helper
-  wrap.addHTML = function(html) { bodyEl.innerHTML += html; };
-  return wrap;
+  body.innerHTML = html;
 }
 
 function buildOrderPayload() {
@@ -2018,17 +1965,44 @@ function selectDel(labelEl, value) {
   handleDeliverableChange();
 }
 
+// ── ICONS ───────────────────────────────────────────────────────────────────
+// Inline Lucide (lucide.dev, ISC) icon paths. One source of truth so every
+// surface uses the same crisp set. ic('name') -> <svg> string.
+const ICONS = {
+  'pen-line':   '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  'user':       '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  'users':      '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  'calendar':   '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+  'package':    '<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  'monitor':    '<rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>',
+  'layers':     '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+  'crop':       '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>',
+  'images':     '<path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 16-3.293-3.293a1 1 0 0 0-1.414 0L13 17"/><path d="m18 12-1.293-1.293a1 1 0 0 0-1.414 0L11 15"/><rect width="14" height="14" x="8" y="2" rx="2"/>',
+  'sparkles':   '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/>',
+  'film':       '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/>',
+};
+function ic(name, size = 16) {
+  const p = ICONS[name] || '';
+  return `<svg class="lic" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+}
+
 function _styleThumb(name) {
   const sg = (typeof STYLE_GALLERY !== 'undefined') ? STYLE_GALLERY.find(s => s.name === name) : null;
   if (sg && sg.img) {
     return `<img class="rsum-thumb" src="data:image/jpeg;base64,${sg.img}" alt="${esc(name)}">`;
   }
-  return `<span class="rsum-thumb rsum-thumb--blank">✦</span>`;
+  return `<span class="rsum-thumb rsum-thumb--blank">${ic('images', 15)}</span>`;
 }
 
-function buildTab3Summary() {
-  const el = document.getElementById('tab3-summary');
-  if (!el) return;
+// Format one resolution into a pill: crop icon · ratio · dimensions (tabular).
+function _resPill(ratio, size) {
+  const dim = (size || '').replace(/\s*x\s*/i, ' × ');
+  return `<span class="rsum-pill">${ic('crop', 13)}${ratio ? `<span class="rsum-pill-ratio">${esc(ratio)}</span>` : ''}<span class="rsum-pill-dim">${esc(dim)}</span></span>`;
+}
+
+// Shared rich-summary renderer used by BOTH the Review tab and the confirm
+// modal. `withEdit` adds the per-card Edit buttons (tab only).
+function renderRequestSummary(withEdit) {
   const dateVal = document.getElementById('delivery-date').value;
   const formattedDate = dateVal
     ? new Date(dateVal + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })
@@ -2041,28 +2015,25 @@ function buildTab3Summary() {
   const hasImages = deliverable && ['images-copy', 'images-only'].includes(deliverable.value);
 
   if (!driver && !formattedDate && !targeting && !delivText) {
-    el.innerHTML = '<span class="summ-val-dim">Complete the previous steps to see your summary.</span>';
-    return;
+    return '<span class="summ-val-dim">Complete the previous steps to see your summary.</span>';
   }
 
-  const cell = (k, v) => `<div class="rsum-cell"><span class="rsum-k">${k}</span><span class="rsum-v">${v || '<span class="summ-val-dim">—</span>'}</span></div>`;
+  const cell = (icon, k, v) => `<div class="rsum-cell"><span class="rsum-k">${ic(icon, 13)}${k}</span><span class="rsum-v">${v || '<span class="summ-val-dim">—</span>'}</span></div>`;
+  const editBtn = (tab) => withEdit ? `<button type="button" class="rsum-edit" onclick="goTab(${tab})">${ic('pen-line', 12)}Edit</button>` : '';
 
-  // ── Card 1: Details (edit → tab 1)
+  // ── Card 1: Details
   let html = `
     <div class="rsum-card">
-      <div class="rsum-head">
-        <span class="rsum-head-label">Details</span>
-        <button type="button" class="rsum-edit" onclick="goTab(1)">${_editIcon()}Edit</button>
-      </div>
+      <div class="rsum-head">${ic('user', 14)}<span class="rsum-head-label">Details</span>${editBtn(1)}</div>
       <div class="rsum-grid">
-        ${cell('Submitter', esc(driver))}
-        ${cell('Delivery Date', formattedDate ? esc(formattedDate) : null)}
-        ${cell('Audience', targeting ? esc(targeting) : null)}
-        ${cell('Deliverable', delivText ? esc(delivText) : null)}
+        ${cell('user', 'Submitter', esc(driver))}
+        ${cell('calendar', 'Delivery Date', formattedDate ? esc(formattedDate) : null)}
+        ${cell('users', 'Audience', targeting ? esc(targeting) : null)}
+        ${cell('package', 'Deliverable', delivText ? esc(delivText) : null)}
       </div>
     </div>`;
 
-  // ── Card 2: Creative (edit → tab 2)
+  // ── Card 2: Creative
   if (hasImages && selectedPlatform) {
     const batches = document.querySelectorAll('.batch-card');
     let batchHtml = '';
@@ -2070,7 +2041,6 @@ function buildTab3Summary() {
       const fmt = bc.querySelector('.batch-card-format')?.textContent.trim() || '—';
       const type = bc.querySelector('.batch-card-type')?.textContent.trim() || '';
 
-      // styles with qty + thumbnail
       const styleChips = [];
       bc.querySelectorAll('.style-row').forEach(row => {
         const h = row.querySelector('input[type="hidden"]');
@@ -2084,26 +2054,28 @@ function buildTab3Summary() {
         }
       });
 
-      // resolutions
       const resPills = [];
       bc.querySelectorAll('.res-check-item').forEach(item => {
         const chk = item.querySelector('input[type="checkbox"]');
         if (chk && chk.checked) {
           const ratio = item.querySelector('.res-check-ratio');
           const size = item.querySelector('.res-check-size');
-          const txt = ((ratio ? ratio.textContent : '') + ' ' + (size ? size.textContent : '')).trim();
-          if (txt) resPills.push(`<span class="rsum-pill">${esc(txt)}</span>`);
+          resPills.push(_resPill(ratio ? ratio.textContent.trim() : '', size ? size.textContent.trim() : ''));
         }
       });
 
+      // Only show a type tag when it adds information (i.e. it isn't just the
+      // format name repeated — avoids the "Static / Static" redundancy).
       const carouselEl = bc.querySelector('.carousel-number');
-      const carouselTag = carouselEl ? `<span class="rsum-tag">${esc(carouselEl.value || '—')} slides</span>` : '';
+      const tags = [];
+      if (carouselEl) tags.push(`<span class="rsum-tag">${ic('film', 11)}${esc(carouselEl.value || '—')} slides</span>`);
+      else if (type && type.toLowerCase() !== fmt.toLowerCase()) tags.push(`<span class="rsum-tag">${esc(type)}</span>`);
 
       batchHtml += `
         <div class="rsum-batch">
           <div class="rsum-batch-head">
             <span class="rsum-batch-fmt">${esc(fmt)}</span>
-            <span class="rsum-batch-tags">${type ? `<span class="rsum-tag">${esc(type)}</span>` : ''}${carouselTag}</span>
+            <span class="rsum-batch-tags">${tags.join('')}</span>
           </div>
           ${styleChips.length ? `<div class="rsum-styles">${styleChips.join('')}</div>` : ''}
           ${resPills.length ? `<div class="rsum-pills">${resPills.join('')}</div>` : ''}
@@ -2112,22 +2084,20 @@ function buildTab3Summary() {
 
     html += `
       <div class="rsum-card">
-        <div class="rsum-head">
-          <span class="rsum-head-label">Creative</span>
-          <button type="button" class="rsum-edit" onclick="goTab(2)">${_editIcon()}Edit</button>
-        </div>
+        <div class="rsum-head">${ic('layers', 14)}<span class="rsum-head-label">Creative</span>${editBtn(2)}</div>
         <div class="rsum-grid rsum-grid--one">
-          ${cell('Platform', esc(selectedPlatform))}
+          ${cell('monitor', 'Platform', esc(selectedPlatform))}
         </div>
         <div class="rsum-batches">${batchHtml || '<span class="summ-val-dim">No formats selected yet.</span>'}</div>
       </div>`;
   }
-
-  el.innerHTML = html;
+  return html;
 }
 
-function _editIcon() {
-  return `<svg viewBox="0 0 14 14" fill="none" aria-hidden="true" style="width:12px;height:12px"><path d="M9.5 2.5l2 2L5 11l-2.5.5L3 9l6.5-6.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
+function buildTab3Summary() {
+  const el = document.getElementById('tab3-summary');
+  if (!el) return;
+  el.innerHTML = renderRequestSummary(true);
 }
 
 // ── COSS-STYLE PICKERS ──────────────────────────────────────────────────────
@@ -2270,6 +2240,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllPick
 
 buildPlatformCards();
 setMinDeliveryDate();
+
+// Paint the featured Additional Context icon.
+const _bfIcon = document.getElementById('brief-feature-icon');
+if (_bfIcon) _bfIcon.innerHTML = ic('sparkles', 20);
 
 // Keep tab lock/done states in sync as the user fills things in.
 document.addEventListener('input', refreshTabState);
