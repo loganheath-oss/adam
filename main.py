@@ -30,17 +30,46 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, Redirect
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
-from agent.routes import router as agent_router
+# The agent chat routes pull in the Anthropic SDK. Guard the import so the app
+# still boots in environments where that dependency (or its config) is absent —
+# e.g. a serverless preview deploy whose job is only to render the UI.
+try:
+    from agent.routes import router as agent_router
+    _AGENT_IMPORT_ERROR = None
+except Exception as _agent_exc:  # pragma: no cover - preview/serverless fallback
+    agent_router = None
+    _AGENT_IMPORT_ERROR = _agent_exc
+    logging.warning("agent.routes import failed (%s); agent chat disabled.", _agent_exc)
 
 BASE_DIR = Path(__file__).parent
 ORDER_FORM_PATH = BASE_DIR / "order-form" / "order-form-local.html"
 FONTS_DIR = BASE_DIR / "order-form" / "fonts"
-RUNS_DIR = BASE_DIR / "runs"
-RUNS_DIR.mkdir(exist_ok=True)
-SYNC_LOG_PATH = BASE_DIR / "sync_log.jsonl"
 
+# On read-only serverless filesystems (e.g. Vercel) only /tmp is writable, so
+# keep run artifacts there. Locally / on Replit this stays inside the repo.
+if os.environ.get("VERCEL"):
+    RUNS_DIR = Path(tempfile.gettempdir()) / "adam-runs"
+    SYNC_LOG_PATH = Path(tempfile.gettempdir()) / "adam-sync_log.jsonl"
+else:
+    RUNS_DIR = BASE_DIR / "runs"
+    SYNC_LOG_PATH = BASE_DIR / "sync_log.jsonl"
+try:
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+except OSError as _runs_exc:  # pragma: no cover - read-only FS fallback
+    logging.warning("Could not create runs dir %s (%s).", RUNS_DIR, _runs_exc)
+
+# The pipeline modules import heavy SDKs (Anthropic, Gemini, Figma). Guard the
+# import the same way so UI-only deploys boot; pipeline execution degrades to a
+# clear error at the routes that need it rather than crashing every request.
 sys.path.insert(0, str(BASE_DIR / "pipeline"))
-from run_pipeline import run_full_pipeline, run_pipeline_auto, resume_gate_2, resume_gate_3, resume_gate_4, resume_gate_5, resume_gate_6
+try:
+    from run_pipeline import run_full_pipeline, run_pipeline_auto, resume_gate_2, resume_gate_3, resume_gate_4, resume_gate_5, resume_gate_6
+    _PIPELINE_IMPORT_ERROR = None
+except Exception as _pipe_exc:  # pragma: no cover - preview/serverless fallback
+    _PIPELINE_IMPORT_ERROR = _pipe_exc
+    logging.warning("run_pipeline import failed (%s); pipeline execution disabled.", _pipe_exc)
+    run_full_pipeline = run_pipeline_auto = None
+    resume_gate_2 = resume_gate_3 = resume_gate_4 = resume_gate_5 = resume_gate_6 = None
 
 GATE_HANDLERS = {2: resume_gate_2, 3: resume_gate_3, 4: resume_gate_4, 5: resume_gate_5, 6: resume_gate_6}
 
@@ -276,7 +305,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="ADAM Pipeline", lifespan=lifespan)
-app.include_router(agent_router, dependencies=[Depends(require_api_key)])
+if agent_router is not None:
+    app.include_router(agent_router, dependencies=[Depends(require_api_key)])
 
 if FONTS_DIR.exists():
     app.mount("/fonts", StaticFiles(directory=FONTS_DIR), name="fonts")
@@ -624,6 +654,13 @@ async def order_form_page():
 
 @app.post("/submit")
 async def submit_order(request: Request):
+    if run_full_pipeline is None:
+        return JSONResponse(
+            {"ok": False, "error": "Pipeline execution is unavailable in this environment "
+             "(run_pipeline import failed — likely a UI-only preview deploy). "
+             "Orders can be submitted from the full deployment."},
+            status_code=503,
+        )
     payload = await request.json()
     sprint_id = payload.get("sprint_id") or _generate_sprint_id(payload)
     _validate_sprint_id(sprint_id)

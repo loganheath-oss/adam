@@ -1,0 +1,7 @@
+# Dependencies for the Vercel UI-preview deploy (api/index.py -> main.app).
+# Kept minimal: enough to import main.py and render the server-side HTML pages.
+# Heavy pipeline/agent SDKs are optional — main.py guards those imports so the
+# UI still boots without them.
+fastapi>=0.136.1
+python-multipart>=0.0.29
+anthropic>=0.103.1
