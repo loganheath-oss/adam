@@ -15,9 +15,30 @@
      form's JavaScript contract is preserved.
      =========================================================================== */
 
-  /* Wider container for the form page — matches Upwork's ~1280px page max */
-  :root { --page-max: 1260px; }
-  .adam-main { padding-block:36px 100px; }
+  .of-wrap { max-width:1060px; }
+  .adam-main { padding-block:0 100px; }
+
+  /* ── HERO ────────────────────────────────────────────────────────────────── */
+  .header {
+    display:flex; flex-direction:column;
+    padding:48px 0 30px;
+  }
+  .header-eyebrow {
+    font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-dim);
+    display:flex; align-items:center; gap:14px; margin-bottom:20px;
+  }
+  .header-eyebrow::before {
+    content:''; display:block; width:22px; height:1.5px;
+    background:var(--brand-green); flex-shrink:0;
+  }
+  h1 {
+    font-size:clamp(40px, 5.5vw, 58px); line-height:.98;
+    letter-spacing:-.025em; color:var(--ink); margin:0;
+  }
+  h1 span {
+    display:block; color:var(--ink-dim); font-weight:400;
+    letter-spacing:-.022em;
+  }
 
   /* ── SECTION HEADERS ─────────────────────────────────────────────────────── */
   .section-header { display:flex; align-items:center; gap:16px; margin:80px 0 28px; }
@@ -480,87 +501,58 @@
     .confirm-footer-actions { justify-content:flex-end; }
   }
 
-  /* ── TAB CARD — split: gradient rail (wayfinding) + form panel (work) ─────
-     The card is the hero. The left rail carries the Upwork brand moment: a
-     soft green→lime gradient (their signature) holding the step progress and
-     a faint wordmark watermark. The right panel is the quiet work surface. */
-  /* No overflow:hidden on the card — the date/audience popovers must be able
-     to extend past its edges. The rail clips its own gradient/watermark via
-     its own radius instead. */
+  /* ── TAB CARD — clean white card, horizontal step tabs on top ────────────
+     The card is the hero. A single white surface with a soft shadow; the only
+     green is the active tab's underline and the primary button. No gradient
+     slab — the green stays an accent so it reads as signal (DESIGN.md §2). */
+  /* No overflow:hidden on the card — the date/audience popovers must extend
+     past its edges. */
   .tab-card {
-    border:1px solid var(--rule-strong); border-radius:var(--radius-2xl);
-    box-shadow:0 8px 40px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
-    background:var(--paper);
-  }
-  .tab-shell { display:flex; align-items:stretch; }
-
-  /* Left rail */
-  .tab-rail {
-    flex:0 0 320px; position:relative; overflow:hidden;
-    border-radius:var(--radius-2xl) 0 0 var(--radius-2xl);
-    padding:48px 36px 48px; color:#fff;
-    background:
-      radial-gradient(140% 60% at 8% -5%, rgba(190,255,60,.32), transparent 52%),
-      radial-gradient(70% 50% at 95% 105%, rgba(8,90,0,.45), transparent 60%),
-      linear-gradient(162deg, #2FA908 0%, #14A800 50%, #0A6800 100%);
-    text-shadow:0 1px 2px rgba(0,0,0,.14);
-  }
-  .rail-eyebrow {
-    display:flex; align-items:center; gap:11px; margin-bottom:22px;
-    font-size:10px; letter-spacing:.24em; text-transform:uppercase; color:rgba(255,255,255,.68);
-  }
-  .rail-eyebrow::before { content:''; width:16px; height:1.5px; background:rgba(255,255,255,.55); flex-shrink:0; }
-  .rail-title {
-    font-size:clamp(28px, 3.5vw, 40px); line-height:1; letter-spacing:-.03em;
-    color:#fff; margin-bottom:44px;
-  }
-  .rail-title-sub {
-    display:block; color:rgba(255,255,255,.55); letter-spacing:-.025em;
+    border:1px solid var(--rule); border-radius:var(--radius-2xl);
+    box-shadow:var(--shadow-soft); background:var(--paper);
   }
 
-  /* Vertical stepper (same IDs/classes the JS drives — restyled for the rail) */
-  .tab-nav { display:flex; flex-direction:column; gap:6px; position:relative; z-index:1; }
+  /* Horizontal step tabs (same IDs/classes the JS drives) */
+  .tab-nav {
+    display:grid; grid-template-columns:repeat(3,1fr);
+    border-bottom:1px solid var(--rule); background:var(--hover);
+    border-radius:var(--radius-2xl) var(--radius-2xl) 0 0; overflow:hidden;
+  }
   .tab-btn {
-    display:flex; align-items:center; gap:14px; width:100%;
-    padding:13px 14px; background:none; border:none; border-radius:var(--radius-lg);
-    cursor:pointer; font-family:var(--font-sans); text-align:left;
-    color:rgba(255,255,255,.74); transition:background .18s, color .18s;
+    display:flex; align-items:center; gap:13px;
+    padding:20px 24px; background:none; border:none; border-right:1px solid var(--rule);
+    border-bottom:2px solid transparent; cursor:pointer; font-family:var(--font-sans);
+    text-align:left; color:var(--ink-dim); transition:background .15s, color .15s, border-color .15s;
   }
-  .tab-btn:not(.locked):hover { background:rgba(255,255,255,.12); color:#fff; }
-  .tab-btn.active { background:rgba(255,255,255,.17); color:#fff; }
-  .tab-btn.locked { cursor:not-allowed; color:rgba(255,255,255,.46); }
-  .tab-btn-inner { display:flex; flex-direction:column; gap:2px; }
-  .tab-step { font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:rgba(255,255,255,.62); font-variant-numeric:tabular-nums; }
-  .tab-btn.active .tab-step { color:rgba(255,255,255,.92); }
-  .tab-name { font-size:14.5px; letter-spacing:.005em; }
+  .tab-btn:last-child { border-right:none; }
+  .tab-btn:not(.locked):hover { background:var(--paper); color:var(--ink); }
+  .tab-btn.active { background:var(--paper); border-bottom-color:var(--brand-green); color:var(--ink); }
+  .tab-btn.locked { cursor:not-allowed; opacity:.5; }
+  .tab-btn-inner { display:flex; flex-direction:column; gap:3px; min-width:0; }
+  .tab-step { font-size:9.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-dim); font-variant-numeric:tabular-nums; }
+  .tab-btn.active .tab-step { color:var(--brand-green); }
+  .tab-name { font-size:14.5px; letter-spacing:-.005em; }
   .tab-check {
-    width:23px; height:23px; border-radius:50%;
-    border:1.5px solid rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center;
+    width:24px; height:24px; border-radius:50%;
+    border:1.5px solid var(--rule-strong); display:flex; align-items:center; justify-content:center;
     flex-shrink:0; font-size:11px; color:transparent; transition:all .2s;
   }
-  .tab-btn.active .tab-check { border-color:rgba(255,255,255,.92); }
-  .tab-btn.done .tab-check { background:#fff; border-color:#fff; color:var(--brand-green-deep); }
-  .tab-btn.locked .tab-check { border-color:rgba(255,255,255,.34); border-style:dashed; }
+  .tab-btn.active .tab-check { border-color:var(--brand-green); }
+  .tab-btn.done .tab-check { background:var(--brand-green); border-color:var(--brand-green); color:#fff; }
+  .tab-btn.locked .tab-check { border-color:var(--rule-strong); border-style:dashed; }
 
-  .rail-note {
-    position:relative; z-index:1; margin-top:24px; max-width:30ch;
-    font-size:12px; line-height:1.65; color:rgba(255,255,255,.84);
-  }
-  .rail-watermark {
-    position:absolute; left:28px; bottom:-16px; pointer-events:none; user-select:none;
-    font-size:64px; line-height:1; letter-spacing:.05em; color:rgba(255,255,255,.12);
-  }
-  .rail-watermark b { color:rgba(255,255,255,.26); }
-
-  /* Right form panel */
-  .tab-main { flex:1; min-width:0; }
-  .tab-panel { display:none; padding:52px 52px 0; }
+  /* Form panel */
+  .tab-panel { display:none; padding:44px 48px 0; }
   .tab-panel.active { display:block; }
+  /* Footer lives INSIDE the panel, so it must NOT re-apply the panel's
+     horizontal padding — zero inline padding keeps the primary button's right
+     edge flush with the input fields above it. */
   .tab-footer {
     display:flex; align-items:center; justify-content:flex-end; gap:12px;
-    padding:32px 52px 44px; border-top:1px solid var(--rule); margin-top:40px;
+    padding:30px 0 44px; border-top:1px solid var(--rule); margin-top:36px;
   }
-  /* Back sits hard-left, the primary action stays flush-right with the inputs. */
+  /* Step indicator / Back sit hard-left; the primary action stays flush-right. */
+  .tab-footer-step { margin-right:auto; font-size:11px; color:var(--ink-dim); letter-spacing:.1em; text-transform:uppercase; font-variant-numeric:tabular-nums; }
   .tab-footer-back { margin-right:auto; font-family:var(--font-sans); font-size:13px; color:var(--ink-mid); background:none; border:1px solid var(--rule-strong); border-radius:var(--radius-lg); padding:10px 18px; cursor:pointer; transition:border-color .12s, color .12s; }
   .tab-footer-back:hover { border-color:var(--ink); color:var(--ink); }
   .tab-footer-next { font-family:var(--font-sans); font-size:15px; letter-spacing:.02em; color:#fff; background:var(--brand-green); border:1px solid var(--brand-green); border-radius:var(--radius-pill); padding:13px 36px; cursor:pointer; box-shadow:var(--shadow-soft-sm); transition:background .15s, transform .1s; }
@@ -697,22 +689,14 @@
   .brief-feature-hint { font-size:11px; color:var(--ink-dim); letter-spacing:.04em; margin-top:9px; }
   /* .upwork-wordmark / .nav-sep are defined once in /static/adam-design.css */
 
-  /* Below the split threshold the rail folds to a top bar with the steps
-     laid out horizontally; the form panel drops underneath. */
-  @media (max-width:860px) {
-    .tab-shell { flex-direction:column; }
-    .tab-rail { flex:none; padding:22px 22px 18px; border-radius:var(--radius-2xl) var(--radius-2xl) 0 0; }
-    .rail-eyebrow { margin-bottom:14px; }
-    .rail-title { display:none; }
-    .tab-nav { flex-direction:row; gap:6px; }
-    .tab-btn { flex:1; padding:11px 12px; }
-    .rail-note, .rail-watermark { display:none; }
-  }
   @media (max-width:640px) {
-    .tab-panel { padding:26px 20px 0; }
-    .tab-footer { padding:20px; }
-    .tab-btn { flex-direction:column; align-items:flex-start; gap:8px; }
-    .tab-name { font-size:12.5px; }
+    h1 { font-size:clamp(34px, 11vw, 46px); }
+    .header { padding:30px 0 24px; }
+    .tab-panel { padding:28px 22px 0; }
+    .tab-footer { padding:24px 0 28px; }
+    .tab-btn { padding:15px 16px; gap:10px; }
+    .tab-name { font-size:13px; }
+    .tab-check { width:21px; height:21px; }
     .del-cards { grid-template-columns:1fr; }
     .fields-grid { grid-template-columns:1fr; }
   }
@@ -764,36 +748,32 @@
 </nav>
 
 <main class="adam-main">
-<div class="adam-container stagger">
+<div class="adam-container of-wrap stagger">
 
-<!-- TAB CARD — card is the hero; title lives in the rail -->
+<!-- HERO -->
+<div class="header">
+  <div class="header-eyebrow">New brief</div>
+  <h1>Ad Creative<span>Request</span></h1>
+</div>
+
+<!-- TAB CARD — clean white card, horizontal step tabs on top -->
 <div class="tab-card reveal-up">
- <div class="tab-shell">
 
-  <!-- Left rail: the brand moment + step progress -->
-  <aside class="tab-rail">
-    <div class="rail-eyebrow">New brief</div>
-    <div class="rail-title">Ad Creative<span class="rail-title-sub">Request</span></div>
-    <div class="tab-nav" role="tablist">
-      <button class="tab-btn active" id="tab-btn-1" type="button" onclick="goTab(1)" role="tab" aria-selected="true" aria-controls="tab-1">
-        <span class="tab-check" id="tab-check-1"></span>
-        <span class="tab-btn-inner"><span class="tab-step">Step 01</span><span class="tab-name">Details</span></span>
-      </button>
-      <button class="tab-btn" id="tab-btn-2" type="button" onclick="goTab(2)" role="tab" aria-selected="false" aria-controls="tab-2">
-        <span class="tab-check" id="tab-check-2"></span>
-        <span class="tab-btn-inner"><span class="tab-step">Step 02</span><span class="tab-name">Creative</span></span>
-      </button>
-      <button class="tab-btn" id="tab-btn-3" type="button" onclick="goTab(3)" role="tab" aria-selected="false" aria-controls="tab-3">
-        <span class="tab-check" id="tab-check-3"></span>
-        <span class="tab-btn-inner"><span class="tab-step">Step 03</span><span class="tab-name">Review</span></span>
-      </button>
-    </div>
-    <p class="rail-note">Three quick steps — the essentials, your formats, then a final review. We route the brief to the creative team and deliver by your date.</p>
-    <div class="rail-watermark" aria-hidden="true">ADAM<b>.</b></div>
-  </aside>
-
-  <!-- Right column: the form work surface -->
-  <div class="tab-main">
+  <!-- Step tabs -->
+  <div class="tab-nav" role="tablist">
+    <button class="tab-btn active" id="tab-btn-1" type="button" onclick="goTab(1)" role="tab" aria-selected="true" aria-controls="tab-1">
+      <span class="tab-check" id="tab-check-1"></span>
+      <span class="tab-btn-inner"><span class="tab-step">Step 01</span><span class="tab-name">Details</span></span>
+    </button>
+    <button class="tab-btn" id="tab-btn-2" type="button" onclick="goTab(2)" role="tab" aria-selected="false" aria-controls="tab-2">
+      <span class="tab-check" id="tab-check-2"></span>
+      <span class="tab-btn-inner"><span class="tab-step">Step 02</span><span class="tab-name">Creative</span></span>
+    </button>
+    <button class="tab-btn" id="tab-btn-3" type="button" onclick="goTab(3)" role="tab" aria-selected="false" aria-controls="tab-3">
+      <span class="tab-check" id="tab-check-3"></span>
+      <span class="tab-btn-inner"><span class="tab-step">Step 03</span><span class="tab-name">Review</span></span>
+    </button>
+  </div>
 
   <!-- ── TAB 1: DETAILS ── -->
   <div class="tab-panel active" id="tab-1" role="tabpanel">
@@ -840,6 +820,7 @@
       </div>
     </div>
     <div class="tab-footer">
+      <span class="tab-footer-step">Step 1 of 3</span>
       <button class="tab-footer-next" type="button" onclick="nextTab()">Configure Creative →</button>
     </div>
   </div>
@@ -931,8 +912,6 @@
     </div>
   </div>
 
-  </div><!-- /.tab-main -->
- </div><!-- /.tab-shell -->
 </div><!-- /.tab-card -->
 
 <!-- Keeps JS's updateSectionNumbers() from erroring -->

@@ -121,38 +121,44 @@ Set `class="active"` on the link for the current page. `.upwork-wordmark` and
 
 ### Multi-step forms (tabs / wizard)
 
-The order form is the reference pattern: a single `.tab-card` laid out as a
-**split** (`.tab-shell`) — a green gradient **rail** on the left and the form
-**panel** on the right. The card is the page's hero. Rules:
+The order form is the reference pattern: a single white `.tab-card` with a
+**horizontal step-tab header** on top and the form **panel** below. A standalone
+`<h1>` hero sits above the card. The card is the page's hero, and green stays an
+*accent* — never a filled slab. Rules:
 
-- **The rail is the brand moment.** `.tab-rail` carries the one sanctioned use
-  of a full green gradient on the whole product: a vivid Upwork-green base
-  (`#2FA908 → #14A800 → #0A6E00`) with a contained lime sheen top-left, white
-  text, and a faint `ADAM.` wordmark watermark bleeding off the bottom edge —
-  echoing Upwork's own gradient hero cards. It holds the `.tab-nav` as a
-  **vertical** stepper and a one-line `.rail-note`. Everything else on the page
-  stays neutral so this reads as *the* accent. Don't add a second gradient.
-- **Wayfinding lives in the rail; work lives in the panel.** The gradient is
-  functional — it separates "where am I / what's this step" (rail) from the
-  work surface (`.tab-main` → `.tab-panel`). The primary action sits in a
-  `.tab-footer` flush-right with the inputs (`justify-content:flex-end`); a Back
-  button, when present, is pushed hard-left with `margin-right:auto`.
+- **The card is one calm white surface.** `.tab-card` is `--paper` with a soft
+  shadow and a hairline border — no gradient. The only green on it is the active
+  tab's underline + step label and the primary button. This keeps the accent a
+  *signal* (§2: "one accent, used rarely"). A green gradient rail was tried and
+  removed — it overwhelmed the page and buried the hierarchy.
+- **Steps are a horizontal tab bar.** `.tab-nav` is a
+  `grid-template-columns:repeat(3,1fr)` strip across the card top on `--hover`,
+  each `.tab-btn` a check circle + step label + name. The active tab lifts to
+  `--paper` with a `--brand-green` bottom border.
+- **The work surface is `.tab-panel`.** The primary action sits in a
+  `.tab-footer` **inside** the panel, flush-right with the inputs
+  (`justify-content:flex-end`). Because the footer is nested in the already-
+  padded panel, it carries **zero horizontal padding** (`padding:30px 0 44px`)
+  so its right edge lines up exactly with the input fields above — re-applying
+  the panel's padding here is the classic misalignment bug. A Back button (or a
+  "Step n of 3" indicator on step 1) is pushed hard-left with `margin-right:auto`.
 - **Gate forward progress.** A step is only reachable once every earlier
   required step validates. Implement one `validateStep(n)` per step; derive both
   the *furthest reachable* tab and the per-tab `done`/`locked` styling from it
   (`refreshTabState()`), recomputed on every `input`/`change`. Backward
-  navigation is always allowed.
-- **Step states** (restyled for the gradient rail): `.tab-btn.active` gets a
-  translucent-white pill; `.tab-btn.done` a solid white check circle with a
-  green tick; `.tab-btn.locked` a dashed dim ring, no pointer.
+  navigation is always allowed. The done-check `✓` is injected by JS via
+  `textContent` — don't also add it in CSS (`::after`) or it doubles.
+- **Step states:** `.tab-btn.active` gets a green underline + green step label;
+  `.tab-btn.done` a solid green check circle; `.tab-btn.locked` is dimmed
+  (`opacity:.5`) with a dashed ring, no pointer.
 - **Field constraints ride the label**, not a line below it: pair the label and
   a right-aligned `.field-note` in a `.field-label-row` (e.g. "5 business days
   minimum" next to *Delivery Date*) to keep the form vertically compact.
 - **Headline treatment:** page title is `<h1>` with the second line in a dim
-  `<span>` (e.g. "Ad Creative" in `--ink`, "Request" in `--ink-dim`). Keep the
-  hero tight to the nav — minimal top padding, no heavy divider rule.
-- **Below ~860px** the shell stacks: the rail folds to a top bar with the steps
-  laid out horizontally, the panel drops underneath, and the watermark/note hide.
+  `<span>` (e.g. "Ad Creative" in `--ink`, "Request" in `--ink-dim`), above a
+  small green-tick `.header-eyebrow`. Keep the hero tight to the nav.
+- **Below ~640px** the panel padding tightens, the tab bar compresses, and the
+  field/card grids collapse to a single column.
 
 ---
 
