@@ -567,19 +567,19 @@ async def root():
                 continue
 
     import html as _h
-    def _state_color(state: str) -> tuple[str, str]:
+    def _state_chip(state: str) -> str:
         s = state or ""
-        if "complete" in s: return ("#EAF7E3", "#0F7A00")
-        if "error" in s: return ("#FDE7EC", "#BE123C")
-        if "interrupted" in s: return ("#FBEAD7", "#B45309")
-        if "awaiting" in s: return ("#FBF3D9", "#B45309")
-        if "stage_" in s or "resuming_" in s or s == "running": return ("#E9F4E6", "#108700")
-        return ("#F4F4F4", "#5C5C5C")
+        if "complete" in s: return "chip chip-good"
+        if "error" in s: return "chip chip-bad"
+        if "interrupted" in s: return "chip chip-warn"
+        if "awaiting" in s: return "chip chip-warn"
+        if "stage_" in s or "resuming_" in s or s == "running": return "chip chip-good"
+        return "chip chip-neutral"
 
     if recent:
         rows = ""
         for s in recent:
-            bg, fg = _state_color(s["state"])
+            chip = _state_chip(s["state"])
             sid = _h.escape(s["sprint_id"])
             driver = _h.escape(s.get("driver") or "—")
             updated = (s["updated_at"][:16].replace("T", " ") if s.get("updated_at") else "—")
@@ -590,12 +590,12 @@ async def root():
                 <div class="recent-id">{sid}</div>
                 <div class="recent-sub">{driver} · {updated}</div>
               </div>
-              <span class="recent-badge" style="background:{bg};color:{fg}">{state_label}</span>
+              <span class="{chip}">{state_label}</span>
             </a>"""
         recent_block = f"""
         <div class="recent-card">
           <div class="recent-head">
-            <h3>Recent sprints</h3>
+            <span class="recent-head-label">Recent sprints</span>
             <a href="/sprints" class="all-link">View all →</a>
           </div>
           {rows}
@@ -606,61 +606,68 @@ async def root():
           <p>No sprints yet. Submit your first order to get started.</p>
         </div>"""
 
+    _icon_plus = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+    _icon_grid = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>'
+
     extra_css = """<style>
-  .home-hero{margin:8px 0 40px;}
-  .home-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand-green);margin-bottom:14px;}
-  .home-hero h1{font-size:clamp(2.4rem,5.5vw,3.4rem);line-height:.98;letter-spacing:-.015em;color:var(--ink);}
-  .home-hero p{font-size:15px;color:var(--ink-mid);max-width:540px;margin-top:14px;line-height:1.6;}
-  .actions{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px;}
-  @media(max-width:680px){.actions{grid-template-columns:1fr}}
+  .home-hero{margin:40px 0 40px;}
+  .home-eyebrow{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:18px;}
+  .home-eyebrow::before{content:'';display:block;width:20px;height:1.5px;background:var(--brand-green);flex-shrink:0;}
+  .home-hero h1{font-size:clamp(2.6rem,5.5vw,3.6rem);line-height:.96;letter-spacing:-.02em;color:var(--ink);margin:0 0 16px;}
+  .home-hero p{font-size:15px;color:var(--ink-mid);max-width:520px;line-height:1.65;}
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:32px;}
+  @media(max-width:640px){.actions{grid-template-columns:1fr}}
   .action-card{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
-    padding:28px 26px;color:var(--ink);display:block;box-shadow:var(--shadow-soft-sm);
+    padding:30px 28px;color:var(--ink);display:block;box-shadow:var(--shadow-soft-sm);
     transition:border-color .15s,box-shadow .2s,transform .15s;}
-  .action-card:hover{border-color:var(--brand-green-soft);box-shadow:var(--shadow-soft);transform:translateY(-2px);}
-  .action-card.primary{background:linear-gradient(135deg,var(--brand-green),var(--brand-green-deep));color:#fff;border-color:transparent;}
+  .action-card:hover{border-color:color-mix(in srgb,var(--brand-green) 40%,transparent);box-shadow:var(--shadow-soft);transform:translateY(-2px);}
+  .action-card.primary{background:linear-gradient(160deg,var(--brand-green) 0%,var(--brand-green-deep) 100%);color:#fff;border-color:transparent;}
   .action-card.primary:hover{box-shadow:var(--shadow-pop);border-color:transparent;}
-  .action-card.primary h2,.action-card.primary p,.action-card.primary .arrow,.action-card.primary .icon{color:#fff;}
-  .action-card .icon{font-size:22px;margin-bottom:14px;display:inline-block;}
-  .action-card h2{font-size:19px;letter-spacing:-.01em;margin-bottom:6px;color:var(--ink);}
-  .action-card p{font-size:13px;color:var(--ink-mid);line-height:1.55;}
-  .action-card.primary p{color:rgba(255,255,255,.86);}
-  .action-card .arrow{font-size:13px;margin-top:16px;color:var(--brand-green);}
+  .action-card.primary h2,.action-card.primary p,.action-card.primary .ac-arrow{color:#fff;}
+  .action-card.primary .ac-icon{color:rgba(255,255,255,.9);}
+  .action-card.primary p{color:rgba(255,255,255,.82);}
+  .action-card.primary .ac-arrow{color:rgba(255,255,255,.7);}
+  .ac-icon{display:flex;align-items:center;justify-content:center;width:40px;height:40px;
+    border-radius:var(--radius-lg);background:var(--hover);color:var(--ink-mid);margin-bottom:18px;}
+  .action-card.primary .ac-icon{background:rgba(255,255,255,.18);}
+  .action-card h2{font-size:18px;letter-spacing:-.01em;margin-bottom:7px;color:var(--ink);}
+  .action-card p{font-size:13px;color:var(--ink-mid);line-height:1.6;margin:0;}
+  .ac-arrow{font-size:12.5px;margin-top:20px;color:var(--brand-green);letter-spacing:.01em;}
   .recent-card{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
-    padding:22px 24px;box-shadow:var(--shadow-soft-sm);}
-  .recent-card.empty{text-align:center;color:var(--ink-dim);font-size:14px;padding:40px 24px;}
-  .recent-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
-  .recent-head h3{font-size:11px;color:var(--ink-mid);letter-spacing:.12em;text-transform:uppercase;}
-  .all-link{font-size:12px;color:var(--brand-green);}
-  .recent-row{display:flex;justify-content:space-between;align-items:center;padding:13px 10px;
+    padding:20px 22px;box-shadow:var(--shadow-soft-sm);}
+  .recent-card.empty{text-align:center;color:var(--ink-dim);font-size:14px;padding:44px 24px;}
+  .recent-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .recent-head-label{font-size:10.5px;color:var(--ink-mid);letter-spacing:.14em;text-transform:uppercase;}
+  .all-link{font-size:12px;color:var(--brand-green);letter-spacing:.01em;}
+  .recent-row{display:flex;justify-content:space-between;align-items:center;padding:12px 10px;
     margin:0 -10px;border-radius:var(--radius-lg);color:var(--ink);transition:background .12s;}
   .recent-row:hover{background:var(--hover);}
   .recent-row + .recent-row{border-top:1px solid var(--rule);}
   .recent-id{font-size:13px;font-variant-numeric:tabular-nums;letter-spacing:.01em;}
   .recent-sub{font-size:11px;color:var(--ink-mid);margin-top:3px;}
-  .recent-badge{padding:3px 11px;border-radius:var(--radius-pill);font-size:11px;letter-spacing:.04em;white-space:nowrap;}
 </style>"""
     return HTMLResponse(
         page_head("ADAM · Paid Acquisition", extra_css)
         + nav_html("")
         + f"""
 <main class="adam-main"><div class="adam-container stagger">
-  <div class="home-hero">
-    <div class="home-eyebrow">ADAM · Upwork Paid Acquisition</div>
-    <h1>Ad creative, produced end&#8209;to&#8209;end.</h1>
-    <p>Submit a new order or pick up a sprint in progress. ADAM takes the brief and produces copy and assembled creative across every size and style.</p>
+  <div class="home-hero reveal-up">
+    <div class="home-eyebrow">Upwork Paid Acquisition</div>
+    <h1>Ad creative, produced<br>end&#8209;to&#8209;end.</h1>
+    <p>Submit a brief and ADAM produces copy and assembled creative across every size and visual style.</p>
   </div>
   <div class="actions">
     <a class="action-card primary" href="/new">
-      <span class="icon">＋</span>
-      <h2>Start a new order</h2>
-      <p>Open the order form. The creative team is notified and can pick it up from the handoff page.</p>
-      <div class="arrow">Go to form →</div>
+      <div class="ac-icon">{_icon_plus}</div>
+      <h2>New order</h2>
+      <p>Open the order form. The creative team is notified and assets arrive by your delivery date.</p>
+      <div class="ac-arrow">Open form →</div>
     </a>
     <a class="action-card" href="/sprints">
-      <span class="icon">▦</span>
-      <h2>Revisit past orders</h2>
+      <div class="ac-icon">{_icon_grid}</div>
+      <h2>Sprint runs</h2>
       <p>Browse every sprint, resume an in-progress chat, or review what was delivered.</p>
-      <div class="arrow">View sprints →</div>
+      <div class="ac-arrow">View sprints →</div>
     </a>
   </div>
   {recent_block}
@@ -1907,35 +1914,29 @@ async def sprints_dashboard():
                 sprints.append(_sprint_data(d.name))
 
     def _badge(state):
-        colors = {
-            "complete": ("#EAF7E3", "#0F7A00"),
-            "error": ("#FDE7EC", "#BE123C"),
-            "interrupted": ("#FBEAD7", "#B45309"),
-            "running": ("#E9F4E6", "#108700"),
-            "queued": ("#F4F4F4", "#5C5C5C"),
-        }
-        for key, (bg, fg) in colors.items():
-            if key in state:
-                return bg, fg
-        if "awaiting" in state:
-            return ("#FBF3D9", "#B45309")
-        return ("#F4F4F4", "#5C5C5C")
+        s = state or ""
+        if "complete" in s: return "chip chip-good"
+        if "error" in s: return "chip chip-bad"
+        if "interrupted" in s: return "chip chip-warn"
+        if "awaiting" in s: return "chip chip-warn"
+        if "stage_" in s or "resuming_" in s or s == "running": return "chip chip-good"
+        return "chip chip-neutral"
 
     rows = ""
     for s in sprints:
-        bg, fg = _badge(s["state"])
+        chip = _badge(s["state"])
         gate_btn = ""
         if s["gate"]:
             gate_btn = f'<a href="/sprints/{s["sprint_id"]}/chat" onclick="event.stopPropagation()" class="row-btn row-btn-primary">Review →</a>'
-        chat_btn = f'<a href="/sprints/{s["sprint_id"]}/chat" onclick="event.stopPropagation()" class="row-btn">💬 Chat</a>'
+        chat_btn = f'<a href="/sprints/{s["sprint_id"]}/chat" onclick="event.stopPropagation()" class="row-btn">Chat →</a>'
         rows += f"""
         <tr onclick="location.href='/sprints/{s['sprint_id']}/chat'">
           <td class="c-time font-num">{s['updated_at'][:16].replace('T',' ') if s['updated_at'] else '—'}</td>
           <td class="c-id font-num">{s['sprint_id']}</td>
           <td>{s['driver'] or '—'}</td>
           <td>{s['platform'] or '—'}</td>
-          <td>
-            <span class="status-badge" style="background:{bg};color:{fg}">{s['state_label']}</span>
+          <td class="c-status">
+            <span class="{chip}">{s['state_label']}</span>
             {gate_btn}{chat_btn}
           </td>
         </tr>"""
@@ -1943,8 +1944,8 @@ async def sprints_dashboard():
     empty = '<tr><td colspan="5" class="empty-cell">No sprints yet — submit an order to get started</td></tr>' if not sprints else ""
 
     extra_css = """<style>
-  .sprints-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:6px;}
-  .sprints-head h1{font-size:clamp(2rem,4vw,2.6rem);letter-spacing:-.015em;color:var(--ink);}
+  .sprints-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:40px 0 6px;}
+  .sprints-head h1{font-size:clamp(1.9rem,4vw,2.6rem);letter-spacing:-.015em;color:var(--ink);}
   .sub{font-size:13px;color:var(--ink-mid);margin-bottom:24px;}
   .table-wrap{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
     box-shadow:var(--shadow-soft);overflow:hidden;}
@@ -1957,27 +1958,31 @@ async def sprints_dashboard():
   td{padding:14px 18px;font-size:13px;color:var(--ink);}
   td.c-time{font-size:12px;color:var(--ink-mid);}
   td.c-id{letter-spacing:.01em;}
+  td.c-status{white-space:nowrap;}
   .empty-cell{padding:44px;text-align:center;color:var(--ink-dim);font-size:14px;}
-  .status-badge{padding:3px 11px;border-radius:var(--radius-pill);font-size:11px;letter-spacing:.04em;white-space:nowrap;}
   .row-btn{display:inline-block;margin-left:8px;padding:5px 12px;background:var(--paper);color:var(--ink-mid);
-    border:1px solid var(--rule-strong);border-radius:var(--radius-md);font-size:11px;}
+    border:1px solid var(--rule-strong);border-radius:var(--radius-md);font-size:11px;letter-spacing:.01em;}
   .row-btn:hover{border-color:var(--ink);color:var(--ink);}
-  .row-btn-primary{background:var(--brand-green);color:#fff;border-color:var(--brand-green);}
-  .row-btn-primary:hover{background:var(--brand-green-deep);color:#fff;}
+  .row-btn-primary{background:var(--brand-green);color:#fff !important;border-color:var(--brand-green);}
+  .row-btn-primary:hover{background:var(--brand-green-deep);border-color:var(--brand-green-deep);}
+  .sprints-actions{display:flex;align-items:center;gap:10px;}
 </style>"""
     return HTMLResponse(
         page_head("ADAM · Sprints", extra_css)
         + nav_html("sprints")
         + f"""
 <main class="adam-main"><div class="adam-container stagger">
-  <div class="sprints-head">
+  <div class="sprints-head reveal-up">
     <h1>Sprint Runs</h1>
-    <button class="btn btn-secondary" onclick="location.reload()">↻ Refresh</button>
+    <div class="sprints-actions">
+      <button class="btn btn-ghost" onclick="location.reload()">↻ Refresh</button>
+      <a class="btn btn-primary" href="/new">+ New Order</a>
+    </div>
   </div>
   <p class="sub">{len(sprints)} sprint{"s" if len(sprints)!=1 else ""} · click any row to view details</p>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Time</th><th>Sprint ID</th><th>Driver</th><th>Platform</th><th>Status</th></tr></thead>
+      <thead><tr><th>Updated</th><th>Sprint ID</th><th>Driver</th><th>Platform</th><th>Status</th></tr></thead>
       <tbody>{rows}{empty}</tbody>
     </table>
   </div>
@@ -2568,26 +2573,26 @@ async def sync_log_page(request: Request):
     rows = ""
     for e in entries:
         status = e.get("status", "")
-        bg = "#EAF7E3" if status == "ok" else "#FDE7EC"
-        fg = "#0F7A00" if status == "ok" else "#BE123C"
+        chip = "chip chip-good" if status == "ok" else "chip chip-bad"
         label = "ok" if status == "ok" else "error"
         sha = html.escape(e.get("sha", "—"))
         pusher = html.escape(e.get("pusher", "—"))
         ts = html.escape(e.get("ts", "—").replace("T", " ").replace("+00:00", " UTC"))
         detail = html.escape(e.get("detail", ""))
-        detail_cell = f'<span title="{detail}" style="font-size:11px;color:var(--ink-mid)">{detail[:80] + ("…" if len(detail) > 80 else "")}</span>' if detail else "—"
+        detail_cell = f'<span class="sl-detail" title="{detail}">{detail[:90] + ("…" if len(detail) > 90 else "")}</span>' if detail else "<span class='sl-dim'>—</span>"
         rows += f"""<tr>
-          <td style="padding:12px 16px;font-size:12px;color:var(--ink-mid);white-space:nowrap;font-variant-numeric:tabular-nums">{ts}</td>
-          <td style="padding:12px 16px;font-size:13px;color:var(--ink)">{pusher}</td>
-          <td style="padding:12px 16px;font-size:12px;letter-spacing:.02em;font-variant-numeric:tabular-nums">{sha}</td>
-          <td style="padding:12px 16px"><span style="background:{bg};color:{fg};padding:3px 11px;border-radius:var(--radius-pill);font-size:11px;letter-spacing:.04em">{label}</span></td>
-          <td style="padding:12px 16px">{detail_cell}</td>
+          <td class="sl-time font-num">{ts}</td>
+          <td class="sl-pusher">{pusher}</td>
+          <td class="sl-sha font-num">{sha}</td>
+          <td class="sl-status"><span class="{chip}">{label}</span></td>
+          <td>{detail_cell}</td>
         </tr>"""
 
-    empty = '<tr><td colspan="5" style="padding:44px;text-align:center;color:var(--ink-dim);font-size:14px">No syncs recorded yet</td></tr>' if not entries else ""
+    empty = '<tr><td colspan="5" class="empty-cell">No syncs recorded yet</td></tr>' if not entries else ""
 
     extra_css = """<style>
-  .sync-head h1{font-size:clamp(2rem,4vw,2.6rem);letter-spacing:-.015em;color:var(--ink);}
+  .sync-head{margin:40px 0 6px;}
+  .sync-head h1{font-size:clamp(1.9rem,4vw,2.6rem);letter-spacing:-.015em;color:var(--ink);}
   .sub{font-size:13px;color:var(--ink-mid);margin:6px 0 24px;}
   .table-wrap{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
     box-shadow:var(--shadow-soft);overflow:hidden;}
@@ -2596,14 +2601,24 @@ async def sync_log_page(request: Request):
   th{padding:12px 16px;text-align:left;font-size:10px;color:var(--ink-mid);letter-spacing:.12em;text-transform:uppercase;}
   tbody tr{border-bottom:1px solid var(--rule);}
   tbody tr:last-child{border-bottom:none;}
+  td{padding:12px 16px;}
+  .sl-time{font-size:12px;color:var(--ink-mid);white-space:nowrap;}
+  .sl-pusher{font-size:13px;color:var(--ink);}
+  .sl-sha{font-size:12px;letter-spacing:.02em;color:var(--ink-mid);}
+  .sl-status{}
+  .sl-detail{font-size:11.5px;color:var(--ink-mid);}
+  .sl-dim{color:var(--ink-dim);}
+  .empty-cell{padding:44px;text-align:center;color:var(--ink-dim);font-size:14px;}
 </style>"""
     return HTMLResponse(
         page_head("ADAM · Sync History", extra_css)
         + nav_html("sync")
         + f"""
 <main class="adam-main"><div class="adam-container stagger">
-  <div class="sync-head"><h1>GitHub Sync History</h1></div>
-  <p class="sub">Showing {len(entries)} of {total} total event{"s" if total != 1 else ""} (capped at {SYNC_LOG_MAX_ENTRIES}) · {ok_count} ok, {err_count} error{"s" if err_count != 1 else ""} · newest first</p>
+  <div class="sync-head reveal-up">
+    <h1>GitHub Sync History</h1>
+  </div>
+  <p class="sub">Showing {len(entries)} of {total} total event{"s" if total != 1 else ""} · {ok_count} ok, {err_count} error{"s" if err_count != 1 else ""} · newest first</p>
   <div class="table-wrap">
     <table>
       <thead><tr><th>Time (UTC)</th><th>Pusher</th><th>Commit SHA</th><th>Status</th><th>Detail</th></tr></thead>
@@ -2632,7 +2647,8 @@ async def learnings_editor():
     content = LEARNINGS_PATH.read_text()
     # Minimal inline editor — no auth (sprint chat itself is public; this is a peer surface).
     extra_css = """<style>
-  .learn-head h1{font-size:clamp(2rem,4vw,2.6rem);letter-spacing:-.015em;color:var(--ink);}
+  .learn-head{margin:40px 0 6px;}
+  .learn-head h1{font-size:clamp(1.9rem,4vw,2.6rem);letter-spacing:-.015em;color:var(--ink);}
   .sub{color:var(--ink-mid);margin:8px 0 22px;font-size:13px;line-height:1.6;}
   .sub code{background:var(--hover);padding:1px 6px;border-radius:var(--radius-sm);font-size:12px;}
   textarea{width:100%;min-height:58vh;font-family:var(--font-sans);font-size:14px;line-height:1.6;padding:18px;
@@ -2640,13 +2656,13 @@ async def learnings_editor():
     box-sizing:border-box;box-shadow:var(--shadow-soft-sm);}
   textarea:focus{outline:none;border-color:var(--brand-green);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-green) 14%,transparent);}
   .row{display:flex;gap:12px;align-items:center;margin-top:14px;}
-  .status{color:var(--brand-green);font-size:13px;}
-  .err{color:var(--bad-fg);font-size:13px;}
+  .save-status{color:var(--brand-green);font-size:13px;}
+  .save-err{color:var(--bad-fg);font-size:13px;}
 </style>"""
     html = """__HEAD____NAV__
 <main class="adam-main"><div class="adam-container stagger">
-<div class="learn-head"><h1>ADAM Learnings</h1></div>
-<div class="sub">Institutional memory shared across every sprint. Loaded into Claude's context on every chat. Edit freely — saves to <code>learnings.md</code> at the project root, also editable in the Replit file editor.</div>
+<div class="learn-head reveal-up"><h1>ADAM Learnings</h1></div>
+<div class="sub">Institutional memory shared across every sprint. Loaded into Claude's context on every chat. Edit freely — saves to <code>learnings.md</code> at the project root.</div>
 <form id="f">
   <textarea id="t" name="content">__CONTENT__</textarea>
   <div class="row">
@@ -2658,13 +2674,13 @@ async def learnings_editor():
 <script>
 const f=document.getElementById('f'),t=document.getElementById('t'),s=document.getElementById('s');
 f.addEventListener('submit',async e=>{
-  e.preventDefault();s.textContent='Saving…';s.className='status';
+  e.preventDefault();s.textContent='Saving…';s.className='save-status';
   try{
     const r=await fetch('/learnings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:t.value})});
     const j=await r.json();
     if(j.ok){s.textContent='Saved '+new Date().toLocaleTimeString();}
-    else{s.textContent=j.error||'Save failed';s.className='err';}
-  }catch(err){s.textContent=String(err);s.className='err';}
+    else{s.textContent=j.error||'Save failed';s.className='save-err';}
+  }catch(err){s.textContent=String(err);s.className='save-err';}
 });
 </script>
 </body></html>"""
