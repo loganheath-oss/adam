@@ -700,6 +700,55 @@
     .del-cards { grid-template-columns:1fr; }
     .fields-grid { grid-template-columns:1fr; }
   }
+
+  /* ── TAB 1: BOOKING LAYOUT ─────────────────────────────────────────────── */
+  /* Date trigger button — kept in DOM for JS focus/highlight compatibility,
+     invisible to the eye since the calendar is always expanded inline. */
+  #date-trigger {
+    position:absolute; opacity:0; pointer-events:none;
+    width:1px; height:1px; overflow:hidden; border:none; padding:0;
+  }
+
+  /* Make the date popover an always-visible inline calendar.
+     CSS display:block !important wins over the UA stylesheet's [hidden]{display:none}
+     so the JS can still set pop.hidden without affecting the visual.
+     Max-width prevents cells from becoming huge when the panel is wide. */
+  #date-popover {
+    position:static !important; display:block !important;
+    max-width:380px; box-shadow:none !important; animation:none !important;
+    margin-top:8px; padding:10px 10px 4px;
+    border:1px solid var(--rule); border-radius:var(--radius-xl); background:var(--paper);
+  }
+  #date-popover .cui-cal { width:100%; }
+  #date-popover .cui-cal-head { padding:4px 6px 10px; }
+  #date-popover .cui-cal-grid { gap:2px; }
+  #date-popover .cui-cal-day {
+    aspect-ratio:unset; height:42px; font-size:13.5px;
+    border-radius:var(--radius-md);
+  }
+  #date-popover .cui-cal-dow { font-size:10px; padding-bottom:6px; }
+  .tab1-date-field { margin-top:20px; }
+
+  /* ── ARROW-CIRCLE NEXT BUTTON (Tab 1) ───────────────────────────────────── */
+  /* Inactive (grey, no-cursor) until all Step 1 fields are filled.
+     Transitions to green via .is-active, added by _updateTab1Arrow(). */
+  .next-arrow-btn {
+    width:54px; height:54px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border:2px solid var(--rule-strong); background:var(--hover);
+    color:var(--rule-strong); cursor:default; flex-shrink:0;
+    transition:background .35s, border-color .35s, color .35s, box-shadow .35s, transform .2s;
+  }
+  .next-arrow-btn.is-active {
+    border-color:var(--brand-green); background:var(--brand-green);
+    color:#fff; cursor:pointer;
+    box-shadow:0 4px 16px rgba(20,168,0,.28);
+  }
+  .next-arrow-btn.is-active:hover {
+    background:var(--brand-green-deep); border-color:var(--brand-green-deep);
+    transform:translateY(-1px); box-shadow:0 6px 22px rgba(20,168,0,.36);
+  }
+  .next-arrow-btn.is-active:active { transform:translateY(0); }
 </style>
 </head>
 <body>
@@ -748,11 +797,10 @@
 </nav>
 
 <main class="adam-main">
-<div class="adam-container of-wrap stagger">
+<div class="adam-container stagger">
 
 <!-- HERO -->
 <div class="header">
-  <div class="header-eyebrow">New brief</div>
   <h1>Ad Creative<span>Request</span></h1>
 </div>
 
@@ -777,31 +825,13 @@
 
   <!-- ── TAB 1: DETAILS ── -->
   <div class="tab-panel active" id="tab-1" role="tabpanel">
+    <!-- Name + Audience: compact 2-col row -->
     <div class="fields-grid">
       <div class="field">
         <label class="field-label" for="driver">Your Name<span class="req">*</span></label>
         <input type="text" id="driver" placeholder="Full name" required autocomplete="name">
       </div>
       <div class="field">
-        <div class="field-label-row">
-          <label class="field-label" for="date-trigger">Delivery Date<span class="req">*</span></label>
-          <span class="field-note">5 business days minimum</span>
-        </div>
-        <!-- Real value lives on the hidden native input (id preserved for the
-             data contract); the custom calendar writes to it. -->
-        <input type="date" id="delivery-date" required class="visually-hidden" tabindex="-1" aria-hidden="true">
-        <div class="cui-picker">
-          <button type="button" class="cui-trigger" id="date-trigger" onclick="toggleDatePicker(event)" aria-haspopup="dialog" aria-expanded="false">
-            <span class="cui-trigger-icon" aria-hidden="true">
-              <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M2 6h12M5.5 1.5v3M10.5 1.5v3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
-            </span>
-            <span class="cui-trigger-label cui-placeholder" id="date-label">Select a date…</span>
-            <span class="cui-trigger-arrow" aria-hidden="true"><svg viewBox="0 0 12 8" fill="none"><path d="M1 1.5l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          </button>
-          <div class="cui-pop cui-cal" id="date-popover" role="dialog" aria-label="Choose delivery date" hidden></div>
-        </div>
-      </div>
-      <div class="field field-full">
         <label class="field-label" for="targeting-trigger">Audience<span class="req">*</span></label>
         <!-- Real value lives on the hidden native select (id + onchange preserved). -->
         <select id="targeting" required class="visually-hidden" tabindex="-1" aria-hidden="true" onchange="updateBatchTargetingRows()">
@@ -819,9 +849,29 @@
         </div>
       </div>
     </div>
+
+    <!-- Delivery Date: inline calendar, always expanded -->
+    <div class="field tab1-date-field">
+      <div class="field-label-row">
+        <label class="field-label" for="date-trigger">Delivery Date<span class="req">*</span></label>
+        <span class="field-note">5 business days minimum</span>
+      </div>
+      <!-- Real value lives on the hidden native input (id preserved for data contract). -->
+      <input type="date" id="delivery-date" required class="visually-hidden" tabindex="-1" aria-hidden="true">
+      <!-- Trigger kept in DOM for JS focus/highlight contract; hidden via CSS. -->
+      <button type="button" class="cui-trigger" id="date-trigger" onclick="toggleDatePicker(event)" aria-haspopup="dialog" aria-expanded="false" tabindex="-1">
+        <span class="cui-trigger-label cui-placeholder" id="date-label">Select a date…</span>
+      </button>
+      <!-- Calendar renders here inline (always visible — see CSS #date-popover) -->
+      <div class="cui-pop cui-cal" id="date-popover" role="dialog" aria-label="Choose delivery date" hidden></div>
+    </div>
+
     <div class="tab-footer">
-      <span class="tab-footer-step">Step 1 of 3</span>
-      <button class="tab-footer-next" type="button" onclick="nextTab()">Configure Creative →</button>
+      <!-- Arrow-circle advances to step 2. Grey/inactive until all fields valid,
+           then animates to green via .is-active (set by _updateTab1Arrow()). -->
+      <button class="next-arrow-btn" id="tab1-next-arrow" type="button" onclick="nextTab()" aria-label="Continue to Creative step">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+      </button>
     </div>
   </div>
 
@@ -2267,9 +2317,30 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllPick
 buildPlatformCards();
 setMinDeliveryDate();
 
+// Render the inline calendar immediately after the min date is set.
+(function() {
+  const pop = document.getElementById('date-popover');
+  if (!pop) return;
+  const sel = _parseYmd(document.getElementById('delivery-date').value);
+  const min = _parseYmd(document.getElementById('delivery-date').min);
+  const base = sel || min || new Date();
+  _calView = new Date(base.getFullYear(), base.getMonth(), 1);
+  renderCalendar();
+})();
+
+// Sync the Tab 1 arrow-circle state: grey until all Step 1 fields valid, then green.
+function _updateTab1Arrow() {
+  const arrow = document.getElementById('tab1-next-arrow');
+  if (!arrow) return;
+  arrow.classList.toggle('is-active', validateStep(1));
+}
+document.addEventListener('input', _updateTab1Arrow);
+document.addEventListener('change', _updateTab1Arrow);
+_updateTab1Arrow();
+
 // Paint the featured Additional Context icon.
 const _bfIcon = document.getElementById('brief-feature-icon');
-if (_bfIcon) _bfIcon.innerHTML = ic('sparkles', 20);
+if (_bfIcon) _bfIcon.innerHTML = ic('pen-line', 20);
 
 // Keep tab lock/done states in sync as the user fills things in.
 document.addEventListener('input', refreshTabState);
