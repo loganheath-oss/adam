@@ -153,7 +153,7 @@
   /* ── FORMAT CHECKBOXES ───────────────────────────────────────────────────── */
   .format-list { display:flex; flex-direction:column; gap:8px; }
   .format-check-item {
-    display:flex; align-items:flex-start; gap:14px; padding:15px 18px;
+    display:flex; align-items:center; gap:14px; padding:13px 18px;
     border:1.5px solid var(--rule); border-radius:var(--radius-xl); background:var(--paper);
     cursor:pointer; transition:border-color .12s, background .12s, box-shadow .12s;
   }
@@ -176,18 +176,19 @@
   }
   @keyframes slideDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
   .batch-card-head {
-    padding:16px 22px; border-bottom:1px solid var(--rule);
-    display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+    padding:14px 20px; border-bottom:1px solid var(--rule);
+    border-left:3px solid color-mix(in srgb, var(--brand-green) 45%, transparent);
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
     background:var(--tint);
   }
   .batch-card-platform { font-size:10px; color:var(--ink-dim); letter-spacing:.12em; text-transform:uppercase; margin-bottom:3px; }
   .batch-card-format { font-size:16px; color:var(--ink); letter-spacing:-.01em; }
   .batch-card-type {
-    font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-mid);
-    margin-top:0; padding:3px 9px; border-radius:var(--radius-pill);
-    background:var(--paper); border:1px solid var(--rule); white-space:nowrap;
+    font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-dim);
+    margin-top:0; padding:3px 10px; border-radius:var(--radius-pill);
+    background:var(--paper); border:1px solid var(--rule-strong); white-space:nowrap;
   }
-  .batch-card-body { padding:18px; }
+  .batch-card-body { padding:20px 22px; }
   .batch-top-row { display:grid; grid-template-columns:1fr auto; gap:18px; align-items:start; margin-bottom:14px; }
   .batch-field { margin-bottom:4px; }
   .batch-field-label { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:7px; }
@@ -238,23 +239,24 @@
   /* ── STYLE ROWS (multiple styles per batch) ─────────────────────────────── */
   .style-rows { display:flex; flex-direction:column; gap:10px; }
   .style-row { display:flex; flex-direction:column; gap:0; }
-  .style-row-head { display:flex; align-items:center; gap:8px; }
+  /* stretch so qty-wrap fills the full row height and can center itself */
+  .style-row-head { display:flex; align-items:stretch; gap:8px; }
   .remove-style-row {
     background:var(--paper); border:1px solid var(--rule-strong); border-radius:var(--radius-md);
-    width:32px; height:32px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    width:32px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
     cursor:pointer; color:var(--ink-dim); font-size:18px; line-height:1;
     transition:border-color .12s, color .12s; font-family:var(--font-sans);
   }
   .remove-style-row:hover { border-color:var(--bad); color:var(--bad); }
   .add-style-btn {
-    margin-top:10px; display:flex; align-items:center; gap:8px;
-    background:var(--paper); border:1px dashed var(--brand-green-soft);
-    border-radius:var(--radius-lg); padding:9px 15px; font-family:var(--font-sans);
-    font-size:12.5px; color:var(--brand-green-deep); cursor:pointer; letter-spacing:.02em;
-    transition:background .12s, border-color .12s; width:fit-content;
+    margin-top:10px; display:flex; align-items:center; gap:7px;
+    background:var(--paper); border:1.5px solid var(--rule-strong);
+    border-radius:var(--radius-lg); padding:9px 16px; font-family:var(--font-sans);
+    font-size:12.5px; color:var(--ink-mid); cursor:pointer; letter-spacing:.01em;
+    transition:background .12s, border-color .12s, color .12s; width:fit-content;
   }
-  .add-style-btn:hover { background:var(--tint); border-color:var(--brand-green); }
-  .add-style-btn .plus { font-size:16px; line-height:1; }
+  .add-style-btn:hover { background:var(--hover); border-color:var(--brand-green-soft); color:var(--brand-green-deep); }
+  .add-style-btn .plus { font-size:15px; line-height:1; color:var(--brand-green); }
 
   /* ── STYLE PICKER (light) ───────────────────────────────────────────────── */
   .style-picker-btn {
@@ -296,7 +298,9 @@
   .spcard--selected .spcard-name { color:var(--brand-green-deep); }
 
   /* ── Per-style quantity ─────────────────────────────────────────────────── */
-  .style-qty-wrap { display:flex; flex-direction:column; align-items:center; gap:3px; min-width:50px; }
+  /* flex-col within a stretch parent — justify:center vertically centers
+     the input+label pair against the full height of the picker button */
+  .style-qty-wrap { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:3px; min-width:54px; }
   .style-qty-input {
     width:50px; text-align:center; font-family:var(--font-sans); font-size:14px; color:var(--ink);
     background:var(--paper); border:1px solid var(--rule-strong); border-radius:var(--radius-md);
@@ -567,8 +571,8 @@
   /* ── WIZARD STEPS (Tab 2) ────────────────────────────────────── */
   .wizard-step { margin-bottom:32px; }
   .wizard-step:last-child { margin-bottom:0; }
-  .wizard-step-head { display:flex; align-items:baseline; gap:14px; padding-bottom:13px; border-bottom:1px solid var(--rule); margin-bottom:18px; }
-  .wizard-step-title { font-size:16px; letter-spacing:-.005em; color:var(--ink); }
+  .wizard-step-head { display:flex; align-items:baseline; gap:14px; padding-bottom:12px; border-bottom:1.5px solid var(--rule-strong); margin-bottom:20px; }
+  .wizard-step-title { font-size:15px; letter-spacing:.01em; color:var(--ink); }
   .wizard-step-desc { font-size:12px; color:var(--ink-dim); margin-left:auto; }
 
   /* Deliverable type — 3-column visual cards */
@@ -709,7 +713,7 @@
 
   /* ── TAB 1 SPLIT LAYOUT — fields cols 1–5, calendar cols 6–12 ──────────── */
   .tab1-layout { /* extends .grid-12 (see HTML class list) */ }
-  .tab1-left  { grid-column:1 / span 5; display:flex; flex-direction:column; gap:28px; }
+  .tab1-left  { grid-column:1 / span 5; display:flex; flex-direction:column; gap:32px; }
   .tab1-right { grid-column:6 / span 7; }
 
   /* ── AUDIENCE PILL SELECTOR ─────────────────────────────────────────────
@@ -813,11 +817,7 @@
 <!-- Build stamp — visible so we can verify cache freshness at a glance.
      If you don't see "build:redirect-v3" in the bottom-left, your browser
      is showing a stale cached copy of this form. -->
-<div id="adam-build-stamp" style="position:fixed;bottom:6px;left:8px;z-index:99999;
-     font:10px/1 monospace;color:#888;background:rgba(255,255,255,0.7);
-     padding:2px 6px;border-radius:3px;pointer-events:none;">
-  build:redirect-v3
-</div>
+<div id="adam-build-stamp" style="display:none" aria-hidden="true">build:redirect-v3</div>
 <script>
   // Unregister any leftover service workers and clear caches —
   // Replit preview iframes sometimes hang onto a stale form HTML.
@@ -1415,7 +1415,8 @@ function insertBatchCard(platformName, formatName) {
         </div>
         ${carouselRow}
         <div class="batch-res-section">
-          <div class="batch-field-label">Resolutions <span style="font-weight:400;text-transform:none;letter-spacing:0">(uncheck to exclude a size)</span></div>
+          <div class="batch-field-label" style="margin-bottom:4px">Resolutions</div>
+          <div style="font-size:11px;color:var(--ink-dim);margin-bottom:8px;letter-spacing:.01em">Uncheck any size to exclude it from this batch</div>
           <div class="res-checks" id="chips-${cid}">${checks}</div>
           <div class="res-all-warning" id="res-warn-${cid}">⚠ All resolutions unchecked. At least one is required.</div>
         </div>

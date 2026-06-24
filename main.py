@@ -215,12 +215,12 @@ def _sync_mini_panel() -> str:
   </div>
   <div style="background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-soft-sm)">
   <table style="width:100%;border-collapse:collapse">
-    <thead><tr style="background:var(--hover);border-bottom:1px solid var(--rule)">
-      <th style="padding:9px 14px;text-align:left;font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em">Time</th>
-      <th style="padding:9px 14px;text-align:left;font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em">Pusher</th>
-      <th style="padding:9px 14px;text-align:left;font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em">SHA</th>
-      <th style="padding:9px 14px;text-align:left;font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em">Status</th>
-      <th style="padding:9px 14px;text-align:left;font-size:10px;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.1em">Detail</th>
+    <thead><tr style="background:var(--hover);border-bottom:2px solid var(--rule-strong)">
+      <th style="padding:10px 14px;text-align:left;font-size:10px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.14em">Time</th>
+      <th style="padding:10px 14px;text-align:left;font-size:10px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.14em">Pusher</th>
+      <th style="padding:10px 14px;text-align:left;font-size:10px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.14em">SHA</th>
+      <th style="padding:10px 14px;text-align:left;font-size:10px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.14em">Status</th>
+      <th style="padding:10px 14px;text-align:left;font-size:10px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.14em">Detail</th>
     </tr></thead>
     <tbody>{rows}</tbody>
   </table>
@@ -2601,8 +2601,8 @@ async def sync_log_page(request: Request):
   .table-wrap{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
     box-shadow:var(--shadow-soft);overflow:hidden;}
   table{width:100%;border-collapse:collapse;}
-  thead tr{background:var(--hover);border-bottom:1px solid var(--rule);}
-  th{padding:12px 16px;text-align:left;font-size:10px;color:var(--ink-mid);letter-spacing:.12em;text-transform:uppercase;}
+  thead tr{background:var(--hover);border-bottom:2px solid var(--rule-strong);}
+  th{padding:11px 16px;text-align:left;font-size:10px;color:var(--ink-dim);letter-spacing:.14em;text-transform:uppercase;}
   tbody tr{border-bottom:1px solid var(--rule);}
   tbody tr:last-child{border-bottom:none;}
   td{padding:12px 16px;}
