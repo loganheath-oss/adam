@@ -135,13 +135,30 @@ The order form is the reference pattern: a single white `.tab-card` with a
   `grid-template-columns:repeat(3,1fr)` strip across the card top on `--hover`,
   each `.tab-btn` a check circle + step label + name. The active tab lifts to
   `--paper` with a `--brand-green` bottom border.
+- **One 12-column grid is the alignment spine.** `.grid-12`
+  (`grid-template-columns:repeat(12,1fr)`, shared `--grid-gutter` column-gap,
+  `32px` row-gap) is the single source of horizontal rhythm; content blocks
+  snap to **column spans** rather than ad-hoc `fr` ratios or fixed pixel caps.
+  Step 1 is a **5 / 7 split** — fields `grid-column:1/span 5`, the inline
+  calendar `6/span 7` — the cleanest 12-column approximation of the golden
+  ratio (≈1.4), calendar as the dominant block. Step 2's three-up card rows are
+  the same spine read as span-4 thirds. Snapping to spans is what makes the
+  left field edge, the calendar's right edge, the `.field-note`, and the
+  primary action all land on the same vertical lines. Below ~700px the two
+  columns each go `grid-column:1/-1` (stack). **Never reintroduce a fixed
+  `max-width` on a grid child to "make it line up" — that was the old random
+  feel; let the span define the width.**
 - **The work surface is `.tab-panel`.** The primary action sits in a
   `.tab-footer` **inside** the panel, flush-right with the inputs
   (`justify-content:flex-end`). Because the footer is nested in the already-
   padded panel, it carries **zero horizontal padding** (`padding:30px 0 44px`)
-  so its right edge lines up exactly with the input fields above — re-applying
-  the panel's padding here is the classic misalignment bug. A Back button (or a
-  "Step n of 3" indicator on step 1) is pushed hard-left with `margin-right:auto`.
+  so its right edge lines up exactly with the calendar/inputs above — re-applying
+  the panel's padding here is the classic misalignment bug. A Back button is
+  pushed hard-left with `margin-right:auto`. Step 1's primary action is an
+  **icon-only arrow circle** (`.next-arrow-btn`): grey/inert until
+  `validateStep(1)` passes, then it animates to `--brand-green` (`.is-active`,
+  toggled by `_updateTab1Arrow()` on every `input`/`change`) — the form
+  *earns* its green as the user completes it.
 - **Gate forward progress.** A step is only reachable once every earlier
   required step validates. Implement one `validateStep(n)` per step; derive both
   the *furthest reachable* tab and the per-tab `done`/`locked` styling from it
@@ -153,12 +170,18 @@ The order form is the reference pattern: a single white `.tab-card` with a
   (`opacity:.5`) with a dashed ring, no pointer.
 - **Field constraints ride the label**, not a line below it: pair the label and
   a right-aligned `.field-note` in a `.field-label-row` (e.g. "5 business days
-  minimum" next to *Delivery Date*) to keep the form vertically compact.
+  minimum" next to *Delivery Date*). On the grid the note sits at the **right
+  edge of the calendar's 7-column span**, so it reads as a caption on that block.
+- **Audience is a pill toggle, not a dropdown.** Two `.aud-pill` buttons
+  (Prospecting / Retargeting); selecting both writes "Prospecting and
+  Retargeting" to the hidden `#targeting` select (data contract intact).
+  `pickAudience()` owns the toggle and fires `change`/`input`. The pill
+  container keeps `id="targeting-trigger"` for the validate/highlight contract.
 - **Headline treatment:** page title is `<h1>` with the second line in a dim
-  `<span>` (e.g. "Ad Creative" in `--ink`, "Request" in `--ink-dim`), above a
-  small green-tick `.header-eyebrow`. Keep the hero tight to the nav.
-- **Below ~640px** the panel padding tightens, the tab bar compresses, and the
-  field/card grids collapse to a single column.
+  `<span>` ("Ad Creative" in `--ink`, "Request" in `--ink-dim`). No eyebrow —
+  it added a label with no meaning. Keep the hero tight to the nav.
+- **Below ~700px** the grid columns each go full-width (`1/-1`), the panel
+  padding tightens, and the tab bar compresses.
 
 ---
 

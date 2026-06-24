@@ -74,6 +74,7 @@
   /* Layout */
   --page-max:1080px;
   --nav-h:64px;
+  --grid-gutter:24px;   /* column gap of the shared 12-column grid (.grid-12) */
 }
 
 /* ── Reset + base ─────────────────────────────────────────────────────────── */

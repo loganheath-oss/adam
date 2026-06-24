@@ -559,8 +559,6 @@
   .tab-footer-next:hover { background:var(--brand-green-deep); transform:translateY(-1px); }
 
   /* ── FIELDS (Tab 1 — no cards, just clean labels) ────────────── */
-  .fields-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
-  .fields-grid .field-full { grid-column:1/-1; }
   .field { display:flex; flex-direction:column; gap:7px; }
   .field-label { font-size:13px; color:var(--ink); letter-spacing:.01em; }
   /* Label + an inline constraint note on the same baseline (keeps hints out
@@ -698,14 +696,23 @@
     .tab-name { font-size:13px; }
     .tab-check { width:21px; height:21px; }
     .del-cards { grid-template-columns:1fr; }
-    .fields-grid { grid-template-columns:1fr; }
   }
 
-  /* ── TAB 1 SPLIT LAYOUT — form left, calendar right ───────────────────── */
-  .tab1-layout {
-    display:grid; grid-template-columns:1fr 1.65fr; gap:40px; align-items:start;
+  /* ── 12-COLUMN GRID — the alignment spine ──────────────────────────────
+     Every step lays its content on the same 12 equal columns with one shared
+     gutter, so vertical edges line up across tabs instead of being chosen ad
+     hoc. Blocks snap to column spans. Tab 1 uses a 5 / 7 split (fields :
+     calendar) — the closest clean 12-column approximation of the golden
+     ratio (1.4), with the calendar as the dominant block. */
+  .grid-12 {
+    display:grid; grid-template-columns:repeat(12, 1fr);
+    column-gap:var(--grid-gutter, 24px); row-gap:32px; align-items:start;
   }
-  .tab1-left { display:flex; flex-direction:column; gap:26px; }
+
+  /* ── TAB 1 SPLIT LAYOUT — fields cols 1–5, calendar cols 6–12 ──────────── */
+  .tab1-layout { /* extends .grid-12 (see HTML class list) */ }
+  .tab1-left  { grid-column:1 / span 5; display:flex; flex-direction:column; gap:28px; }
+  .tab1-right { grid-column:6 / span 7; }
 
   /* ── AUDIENCE PILL SELECTOR ─────────────────────────────────────────────
      Two toggle pills (Prospecting / Retargeting). Both selected → value
@@ -730,7 +737,7 @@
   }
 
   @media (max-width:700px) {
-    .tab1-layout { grid-template-columns:1fr; gap:24px; }
+    .tab1-left, .tab1-right { grid-column:1 / -1; }
   }
 
   /* Date trigger button — kept in DOM for JS focus/highlight contract,
@@ -740,28 +747,27 @@
     width:1px; height:1px; overflow:hidden; border:none; padding:0;
   }
 
-  /* Make the date popover an always-visible inline calendar.
-     CSS display:block !important wins over the UA stylesheet's [hidden]{display:none}
-     so the JS can still set pop.hidden without affecting the visual.
-     Max-width prevents cells from becoming huge when the panel is wide. */
+  /* Make the date popover an always-visible inline calendar that FILLS its
+     7-column span, so its left edge sits on the column-6 gridline and its
+     right edge on the panel padding — flush with the label note above it.
+     display:block !important wins over the UA [hidden]{display:none} so JS can
+     still toggle pop.hidden without collapsing the visible calendar. */
   #date-popover {
     position:static !important; display:block !important;
-    max-width:380px; box-shadow:none !important; animation:none !important;
-    margin-top:8px; padding:10px 10px 4px;
+    width:100%; box-shadow:none !important; animation:none !important;
+    margin-top:8px; padding:16px 18px 6px;
     border:1px solid var(--rule); border-radius:var(--radius-xl); background:var(--paper);
   }
   #date-popover .cui-cal { width:100%; }
-  #date-popover .cui-cal-head { padding:4px 6px 10px; }
-  #date-popover .cui-cal-grid { gap:2px; }
+  #date-popover .cui-cal-head { padding:2px 4px 14px; }
+  #date-popover .cui-cal-grid { gap:4px; }
   #date-popover .cui-cal-day {
-    aspect-ratio:unset; height:42px; font-size:13.5px;
+    aspect-ratio:unset; height:52px; font-size:14px;
     border-radius:var(--radius-md);
   }
-  #date-popover .cui-cal-dow { font-size:10px; padding-bottom:6px; }
+  #date-popover .cui-cal-dow { font-size:10px; padding-bottom:8px; }
   /* In inline context the Clear button is confusing — you just pick a new date */
   #date-popover .cui-cal-foot { display:none; }
-  /* Constrain the whole right column so the label row aligns to the calendar edge */
-  .tab1-right { max-width:380px; }
 
   /* ── ARROW-CIRCLE NEXT BUTTON (Tab 1) ───────────────────────────────────── */
   /* Inactive (grey, no-cursor) until all Step 1 fields are filled.
@@ -859,7 +865,7 @@
 
   <!-- ── TAB 1: DETAILS ── -->
   <div class="tab-panel active" id="tab-1" role="tabpanel">
-    <div class="tab1-layout">
+    <div class="tab1-layout grid-12">
 
       <!-- Left: Name + Audience -->
       <div class="tab1-left">
