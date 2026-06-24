@@ -308,10 +308,8 @@ summary, label[for], select:not(:disabled), .clickable { cursor:pointer; }
     position:absolute; top:var(--nav-h); left:0; right:0; margin-left:0;
     flex-direction:column; align-items:stretch; gap:2px;
     padding:10px 16px 16px;
-    background:color-mix(in srgb, var(--bg) 96%, transparent);
-    backdrop-filter:saturate(180%) blur(16px);
-    -webkit-backdrop-filter:saturate(180%) blur(16px);
-    border-bottom:1px solid var(--rule); box-shadow:var(--shadow-soft);
+    background:var(--paper);
+    border-bottom:1px solid var(--rule-strong); box-shadow:var(--shadow-soft);
     display:none;
   }
   .adam-nav-toggle:checked ~ .adam-nav-links { display:flex; }

@@ -1954,8 +1954,8 @@ async def sprints_dashboard():
   .table-wrap{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-2xl);
     box-shadow:var(--shadow-soft);overflow:hidden;}
   table{width:100%;border-collapse:collapse;}
-  thead tr{background:var(--hover);border-bottom:1px solid var(--rule);}
-  th{padding:12px 18px;text-align:left;font-size:10px;color:var(--ink-mid);letter-spacing:.12em;text-transform:uppercase;}
+  thead tr{background:var(--hover);border-bottom:2px solid var(--rule-strong);}
+  th{padding:11px 18px;text-align:left;font-size:10px;color:var(--ink-dim);letter-spacing:.14em;text-transform:uppercase;}
   tbody tr{border-bottom:1px solid var(--rule);cursor:pointer;transition:background .12s;}
   tbody tr:last-child{border-bottom:none;}
   tbody tr:hover{background:var(--hover);}

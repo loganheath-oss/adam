@@ -722,17 +722,36 @@
     transition:border-color .15s, box-shadow .15s;
   }
   .aud-pill {
-    padding:10px 22px; border-radius:var(--radius-pill);
-    border:1.5px solid var(--rule-strong);
+    display:flex; align-items:center; gap:9px;
+    padding:10px 20px 10px 14px; border-radius:var(--radius-pill);
+    border:1.5px solid var(--rule-strong); box-shadow:none;
     background:var(--paper); color:var(--ink-mid);
     font-family:var(--font-sans); font-size:13.5px; letter-spacing:.01em;
-    cursor:pointer; transition:border-color .15s, background .15s, color .15s, box-shadow .15s;
+    cursor:pointer; transition:border-color .15s, background .15s, color .15s;
   }
   .aud-pill:hover { border-color:color-mix(in srgb, var(--brand-green) 40%, transparent); color:var(--ink); }
   .aud-pill.selected {
     border-color:var(--brand-green); background:var(--tint);
-    color:var(--brand-green-deep); box-shadow:0 0 0 1px var(--brand-green) inset;
+    color:var(--brand-green-deep);
   }
+  /* Circle checkmark indicator inside each pill */
+  .aud-check {
+    flex-shrink:0; width:18px; height:18px; border-radius:50%;
+    border:1.5px solid var(--rule-strong); background:var(--paper);
+    display:flex; align-items:center; justify-content:center;
+    transition:border-color .15s, background .15s;
+  }
+  .aud-check::after {
+    content:""; display:block; opacity:0;
+    width:5px; height:9px;
+    border-right:1.5px solid #fff; border-bottom:1.5px solid #fff;
+    transform:rotate(45deg) translate(-1px,-1px);
+    transition:opacity .12s;
+  }
+  .aud-pill.selected .aud-check {
+    border-color:var(--brand-green); background:var(--brand-green);
+  }
+  .aud-pill.selected .aud-check::after { opacity:1; }
 
   @media (max-width:700px) {
     .tab1-left, .tab1-right { grid-column:1 / -1; }
@@ -887,8 +906,8 @@
           </select>
           <!-- id="targeting-trigger" preserves validateStep/highlightField contract -->
           <div class="aud-pills" id="targeting-trigger" tabindex="-1" role="group" aria-label="Audience segment">
-            <button type="button" class="aud-pill" data-val="Prospecting" onclick="pickAudience(this)">Prospecting</button>
-            <button type="button" class="aud-pill" data-val="Retargeting" onclick="pickAudience(this)">Retargeting</button>
+            <button type="button" class="aud-pill" data-val="Prospecting" onclick="pickAudience(this)"><span class="aud-check" aria-hidden="true"></span>Prospecting</button>
+            <button type="button" class="aud-pill" data-val="Retargeting" onclick="pickAudience(this)"><span class="aud-check" aria-hidden="true"></span>Retargeting</button>
           </div>
           <span class="field-hint">Select one or both</span>
         </div>
