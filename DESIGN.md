@@ -77,7 +77,10 @@ All provided by `adam-design.css`:
 - **Cards** — `.card-soft` (+ `.shadow-soft`/`-pop`). Hover-lift data cards by transitioning
   `shadow-soft → shadow-pop`.
 - **Buttons** — `.btn` + `.btn-primary` (green), `.btn-secondary` (outline), `.btn-ghost`.
-  Modifiers: `.btn-pill`, `.btn-lg`.
+  Modifiers: `.btn-pill`, `.btn-lg`. The primary is **one flat `--brand-green`** with a
+  soft shadow — no gradient, no colored glow. Hover deepens to `--brand-green-deep`. Every
+  primary action in the app (page buttons, the order form's submit/confirm) uses this same
+  calm fill so green reads consistently; a gradient+glow style was tried and removed.
 - **Inputs** — `.input` or any control inside `.field`; green focus ring built in.
 - **Labels / numbers** — `.adam-label` (uppercase tracked micro-label), `.font-num` (tabular).
 - **Status** — `.chip` + `.chip-good/warn/bad/neutral`; `.dot` + `.dot-good/warn/bad`.
@@ -107,6 +110,13 @@ the order form's inlined nav — keep the two in sync.
     <span class="nav-sep" aria-hidden="true"></span>
     <span class="adam-logo">ADAM<b>.</b></span>
   </a>
+  <!-- CSS-only mobile menu: checkbox toggles the dropdown, label is the burger.
+       The checkbox MUST precede both the burger and the links so the
+       `:checked ~` sibling selectors reach them. -->
+  <input type="checkbox" id="adam-nav-toggle" class="adam-nav-toggle">
+  <label for="adam-nav-toggle" class="adam-nav-burger" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </label>
   <div class="adam-nav-links">
     <a href="/new" class="active">New Order</a>
     <a href="/sprints">Sprints</a>
@@ -118,6 +128,14 @@ the order form's inlined nav — keep the two in sync.
 
 Set `class="active"` on the link for the current page. `.upwork-wordmark` and
 `.nav-sep` are sized once in `adam-design.css` — never re-declare them per page.
+
+**Mobile (≤640px):** the link row collapses into a **CSS-only hamburger** — no
+JS. The hidden checkbox drives a dropdown panel under the bar (frosted, same
+blur as the nav) and the burger morphs into an X via `:checked ~` selectors;
+the active link gets a `--tint` fill instead of the underline. Because every
+link is a full-page navigation, the menu resets closed on click — no script
+needed. All of this lives in `adam-design.css`; the markup above is the only
+per-copy change, so keep `nav_html()` and the order form's inlined nav in sync.
 
 ### Multi-step forms (tabs / wizard)
 

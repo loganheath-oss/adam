@@ -379,6 +379,11 @@ def nav_html(active: str = "") -> str:
         '<span class="nav-sep" aria-hidden="true"></span>'
         '<span class="adam-logo">ADAM<b>.</b></span>'
         '</a>'
+        # CSS-only mobile menu: checkbox toggles the dropdown, label is the burger.
+        '<input type="checkbox" id="adam-nav-toggle" class="adam-nav-toggle">'
+        '<label for="adam-nav-toggle" class="adam-nav-burger" aria-label="Toggle menu">'
+        '<span></span><span></span><span></span>'
+        '</label>'
         f'<div class="adam-nav-links">{links}</div>'
         '</nav>'
     )
@@ -621,15 +626,14 @@ async def root():
     padding:30px 28px;color:var(--ink);display:block;box-shadow:var(--shadow-soft-sm);
     transition:border-color .15s,box-shadow .2s,transform .15s;}
   .action-card:hover{border-color:color-mix(in srgb,var(--brand-green) 40%,transparent);box-shadow:var(--shadow-soft);transform:translateY(-2px);}
-  .action-card.primary{background:linear-gradient(160deg,var(--brand-green) 0%,var(--brand-green-deep) 100%);color:#fff;border-color:transparent;}
-  .action-card.primary:hover{box-shadow:var(--shadow-pop);border-color:transparent;}
-  .action-card.primary h2,.action-card.primary p,.action-card.primary .ac-arrow{color:#fff;}
-  .action-card.primary .ac-icon{color:rgba(255,255,255,.9);}
-  .action-card.primary p{color:rgba(255,255,255,.82);}
-  .action-card.primary .ac-arrow{color:rgba(255,255,255,.7);}
+  /* Primary path is the "featured" treatment — a light green wash + green-accent
+     icon, never a filled slab (green stays an accent; see DESIGN.md §2). */
+  .action-card.primary{background:var(--tint);border-color:color-mix(in srgb,var(--brand-green) 32%,var(--rule));}
+  .action-card.primary:hover{border-color:var(--brand-green);box-shadow:var(--shadow-soft);}
+  .action-card.primary h2{color:var(--ink);}
+  .action-card.primary .ac-icon{background:var(--paper);border:1px solid color-mix(in srgb,var(--brand-green) 26%,var(--rule));color:var(--brand-green);}
   .ac-icon{display:flex;align-items:center;justify-content:center;width:40px;height:40px;
     border-radius:var(--radius-lg);background:var(--hover);color:var(--ink-mid);margin-bottom:18px;}
-  .action-card.primary .ac-icon{background:rgba(255,255,255,.18);}
   .action-card h2{font-size:18px;letter-spacing:-.01em;margin-bottom:7px;color:var(--ink);}
   .action-card p{font-size:13px;color:var(--ink-mid);line-height:1.6;margin:0;}
   .ac-arrow{font-size:12.5px;margin-top:20px;color:var(--brand-green);letter-spacing:.01em;}
