@@ -2649,43 +2649,134 @@ async def learnings_editor():
     if not LEARNINGS_PATH.exists():
         LEARNINGS_PATH.write_text(LEARNINGS_HEADER)
     content = LEARNINGS_PATH.read_text()
-    # Minimal inline editor — no auth (sprint chat itself is public; this is a peer surface).
+    # Reads as a styled document by default; the textarea editor reveals on Edit.
+    # No auth (sprint chat itself is public; this is a peer surface).
     extra_css = """<style>
-  .learn-head{margin:40px 0 6px;}
-  .learn-head h1{font-size:clamp(1.9rem,4vw,2.6rem);letter-spacing:-.015em;color:var(--ink);}
-  .sub{color:var(--ink-mid);margin:8px 0 22px;font-size:13px;line-height:1.6;}
-  .sub code{background:var(--hover);padding:1px 6px;border-radius:var(--radius-sm);font-size:12px;}
-  textarea{width:100%;min-height:58vh;font-family:var(--font-sans);font-size:14px;line-height:1.6;padding:18px;
-    border:1px solid var(--rule-strong);border-radius:var(--radius-xl);background:var(--paper);color:var(--ink);
-    box-sizing:border-box;box-shadow:var(--shadow-soft-sm);}
-  textarea:focus{outline:none;border-color:var(--brand-green);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-green) 14%,transparent);}
-  .row{display:flex;gap:12px;align-items:center;margin-top:14px;}
-  .save-status{color:var(--brand-green);font-size:13px;}
+  .learn-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:40px 0 24px;}
+  .learn-eyebrow{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--brand-green);}
+  .learn-bar-actions{display:flex;gap:10px;align-items:center;flex-shrink:0;}
+  .save-status{color:var(--brand-green-deep);font-size:13px;}
   .save-err{color:var(--bad-fg);font-size:13px;}
+
+  /* ── Reading view (rendered markdown) ───────────────────────────────────── */
+  .md-doc{border:1px solid var(--rule);border-radius:var(--radius-2xl);background:var(--paper);
+    box-shadow:var(--shadow-soft-sm);padding:38px 44px 42px;}
+  .md-body{color:var(--ink-mid);font-size:15px;line-height:1.72;letter-spacing:.005em;}
+  .md-body>*:first-child{margin-top:0;}
+  .md-body h1{font-size:30px;letter-spacing:-.022em;color:var(--ink);line-height:1.12;margin:0 0 10px;}
+  .md-body h2{font-size:19px;letter-spacing:-.01em;color:var(--ink);margin:34px 0 12px;
+    padding-bottom:9px;border-bottom:1px solid var(--rule);}
+  .md-body h3{font-size:15.5px;letter-spacing:.005em;color:var(--ink);margin:26px 0 8px;}
+  .md-body h4,.md-body h5,.md-body h6{font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-dim);margin:22px 0 6px;}
+  .md-body p{margin:0 0 14px;}
+  .md-body ul,.md-body ol{margin:0 0 14px;padding-left:24px;}
+  .md-body li{margin:5px 0;}
+  .md-body li::marker{color:var(--brand-green);}
+  .md-body ol li::marker{color:var(--ink-dim);}
+  .md-body strong{color:var(--ink);}   /* weight is capped at 400, so emphasis reads via color */
+  .md-body em{font-style:italic;}
+  .md-body a{color:var(--brand-green-deep);text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px;}
+  .md-body a:hover{text-decoration-thickness:2px;}
+  .md-body code{background:var(--hover);border:1px solid var(--rule);padding:1px 6px;border-radius:var(--radius-sm);
+    font-size:.88em;color:var(--ink);font-variant-ligatures:none;}
+  .md-body pre{background:var(--hover);border:1px solid var(--rule);border-radius:var(--radius-lg);
+    padding:14px 16px;overflow-x:auto;margin:0 0 16px;}
+  .md-body pre code{background:none;border:none;padding:0;font-size:13px;line-height:1.6;color:var(--ink);}
+  .md-body blockquote{margin:0 0 16px;padding:2px 0 2px 16px;border-left:3px solid var(--brand-green-soft);
+    color:var(--ink-mid);}
+  .md-body blockquote p:last-child{margin-bottom:0;}
+  .md-body hr{border:0;height:1px;background:var(--rule);margin:26px 0;}
+  .md-empty{color:var(--ink-dim);font-size:14px;line-height:1.6;}
+
+  /* ── Edit view ──────────────────────────────────────────────────────────── */
+  #editor{display:none;}
+  textarea{width:100%;min-height:62vh;font-family:var(--font-mono,ui-monospace,SFMono-Regular,Menlo,monospace);
+    font-size:13.5px;line-height:1.7;padding:20px;tab-size:2;
+    border:1px solid var(--rule-strong);border-radius:var(--radius-xl);background:var(--paper);color:var(--ink);
+    box-sizing:border-box;box-shadow:var(--shadow-soft-sm);resize:vertical;}
+  textarea:focus{outline:none;border-color:var(--brand-green);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-green) 14%,transparent);}
+  .edit-foot{display:flex;gap:12px;align-items:center;margin-top:14px;}
+  .edit-hint{color:var(--ink-dim);font-size:12px;}
 </style>"""
     html = """__HEAD____NAV__
 <main class="adam-main"><div class="adam-container stagger">
-<div class="learn-head reveal-up"><h1>ADAM Learnings</h1></div>
-<div class="sub">Institutional memory shared across every sprint. Loaded into Claude's context on every chat. Edit freely — saves to <code>learnings.md</code> at the project root.</div>
-<form id="f">
-  <textarea id="t" name="content">__CONTENT__</textarea>
-  <div class="row">
-    <button type="submit" class="btn btn-primary">Save</button>
-    <span id="s" class="status"></span>
+<div class="learn-bar reveal-up">
+  <div class="learn-eyebrow">Institutional Memory</div>
+  <div class="learn-bar-actions">
+    <span id="s"></span>
+    <button type="button" id="edit-btn" class="btn btn-secondary" onclick="enterEdit()">Edit</button>
   </div>
-</form>
+</div>
+
+<div id="view" class="md-doc reveal-up"><div class="md-body" id="rendered"></div></div>
+
+<div id="editor" class="reveal-up">
+  <textarea id="t" name="content">__CONTENT__</textarea>
+  <div class="edit-foot">
+    <button type="button" class="btn btn-primary" onclick="saveEdit()">Save</button>
+    <button type="button" class="btn btn-secondary" onclick="cancelEdit()">Cancel</button>
+    <span class="edit-hint">Markdown — saves to <code>learnings.md</code> at the project root.</span>
+  </div>
+</div>
 </div></main>
 <script>
-const f=document.getElementById('f'),t=document.getElementById('t'),s=document.getElementById('s');
-f.addEventListener('submit',async e=>{
-  e.preventDefault();s.textContent='Saving…';s.className='save-status';
+const t=document.getElementById('t'), s=document.getElementById('s');
+const viewEl=document.getElementById('view'), editEl=document.getElementById('editor');
+const editBtn=document.getElementById('edit-btn'), rendered=document.getElementById('rendered');
+
+// Self-contained Markdown -> HTML (no external libs; CSP/offline safe).
+function mdToHtml(src){
+  const esc = x => x.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const inline = x => {
+    x = esc(x);
+    const codes=[];
+    x = x.replace(/`([^`]+)`/g,(m,c)=>{codes.push(c);return '\\u0000'+(codes.length-1)+'\\u0000';});
+    x = x.replace(/\\*\\*([^*]+)\\*\\*/g,'<strong>$1</strong>');
+    x = x.replace(/\\*([^*]+)\\*/g,'<em>$1</em>');   // '*' only — leaves snake_case intact
+    x = x.replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+    x = x.replace(/\\u0000(\\d+)\\u0000/g,(m,n)=>'<code>'+codes[+n]+'</code>');
+    return x;
+  };
+  const isBlockStart = l => /^(#{1,6}\\s|```|\\s*>|\\s*[-*+]\\s|\\s*\\d+\\.\\s)/.test(l) || /^\\s*(---|\\*\\*\\*|___)\\s*$/.test(l);
+  const lines = src.replace(/\\r\\n/g,'\\n').split('\\n');
+  const out=[]; let i=0;
+  while(i<lines.length){
+    const line=lines[i];
+    if(/^```/.test(line)){ const buf=[]; i++; while(i<lines.length && !/^```/.test(lines[i])){buf.push(lines[i]);i++;} i++; out.push('<pre><code>'+esc(buf.join('\\n'))+'</code></pre>'); continue; }
+    if(/^\\s*(---|\\*\\*\\*|___)\\s*$/.test(line)){ out.push('<hr>'); i++; continue; }
+    const h=line.match(/^(#{1,6})\\s+(.*)$/);
+    if(h){ const lvl=h[1].length; out.push('<h'+lvl+'>'+inline(h[2].trim())+'</h'+lvl+'>'); i++; continue; }
+    if(/^\\s*>\\s?/.test(line)){ const buf=[]; while(i<lines.length && /^\\s*>\\s?/.test(lines[i])){buf.push(lines[i].replace(/^\\s*>\\s?/,''));i++;} out.push('<blockquote>'+mdToHtml(buf.join('\\n'))+'</blockquote>'); continue; }
+    if(/^\\s*[-*+]\\s+/.test(line)){ const items=[]; while(i<lines.length && /^\\s*[-*+]\\s+/.test(lines[i])){items.push(inline(lines[i].replace(/^\\s*[-*+]\\s+/,'')));i++;} out.push('<ul>'+items.map(x=>'<li>'+x+'</li>').join('')+'</ul>'); continue; }
+    if(/^\\s*\\d+\\.\\s+/.test(line)){ const items=[]; while(i<lines.length && /^\\s*\\d+\\.\\s+/.test(lines[i])){items.push(inline(lines[i].replace(/^\\s*\\d+\\.\\s+/,'')));i++;} out.push('<ol>'+items.map(x=>'<li>'+x+'</li>').join('')+'</ol>'); continue; }
+    if(/^\\s*$/.test(line)){ i++; continue; }
+    const buf=[line]; i++;
+    while(i<lines.length && !/^\\s*$/.test(lines[i]) && !isBlockStart(lines[i])){ buf.push(lines[i]); i++; }
+    out.push('<p>'+inline(buf.join(' '))+'</p>');
+  }
+  return out.join('\\n');
+}
+
+function renderView(){
+  const raw=t.value;
+  if(!raw.trim()){ rendered.innerHTML='<div class="md-empty">No guidance captured yet. Click <strong>Edit</strong> to add the first note.</div>'; return; }
+  rendered.innerHTML=mdToHtml(raw);
+}
+function enterEdit(){ viewEl.style.display='none'; editEl.style.display='block'; editBtn.style.display='none'; s.textContent=''; t.focus(); }
+function exitEdit(){ editEl.style.display='none'; viewEl.style.display='block'; editBtn.style.display=''; }
+function cancelEdit(){ t.value=lastSaved; exitEdit(); }
+async function saveEdit(){
+  s.textContent='Saving…'; s.className='save-status';
   try{
     const r=await fetch('/learnings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:t.value})});
     const j=await r.json();
-    if(j.ok){s.textContent='Saved '+new Date().toLocaleTimeString();}
-    else{s.textContent=j.error||'Save failed';s.className='save-err';}
-  }catch(err){s.textContent=String(err);s.className='save-err';}
-});
+    if(j.ok){ lastSaved=t.value; renderView(); exitEdit(); s.textContent='Saved '+new Date().toLocaleTimeString(); s.className='save-status'; }
+    else{ s.textContent=j.error||'Save failed'; s.className='save-err'; }
+  }catch(err){ s.textContent=String(err); s.className='save-err'; }
+}
+let lastSaved=t.value;
+renderView();
 </script>
 </body></html>"""
     html = (
