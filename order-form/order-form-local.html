@@ -255,44 +255,100 @@
     transition:background .12s;
   }
 
-  /* ── STYLE PICKER (light) ───────────────────────────────────────────────── */
+  /* ── STYLE PICKER TRIGGER ───────────────────────────────────────────────── */
+  /* Reads as an inviting "choose" card, not a dropdown. Empty: tinted tile +
+     prompt + Browse hint. Filled: real thumbnail + name + Change hint. */
   .style-picker-btn {
-    flex:1; display:flex; align-items:center; gap:10px;
-    padding:10px 14px; min-height:44px;
+    flex:1; display:flex; align-items:center; gap:11px;
+    padding:6px 8px 6px 6px; min-height:44px;
     background:var(--paper); border:1px solid var(--rule-strong);
     border-radius:var(--radius-lg); font-family:var(--font-sans);
     font-size:14px; letter-spacing:.01em; color:var(--ink-mid); cursor:pointer;
-    text-align:left; transition:border-color .15s, color .15s, background .15s;
+    text-align:left; transition:border-color .15s, color .15s, background .15s, box-shadow .15s;
   }
-  .style-picker-btn:hover { border-color:var(--brand-green-soft); color:var(--ink); }
-  .style-picker-btn.has-value { color:var(--ink); border-color:var(--brand-green); background:var(--tint); }
-  .style-picker-thumb { display:inline-flex; align-items:center; flex-shrink:0; }
-  .style-picker-thumb:empty { display:none; }
-  .style-picker-thumb img { box-shadow:0 0 0 1px var(--rule); }
-  .style-picker-label { flex:1; }
-  .style-picker-arrow { color:var(--ink-dim); font-size:11px; min-width:10px; }
+  .style-picker-btn:hover { border-color:var(--brand-green-soft); color:var(--ink); box-shadow:var(--shadow-soft-sm); }
+  .style-picker-btn.has-value { color:var(--ink); border-color:var(--brand-green); }
+  .style-picker-thumb { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .style-picker-ph {
+    width:32px; height:32px; border-radius:7px; background:var(--tint);
+    color:var(--brand-green); display:flex; align-items:center; justify-content:center;
+  }
+  .style-picker-thumb img { width:32px; height:32px; object-fit:cover; border-radius:7px; box-shadow:0 0 0 1px var(--rule); display:block; }
+  .style-picker-label { flex:1; line-height:1.2; }
+  .style-picker-cta {
+    flex-shrink:0; font-size:11px; letter-spacing:.04em; color:var(--brand-green-deep);
+    background:var(--tint); border-radius:var(--radius-pill); padding:5px 12px;
+    transition:background .15s;
+  }
+  .style-picker-btn:hover .style-picker-cta { background:color-mix(in srgb, var(--brand-green) 16%, transparent); }
 
-  /* ── Inline style panel ─────────────────────────────────────────────────── */
-  .style-panel {
-    margin-top:10px; border:1px solid var(--rule); border-radius:var(--radius-xl);
-    background:var(--paper); box-shadow:var(--shadow-soft); padding:16px;
-    max-height:440px; overflow-y:auto; animation:menuPop .18s cubic-bezier(.4,0,.2,1);
+  /* ── STYLE GALLERY MODAL ────────────────────────────────────────────────── */
+  .style-modal {
+    display:none; position:fixed; inset:0; background:rgba(10,10,10,.5);
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    z-index:1100; align-items:center; justify-content:center; padding:32px 24px;
   }
-  .style-panel-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)); gap:12px; }
-  .spcard {
-    background:var(--paper); border:1.5px solid var(--rule-strong);
-    border-radius:var(--radius-lg); cursor:pointer; overflow:hidden;
-    transition:border-color .13s, transform .1s, box-shadow .13s;
+  .style-modal.visible { display:flex; }
+  .style-modal-card {
+    background:var(--paper); width:100%; max-width:940px; max-height:88vh;
+    border:1px solid var(--rule); border-radius:var(--radius-3xl);
+    box-shadow:var(--shadow-pop); display:flex; flex-direction:column; overflow:hidden;
+    animation:menuPop .22s cubic-bezier(.4,0,.2,1);
   }
-  .spcard:hover { border-color:var(--brand-green-soft); transform:translateY(-2px); box-shadow:var(--shadow-soft); }
-  .spcard--selected { border-color:var(--brand-green) !important; box-shadow:0 0 0 1px var(--brand-green) inset; }
-  .spcard-img { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; }
-  .spcard-img--blank {
-    width:100%; aspect-ratio:1/1; background:var(--hover);
-    display:flex; align-items:center; justify-content:center; color:var(--ink-dim); font-size:22px;
+  .style-modal-head { padding:24px 28px 18px; border-bottom:1px solid var(--rule); flex-shrink:0; }
+  .style-modal-eyebrow { font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--brand-green); margin-bottom:7px; }
+  .style-modal-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+  .style-modal-title { font-size:23px; letter-spacing:-.02em; line-height:1.1; color:var(--ink); }
+  .style-modal-sub { font-size:13px; color:var(--ink-mid); margin-top:6px; line-height:1.5; }
+  .style-modal-close {
+    flex-shrink:0; width:34px; height:34px; border-radius:50%;
+    border:1px solid var(--rule-strong); background:var(--paper); color:var(--ink-mid);
+    font-size:17px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:background .12s, color .12s, border-color .12s;
   }
-  .spcard-name { font-family:var(--font-sans); font-size:11px; color:var(--ink); padding:8px 9px 9px; line-height:1.3; letter-spacing:.01em; }
-  .spcard--selected .spcard-name { color:var(--brand-green-deep); }
+  .style-modal-close:hover { background:var(--hover); color:var(--ink); border-color:var(--ink-dim); }
+  .style-modal-search {
+    margin-top:17px; display:flex; align-items:center; gap:9px;
+    border:1px solid var(--rule-strong); border-radius:var(--radius-lg); padding:9px 13px;
+    background:var(--paper); transition:border-color .15s, box-shadow .15s;
+  }
+  .style-modal-search:focus-within { border-color:var(--brand-green); box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-green) 12%,transparent); }
+  .style-modal-search svg { color:var(--ink-dim); flex-shrink:0; }
+  .style-modal-search input { flex:1; border:none; outline:none; background:none; font-family:var(--font-sans); font-size:14px; color:var(--ink); }
+  .style-modal-search input::placeholder { color:var(--ink-dim); }
+  .style-gallery-scroll { overflow-y:auto; padding:20px 28px 28px; }
+  .style-gallery-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(168px,1fr)); gap:16px; }
+  .sgcard {
+    position:relative; background:var(--paper); border:1.5px solid var(--rule);
+    border-radius:var(--radius-xl); cursor:pointer; overflow:hidden; text-align:left;
+    display:flex; flex-direction:column;
+    transition:border-color .14s, transform .12s, box-shadow .14s;
+  }
+  .sgcard:hover { border-color:var(--brand-green-soft); transform:translateY(-3px); box-shadow:var(--shadow-soft); }
+  .sgcard-img { width:100%; aspect-ratio:1/1; object-fit:cover; display:block; background:var(--hover); }
+  .sgcard-img--blank { width:100%; aspect-ratio:1/1; background:var(--hover); display:flex; align-items:center; justify-content:center; color:var(--ink-dim); font-size:26px; }
+  .sgcard-body { padding:11px 13px 13px; }
+  .sgcard-name { font-size:12.5px; color:var(--ink); letter-spacing:.01em; line-height:1.25; }
+  .sgcard-desc { font-size:11px; color:var(--ink-dim); margin-top:4px; line-height:1.4; }
+  .sgcard--selected { border-color:var(--brand-green); box-shadow:0 0 0 1.5px var(--brand-green); }
+  .sgcard--selected .sgcard-name { color:var(--brand-green-deep); }
+  .sgcard-check {
+    position:absolute; top:9px; right:9px; width:24px; height:24px; border-radius:50%;
+    background:var(--brand-green); color:#fff; display:none; align-items:center; justify-content:center;
+    box-shadow:0 1px 5px rgba(0,0,0,.22);
+  }
+  .sgcard--selected .sgcard-check { display:flex; }
+  .sgcard-inuse {
+    position:absolute; top:9px; left:9px; font-size:9px; letter-spacing:.07em; text-transform:uppercase;
+    background:rgba(255,255,255,.93); color:var(--ink-mid); border:1px solid var(--rule);
+    border-radius:var(--radius-pill); padding:2px 8px; display:none;
+  }
+  .sgcard--inuse .sgcard-inuse { display:block; }
+  .style-gallery-empty { display:none; padding:48px 0; text-align:center; color:var(--ink-dim); font-size:13.5px; }
+  @media (prefers-reduced-motion: reduce) {
+    .style-modal-card, .sgcard { animation:none !important; transition:none !important; }
+    .sgcard:hover { transform:none; }
+  }
 
   /* ── Per-style quantity ─────────────────────────────────────────────────── */
   /* The input box matches the 44px picker height and top-aligns with it; the
@@ -1033,6 +1089,31 @@
 </div><!-- /.adam-container -->
 </main>
 
+<!-- Shared visual-style gallery (one modal, retargeted per style row) -->
+<div class="style-modal" id="style-modal" role="dialog" aria-modal="true" aria-labelledby="style-modal-title">
+  <div class="style-modal-card">
+    <div class="style-modal-head">
+      <div class="style-modal-eyebrow">Visual Style</div>
+      <div class="style-modal-title-row">
+        <div>
+          <div class="style-modal-title" id="style-modal-title">Choose a style</div>
+          <div class="style-modal-sub">Pick the look for this batch — you can browse all formats and add more styles after.</div>
+        </div>
+        <button type="button" class="style-modal-close" onclick="closeStyleModal()" aria-label="Close">✕</button>
+      </div>
+      <label class="style-modal-search">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="style-search" placeholder="Search styles…" autocomplete="off"
+          oninput="filterStyleGallery(this.value)">
+      </label>
+    </div>
+    <div class="style-gallery-scroll">
+      <div class="style-gallery-grid" id="style-gallery-grid"></div>
+      <div class="style-gallery-empty" id="style-gallery-empty">No styles match your search.</div>
+    </div>
+  </div>
+</div>
+
 <div class="confirm-overlay" id="confirm-overlay">
   <div class="confirm-card">
 
@@ -1249,12 +1330,12 @@ function onFormatToggle(platformName, formatName, checkbox) {
 // ── BUILD STYLE ROW (inline gallery picker) ──────────────────────────────────
 function buildStyleRowHTML(cid, rowIdx) {
   return `<div class="style-row" id="srow-${cid}-${rowIdx}">
-      <div class="style-row-head" style="position:relative;">
+      <div class="style-row-head">
         <button type="button" class="style-picker-btn" id="style-btn-${cid}-${rowIdx}"
-          onclick="toggleStylePanel(${cid},${rowIdx})">
-          <span class="style-picker-thumb" id="style-thumb-${cid}-${rowIdx}"></span>
-          <span class="style-picker-label" id="style-label-${cid}-${rowIdx}">SELECT STYLE</span>
-          <span class="style-picker-arrow" id="style-arrow-${cid}-${rowIdx}">▾</span>
+          onclick="openStyleModal(${cid},${rowIdx})" aria-haspopup="dialog">
+          <span class="style-picker-thumb" id="style-thumb-${cid}-${rowIdx}"><span class="style-picker-ph">${ic('images', 17)}</span></span>
+          <span class="style-picker-label" id="style-label-${cid}-${rowIdx}">Choose a visual style</span>
+          <span class="style-picker-cta" id="style-cta-${cid}-${rowIdx}">Browse</span>
         </button>
         <input type="hidden" id="style-${cid}-${rowIdx}" value="">
         <div class="style-qty-wrap">
@@ -1266,86 +1347,107 @@ function buildStyleRowHTML(cid, rowIdx) {
         <button type="button" class="remove-style-row" id="srow-rm-${cid}-${rowIdx}"
           onclick="removeStyleRow(${cid},${rowIdx})" title="Remove style" style="visibility:hidden">×</button>
       </div>
-      <div class="style-panel" id="style-panel-${cid}-${rowIdx}" style="display:none;"></div>
     </div>`;
 }
 
-function toggleStylePanel(cid, rowIdx) {
-  const panel = document.getElementById('style-panel-' + cid + '-' + rowIdx);
-  const arrow = document.getElementById('style-arrow-' + cid + '-' + rowIdx);
-  const isOpen = panel.style.display !== 'none';
-  // Close all other open panels first
-  document.querySelectorAll('.style-panel').forEach(p => {
-    p.style.display = 'none';
-    const id = p.id; // style-panel-CID-ROWIDX
-    const parts = id.replace('style-panel-','').split('-');
-    const a = document.getElementById('style-arrow-' + parts[0] + '-' + parts[1]);
-    if (a) a.textContent = '▾';
-  });
-  if (!isOpen) {
-    // Populate grid on first open
-    if (!panel.dataset.populated) {
-      const grid = document.createElement('div');
-      grid.className = 'style-panel-grid';
-      STYLE_GALLERY.forEach(s => {
-        const card = document.createElement('div');
-        card.className = 'spcard';
-        card.dataset.styleName = s.name;
-        card.onclick = () => pickStyle(cid, rowIdx, s.name);
-        const imgHTML = s.img
-          ? `<img class="spcard-img" src="data:image/jpeg;base64,${s.img}" alt="${s.name}">`
-          : `<div class="spcard-img spcard-img--blank">✦</div>`;
-        card.innerHTML = imgHTML + `<div class="spcard-name">${s.name}</div>`;
-        grid.appendChild(card);
-      });
-      panel.appendChild(grid);
-      panel.dataset.populated = '1';
-    }
-    // Every time the panel opens, refresh green highlights for ALL styles
-    // currently selected anywhere in this batch card
-    const bc = document.getElementById('bc-' + cid);
-    const selectedInCard = new Set();
-    if (bc) {
-      bc.querySelectorAll('.style-row input[type="hidden"]').forEach(h => {
-        if (h.value) selectedInCard.add(h.value);
-      });
-    }
-    panel.querySelectorAll('.spcard').forEach(c => {
-      c.classList.toggle('spcard--selected', selectedInCard.has(c.dataset.styleName));
+// ── STYLE GALLERY MODAL ───────────────────────────────────────────────────
+// One shared lightbox, retargeted at whichever style row opened it. Large,
+// browseable thumbnails with descriptions; click-to-select-and-close.
+let _styleTarget = null;        // { cid, rowIdx } currently being edited
+let _styleGridBuilt = false;    // grid cards are built once, reused
+
+function buildStyleGalleryGrid() {
+  const grid = document.getElementById('style-gallery-grid');
+  grid.innerHTML = STYLE_GALLERY.map(s => {
+    const img = s.img
+      ? `<img class="sgcard-img" src="data:image/jpeg;base64,${s.img}" alt="${esc(s.name)}" loading="lazy">`
+      : `<div class="sgcard-img sgcard-img--blank">✦</div>`;
+    return `<button type="button" class="sgcard" data-style-name="${esc(s.name)}"
+        onclick="selectStyleFromModal('${esc(s.name).replace(/'/g, "\\'")}')">
+        ${img}
+        <span class="sgcard-check" aria-hidden="true">${ic('check', 14)}</span>
+        <span class="sgcard-inuse">In use</span>
+        <span class="sgcard-body">
+          <span class="sgcard-name">${esc(s.name)}</span>
+          ${s.desc ? `<span class="sgcard-desc">${esc(s.desc)}</span>` : ''}
+        </span>
+      </button>`;
+  }).join('');
+  _styleGridBuilt = true;
+}
+
+function refreshStyleGalleryState() {
+  if (!_styleTarget) return;
+  const { cid, rowIdx } = _styleTarget;
+  const current = document.getElementById('style-' + cid + '-' + rowIdx)?.value || '';
+  // Styles used by OTHER rows in this batch (shown as "In use" so the user can
+  // avoid accidental duplicates, but still pick them if intended).
+  const bc = document.getElementById('bc-' + cid);
+  const inUse = new Set();
+  if (bc) {
+    bc.querySelectorAll('.style-row input[type="hidden"]').forEach(h => {
+      if (h.value && h.value !== current) inUse.add(h.value);
     });
-    panel.style.display = 'block';
-    arrow.textContent = '▴';
   }
+  document.querySelectorAll('#style-gallery-grid .sgcard').forEach(c => {
+    const n = c.dataset.styleName;
+    c.classList.toggle('sgcard--selected', n === current);
+    c.classList.toggle('sgcard--inuse', inUse.has(n));
+  });
+}
+
+function openStyleModal(cid, rowIdx) {
+  _styleTarget = { cid, rowIdx };
+  if (!_styleGridBuilt) buildStyleGalleryGrid();
+  const search = document.getElementById('style-search');
+  if (search) { search.value = ''; filterStyleGallery(''); }
+  refreshStyleGalleryState();
+  const overlay = document.getElementById('style-modal');
+  overlay.classList.add('visible');
+  document.body.style.overflow = 'hidden';
+  // Bring the active choice into view; otherwise focus search for quick filtering.
+  const sel = document.querySelector('#style-gallery-grid .sgcard--selected');
+  if (sel) sel.scrollIntoView({ block: 'nearest' });
+  setTimeout(() => { if (!sel && search) search.focus(); }, 60);
+}
+
+function closeStyleModal() {
+  document.getElementById('style-modal').classList.remove('visible');
+  document.body.style.overflow = '';
+  _styleTarget = null;
+}
+
+function filterStyleGallery(q) {
+  const term = (q || '').trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('#style-gallery-grid .sgcard').forEach(c => {
+    const hay = c.textContent.toLowerCase();
+    const match = !term || hay.includes(term);
+    c.style.display = match ? '' : 'none';
+    if (match) shown++;
+  });
+  document.getElementById('style-gallery-empty').style.display = shown ? 'none' : 'block';
+}
+
+function selectStyleFromModal(name) {
+  if (!_styleTarget) return;
+  pickStyle(_styleTarget.cid, _styleTarget.rowIdx, name);
+  closeStyleModal();
 }
 
 function pickStyle(cid, rowIdx, name) {
   const hidden = document.getElementById('style-' + cid + '-' + rowIdx);
   const label  = document.getElementById('style-label-' + cid + '-' + rowIdx);
   const thumb  = document.getElementById('style-thumb-' + cid + '-' + rowIdx);
-  const arrow  = document.getElementById('style-arrow-' + cid + '-' + rowIdx);
-  const panel  = document.getElementById('style-panel-' + cid + '-' + rowIdx);
+  const cta    = document.getElementById('style-cta-' + cid + '-' + rowIdx);
   hidden.value = name;
   label.textContent = name;
+  if (cta) cta.textContent = 'Change';
   document.getElementById('style-btn-' + cid + '-' + rowIdx)?.classList.add('has-value');
   const sg = STYLE_GALLERY.find(s => s.name === name);
-  if (sg && sg.img) {
-    thumb.innerHTML = `<img src="data:image/jpeg;base64,${sg.img}" style="width:28px;height:28px;object-fit:cover;border-radius:3px;margin-right:8px;vertical-align:middle;">`;
-  } else {
-    thumb.innerHTML = '';
-  }
-  // Refresh all highlights to reflect every selected style in this card
-  const bc2 = document.getElementById('bc-' + cid);
-  const selectedInCard2 = new Set();
-  if (bc2) {
-    bc2.querySelectorAll('.style-row input[type="hidden"]').forEach(h => {
-      if (h.value) selectedInCard2.add(h.value);
-    });
-  }
-  panel.querySelectorAll('.spcard').forEach(c => {
-    c.classList.toggle('spcard--selected', selectedInCard2.has(c.dataset.styleName));
-  });
-  panel.style.display = 'none';
-  arrow.textContent = '▾';
+  thumb.innerHTML = (sg && sg.img)
+    ? `<img src="data:image/jpeg;base64,${sg.img}" alt="${esc(name)}">`
+    : `<span class="style-picker-ph">${ic('images', 17)}</span>`;
 }
 
 // Small rounded-rectangle glyph that visualises an aspect ratio (4:5 tall,
@@ -2001,6 +2103,14 @@ document.getElementById('confirm-overlay').addEventListener('click', function(e)
   if (e.target === this) closeConfirm();
 });
 
+// Style gallery: dismiss on backdrop click or Escape.
+document.getElementById('style-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeStyleModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('style-modal').classList.contains('visible')) closeStyleModal();
+});
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 function addBusinessDays(date, days) {
   let d = new Date(date);
@@ -2165,6 +2275,8 @@ const ICONS = {
   'images':     '<path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 16-3.293-3.293a1 1 0 0 0-1.414 0L13 17"/><path d="m18 12-1.293-1.293a1 1 0 0 0-1.414 0L11 15"/><rect width="14" height="14" x="8" y="2" rx="2"/>',
   'sparkles':   '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/>',
   'film':       '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M3 7.5h4"/><path d="M3 12h18"/><path d="M3 16.5h4"/><path d="M17 3v18"/><path d="M17 7.5h4"/><path d="M17 16.5h4"/>',
+  'search':     '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  'check':      '<path d="M20 6 9 17l-5-5"/>',
 };
 function ic(name, size = 16) {
   const p = ICONS[name] || '';
