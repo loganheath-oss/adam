@@ -789,12 +789,32 @@ You have a full project wiki covering how ADAM is built, where everything lives,
 Concise. Friendly. Plain English. Bold the things that matter (headlines, decisions). Use bullets and numbered lists generously — wall-of-text replies are a failure. Never use words like "intake", "payload", "manifest" without an inline plain-English explanation."""
 
 
+# ── "Ask ADAM" wiki helper: a separate, restricted, read-only assistant ───────
+# Used for the public standalone chat. It can ONLY read the wiki — no access to
+# orders, sprints, gates, or learnings — so it's safe to expose without a login.
+WIKI_TOOLS = [t for t in TOOLS if t["name"] in ("search_wiki", "get_wiki")]
+
+WIKI_SYSTEM_PROMPT = """You are "Ask ADAM" — a friendly help assistant for the ADAM ad-creative tool. Your ONLY job is to help people understand and navigate the tool by answering questions from the project wiki.
+
+# HOW TO ANSWER
+- For ANY question, call `search_wiki` FIRST (and `get_wiki` to read a page in full), then answer in plain English based on what you find. The pages you surface appear to the user as clickable source previews, so don't paste long quotes — summarize and point them to the right page/section.
+- If the wiki doesn't cover something, say so plainly instead of guessing.
+
+# WHAT YOU CANNOT DO
+- You do NOT run, change, or approve anything. You cannot submit orders, generate copy or images, inspect a specific sprint, or approve gates — you have no tools for any of that, on purpose.
+- If someone asks you to DO something operational ("approve gate 3", "start an order", "show me sprint X"), explain that Ask ADAM only answers questions about how the tool works, and point them to the right place — "Start a new order" on the home page, or the **Sprints** page — then offer to explain how that part works using the wiki.
+
+# TONE
+Concise and friendly. Short paragraphs and bullets. Plain English — define any jargon inline."""
+
+
 # ── Streaming Claude loop ─────────────────────────────────────────────────────
 
 async def run_agent_turn(
     messages: list[dict],
     api_key: str,
     sprint_id: str | None = None,
+    wiki_only: bool = False,
 ) -> AsyncGenerator[str, None]:
     """
     Run one turn of the Claude tool-use loop and yield SSE-formatted chunks.
@@ -804,6 +824,9 @@ async def run_agent_turn(
 
     When sprint_id is set the system prompt is extended to bind the session to
     that sprint so Claude doesn't ask the user which sprint to work on.
+
+    When wiki_only is True this becomes the public "Ask ADAM" helper: only the
+    read-only wiki tools are exposed (no orders/sprints/gates/learnings).
     """
     import anthropic as _anthropic
 
@@ -811,23 +834,28 @@ async def run_agent_turn(
 
     loop_messages = list(messages)
 
-    system_prompt = SYSTEM_PROMPT
+    if wiki_only:
+        active_tools = WIKI_TOOLS
+        system_prompt = WIKI_SYSTEM_PROMPT
+    else:
+        active_tools = TOOLS
+        system_prompt = SYSTEM_PROMPT
 
-    learnings_text = read_learnings_text().strip()
-    if learnings_text:
-        system_prompt += (
-            "\n\n# Institutional learnings\n\n"
-            "The following is the live `learnings.md` doc — apply this guidance "
-            "to every decision and recommendation in this session:\n\n"
-            f"{learnings_text}"
-        )
+        learnings_text = read_learnings_text().strip()
+        if learnings_text:
+            system_prompt += (
+                "\n\n# Institutional learnings\n\n"
+                "The following is the live `learnings.md` doc — apply this guidance "
+                "to every decision and recommendation in this session:\n\n"
+                f"{learnings_text}"
+            )
 
-    if sprint_id:
-        system_prompt += (
-            f"\n\n# Sprint binding\n\nThis session is bound to sprint `{sprint_id}`. "
-            "Do not ask the user which sprint to work on. Default every tool call "
-            f"to sprint_id=\"{sprint_id}\" unless the user explicitly references a different one."
-        )
+        if sprint_id:
+            system_prompt += (
+                f"\n\n# Sprint binding\n\nThis session is bound to sprint `{sprint_id}`. "
+                "Do not ask the user which sprint to work on. Default every tool call "
+                f"to sprint_id=\"{sprint_id}\" unless the user explicitly references a different one."
+            )
 
     wiki_sources: dict = {}
 
@@ -836,7 +864,7 @@ async def run_agent_turn(
             model="claude-sonnet-4-20250514",
             max_tokens=2048,
             system=system_prompt,
-            tools=TOOLS,
+            tools=active_tools,
             messages=loop_messages,
         )
 

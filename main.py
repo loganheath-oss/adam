@@ -275,7 +275,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="ADAM Pipeline", lifespan=lifespan)
-app.include_router(agent_router, dependencies=[Depends(require_api_key)])
+# Ask ADAM is a public, read-only wiki helper (no orders/sprints/gates tools),
+# so it doesn't need the API key gate that protects the operational surface.
+app.include_router(agent_router)
 
 if FONTS_DIR.exists():
     app.mount("/fonts", StaticFiles(directory=FONTS_DIR), name="fonts")
@@ -2867,6 +2869,131 @@ def _render_markdown(md: str) -> str:
     return "\n".join(out)
 
 
+# Floating "Ask ADAM" chat bar, injected into every wiki page. Self-contained
+# (style + markup + script). Raw string so the JS escape sequences and braces
+# pass through untouched when interpolated into the wiki shell f-string.
+_ASK_ADAM_WIDGET = r"""
+<style>
+  .wiki-wrap{padding-bottom:96px}
+  #askadam{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;
+    width:min(720px,calc(100% - 28px));z-index:1000}
+  .aa-bar{width:100%;display:flex;align-items:center;gap:10px;background:#111;color:#fff;border:none;
+    border-radius:999px;padding:13px 20px;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.20);font-size:14px}
+  .aa-bar:hover{background:#1c1c1c}
+  .aa-bar-icon{font-size:16px}
+  .aa-bar-text{flex:1;text-align:left;color:#cbd5d1}
+  .aa-bar-chev{color:#9ca3af;font-size:11px}
+  .aa-panel{display:none;flex-direction:column;background:#fff;border:1px solid #e5e7eb;border-radius:16px;
+    box-shadow:0 16px 48px rgba(0,0,0,.24);overflow:hidden;height:min(70vh,560px);margin-bottom:10px}
+  #askadam.aa-open .aa-panel{display:flex}
+  #askadam.aa-open .aa-bar{display:none}
+  .aa-head{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;
+    border-bottom:1px solid #eee;font-size:13px;color:#374151}
+  .aa-head .aa-logo{color:#14a800;font-weight:700;letter-spacing:.04em}
+  .aa-close{background:none;border:none;font-size:16px;cursor:pointer;color:#9ca3af;line-height:1}
+  .aa-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:11px}
+  .aa-empty{color:#9ca3af;font-size:13px;line-height:1.7}
+  .aa-chip{display:inline-block;margin:4px 6px 0 0;padding:5px 11px;border:1px solid #e5e7eb;border-radius:999px;
+    font-size:12px;color:#374151;cursor:pointer;background:#fff}
+  .aa-chip:hover{border-color:#14a800;color:#111}
+  .aa-msg{font-size:14px;line-height:1.6;max-width:90%}
+  .aa-msg.user{align-self:flex-end;background:#14a800;color:#fff;padding:8px 13px;border-radius:14px 14px 4px 14px}
+  .aa-msg.bot{align-self:flex-start;color:#111;white-space:pre-wrap}
+  .aa-msg.tool{align-self:flex-start;font-size:11px;color:#9ca3af;font-style:italic}
+  .aa-sources{align-self:flex-start;display:flex;flex-direction:column;gap:6px;width:100%}
+  .aa-src{display:block;border:1px solid #e5e7eb;border-radius:9px;padding:8px 11px;text-decoration:none;background:#f9fafb}
+  .aa-src:hover{border-color:#14a800;background:#f3faef}
+  .aa-src-t{font-size:13px;font-weight:600;color:#111}
+  .aa-src-s{font-size:12px;color:#6b7280;font-weight:400}
+  .aa-src-snip{font-size:11.5px;color:#9ca3af;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .aa-input{display:flex;gap:8px;padding:12px;border-top:1px solid #eee}
+  .aa-input input{flex:1;border:1px solid #d1d5db;border-radius:999px;padding:10px 16px;font-size:14px;outline:none}
+  .aa-input input:focus{border-color:#14a800}
+  .aa-input button{background:#14a800;color:#fff;border:none;border-radius:50%;width:38px;height:38px;font-size:17px;cursor:pointer}
+  .aa-input button:disabled{opacity:.5;cursor:default}
+</style>
+<div id="askadam">
+  <button class="aa-bar" onclick="aaToggle()">
+    <span class="aa-bar-icon">💬</span>
+    <span class="aa-bar-text">Ask ADAM about this tool…</span>
+    <span class="aa-bar-chev">▴</span>
+  </button>
+  <div class="aa-panel">
+    <div class="aa-head"><span><span class="aa-logo">Ask ADAM</span> · wiki helper</span>
+      <button class="aa-close" onclick="aaToggle()">✕</button></div>
+    <div class="aa-msgs" id="aa-msgs">
+      <div class="aa-empty">Ask me how the tool works and I'll answer with links to the wiki.
+        <div>
+          <span class="aa-chip" onclick="aaAsk(this)">How is copy generated?</span>
+          <span class="aa-chip" onclick="aaAsk(this)">Where is it deployed?</span>
+          <span class="aa-chip" onclick="aaAsk(this)">How do I add a new ad template?</span>
+          <span class="aa-chip" onclick="aaAsk(this)">Why is generated copy blank?</span>
+        </div>
+      </div>
+    </div>
+    <form class="aa-input" onsubmit="aaSend(event)">
+      <input id="aa-text" autocomplete="off" placeholder="Ask a question…" />
+      <button type="submit" id="aa-send">↑</button>
+    </form>
+  </div>
+</div>
+<script>
+(function(){
+  var root=document.getElementById('askadam');
+  var msgs=document.getElementById('aa-msgs');
+  var input=document.getElementById('aa-text');
+  var sendBtn=document.getElementById('aa-send');
+  var history=[], streaming=false;
+  function esc(s){return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  window.aaToggle=function(){root.classList.toggle('aa-open');if(root.classList.contains('aa-open')){setTimeout(function(){input.focus();},60);}};
+  window.aaAsk=function(el){input.value=el.textContent;aaSend(new Event('submit'));};
+  function clearEmpty(){var e=msgs.querySelector('.aa-empty');if(e)e.remove();}
+  function add(cls,html){var d=document.createElement('div');d.className='aa-msg '+cls;d.innerHTML=html;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;return d;}
+  function renderSources(sources){
+    if(!sources||!sources.length)return;
+    var wrap=document.createElement('div');wrap.className='aa-sources';
+    sources.forEach(function(s){
+      var url=s.url||('/wiki/'+s.slug);
+      var a=document.createElement('a');a.className='aa-src';a.href=url;
+      var sec=(s.section&&s.section!==s.title)?' <span class="aa-src-s">› '+esc(s.section)+'</span>':'';
+      a.innerHTML='<span class="aa-src-t">📄 '+esc(s.title||s.slug)+'</span>'+sec+
+        (s.snippet?'<div class="aa-src-snip">'+esc(s.snippet)+'</div>':'');
+      wrap.appendChild(a);
+    });
+    msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;
+  }
+  window.aaSend=async function(e){
+    if(e&&e.preventDefault)e.preventDefault();
+    var text=input.value.trim();if(!text||streaming)return;
+    clearEmpty();input.value='';streaming=true;sendBtn.disabled=true;
+    add('user',esc(text));history.push({role:'user',content:text});
+    var botEl=null,botText='';var thinking=add('tool','thinking…');
+    try{
+      var resp=await fetch('/agent/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:history})});
+      var reader=resp.body.getReader();var dec=new TextDecoder();var buf='';
+      while(true){
+        var r=await reader.read();if(r.done)break;
+        buf+=dec.decode(r.value,{stream:true});
+        var lines=buf.split('\n\n');buf=lines.pop();
+        for(var i=0;i<lines.length;i++){
+          var line=lines[i];if(line.indexOf('data: ')!==0)continue;
+          var evt;try{evt=JSON.parse(line.slice(6));}catch(err){continue;}
+          if(evt.type==='text'){if(thinking&&thinking.parentNode)thinking.remove();if(!botEl)botEl=add('bot','');botText+=evt.text;botEl.textContent=botText;msgs.scrollTop=msgs.scrollHeight;}
+          else if(evt.type==='tool_call'){thinking.textContent='searching the wiki…';}
+          else if(evt.type==='sources'){renderSources(evt.sources);}
+          else if(evt.type==='error'){if(thinking&&thinking.parentNode)thinking.remove();add('bot','⚠️ '+esc(evt.message));botText='⚠️ '+evt.message;}
+          else if(evt.type==='done'){if(thinking&&thinking.parentNode)thinking.remove();}
+        }
+      }
+    }catch(err2){if(thinking&&thinking.parentNode)thinking.remove();add('bot','⚠️ Network error — try again.');}
+    if(botText)history.push({role:'assistant',content:botText});
+    streaming=false;sendBtn.disabled=false;input.focus();
+  };
+})();
+</script>
+"""
+
+
 def _wiki_shell(current: str, body_html: str) -> str:
     sidebar = ""
     for slug, label in WIKI_PAGES:
@@ -2927,6 +3054,7 @@ def _wiki_shell(current: str, body_html: str) -> str:
   <aside class="wiki-side"><h4>ADAM Wiki</h4>{sidebar}</aside>
   <main class="wiki-main">{body_html}</main>
 </div>
+{_ASK_ADAM_WIDGET}
 </body></html>"""
 
 

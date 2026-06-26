@@ -58,7 +58,7 @@ async def agent_chat(request: Request):
 
     async def _stream():
         try:
-            async for chunk in run_agent_turn(messages, api_key):
+            async for chunk in run_agent_turn(messages, api_key, wiki_only=True):
                 yield chunk
         except Exception as exc:
             yield f'data: {json.dumps({"type": "error", "message": str(exc)})}\n\n'
