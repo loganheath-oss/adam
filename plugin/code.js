@@ -39,7 +39,7 @@ var LEGACY_LAYER_NAMES = {
 var STYLE_TEMPLATE_PREFIXES = {
   "lifestyle photo": ["Template_LifestylePhoto"],
   "photo with text": ["Template_PhotoWithText"],
-  "testimonial":     ["Template_TestimonialB", "Template_TestimonialA"],
+  "testimonial":     ["Template_TestimonialC", "Template_TestimonialB", "Template_TestimonialA"],
   "sticky note":     ["Template_StickyNote", "Template_TestimonialA"],
   "text with button": ["Template_TextWithButton"],
   // Notification: variant frames are misnamed Template_ChatBubble_* in the
@@ -84,7 +84,7 @@ var STYLE_TEMPLATE_PREFIXES = {
 var STYLE_ADTYPE_CONTAINERS = {
   "lifestyle photo": ["Adtype: Lifestyle Photo (Full Bleed)", "Adtype: Lifestyle Photo"],
   "photo with text": ["Adtype: Photo with Text"],
-  "testimonial":     ["Adtype: Testimonial"],
+  "testimonial":     ["Adtype: Testimonial Variants", "Adtype: Testimonial"],
   "sticky note":     ["Adtype: Sticky Note"],
   "text with button": ["Adtype: Text with Button"],
   "notification":    ["Adtype: Notification"],
@@ -125,7 +125,7 @@ var STYLE_VARIANT_PREFERENCES = {
 var STYLE_HEADLINE_LAYERS = {
   "lifestyle photo": ["LifestylePhoto_Headline_Text", "headline_text"],
   "photo with text": ["PhotoWithText_Headline_Text", "headline_text"],
-  "testimonial":     ["headline_text", "Testimonial_Headline_Text"],
+  "testimonial":     ["Notification_Headline_Text", "headline_text", "Testimonial_Headline_Text"],
   "sticky note":     ["Left_Headline_Text", "headline_text"],
   // Text with Button: the button label IS the only text. The CTA layer doubles
   // as the headline (this style has no separate body or CTA copy).
@@ -219,7 +219,6 @@ var STYLES_WITH_DUAL_IMAGE = {
 //     not a CTA — Brandon edits it manually per concept
 var STYLES_THAT_SKIP_CTA = {
   "text with button": true,
-  "chat bubble":      true,
   // Meme: the cta_text layer exists but its parent Cta Pill frame is hidden
   // in Brandon's design. Writing a CTA would be a no-op visually anyway —
   // skip to avoid clobbering the template's intentional hidden state.
@@ -381,6 +380,24 @@ function detectTemplateMode(t) {
   if (f13 && f14) return "concept_board";
 
   return "legacy";
+}
+
+// Auto-discover the best document-wide search root for templates, so assembly
+// works from ANY page with no manual "Capture Template" step and no need to
+// pick which templates to use. Prefers the page named like a template library;
+// otherwise the single page that has Template_* frames; otherwise the whole
+// document (figma.root) so the finder can scope by Adtype container across pages.
+function findTemplatesRoot() {
+  var pages = figma.root.children;
+  var withTemplates = [];
+  for (var i = 0; i < pages.length; i++) {
+    if (findAllByPrefix(pages[i], "Template_").length > 0) withTemplates.push(pages[i]);
+  }
+  for (var j = 0; j < withTemplates.length; j++) {
+    if (/template/i.test(withTemplates[j].name)) return withTemplates[j];
+  }
+  if (withTemplates.length === 1) return withTemplates[0];
+  return figma.root; // spread across pages (or none here) — search the whole file
 }
 
 function captureTemplate() {
@@ -1287,8 +1304,9 @@ async function assemble(payload) {
     }
   }
   if (!template) {
-    template = figma.currentPage;
-    log("No template captured — using current page as search root (styled_per_row mode).");
+    template = findTemplatesRoot();
+    var rootLabel = (template === figma.root) ? "entire document" : ("page '" + template.name + "'");
+    log("No template captured — auto-discovering templates across the " + rootLabel + " (styled_per_row mode).");
   }
 
   var manifest;
@@ -1317,8 +1335,9 @@ async function assemble(payload) {
 
   if (mode === "styled_per_row") {
     // Use the captured frame as the search root for templates.
-    // Fall back to the page if the captured frame has too few templates
-    // (e.g., user captured one Adtype container but manifest has multiple styles).
+    // Fall back to document-wide auto-discovery if the captured frame has too few
+    // templates (e.g., user captured one Adtype container but manifest has multiple
+    // styles), so the finder can scope each style by its Adtype container across pages.
     var searchRoot = template;
     var distinctStyles = {};
     for (var i = 0; i < manifest.length; i++) {
@@ -1327,8 +1346,9 @@ async function assemble(payload) {
     }
     var styleCount = Object.keys(distinctStyles).length;
     if (styleCount > 1) {
-      log("Manifest has " + styleCount + " distinct styles — searching the entire page for templates");
-      searchRoot = figma.currentPage;
+      searchRoot = findTemplatesRoot();
+      var srLabel = (searchRoot === figma.root) ? "entire document" : ("page '" + searchRoot.name + "'");
+      log("Manifest has " + styleCount + " distinct styles — auto-searching the " + srLabel + " for templates");
     }
     var result = await assembleStyledPerRow(searchRoot, manifest, destination, baseX, baseY);
     assembled = result.assembled;

@@ -38,6 +38,7 @@ FONTS_DIR = BASE_DIR / "order-form" / "fonts"
 RUNS_DIR = BASE_DIR / "runs"
 RUNS_DIR.mkdir(exist_ok=True)
 SYNC_LOG_PATH = BASE_DIR / "sync_log.jsonl"
+WIKI_DIR = BASE_DIR / "docs" / "wiki"
 
 sys.path.insert(0, str(BASE_DIR / "pipeline"))
 from run_pipeline import run_full_pipeline, run_pipeline_auto, resume_gate_2, resume_gate_3, resume_gate_4, resume_gate_5, resume_gate_6
@@ -537,6 +538,7 @@ async def root():
   <span class="nav-logo">ADAM Pipeline</span>
   <a href="/" class="active">Home</a>
   <a href="/new">New Order</a>
+  <a href="/wiki">Wiki</a>
   <a href="/sprints">Sprints</a>
   <a href="/sync-log">Sync Log</a>
 </nav>
@@ -1869,6 +1871,7 @@ async def sprints_dashboard():
   <span class="nav-logo">ADAM Pipeline</span>
   <a href="/">Home</a>
   <a href="/new">New Order</a>
+  <a href="/wiki">Wiki</a>
   <a href="/sprints" style="color:#111;font-weight:600">Sprints</a>
   <a href="/sync-log">Sync Log</a>
 </nav>
@@ -2296,6 +2299,7 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
   <span class="nav-logo">ADAM Pipeline</span>
   <a href="/">Home</a>
   <a href="/new">New Order</a>
+  <a href="/wiki">Wiki</a>
   <a href="/sprints">Sprints</a>
   <span style="font-size:13px;color:#111;font-weight:600">› {sprint_id}</span>
 </nav>
@@ -2509,6 +2513,7 @@ async def sync_log_page(request: Request):
   <span class="nav-logo">ADAM Pipeline</span>
   <a href="/">Home</a>
   <a href="/new">New Order</a>
+  <a href="/wiki">Wiki</a>
   <a href="/sprints">Sprints</a>
   <a href="/sync-log" style="color:#111;font-weight:600">Sync Log</a>
 </nav>
@@ -2671,6 +2676,255 @@ async def _do_sync_and_restart(pusher: str = "webhook", sha: str = ""):
 
     await asyncio.sleep(1)
     os.execv(sys.executable, [sys.executable] + sys.argv)
+
+
+# ── Wiki ─────────────────────────────────────────────────────────────────────
+# Renders docs/wiki/*.md inside the tool with a sidebar and working internal links.
+# Self-contained markdown→HTML (no extra dependency) covering the subset the wiki
+# uses: headings, GFM tables, fenced code, lists, checkboxes, blockquotes, hr,
+# bold, inline code, and links (with .md → /wiki link rewriting).
+
+WIKI_PAGES = [
+    ("README", "Home"),
+    ("01-what-is-adam", "What is ADAM"),
+    ("02-architecture", "Architecture"),
+    ("03-repo-map", "Repo map"),
+    ("04-the-pipeline", "The pipeline"),
+    ("05-figma-plugin", "Figma plugin"),
+    ("06-the-web-app-and-chat", "Web app & chat"),
+    ("07-using-adam", "Using ADAM"),
+    ("08-deployment-and-ops", "Deployment & ops"),
+    ("09-configuration-and-refs", "Configuration & refs"),
+    ("10-constraints", "Constraints"),
+    ("11-troubleshooting", "Troubleshooting"),
+    ("12-faq", "FAQ"),
+    ("13-glossary", "Glossary"),
+    ("14-handoff", "Handoff"),
+    ("15-decisions-log", "Decisions log"),
+]
+
+
+def _wiki_href(href: str):
+    """Map a markdown link target to an in-tool URL. Returns (url, is_external)."""
+    if href.startswith(("http://", "https://", "mailto:")):
+        return href, True
+    anchor = ""
+    if "#" in href:
+        href, frag = href.split("#", 1)
+        anchor = "#" + frag
+    if not href:                       # pure in-page anchor
+        return anchor or "#", False
+    base = href.split("/")[-1]
+    if base.endswith(".md"):
+        name = base[:-3]
+        if "learnings" in href.lower():
+            return "/learnings" + anchor, False
+        if name.lower() == "readme":
+            return "/wiki" + anchor, False
+        return "/wiki/" + name + anchor, False
+    return href + anchor, False        # leave other relative links untouched
+
+
+def _md_inline(text: str) -> str:
+    text = html.escape(text)
+
+    def _link(m):
+        label, href = m.group(1), m.group(2)
+        url, ext = _wiki_href(href.strip())
+        tgt = ' target="_blank" rel="noopener"' if ext else ""
+        return f'<a href="{html.escape(url)}"{tgt}>{label}</a>'
+
+    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", _link, text)
+    text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
+    text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
+    return text
+
+
+def _render_markdown(md: str) -> str:
+    lines = md.split("\n")
+    out, i, n = [], 0, len(md.split("\n"))
+    list_open = False
+
+    def close_list():
+        nonlocal list_open
+        if list_open:
+            out.append("</ul>")
+            list_open = False
+
+    sep_re = re.compile(r"^\s*\|?[\s:|-]+\|?\s*$")
+    li_re = re.compile(r"^(\s*)([-*]|\d+\.)\s+(.*)")
+
+    while i < n:
+        line = lines[i]
+
+        if line.startswith("```"):
+            close_list()
+            i += 1
+            buf = []
+            while i < n and not lines[i].startswith("```"):
+                buf.append(html.escape(lines[i]))
+                i += 1
+            i += 1
+            out.append("<pre><code>" + "\n".join(buf) + "</code></pre>")
+            continue
+
+        if line.strip() == "":
+            close_list()
+            i += 1
+            continue
+
+        m = re.match(r"(#{1,6})\s+(.*)", line)
+        if m:
+            close_list()
+            lvl, txt = len(m.group(1)), m.group(2)
+            anchor = re.sub(r"[^a-z0-9]+", "-", txt.lower()).strip("-")
+            out.append(f'<h{lvl} id="{anchor}">{_md_inline(txt)}</h{lvl}>')
+            i += 1
+            continue
+
+        if re.match(r"^---+\s*$", line):
+            close_list()
+            out.append("<hr>")
+            i += 1
+            continue
+
+        # GFM table: a row with pipes followed by a |---|---| separator
+        if "|" in line and i + 1 < n and "-" in lines[i + 1] and sep_re.match(lines[i + 1]):
+            close_list()
+            header = [c.strip() for c in line.strip().strip("|").split("|")]
+            i += 2
+            rows = []
+            while i < n and "|" in lines[i] and lines[i].strip() != "":
+                rows.append([c.strip() for c in lines[i].strip().strip("|").split("|")])
+                i += 1
+            thead = "".join(f"<th>{_md_inline(h)}</th>" for h in header)
+            body = ""
+            for r in rows:
+                body += "<tr>" + "".join(f"<td>{_md_inline(c)}</td>" for c in r) + "</tr>"
+            out.append(f"<table><thead><tr>{thead}</tr></thead><tbody>{body}</tbody></table>")
+            continue
+
+        if line.startswith(">"):
+            close_list()
+            buf = []
+            while i < n and lines[i].startswith(">"):
+                buf.append(lines[i].lstrip(">").strip())
+                i += 1
+            out.append("<blockquote>" + _md_inline(" ".join(buf)) + "</blockquote>")
+            continue
+
+        m = li_re.match(line)
+        if m:
+            if not list_open:
+                out.append("<ul>")
+                list_open = True
+            content = m.group(3)
+            cb = re.match(r"\[([ xX])\]\s+(.*)", content)
+            if cb:
+                checked = "checked" if cb.group(1).lower() == "x" else ""
+                out.append(
+                    f'<li class="task"><input type="checkbox" disabled {checked}> '
+                    f"{_md_inline(cb.group(2))}</li>"
+                )
+            else:
+                out.append(f"<li>{_md_inline(content)}</li>")
+            i += 1
+            continue
+
+        # paragraph — gather consecutive plain lines
+        close_list()
+        buf = []
+        while i < n:
+            l = lines[i]
+            if (l.strip() == "" or l.startswith(("#", "```", ">"))
+                    or re.match(r"^---+\s*$", l) or li_re.match(l)):
+                break
+            if "|" in l and i + 1 < n and "-" in lines[i + 1] and sep_re.match(lines[i + 1]):
+                break
+            buf.append(l.strip())
+            i += 1
+        if buf:
+            out.append("<p>" + _md_inline(" ".join(buf)) + "</p>")
+        else:
+            i += 1
+
+    close_list()
+    return "\n".join(out)
+
+
+def _wiki_shell(current: str, body_html: str) -> str:
+    sidebar = ""
+    for slug, label in WIKI_PAGES:
+        href = "/wiki" if slug == "README" else f"/wiki/{slug}"
+        active = " active" if slug == current else ""
+        sidebar += f'<a class="wiki-side-link{active}" href="{href}">{html.escape(label)}</a>'
+    return f"""<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ADAM Wiki</title>
+<style>
+  *{{box-sizing:border-box;margin:0;padding:0}}
+  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f7f5;color:#111827}}
+  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
+  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
+  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
+  .nav a:hover{{background:#f3f4f6;color:#111}}
+  .nav a.active{{color:#111;font-weight:600}}
+  .wiki-wrap{{display:flex;max-width:1180px;margin:0 auto;gap:32px;padding:28px 24px 80px}}
+  .wiki-side{{flex:0 0 220px;position:sticky;top:28px;align-self:flex-start;display:flex;flex-direction:column;gap:2px}}
+  .wiki-side h4{{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin:4px 8px 8px}}
+  .wiki-side-link{{font-size:13px;color:#4b5563;text-decoration:none;padding:6px 10px;border-radius:6px}}
+  .wiki-side-link:hover{{background:#eef0ee;color:#111}}
+  .wiki-side-link.active{{background:#14a800;color:#fff;font-weight:600}}
+  .wiki-main{{flex:1;min-width:0;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:36px 44px}}
+  .wiki-main h1{{font-size:28px;font-weight:700;letter-spacing:-0.02em;margin:8px 0 18px}}
+  .wiki-main h2{{font-size:20px;font-weight:650;margin:30px 0 12px;padding-top:8px;border-top:1px solid #f0f0ee}}
+  .wiki-main h3{{font-size:16px;font-weight:650;margin:22px 0 8px}}
+  .wiki-main p{{font-size:14.5px;line-height:1.65;margin:10px 0;color:#1f2937}}
+  .wiki-main a{{color:#14a800;text-decoration:none}}
+  .wiki-main a:hover{{text-decoration:underline}}
+  .wiki-main ul{{margin:10px 0 10px 22px}}
+  .wiki-main li{{font-size:14.5px;line-height:1.6;margin:4px 0}}
+  .wiki-main li.task{{list-style:none;margin-left:-20px}}
+  .wiki-main code{{background:#f3f4f6;border-radius:4px;padding:1px 5px;font-size:12.5px;
+    font-family:'SF Mono',Consolas,monospace}}
+  .wiki-main pre{{background:#0f1115;color:#e5e7eb;border-radius:10px;padding:16px 18px;overflow:auto;margin:14px 0}}
+  .wiki-main pre code{{background:none;color:inherit;padding:0;font-size:12.5px;line-height:1.5}}
+  .wiki-main table{{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px}}
+  .wiki-main th,.wiki-main td{{border:1px solid #e5e7eb;padding:7px 11px;text-align:left;vertical-align:top}}
+  .wiki-main th{{background:#f9fafb;font-weight:600}}
+  .wiki-main blockquote{{border-left:3px solid #14a800;background:#f6faf4;margin:14px 0;padding:10px 16px;
+    border-radius:0 8px 8px 0;color:#374151;font-size:14px}}
+  .wiki-main hr{{border:none;border-top:1px solid #ececec;margin:24px 0}}
+  @media(max-width:820px){{.wiki-wrap{{flex-direction:column}}.wiki-side{{position:static;flex-basis:auto}}}}
+</style>
+</head><body>
+<nav class="nav">
+  <span class="nav-logo">ADAM Pipeline</span>
+  <a href="/">Home</a>
+  <a href="/new">New Order</a>
+  <a href="/wiki" class="active">Wiki</a>
+  <a href="/sprints">Sprints</a>
+  <a href="/sync-log">Sync Log</a>
+</nav>
+<div class="wiki-wrap">
+  <aside class="wiki-side"><h4>ADAM Wiki</h4>{sidebar}</aside>
+  <main class="wiki-main">{body_html}</main>
+</div>
+</body></html>"""
+
+
+@app.get("/wiki", response_class=HTMLResponse)
+@app.get("/wiki/{page}", response_class=HTMLResponse)
+async def wiki_page(page: str = "README"):
+    safe = re.sub(r"[^A-Za-z0-9_-]", "", page) or "README"
+    md_path = WIKI_DIR / f"{safe}.md"
+    if not md_path.exists():
+        body = ("<h1>Page not found</h1><p>That wiki page doesn't exist. "
+                "<a href='/wiki'>Back to the Wiki home</a>.</p>")
+        return HTMLResponse(_wiki_shell("README", body), status_code=404)
+    body = _render_markdown(md_path.read_text(encoding="utf-8"))
+    return HTMLResponse(_wiki_shell(safe, body))
 
 
 if __name__ == "__main__":

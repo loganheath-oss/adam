@@ -1,0 +1,18 @@
+{
+  "delivery_date": "2026-06-23",
+  "driver": "Demo - New Styles Copy Proof",
+  "targeting": "Prospecting",
+  "deliverable": "images-copy",
+  "brief": "Show businesses they can hire vetted freelancers on Upwork in days, not weeks. Confident, modern, a little bold. Emphasize speed, quality of talent, and lower risk vs. traditional hiring.",
+  "batches": [
+    {
+      "platform": "Meta",
+      "format": "Static Feed",
+      "quantity": 1,
+      "visual_styles": ["Pie Chart", "Us vs Them", "Sticky Note", "Poll", "Text Only"],
+      "resolutions": [
+        {"size": "1440x1440", "ratio": "1:1"}
+      ]
+    }
+  ]
+}
