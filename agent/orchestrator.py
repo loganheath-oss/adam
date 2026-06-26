@@ -438,6 +438,81 @@ def tool_append_learning(text: str, source_sprint: str = "") -> dict:
 
 # ── Tool schema for Claude ────────────────────────────────────────────────────
 
+# ── Project wiki (docs/wiki) — powers grounded Q&A with clickable sources ─────
+WIKI_DIR = BASE_DIR / "docs" / "wiki"
+
+
+def _wiki_files() -> list[Path]:
+    return sorted(WIKI_DIR.glob("*.md")) if WIKI_DIR.exists() else []
+
+
+def _wiki_title(text: str, slug: str) -> str:
+    for line in text.splitlines():
+        if line.startswith("# "):
+            return line[2:].strip()
+    return slug
+
+
+def _wiki_anchor(heading: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", heading.lower()).strip("-")
+
+
+def tool_search_wiki(query: str, limit: int = 5) -> list[dict]:
+    """Search the ADAM project wiki and return best-matching pages with the most
+    relevant section + a snippet. Surfaced pages are shown to the user as
+    clickable source previews automatically."""
+    if not query or not WIKI_DIR.exists():
+        return []
+    terms = [t for t in re.split(r"\s+", query.lower().strip()) if len(t) > 1]
+    if not terms:
+        return []
+    results = []
+    for p in _wiki_files():
+        text = p.read_text()
+        low = text.lower()
+        page_score = sum(low.count(t) for t in terms)
+        if page_score == 0:
+            continue
+        title = _wiki_title(text, p.stem)
+        cur_head, cur_anchor, best = title, "", None
+        for line in text.splitlines():
+            hm = re.match(r"(#{1,6})\s+(.*)", line)
+            if hm:
+                cur_head = hm.group(2).strip()
+                cur_anchor = _wiki_anchor(cur_head)
+                continue
+            s = sum(line.lower().count(t) for t in terms)
+            if s and (best is None or s > best["score"]):
+                best = {"score": s, "section": cur_head, "anchor": cur_anchor,
+                        "snippet": line.strip()[:240]}
+        anchor = best["anchor"] if best else ""
+        results.append({
+            "slug": p.stem,
+            "title": title,
+            "section": best["section"] if best else title,
+            "anchor": anchor,
+            "snippet": best["snippet"] if best else "",
+            "url": f"/wiki/{p.stem}" + (f"#{anchor}" if anchor else ""),
+            "_score": page_score + (best["score"] * 3 if best else 0),
+        })
+    results.sort(key=lambda r: r["_score"], reverse=True)
+    for r in results:
+        r.pop("_score", None)
+    return results[:limit]
+
+
+def tool_get_wiki(page: str) -> dict:
+    """Read a full ADAM wiki page by slug (e.g. '02-architecture')."""
+    slug = re.sub(r"[^A-Za-z0-9_-]", "", page or "")
+    p = WIKI_DIR / f"{slug}.md"
+    if not p.exists():
+        return {"error": f"wiki page not found: {page}",
+                "available_pages": [f.stem for f in _wiki_files()]}
+    text = p.read_text()
+    return {"slug": slug, "title": _wiki_title(text, slug),
+            "url": f"/wiki/{slug}", "content": text}
+
+
 TOOLS = [
     {
         "name": "list_sprints",
@@ -616,6 +691,36 @@ TOOLS = [
             "required": ["text"],
         },
     },
+    {
+        "name": "search_wiki",
+        "description": (
+            "Search the ADAM project wiki — how the tool is built, where things "
+            "live, how to run/deploy/operate/fix it, the glossary, and handoff. "
+            "Call this BEFORE answering any 'how does this work / where is / why / "
+            "what is / how do I' question. The pages you surface are shown to the "
+            "user as clickable source previews automatically, so don't paste long "
+            "quotes — answer in your own words and reference the section."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "What to look up, e.g. 'how is copy generated' or 'railway deploy'."},
+                "limit": {"type": "integer", "description": "Max pages to return (default 5).", "default": 5},
+            },
+            "required": ["query"],
+        },
+    },
+    {
+        "name": "get_wiki",
+        "description": "Read a full ADAM wiki page by slug (e.g. '02-architecture', '11-troubleshooting'). Use after search_wiki to read a page in full before answering in detail.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "page": {"type": "string", "description": "Wiki page slug, e.g. '04-the-pipeline'."},
+            },
+            "required": ["page"],
+        },
+    },
 ]
 
 TOOL_DISPATCH = {
@@ -632,6 +737,8 @@ TOOL_DISPATCH = {
     "search_past_sprints": lambda args: tool_search_past_sprints(**args),
     "get_learnings": lambda args: tool_get_learnings(),
     "append_learning": lambda args: tool_append_learning(**args),
+    "search_wiki": lambda args: tool_search_wiki(**args),
+    "get_wiki": lambda args: tool_get_wiki(**args),
 }
 
 SYSTEM_PROMPT = """You are the ADAM Pipeline assistant — a production coordinator for Upwork's automated ad creative pipeline.
@@ -672,6 +779,10 @@ When a sprint is in `awaiting_gate_N`, you must:
 - **When state is `error` or `interrupted`**: show the error message clearly, suggest the retry endpoint, and ask if they want to investigate.
 - **Learnings**: if the user says "remember this" / "next time" / "always" / "never" — offer to append to learnings. After a gate approval with a substantive note, consider offering to save the rule.
 - **Cross-sprint context**: when starting a new sprint, briefly check `search_past_sprints` for the driver name or platform to surface relevant prior decisions, but don't bombard the user with history unless it's relevant.
+
+# ANSWERING "HOW DOES THIS WORK?" QUESTIONS
+
+You have a full project wiki covering how ADAM is built, where everything lives, how to run/deploy/operate/fix it, the glossary, and handoff. For ANY question that isn't a specific sprint's gate flow — "how does X work", "where is Y", "why", "what is", "how do I deploy/fix/add" — call `search_wiki` FIRST (and `get_wiki` to read a page in full), then answer in plain English based on what they return. The wiki pages you surface are shown to the user automatically as clickable source previews, so don't paste long quotes — summarize and point them to the right section. If the wiki doesn't cover something, say so plainly instead of guessing.
 
 # TONE
 
@@ -718,6 +829,8 @@ async def run_agent_turn(
             f"to sprint_id=\"{sprint_id}\" unless the user explicitly references a different one."
         )
 
+    wiki_sources: dict = {}
+
     while True:
         response = client.messages.create(
             model="claude-sonnet-4-20250514",
@@ -755,6 +868,22 @@ async def run_agent_turn(
                 result = {"error": str(exc)}
 
             yield f"data: {json.dumps({'type': 'tool_result', 'name': tu.name, 'result': result})}\n\n"
+
+            # Track wiki pages surfaced this turn → emitted as clickable sources.
+            if tu.name == "search_wiki" and isinstance(result, list):
+                for hit in result:
+                    if hit.get("slug"):
+                        wiki_sources[(hit["slug"], hit.get("anchor", ""))] = {
+                            "slug": hit["slug"], "title": hit.get("title", ""),
+                            "section": hit.get("section", ""), "anchor": hit.get("anchor", ""),
+                            "url": hit.get("url"), "snippet": hit.get("snippet", ""),
+                        }
+            elif tu.name == "get_wiki" and isinstance(result, dict) and result.get("slug"):
+                wiki_sources.setdefault((result["slug"], ""), {
+                    "slug": result["slug"], "title": result.get("title", ""),
+                    "section": "", "anchor": "", "url": result.get("url"), "snippet": "",
+                })
+
             tool_results.append({
                 "type": "tool_result",
                 "tool_use_id": tu.id,
@@ -762,5 +891,8 @@ async def run_agent_turn(
             })
 
         loop_messages.append({"role": "user", "content": tool_results})
+
+    if wiki_sources:
+        yield f"data: {json.dumps({'type': 'sources', 'sources': list(wiki_sources.values())})}\n\n"
 
     yield "data: {\"type\": \"done\"}\n\n"

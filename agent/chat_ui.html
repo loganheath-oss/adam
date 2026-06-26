@@ -195,15 +195,32 @@
     transition: background 0.1s, border-color 0.1s;
   }
   .suggestion:hover { background: #f9fafb; border-color: #14a800; color: #14a800; }
+  /* Cited wiki sources — clickable iframe previews */
+  .sources{max-width:680px}
+  .sources-head{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;margin:2px 0 8px}
+  .source-card{border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:10px;background:#fff}
+  .source-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;
+    text-decoration:none;color:#111;background:#f9fafb;border-bottom:1px solid #eee;font-size:13px}
+  .source-bar:hover{background:#f1f3f1}
+  .source-title{font-weight:600}
+  .source-section{font-weight:400;color:#6b7280}
+  .source-open{color:#14a800;font-size:12px;font-weight:600;white-space:nowrap}
+  .source-frame-wrap{position:relative;display:block;height:200px;overflow:hidden;text-decoration:none}
+  .source-frame{width:100%;height:100%;border:0;pointer-events:none;background:#fff}
+  .source-overlay{position:absolute;inset:0;cursor:pointer}
+  .source-frame-wrap:hover .source-overlay{background:rgba(20,168,0,.06);
+    box-shadow:inset 0 0 0 2px rgba(20,168,0,.35)}
 </style>
 </head>
 <body>
 
 <nav class="nav">
   <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Order Form</a>
+  <a href="/">Home</a>
+  <a href="/new">New Order</a>
+  <a href="/wiki">Wiki</a>
+  <a href="/agent" class="active">Ask ADAM</a>
   <a href="/sprints">Sprints</a>
-  <a href="/agent" class="active">Agent</a>
 </nav>
 
 <div class="chat-container">
@@ -406,6 +423,9 @@ async function sendMessage() {
         } else if (evt.type === 'tool_result') {
           addToolEvent('result', evt.name, null);
           typingEl && addTyping();
+        } else if (evt.type === 'sources') {
+          removeTyping();
+          renderSources(evt.sources);
         } else if (evt.type === 'error') {
           removeTyping();
           addMessage('assistant', '⚠️ Error: ' + evt.message);
@@ -428,6 +448,66 @@ async function sendMessage() {
   streaming = false;
   sendBtn.disabled = false;
   inputEl.focus();
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// Render cited wiki pages as clickable iframe-preview cards. Clicking the preview
+// (or the header bar) opens the page at its exact section in a new tab.
+function renderSources(sources) {
+  if (!sources || !sources.length) return;
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  const msg = document.createElement('div');
+  msg.className = 'message assistant';
+  const av = document.createElement('div');
+  av.className = 'avatar assistant';
+  av.style.visibility = 'hidden';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'sources';
+  const head = document.createElement('div');
+  head.className = 'sources-head';
+  head.textContent = sources.length === 1 ? 'Source' : 'Sources';
+  wrap.appendChild(head);
+
+  sources.forEach(s => {
+    const url = s.url || ('/wiki/' + s.slug);
+    const card = document.createElement('div');
+    card.className = 'source-card';
+
+    const bar = document.createElement('a');
+    bar.className = 'source-bar';
+    bar.href = url; bar.target = '_blank'; bar.rel = 'noopener';
+    const sec = (s.section && s.section !== s.title)
+      ? ' <span class="source-section">› ' + escapeHtml(s.section) + '</span>' : '';
+    bar.innerHTML = '<span class="source-title">📄 ' + escapeHtml(s.title || s.slug) + sec + '</span>'
+      + '<span class="source-open">Open ↗</span>';
+
+    const frameWrap = document.createElement('a');
+    frameWrap.className = 'source-frame-wrap';
+    frameWrap.href = url; frameWrap.target = '_blank'; frameWrap.rel = 'noopener';
+    frameWrap.title = 'Click to open this page';
+    const iframe = document.createElement('iframe');
+    iframe.className = 'source-frame';
+    iframe.src = url;
+    iframe.loading = 'lazy';
+    const overlay = document.createElement('span');
+    overlay.className = 'source-overlay';
+    frameWrap.appendChild(iframe);
+    frameWrap.appendChild(overlay);
+
+    card.appendChild(bar);
+    card.appendChild(frameWrap);
+    wrap.appendChild(card);
+  });
+
+  msg.appendChild(av);
+  msg.appendChild(wrap);
+  messagesEl.appendChild(msg);
+  scrollToBottom();
 }
 </script>
 </body>

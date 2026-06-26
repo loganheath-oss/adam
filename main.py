@@ -539,6 +539,7 @@ async def root():
   <a href="/" class="active">Home</a>
   <a href="/new">New Order</a>
   <a href="/wiki">Wiki</a>
+  <a href="/agent">Ask ADAM</a>
   <a href="/sprints">Sprints</a>
   <a href="/sync-log">Sync Log</a>
 </nav>
@@ -559,6 +560,18 @@ async def root():
       <h2>Revisit past orders</h2>
       <p>Browse every sprint, resume an in-progress chat, or review what was delivered.</p>
       <div class="arrow">View sprints →</div>
+    </a>
+    <a class="action-card" href="/agent">
+      <span class="icon">💬</span>
+      <h2>Ask ADAM</h2>
+      <p>Chat with the assistant — ask how the tool works, where things live, or how to run it. Answers come with clickable source previews from the wiki.</p>
+      <div class="arrow">Start chatting →</div>
+    </a>
+    <a class="action-card" href="/wiki">
+      <span class="icon">📚</span>
+      <h2>Read the wiki</h2>
+      <p>The full handoff knowledge base — architecture, pipeline, the Figma plugin, deployment, troubleshooting, and FAQ.</p>
+      <div class="arrow">Open wiki →</div>
     </a>
   </div>
   {recent_block}
@@ -2300,6 +2313,7 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
   <a href="/">Home</a>
   <a href="/new">New Order</a>
   <a href="/wiki">Wiki</a>
+  <a href="/agent">Ask ADAM</a>
   <a href="/sprints">Sprints</a>
   <span style="font-size:13px;color:#111;font-weight:600">› {sprint_id}</span>
 </nav>
@@ -2514,6 +2528,7 @@ async def sync_log_page(request: Request):
   <a href="/">Home</a>
   <a href="/new">New Order</a>
   <a href="/wiki">Wiki</a>
+  <a href="/agent">Ask ADAM</a>
   <a href="/sprints">Sprints</a>
   <a href="/sync-log" style="color:#111;font-weight:600">Sync Log</a>
 </nav>
@@ -2904,6 +2919,7 @@ def _wiki_shell(current: str, body_html: str) -> str:
   <a href="/">Home</a>
   <a href="/new">New Order</a>
   <a href="/wiki" class="active">Wiki</a>
+  <a href="/agent">Ask ADAM</a>
   <a href="/sprints">Sprints</a>
   <a href="/sync-log">Sync Log</a>
 </nav>
