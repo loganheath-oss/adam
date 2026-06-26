@@ -13,6 +13,22 @@ the order form, a sprint dashboard, the pipeline runner, and the **in-app AI cha
 > TODO: enumerate the exact routes/paths in `main.py` (order submit, sprint list, sprint detail, finals,
 > healthcheck) and add them here as a table.
 
+## How the chat answers (with sources)
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant C as Ask ADAM
+  participant K as Claude
+  participant W as Wiki tools
+  U->>C: question
+  C->>K: prompt + wiki tools
+  K->>W: search_wiki / get_wiki
+  W-->>K: matching pages + sections
+  K-->>C: answer (in its own words)
+  C-->>U: streamed answer + clickable source cards
+```
+
 ## The chat — "ask ADAM anything"
 `agent/orchestrator.py` is a **Claude tool-use loop**. It can read sprints, references, copy, manifests,
 and learnings, and (with approval) edit orders and approve gates. The tools it has:

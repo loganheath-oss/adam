@@ -3,6 +3,14 @@
 End-to-end: from a brief to finished creatives. Two ways to drive it — the **web app** (normal) or the
 **CLI** (power users / debugging).
 
+## The operator's path
+
+```mermaid
+flowchart LR
+  O["Submit<br/>order"] --> G2["Confirm<br/>order+refs"] --> G3["Review<br/>copy"] --> G4["Check<br/>prompts"]
+  G4 --> G5["Review<br/>images"] --> G6["Final<br/>QA"] --> A["Assemble<br/>in Figma"] --> D["Deliver"]
+```
+
 ## A) The normal flow (web app)
 1. **Submit an order** in the order form: platform, format, quantity, **visual styles**, **resolutions**,
    and a **brief** (the brief is the highest-priority instruction — it overrides standing refs).

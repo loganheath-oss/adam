@@ -1,5 +1,15 @@
 # Deployment & ops
 
+## Deploy topology
+
+```mermaid
+flowchart LR
+  DEV["Local<br/>~/Documents/adam"] -->|git push main| GH["GitHub<br/>loganheath-oss/adam"]
+  GH -->|auto-deploy| RW["Railway<br/>service: adam"]
+  RW --> URL["adam-production-9618<br/>.up.railway.app"]
+  ENV["Railway env vars<br/>ANTHROPIC · GEMINI · FIGMA"] -.-> RW
+```
+
 ## Where things run
 | Surface | Runs on | Notes |
 |---|---|---|

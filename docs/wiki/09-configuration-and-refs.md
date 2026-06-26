@@ -7,6 +7,16 @@
 | `template_registry.json` | Style → template frame mapping + per-template rules | A template moves (⚠️ currently **stale**; plugin is name-driven so lower priority) |
 | `refs_context.json` | Compiled brand + legal + performance context (~140 KB) | **Never by hand** — it's generated |
 
+## How references reach the copy
+
+```mermaid
+flowchart LR
+  RAW["refs/*.txt<br/>brand · legal · claims"] -->|build_refs.py| COMP["configs/<br/>refs_context.json"]
+  COMP --> PROMPT["copy-gen prompt"]
+  BRIEF["order brief<br/>(highest priority)"] --> PROMPT
+  PROMPT --> CLAUDE["Claude writes copy"]
+```
+
 ## The references pipeline (`refs/` → `build_refs.py` → `refs_context.json`)
 The AI's brand/legal/voice knowledge is **compiled**, not hand-written into the config:
 

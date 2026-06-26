@@ -4,6 +4,21 @@
 (`DoDwumxELkuAuKKSP5p00e`). It reads a manifest CSV, clones the right template per row, and fills copy +
 imagery into named layers.
 
+## How one manifest row becomes an ad
+
+```mermaid
+flowchart TD
+  ROW["Manifest row<br/>(Visual_Style + copy)"] --> NORM["normalizeStyle()"]
+  NORM --> FIND["Find template<br/>by Adtype container + prefix"]
+  FIND --> CLONE["Clone the template"]
+  CLONE --> SKIP{"Skip image<br/>for this style?"}
+  SKIP -- yes --> TXT["Fill text layers<br/>(headline, CTA, bullets…)"]
+  SKIP -- no --> IMG["Apply image<br/>(library photo / Gemini)"]
+  IMG --> TXT
+  TXT --> SPECIAL["Special fills<br/>(pie %, us-vs-them, sticky note)"]
+  SPECIAL --> DONE["Placed ad frame"]
+```
+
 ## Install
 1. Figma desktop → **Plugins → Development → Import plugin from manifest…**
 2. Select `plugin/manifest.json`.

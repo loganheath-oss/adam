@@ -5,6 +5,18 @@ ADAM turns a **creative brief** into **production-ready Upwork ads** — AI writ
 generates the imagery, and a Figma plugin assembles finished creatives across every required size and
 visual style.
 
+## The five steps, in one picture
+
+```mermaid
+flowchart LR
+  A["1 · Order<br/>brief + styles"] --> B["2 · Copy<br/>Claude writes & scores"]
+  B --> C["3 · Imagery<br/>library photo OR Gemini"]
+  C --> D["4 · Assembly<br/>Figma fills templates"]
+  D --> E["5 · Delivery<br/>to Paid Acq team"]
+```
+
+> A **human gate** sits between each step — approve, edit, or reject before moving on.
+
 ## The problem it solves
 Upwork's Paid Acquisition team manually concepted copy and hand-assembled static ads in Figma for every
 batch — slow, repetitive, and hard to scale across the many platforms/sizes/styles each campaign needs.

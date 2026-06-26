@@ -17,6 +17,29 @@ How the pieces fit together, end to end. For *where the files are*, see [Repo ma
 
 ## Data flow (happy path)
 
+```mermaid
+flowchart TD
+  subgraph WEB["Web app · Railway / FastAPI"]
+    FORM["Order form"]
+    DASH["Dashboard"]
+    CHAT["Ask ADAM chat"]
+  end
+  FORM --> S2
+  subgraph PIPE["Pipeline · per-sprint outputs"]
+    S2["02 copy_gen"] --> S3["03 image_prompts"]
+    S3 --> S4["04 generate_images"]
+    S4 --> S5["05 assembly → manifest"]
+  end
+  CLAUDE["Anthropic Claude"] -.-> S2
+  GEM["Gemini"] -.-> S4
+  LIB["Figma photo library"] -.-> S3
+  S5 --> PLUG["Figma plugin"]
+  PLUG --> OUT["Finished creatives"]
+  DASH -. approve at gates .-> PIPE
+```
+
+The same flow, in ASCII detail:
+
 ```
    ┌─────────────┐   order.json    ┌──────────────────────────────────────┐
    │ Order form  │ ───────────────▶│  run_pipeline.py  (per-sprint state)  │

@@ -3,6 +3,19 @@
 The goal: a new Upwork owner can run, edit, extend, and operate ADAM — and when stuck, **ask ADAM's own
 chat** and get a grounded answer.
 
+## What unblocks a clean handoff
+
+```mermaid
+flowchart TD
+  KEY["Funded Anthropic key<br/>+ valid model"] --> COPY["Live copy-gen works"]
+  COPY --> GEM["Gemini quota<br/>→ image styles"]
+  KEY --> GOOG["GOOGLE_SERVICE_ACCOUNT_JSON<br/>→ delivery"]
+  WIKI["Wiki-aware chat ✓"] --> HAND["Smooth handoff"]
+  COPY --> HAND
+  GEM --> HAND
+  GOOG --> HAND
+```
+
 ## Stakeholders & ownership
 | Person | Role | Owns |
 |---|---|---|

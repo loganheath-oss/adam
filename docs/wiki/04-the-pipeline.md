@@ -3,6 +3,21 @@
 The pipeline lives in **`pipeline/run_pipeline.py`** — the source of truth for current logic. It runs as
 six stages with **human gates** between them. State for each run lives in `runs/{sprint_id}/`.
 
+## Stages → gates at a glance
+
+```mermaid
+flowchart LR
+  O["Order"] --> G1{{"Gate 1<br/>submitted"}}
+  G1 --> S1["01 load_refs"] --> G2{{"Gate 2<br/>order + refs"}}
+  G2 --> S2["02 copy_gen"] --> G3{{"Gate 3<br/>copy review"}}
+  G3 --> S3["03 image_prompts"] --> G4{{"Gate 4<br/>prompt scan"}}
+  G4 --> S4["04 generate_images"] --> G5{{"Gate 5<br/>images + assembly"}}
+  G5 --> S5["05 assembly"] --> G6{{"Gate 6<br/>final QA"}}
+  G6 --> S6["06 deliver"]
+```
+
+> Hexagons are **human gates**; rectangles are automated **stages**. Gate 2 is the last free checkpoint (no API spend before it).
+
 ## Stages
 
 | Stage | Module / function | Produces | Notes |

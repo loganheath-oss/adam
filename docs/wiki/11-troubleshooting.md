@@ -1,5 +1,17 @@
 # Troubleshooting
 
+## Blank copy? Follow the tree
+
+```mermaid
+flowchart TD
+  Q["Ads show placeholder / Lorem Ipsum?"] --> A{"Did copy-gen run?"}
+  A -->|no| K{"Anthropic API error?"}
+  K -->|400 credit too low| FUND["Fund / swap the key"]
+  K -->|404 model not found| MODEL["Fix model ID to claude-sonnet-4-6"]
+  A -->|ran, manifest hand-made| RUN["Run the full pipeline<br/>to make a real manifest"]
+  A -->|ran fine| LAYER["Check the layer name<br/>in STYLE star LAYERS"]
+```
+
 ## Copy comes out blank / "Lorem Ipsum" / ads look like bare templates
 **Most likely:** copy-gen never ran. Two causes:
 1. **Anthropic key has no credits.** Copy-gen returns **HTTP 400 `"Your credit balance is too low to access

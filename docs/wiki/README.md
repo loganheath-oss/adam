@@ -10,6 +10,19 @@ ADAM. If something here contradicts an older doc (e.g. the root `CLAUDE.md` stil
 
 ---
 
+## 🗺️ The whole system at a glance
+
+```mermaid
+flowchart LR
+  U["Operator"] --> FORM["Order form<br/>(web app)"]
+  FORM --> PIPE["Pipeline<br/>copy + imagery"]
+  PIPE --> MAN["asset_manifest.csv"]
+  MAN --> PLUG["Figma plugin<br/>assembles ads"]
+  PLUG --> OUT["Finished creatives"]
+  PIPE -. inspect .-> DASH["Dashboard<br/>+ Ask ADAM chat"]
+  DASH -. approve at gates .-> PIPE
+```
+
 ## 🚦 Status at a glance
 
 | Thing | State |

@@ -2776,13 +2776,19 @@ def _render_markdown(md: str) -> str:
 
         if line.startswith("```"):
             close_list()
+            lang = line[3:].strip().lower()
             i += 1
             buf = []
             while i < n and not lines[i].startswith("```"):
-                buf.append(html.escape(lines[i]))
+                buf.append(lines[i])
                 i += 1
             i += 1
-            out.append("<pre><code>" + "\n".join(buf) + "</code></pre>")
+            joined = "\n".join(html.escape(b) for b in buf)
+            if lang == "mermaid":
+                # Rendered client-side by mermaid.js (loaded in the wiki shell).
+                out.append('<pre class="mermaid">' + joined + "</pre>")
+            else:
+                out.append("<pre><code>" + joined + "</code></pre>")
             continue
 
         if line.strip() == "":
@@ -2867,6 +2873,30 @@ def _render_markdown(md: str) -> str:
 
     close_list()
     return "\n".join(out)
+
+
+# Mermaid: renders ```mermaid fenced blocks as diagrams, client-side. Raw string
+# so its braces/JS pass through the wiki-shell f-string untouched.
+_MERMAID_TAG = r"""
+<style>
+  .wiki-main .mermaid{margin:20px 0;text-align:center;background:#fbfdfb;border:1px solid #eef0ee;
+    border-radius:12px;padding:18px 14px;overflow-x:auto}
+  .wiki-main .mermaid:not([data-processed]){color:#9aa0a6;font-size:12px;font-family:'SF Mono',Consolas,monospace;text-align:left}
+  .wiki-main .mermaid svg{max-width:100%;height:auto}
+</style>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#eef7ea', primaryBorderColor: '#14a800', primaryTextColor: '#111827',
+      lineColor: '#9aa0a6', secondaryColor: '#f3f4f6', tertiaryColor: '#ffffff',
+      fontFamily: '-apple-system,Segoe UI,sans-serif', fontSize: '13px'
+    }
+  });
+</script>
+"""
 
 
 # Floating "Ask ADAM" chat bar, injected into every wiki page. Self-contained
@@ -3055,6 +3085,7 @@ def _wiki_shell(current: str, body_html: str) -> str:
   <main class="wiki-main">{body_html}</main>
 </div>
 {_ASK_ADAM_WIDGET}
+{_MERMAID_TAG}
 </body></html>"""
 
 
