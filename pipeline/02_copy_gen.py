@@ -38,7 +38,7 @@ LLM_GATEWAY_MODEL     = os.environ.get("LLM_GATEWAY_MODEL", "")
 # Remove this before production deployment
 ANTHROPIC_API_KEY     = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_ENDPOINT    = "https://api.anthropic.com/v1/messages"
-ANTHROPIC_MODEL       = "claude-sonnet-4-20250514"
+ANTHROPIC_MODEL       = "claude-sonnet-4-6"
 
 # Copy generation settings
 MAX_TOKENS            = 4096

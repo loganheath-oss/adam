@@ -454,7 +454,7 @@ Return as JSON array of objects with exactly these keys: headline, body_short, b
                         "content-type": "application/json"
                     },
                     json={
-                        "model": "claude-sonnet-4-20250514",
+                        "model": "claude-sonnet-4-6",
                         "max_tokens": 1500,
                         "messages": [{"role": "user", "content": prompt}]
                     },
@@ -589,7 +589,7 @@ Return ONLY the JSON array. No other text."""
                     "content-type": "application/json"
                 },
                 json={
-                    "model": "claude-sonnet-4-20250514",
+                    "model": "claude-sonnet-4-6",
                     "max_tokens": 2000,
                     "messages": [{"role": "user", "content": review_prompt}]
                 },
@@ -1312,7 +1312,7 @@ Respond with ONLY a JSON object:
                 "content-type": "application/json"
             },
             json={
-                "model": "claude-sonnet-4-20250514",
+                "model": "claude-sonnet-4-6",
                 "max_tokens": 300,
                 "messages": [{
                     "role": "user",

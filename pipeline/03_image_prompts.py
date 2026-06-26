@@ -52,7 +52,7 @@ FIGMA_FILE_ID         = os.environ.get("FIGMA_FILE_ID", "DoDwumxELkuAuKKSP5p00e"
 # Fallback for local dev
 ANTHROPIC_API_KEY     = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_ENDPOINT    = "https://api.anthropic.com/v1/messages"
-ANTHROPIC_MODEL       = "claude-sonnet-4-20250514"
+ANTHROPIC_MODEL       = "claude-sonnet-4-6"
 FIGMA_API_BASE        = "https://api.figma.com/v1"
 
 MAX_TOKENS            = 1024   # Prompts are short
