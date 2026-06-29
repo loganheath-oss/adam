@@ -80,9 +80,10 @@ flowchart TD
 - In-app chat with 13 sprint/learnings tools.
 
 ## What's left (priority order)
-1. **Verify live copy-gen end-to-end.** The old blocker (a dead model ID, `claude-sonnet-4-20250514`) is
-   **fixed** → `claude-sonnet-4-6`, and the **Railway Anthropic key clears billing** (it has credits — only
-   the *local* `.env` key is empty). Run one real sprint on the live tool to confirm unique copy generates.
+1. ✅ **Live copy-gen verified (2026-06-29).** A 5-style sprint generated **30 real, on-brief concepts** on
+   the Railway key — the original "make unique copy" blocker is resolved. (It was a dead model ID,
+   `claude-sonnet-4-20250514` → `claude-sonnet-4-6`; the Railway key clears billing, only the local `.env`
+   key is empty.) Remaining: drive it through the **web UI gates** end-to-end (needs `PIPELINE_API_KEY` set).
 2. **Confirm Gemini quota** for image styles, then run an image-style sprint.
 3. **Set `GOOGLE_SERVICE_ACCOUNT_JSON` on Railway** — delivery stage (Drive upload) needs it.
 4. **Transfer ownership** per the table above (repo, Railway, keys) — the real handoff work.
@@ -102,7 +103,7 @@ templates recognized, multi-field copy-gen, the dead-model-ID fix.
 
 ## Handoff checklist
 - [x] Wiki-aware Ask ADAM chat live; team can ask "how is ADAM built?" and get cited answers
-- [ ] Live copy-gen verified end-to-end on Railway (model fixed; key clears billing — just confirm)
+- [x] Live copy-gen verified — 30 concepts generated on the Railway key (5-style test sprint, 2026-06-29)
 - [ ] Gemini quota confirmed; an image-style sprint generated successfully
 - [ ] `GOOGLE_SERVICE_ACCOUNT_JSON` set on Railway; delivery stage verified
 - [ ] **GitHub repo moved to an Upwork/CM org**; Railway deploy source repointed
