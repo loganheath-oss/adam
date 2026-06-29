@@ -3,6 +3,13 @@
 Load-bearing decisions that shape how to read the code or extend it. Newest first. (Seeded from root
 `CLAUDE.md` §8 plus this build's decisions; keep appending as you go.)
 
+## Where the hosting has lived
+
+```mermaid
+flowchart LR
+  MS["MindStudio<br/>(out)"] --> RP["Replit<br/>(retired)"] --> FLY["Fly<br/>(old MCP host)"] --> RW["Railway<br/>(current host) ✅"]
+```
+
 ## This build (2026-06)
 - **Hosting moved to Railway** (from Fly/Replit). Auto-deploys from GitHub `loganheath-oss/adam`; local repo
   kept in sync. Replit retired (`replit-poc/`).

@@ -3,6 +3,45 @@
 The goal: a new Upwork owner can run, edit, extend, and operate ADAM — and when stuck, **ask ADAM's own
 chat** and get a grounded answer.
 
+## Access & ownership — what is tied to Logan/CM and MUST transfer
+
+**The wiki's *knowledge* is 100% portable — nothing here needs Logan's laptop.** The local `~/...` paths
+in the runbooks are just *one* clone of the repo; any machine that clones it works the same. What the
+*running system* depends on is a short list of **accounts and keys** currently held by Logan or CM. Move
+these and the team is fully self-sufficient:
+
+```mermaid
+flowchart LR
+  subgraph NOW["Today — held by Logan / CM"]
+    GH["GitHub: loganheath-oss/adam"]
+    RW["Railway: angelic-liberation"]
+    KEYS["API keys:<br/>Anthropic · Gemini · Figma · Google"]
+  end
+  subgraph TEAM["Before August — Upwork-owned"]
+    GH2["Upwork/CM-owned repo"]
+    RW2["Team Railway + billing"]
+    KEYS2["Team-funded keys"]
+  end
+  GH ==> GH2
+  RW ==> RW2
+  KEYS ==> KEYS2
+```
+
+| Asset | Held by today | What it powers | Action before August |
+|---|---|---|---|
+| GitHub repo `loganheath-oss/adam` | Logan's GitHub | Canonical source; Railway deploys from it | **Transfer or fork to an Upwork/CM org**, then repoint Railway's deploy source |
+| Railway project `angelic-liberation` (service `adam`) | Logan/CM Railway | Hosts the live tool + its env vars | **Transfer the project + billing** to the team's Railway account |
+| `ANTHROPIC_API_KEY` (Railway env) | current funded account | Copy-gen + Ask ADAM chat | Swap in the **team's own funded Anthropic key** |
+| `GEMINI_API_KEY` | current account | Image generation (stage 04) | Swap in the team's own funded Gemini key |
+| `FIGMA_ACCESS_TOKEN` | Logan's read token | Library photo lookup | Replace with a team token *(the Figma **file** is already Upwork-owned)* |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | not yet set | Delivery (Drive upload) | Provision under a **team Google account** + set on Railway |
+| Drive folders (Brand / Sprints / Approved) | current Google account | Sprint inputs/outputs | Confirm team access or move the folders |
+| `PIPELINE_API_KEY` (Railway env) | not yet set | Login for `/sync-log`, `/learnings`, sprint admin | Set a value the team holds |
+| Adrie's Claude Project (copy curation) | Adrie | Copy-prompt tuning | Person-owned — confirm continuity or migrate into `refs/` |
+
+> Everything **else** — the code, the wiki, the Figma file, the live URL — is already usable as-is. The list
+> above is the *entire* dependency surface. Nothing depends on Logan being reachable once these have moved.
+
 ## What unblocks a clean handoff
 
 ```mermaid
@@ -41,16 +80,18 @@ flowchart TD
 - In-app chat with 13 sprint/learnings tools.
 
 ## What's left (priority order)
-1. **Funded Anthropic key** — *the* blocker for live unique output. Fund the account or swap the key in
-   `.env` + Railway. (Then verify Gemini quota for image styles.)
-2. **Push `GOOGLE_SERVICE_ACCOUNT_JSON` to Railway** — delivery stage (Drive upload) needs it.
-3. **Make the chat wiki-aware** — add a `get_wiki`/`search_wiki` tool (or seed `learnings.md`) so handoff
-   questions get grounded answers. See [The web app & chat](06-the-web-app-and-chat.md).
-4. **Reconcile docs** — fold the stale `CLAUDE.md` status/hosting sections into this wiki; confirm Railway
-   project/service names; document `runs/` persistence on Railway.
+1. **Verify live copy-gen end-to-end.** The old blocker (a dead model ID, `claude-sonnet-4-20250514`) is
+   **fixed** → `claude-sonnet-4-6`, and the **Railway Anthropic key clears billing** (it has credits — only
+   the *local* `.env` key is empty). Run one real sprint on the live tool to confirm unique copy generates.
+2. **Confirm Gemini quota** for image styles, then run an image-style sprint.
+3. **Set `GOOGLE_SERVICE_ACCOUNT_JSON` on Railway** — delivery stage (Drive upload) needs it.
+4. **Transfer ownership** per the table above (repo, Railway, keys) — the real handoff work.
 5. **Field-coverage polish** — Pie Chart quadrant labels, Photo-with-Text subhead variant, a few layer renames.
 6. **Production hardening** (Upwork eng) — LLM Gateway, OAuth, audit trail, sprint state in a DB.
 7. **Rotate** the Figma + Railway tokens shared during the build.
+
+✅ *Already done this build:* in-tool wiki, **wiki-aware Ask ADAM chat** with clickable sources, all 21
+templates recognized, multi-field copy-gen, the dead-model-ID fix.
 
 ## How to get unblocked
 - **Operating questions** → ask the in-app **chat** (`/chat`), or this wiki's [FAQ](12-faq.md) /
@@ -60,10 +101,12 @@ flowchart TD
 - **People** → table above.
 
 ## Handoff checklist
-- [ ] Funded Anthropic key live (local + Railway) and copy-gen verified end-to-end
+- [x] Wiki-aware Ask ADAM chat live; team can ask "how is ADAM built?" and get cited answers
+- [ ] Live copy-gen verified end-to-end on Railway (model fixed; key clears billing — just confirm)
 - [ ] Gemini quota confirmed; an image-style sprint generated successfully
 - [ ] `GOOGLE_SERVICE_ACCOUNT_JSON` set on Railway; delivery stage verified
-- [ ] Chat made wiki-aware; team can ask "how is ADAM built?" and get a cited answer
-- [ ] Tokens rotated; secret access transferred to Upwork-owned accounts
-- [ ] Railway project access transferred to the inheriting team
+- [ ] **GitHub repo moved to an Upwork/CM org**; Railway deploy source repointed
+- [ ] **Railway project + billing transferred** to the inheriting team
+- [ ] API keys swapped to **team-funded accounts**; build-time tokens rotated
+- [ ] `PIPELINE_API_KEY` set on Railway (lights up `/sync-log`, `/learnings`, sprint admin)
 - [ ] A live walkthrough recorded (order → gates → assembly → delivery)

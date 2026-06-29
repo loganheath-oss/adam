@@ -4,7 +4,7 @@
 
 ```mermaid
 flowchart LR
-  DEV["Local<br/>~/Documents/adam"] -->|git push main| GH["GitHub<br/>loganheath-oss/adam"]
+  DEV["Your local clone<br/>of the repo"] -->|git push main| GH["GitHub<br/>loganheath-oss/adam"]
   GH -->|auto-deploy| RW["Railway<br/>service: adam"]
   RW --> URL["adam-production-9618<br/>.up.railway.app"]
   ENV["Railway env vars<br/>ANTHROPIC · GEMINI · FIGMA"] -.-> RW
@@ -18,7 +18,7 @@ flowchart LR
 | Figma plugin | Figma desktop (manual) | Against file `DoDwumxELkuAuKKSP5p00e` |
 | MCP server | Fly config in repo (`mcp_server/fly.toml`) | 🗄️ Historical; superseded by the web app |
 
-> **Source of truth = GitHub `loganheath-oss/adam`.** Local `~/Documents/adam` is kept in sync.
+> **Source of truth = GitHub `loganheath-oss/adam`.** Any local clone (on any machine) is kept in sync — there's nothing special about the original author's checkout.
 > Push to `main` → Railway redeploys.
 
 ## Deploying

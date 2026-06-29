@@ -2,6 +2,16 @@
 
 Where every piece lives. ✅ = live/current, 🟡 = supporting, 🗄️ = historical/dormant.
 
+```mermaid
+flowchart TD
+  ROOT["adam/ repo"] --> WEB["Web app<br/>main.py · agent/"]
+  ROOT --> PIPE["Pipeline<br/>pipeline/run_pipeline.py"]
+  ROOT --> PLUG["Figma plugin<br/>plugin/code.js"]
+  ROOT --> CFG["Config + refs<br/>configs/ · refs/"]
+  ROOT --> DOCS["Docs<br/>docs/wiki/ · learnings.md"]
+  ROOT --> HIST["Historical 🗄️<br/>mcp_server · replit-poc<br/>mindstudio · terraform"]
+```
+
 ```
 adam/
 ├── main.py                  ✅ Web app entry (FastAPI): order form, dashboard, pipeline runner, chat mount

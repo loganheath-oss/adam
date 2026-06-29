@@ -77,5 +77,7 @@ columns (`Chart_Pct`, `Us_Headline`, `Them_Bullets`, `Left_Bullets`, …) and op
 `template_frame_id`. See [Figma plugin](05-figma-plugin.md) for how each column is consumed.
 
 ## Known blocker
-Copy-gen currently returns **HTTP 400 "credit balance is too low"** — the Anthropic key has no credits.
+Historic gotcha (now fixed): copy-gen used a **dead model ID** (`claude-sonnet-4-20250514` → 404) — now
+`claude-sonnet-4-6`. On Railway the Anthropic key **clears billing**; the **local** `.env` key is $0, so for
+*local* runs supply your own funded key.
 See [Troubleshooting](11-troubleshooting.md). This is the single thing stopping live unique output.

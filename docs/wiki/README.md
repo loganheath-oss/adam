@@ -31,13 +31,14 @@ flowchart LR
 | Web app (`main.py`: order form + dashboard + chat) | ✅ Deployed on **Railway** (auto-deploy from GitHub) |
 | In-app AI chat (`agent/`) | ✅ Live — Claude tool-use loop over sprints + learnings |
 | Figma assembly plugin | ✅ Recognizes **all 21** templates; auto-discovers templates across the file |
-| Copy generation (Claude) | ⛔ **Blocked** — Anthropic API key has $0 credit balance (see [Troubleshooting](11-troubleshooting.md)) |
+| Copy generation (Claude) | 🟡 Dead model ID **fixed**; Railway key clears billing — **verify with one live sprint** (the local `.env` key is $0) |
 | MCP server (`mcp_server/`) | 🟡 Exists (Fly config in repo); superseded by the web app for day-to-day use |
 | Production hardening (LLM Gateway, OAuth, audit) | ⏳ Pending — owned by Upwork eng |
 
-> ⚠️ **The one thing blocking unique output today** is a funded **Anthropic API key**. Everything
-> else is wired. The moment a key with credits is in place, copy-gen runs and the live tool
-> produces real, on-brief ads instead of bare templates.
+> ⚠️ **Recent fix:** copy-gen was failing on a dead model ID (`claude-sonnet-4-20250514` → now
+> `claude-sonnet-4-6`). The **Railway Anthropic key clears billing**, so the live tool should now produce
+> real copy — it just needs one end-to-end **verification sprint**. (Local dev needs your *own* funded key;
+> the committed local `.env` key is empty.)
 
 ---
 

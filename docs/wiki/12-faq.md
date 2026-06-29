@@ -11,8 +11,9 @@ A: The **copy-gen stage** (`run_pipeline.py` → Claude), not the Figma plugin. 
 the manifest already contains.
 
 **Q: Why do my assembled ads show placeholder text?**
-A: Copy-gen didn't run — almost always because the **Anthropic key has $0 credits** (HTTP 400 "credit balance
-too low"), or you loaded a hand-made manifest. See [Troubleshooting](11-troubleshooting.md).
+A: Copy-gen didn't run, or you loaded a hand-made manifest. The two classic causes — a **dead model ID**
+(404, now fixed → `claude-sonnet-4-6`) and a **$0 local key** (HTTP 400) — are why; on the live tool both are
+resolved. See [Troubleshooting](11-troubleshooting.md).
 
 **Q: Where is it deployed?**
 A: **Railway**, auto-deploying from GitHub `loganheath-oss/adam`. (Older docs say Fly/Replit — that's stale.)
@@ -42,6 +43,7 @@ lags it.
 A: Add it to `learnings.md` (or the `/learnings` page). The chat reads it every session.
 
 **Q: What's blocking "make it live with unique output" right now?**
-A: A **funded Anthropic API key**. Everything else is wired.
+A: Essentially nothing new — the dead-model-ID bug is fixed and the Railway key clears billing. It just needs
+**one end-to-end verification sprint** on the live tool to confirm. (For local dev, bring your own funded key.)
 
 > TODO: grow this from real questions the team asks during handoff sessions.

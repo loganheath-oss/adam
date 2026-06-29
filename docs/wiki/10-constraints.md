@@ -3,6 +3,15 @@
 These are **hard rules**. Treat them as guardrails when editing code or proposing architecture. (Source:
 root `CLAUDE.md` §6, still authoritative for constraints.)
 
+## The principle: layered judgment
+
+```mermaid
+flowchart LR
+  RULES["Hard rules set the boundaries<br/>(no AI people photos, no native AWS,<br/>gateway in prod, rights, no repeats)"]
+  RULES --> AI["AI makes the judgment calls<br/>inside those boundaries"]
+  AI --> HUMAN["Humans veto / override<br/>at the gates"]
+```
+
 ## 1. No AI-generated photography of people
 Ratified by **Brian** (Upwork Creative Director), 2026-04-20. People photos come **only** from the approved,
 rights-cleared Upwork brand library in Figma. Gemini is approved for **illustrations, abstract graphics,

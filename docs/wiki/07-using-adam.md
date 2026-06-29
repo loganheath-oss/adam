@@ -26,7 +26,7 @@ sprint 2026-06-…"* or *"show me the copy concepts."*
 
 ## B) The CLI flow (debugging / no web app)
 ```bash
-cd ~/Documents/adam
+cd /path/to/adam          # your local clone of loganheath-oss/adam (any machine)
 
 # Start a run
 python3 pipeline/run_pipeline.py --json runs_demo_order.json   # or --csv order.csv  or  --test
@@ -71,5 +71,6 @@ Tip: a batch of **skip-image styles** (Pie Chart, Us vs Them, Sticky Note, Poll,
 quota — the fastest way to exercise copy-gen end to end.
 
 ## Before you can get *unique* output
-Copy-gen needs a **funded Anthropic key** (currently $0). With an empty key, every ad assembles with
+On the **live (Railway)** tool, copy-gen is unblocked (model fixed, key clears billing) — pending one
+verification sprint. For **local** runs you need your *own* funded Anthropic key; with an empty key every ad assembles with
 template placeholder text. See [Troubleshooting](11-troubleshooting.md).
