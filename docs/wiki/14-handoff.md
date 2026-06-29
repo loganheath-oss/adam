@@ -42,6 +42,10 @@ flowchart LR
 > Everything **else** — the code, the wiki, the Figma file, the live URL — is already usable as-is. The list
 > above is the *entire* dependency surface. Nothing depends on Logan being reachable once these have moved.
 
+> **Migration status (2026-06-26):** underway — **John Papus** (Upwork) is directing the initial steps to move
+> ADAM into an Upwork-owned space; Logan is coordinating IT access (**Zscaler / Okta**, machine/VM config) with
+> **Mike Leon** via Slack.
+
 ## What unblocks a clean handoff
 
 ```mermaid
@@ -60,12 +64,15 @@ flowchart TD
 |---|---|---|
 | Logan Heath | Tech lead (CM contractor) | Pipeline, web app, chat, plugin, end-to-end integration |
 | Adrie Etherington | Creative lead | Copy prompts, brand voice, curation |
-| Brandon Morayo* | Motion/graphic designer | Figma templates + photo-library tagging *(registry/plugin ownership moved in-house — see note)* |
-| Bree | Design producer | Production schedule, stakeholder coordination |
+| Breanna Hovan (Bree) | Design producer | Templates + production; confirmed all templates incorporated into ADAM |
+| Adrie + Elise | Creative / design | Bespoke + illustration templates (now complete); Figma feature investigation |
+| Brandon Morayo* | (former) motion/graphic | Original Figma templates *(work complete; ownership moved in-house — see note)* |
 | Brian | Upwork CD | Veto on AI photography (source of the no-AI-photo rule) |
 | Leon Zhao | Upwork architect / sponsor | Hosting decisions, InfoSec narrative, handoff support |
 | Ravi Parikh | Director of AI (Wonder) | High-level architecture sign-off |
 | Haresh's team | Upwork engineering | LLM Gateway, AWS Terraform, production deploy |
+| John Papus | Upwork | Directing the infra migration into an Upwork-owned space |
+| Mike Leon | Upwork IT | Access setup — Zscaler / Okta, machine/VM config (via Slack) |
 | Sal / Shams | Upwork InfoSec | Security review |
 | Blake | CM owner | Logan's contracting entity |
 
@@ -73,6 +80,7 @@ flowchart TD
 > current ownership of the Figma templates with Logan/Bree.
 
 ## What's done
+- **All templates complete** — remaining + bespoke + illustration templates incorporated into ADAM (confirmed 2026-06-26).
 - Pipeline runs end-to-end through all 6 gates.
 - Web app (order form + dashboard + chat) deployed on Railway.
 - Plugin recognizes **all 21** templates with document-wide auto-discovery.

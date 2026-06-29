@@ -33,7 +33,7 @@ The app needs these (set in **Railway env vars**, mirrored locally in `.env`):
 
 | Var | Used by | Status |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Copy-gen + chat | ⛔ **present but $0 credits** — see Troubleshooting |
+| `ANTHROPIC_API_KEY` | Copy-gen + chat | ✅ Set on Railway — copy-gen **verified live**. (Local `.env` key is $0 for local dev only.) |
 | `GEMINI_API_KEY` | Image generation (stage 04) | Pushed; verify quota before generating images |
 | `FIGMA_ACCESS_TOKEN` | Library photo lookup (read-only) | Pushed (rotate when convenient) |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Delivery (Drive upload, stage 06) | ⏳ Not yet on Railway |
