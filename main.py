@@ -28,7 +28,6 @@ from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, Respo
 from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-import uvicorn
 
 # The agent chat routes pull in the Anthropic SDK. Guard the import so the app
 # still boots in environments where that dependency (or its config) is absent —
@@ -2879,4 +2878,9 @@ async def _do_sync_and_restart(pusher: str = "webhook", sha: str = ""):
 
 
 if __name__ == "__main__":
+    # uvicorn is only needed to run the app locally. Vercel imports `app`
+    # directly via api/index.py and serves it with its own ASGI runtime, so we
+    # keep uvicorn out of the module-level imports (and out of requirements.txt)
+    # to avoid a ModuleNotFoundError at serverless cold start.
+    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
