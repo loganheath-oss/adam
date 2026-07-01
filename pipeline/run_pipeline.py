@@ -316,74 +316,66 @@ def _generate_placeholder_copy(order):
     return {"concepts": concepts, "generated_at": datetime.now(timezone.utc).isoformat()}
 
 
-def _generate_real_copy(order, context, api_key, sprint_id=None):
-    """Generate copy using Anthropic API."""
+def _generate_copy_for_style(i, batch, style, order, context, api_key):
+    """Generate 6 copy concepts for one visual style (one Claude call).
+
+    Extracted so styles can run concurrently — each call is independent and
+    ~120s I/O-bound, so a serial loop stacked minutes on wide orders."""
     import httpx
 
+    OVERGENERATE_MULTIPLIER = 6
     concepts = []
-    OVERGENERATE_MULTIPLIER = 6  # Generate 6x concepts, review picks top 3
+    qty = OVERGENERATE_MULTIPLIER  # Always generate 6 regardless of ordered quantity
 
-    total_styles = sum(
-        len(b.get("visual_styles", ["default"])) for b in order.get("batches", [])
-    )
-    style_idx = 0
+    # Build rich prompt with all reference context
+    brand_voice = context.get("brand_voice", "Professional, clear, human")
+    writing_style = context.get("writing_style", "")
+    compliance = context.get("compliance", "")
+    playbook = context.get("copy_playbook", "")
+    claims = context.get("approved_claims", "")
+    copy_bank = context.get("smb_copy_bank", "")
+    copy_style_rules = context.get("copy_style_rules", "")
 
-    for i, batch in enumerate(order.get("batches", [])):
-        for style in batch.get("visual_styles", ["default"]):
-            style_idx += 1
-            _save_progress(sprint_id, "stage_02_copy_gen", style_idx, total_styles,
-                           f"Copy: {style}")
-            qty = OVERGENERATE_MULTIPLIER  # Always generate 6 regardless of ordered quantity
+    # Pick examples based on targeting
+    targeting_type = order.get("targeting", "Prospecting")
+    examples = ""
+    if "Prospecting" in targeting_type:
+        examples = context.get("prospecting_examples", "")
+    elif "Retargeting" in targeting_type:
+        examples = context.get("retargeting_examples", "")
+    if not examples and context.get("prospecting_examples"):
+        examples = context.get("prospecting_examples", "")
 
-            # Build rich prompt with all reference context
-            brand_voice = context.get("brand_voice", "Professional, clear, human")
-            writing_style = context.get("writing_style", "")
-            compliance = context.get("compliance", "")
-            playbook = context.get("copy_playbook", "")
-            claims = context.get("approved_claims", "")
-            copy_bank = context.get("smb_copy_bank", "")
-            copy_style_rules = context.get("copy_style_rules", "")
+    # Get order brief for priority override
+    order_brief = context.get("order_brief", order.get("brief", ""))
+    priority_note = context.get("_priority_note", "")
 
-            # Pick examples based on targeting
-            targeting_type = order.get("targeting", "Prospecting")
-            examples = ""
-            if "Prospecting" in targeting_type:
-                examples = context.get("prospecting_examples", "")
-            elif "Retargeting" in targeting_type:
-                examples = context.get("retargeting_examples", "")
-            if not examples and context.get("prospecting_examples"):
-                examples = context.get("prospecting_examples", "")
+    # Multi-field styles need extra structured copy beyond headline/body/cta.
+    _sl = style.strip().lower().replace(" ", "")
+    multi_field_instructions = ""
+    multi_field_keys = ""
+    if _sl == "usvsthem":
+        multi_field_instructions = (
+            "\n===== EXTRA FIELDS FOR \"Us vs Them\" =====\n"
+            "This is a side-by-side comparison ad. ALSO provide:\n"
+            "- us_headline (max 18 chars — the Upwork/positive side label)\n"
+            "- them_headline (max 18 chars — the old-way/negative side label)\n"
+            "- us_bullets (array of EXACTLY 3 strings, max 28 chars each — Upwork-side wins)\n"
+            "- them_bullets (array of EXACTLY 3 strings, max 28 chars each — old-way pains)\n"
+        )
+        multi_field_keys = ", us_headline, them_headline, us_bullets, them_bullets"
+    elif _sl == "stickynote":
+        multi_field_instructions = (
+            "\n===== EXTRA FIELDS FOR \"Sticky Note\" =====\n"
+            "This is a two-column sticky-note ad. ALSO provide:\n"
+            "- left_headline (max 12 chars — left column title)\n"
+            "- right_headline (max 12 chars — right column title)\n"
+            "- left_bullets (array of EXACTLY 2 strings, max 30 chars each)\n"
+            "- right_bullets (array of EXACTLY 2 strings, max 30 chars each)\n"
+        )
+        multi_field_keys = ", left_headline, right_headline, left_bullets, right_bullets"
 
-            # Get order brief for priority override
-            order_brief = context.get("order_brief", order.get("brief", ""))
-            priority_note = context.get("_priority_note", "")
-
-            # Multi-field styles need extra structured copy beyond headline/body/cta.
-            _sl = style.strip().lower().replace(" ", "")
-            multi_field_instructions = ""
-            multi_field_keys = ""
-            if _sl == "usvsthem":
-                multi_field_instructions = (
-                    "\n===== EXTRA FIELDS FOR \"Us vs Them\" =====\n"
-                    "This is a side-by-side comparison ad. ALSO provide:\n"
-                    "- us_headline (max 18 chars — the Upwork/positive side label)\n"
-                    "- them_headline (max 18 chars — the old-way/negative side label)\n"
-                    "- us_bullets (array of EXACTLY 3 strings, max 28 chars each — Upwork-side wins)\n"
-                    "- them_bullets (array of EXACTLY 3 strings, max 28 chars each — old-way pains)\n"
-                )
-                multi_field_keys = ", us_headline, them_headline, us_bullets, them_bullets"
-            elif _sl == "stickynote":
-                multi_field_instructions = (
-                    "\n===== EXTRA FIELDS FOR \"Sticky Note\" =====\n"
-                    "This is a two-column sticky-note ad. ALSO provide:\n"
-                    "- left_headline (max 12 chars — left column title)\n"
-                    "- right_headline (max 12 chars — right column title)\n"
-                    "- left_bullets (array of EXACTLY 2 strings, max 30 chars each)\n"
-                    "- right_bullets (array of EXACTLY 2 strings, max 30 chars each)\n"
-                )
-                multi_field_keys = ", left_headline, right_headline, left_bullets, right_bullets"
-
-            prompt = f"""You are writing paid acquisition ad copy for Upwork. Follow every brand rule below exactly.
+    prompt = f"""You are writing paid acquisition ad copy for Upwork. Follow every brand rule below exactly.
 
 ===== ORDER BRIEF (HIGHEST PRIORITY) =====
 {f"This brief is the most current instruction. If it contradicts any reference document below, follow the brief." if order_brief else "No specific brief provided."}
@@ -453,45 +445,94 @@ RULES:
 
 Return as JSON array of objects with exactly these keys: headline, body_short, body_long, description, cta, concept_tag{multi_field_keys}. No other text."""
 
+    try:
+        response = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json"
+            },
+            json={
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1500,
+                "messages": [{"role": "user", "content": prompt}]
+            },
+            timeout=120
+        )
+
+        if response.status_code == 200:
+            text = response.json()["content"][0]["text"].strip()
+            if "```json" in text:
+                text = text.split("```json")[1].split("```")[0]
+            elif "```" in text:
+                text = text.split("```")[1].split("```")[0]
+
+            parsed = json.loads(text.strip())
+            if isinstance(parsed, list):
+                for j, concept in enumerate(parsed):
+                    concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{j}"
+                    concept["batch_index"] = i
+                    concept["visual_style"] = style
+                    concepts.append(concept)
+            print(f"    {style}: {len(parsed)} concepts generated")
+        else:
+            print(f"    {style}: API error {response.status_code}")
+
+    except Exception as e:
+        print(f"    {style}: Error - {str(e)[:60]}")
+
+    return concepts
+
+
+def _generate_real_copy(order, context, api_key, sprint_id=None):
+    """Generate copy concepts, fanning out one call per style concurrently.
+
+    Per-style calls are independent + I/O-bound (~120s each); a serial loop
+    stacked minutes on wide orders. Bounded by COPY_CONCURRENCY (default 5)
+    to respect API rate limits."""
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    tasks = []
+    for i, batch in enumerate(order.get("batches", [])):
+        for style in batch.get("visual_styles", ["default"]):
+            tasks.append((i, batch, style))
+    total = len(tasks)
+    if total == 0:
+        return {"concepts": [], "generated_at": datetime.now(timezone.utc).isoformat()}
+
+    try:
+        workers = int(os.environ.get("COPY_CONCURRENCY", "5") or "5")
+    except ValueError:
+        workers = 5
+    workers = max(1, min(workers, total))
+
+    results = {}
+    done = 0
+    lock = threading.Lock()
+
+    def _run(idx, i, batch, style):
+        nonlocal done
+        res = _generate_copy_for_style(i, batch, style, order, context, api_key)
+        with lock:
+            done += 1
+            _save_progress(sprint_id, "stage_02_copy_gen", done, total, f"Copy: {style}")
+        return idx, res
+
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        futures = [ex.submit(_run, idx, i, batch, style)
+                   for idx, (i, batch, style) in enumerate(tasks)]
+        for fut in as_completed(futures):
             try:
-                response = httpx.post(
-                    "https://api.anthropic.com/v1/messages",
-                    headers={
-                        "x-api-key": api_key,
-                        "anthropic-version": "2023-06-01",
-                        "content-type": "application/json"
-                    },
-                    json={
-                        "model": "claude-sonnet-4-6",
-                        "max_tokens": 1500,
-                        "messages": [{"role": "user", "content": prompt}]
-                    },
-                    timeout=120
-                )
-
-                if response.status_code == 200:
-                    text = response.json()["content"][0]["text"].strip()
-                    if "```json" in text:
-                        text = text.split("```json")[1].split("```")[0]
-                    elif "```" in text:
-                        text = text.split("```")[1].split("```")[0]
-
-                    parsed = json.loads(text.strip())
-                    if isinstance(parsed, list):
-                        for j, concept in enumerate(parsed):
-                            concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{j}"
-                            concept["batch_index"] = i
-                            concept["visual_style"] = style
-                            concepts.append(concept)
-                    print(f"    {style}: {len(parsed)} concepts generated")
-                else:
-                    print(f"    {style}: API error {response.status_code}")
-
+                idx, res = fut.result()
+                results[idx] = res
             except Exception as e:
-                print(f"    {style}: Error - {str(e)[:60]}")
+                print(f"    copy task error: {str(e)[:60]}")
 
-            time.sleep(1)
-
+    concepts = []
+    for idx in range(total):
+        concepts.extend(results.get(idx, []))
     return {"concepts": concepts, "generated_at": datetime.now(timezone.utc).isoformat()}
 
 
