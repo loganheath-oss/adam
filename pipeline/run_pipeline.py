@@ -28,6 +28,7 @@ import csv
 import os
 import re
 import sys
+import threading
 import time
 import uuid
 import argparse
@@ -287,7 +288,7 @@ def stage_02_copy_gen(sprint_id, order, context):
         # Step 2: Self-review — Claude scores all concepts and picks top 3
         if copy_outputs.get("concepts"):
             print("  Phase 2: Self-review — scoring and ranking...")
-            copy_outputs = _review_and_rank_copy(copy_outputs, order, context, api_key)
+            copy_outputs = _review_and_rank_copy(copy_outputs, order, context, api_key, sprint_id)
 
     copy_path = run_dir / "copy_outputs.json"
     with open(copy_path, "w") as f:
@@ -316,7 +317,7 @@ def _generate_placeholder_copy(order):
     return {"concepts": concepts, "generated_at": datetime.now(timezone.utc).isoformat()}
 
 
-def _generate_copy_for_style(i, batch, style, order, context, api_key):
+def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id=None):
     """Generate 6 copy concepts for one visual style (one Claude call).
 
     Extracted so styles can run concurrently — each call is independent and
@@ -462,7 +463,11 @@ Return as JSON array of objects with exactly these keys: headline, body_short, b
         )
 
         if response.status_code == 200:
-            text = response.json()["content"][0]["text"].strip()
+            _rj = response.json()
+            text = _rj["content"][0]["text"].strip()
+            _u = _rj.get("usage", {})
+            _add_token_usage(sprint_id, "claude-sonnet-4-6",
+                             _u.get("input_tokens"), _u.get("output_tokens"))
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0]
             elif "```" in text:
@@ -514,7 +519,7 @@ def _generate_real_copy(order, context, api_key, sprint_id=None):
 
     def _run(idx, i, batch, style):
         nonlocal done
-        res = _generate_copy_for_style(i, batch, style, order, context, api_key)
+        res = _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id)
         with lock:
             done += 1
             _save_progress(sprint_id, "stage_02_copy_gen", done, total, f"Copy: {style}")
@@ -536,7 +541,7 @@ def _generate_real_copy(order, context, api_key, sprint_id=None):
     return {"concepts": concepts, "generated_at": datetime.now(timezone.utc).isoformat()}
 
 
-def _review_and_rank_copy(copy_outputs, order, context, api_key):
+def _review_and_rank_copy(copy_outputs, order, context, api_key, sprint_id=None):
     """Self-review: Claude scores all 6 concepts per style, ranks them, picks top 3.
 
     Returns the same structure but with added fields:
@@ -646,7 +651,11 @@ Return ONLY the JSON array. No other text."""
             )
 
             if response.status_code == 200:
-                text = response.json()["content"][0]["text"].strip()
+                _rj = response.json()
+                text = _rj["content"][0]["text"].strip()
+                _u = _rj.get("usage", {})
+                _add_token_usage(sprint_id, "claude-sonnet-4-6",
+                                 _u.get("input_tokens"), _u.get("output_tokens"))
                 if "```json" in text:
                     text = text.split("```json")[1].split("```")[0]
                 elif "```" in text:
@@ -2027,6 +2036,56 @@ def resume_gate_6(sprint_id):
 # =============================================================================
 # GATE HELPERS
 # =============================================================================
+
+
+# ---- Burn-rate counter -------------------------------------------------------
+# Rough $/1M-token pricing for the estimate. Update when models/prices change.
+_TOKEN_PRICING = {
+    "claude-sonnet-4-6": (3.0, 15.0),
+    "claude-opus-4-8":   (5.0, 25.0),
+    "claude-haiku-4-5":  (1.0, 5.0),
+}
+_TOKEN_LOCK = threading.Lock()
+
+
+def _estimate_cost(by_model):
+    total = 0.0
+    for model, u in by_model.items():
+        pin, pout = _TOKEN_PRICING.get(model, (0.0, 0.0))
+        total += (u.get("input_tokens", 0) / 1_000_000) * pin
+        total += (u.get("output_tokens", 0) / 1_000_000) * pout
+    return total
+
+
+def _add_token_usage(sprint_id, model, input_tokens, output_tokens):
+    """Accumulate LLM token usage for the burn-rate counter. Thread-safe
+    (copy-gen runs concurrently) and best-effort — never breaks the pipeline."""
+    if not sprint_id:
+        return
+    try:
+        with _TOKEN_LOCK:
+            path = RUNS_DIR / sprint_id / "token_usage.json"
+            try:
+                data = json.loads(path.read_text())
+            except Exception:
+                data = {"input_tokens": 0, "output_tokens": 0, "calls": 0, "by_model": {}}
+            it, ot = int(input_tokens or 0), int(output_tokens or 0)
+            data["input_tokens"] += it
+            data["output_tokens"] += ot
+            data["calls"] = data.get("calls", 0) + 1
+            bm = data.setdefault("by_model", {}).setdefault(
+                model, {"input_tokens": 0, "output_tokens": 0, "calls": 0})
+            bm["input_tokens"] += it
+            bm["output_tokens"] += ot
+            bm["calls"] += 1
+            data["estimated_cost_usd"] = round(_estimate_cost(data["by_model"]), 4)
+            data["updated_at"] = datetime.now(timezone.utc).isoformat()
+            tmp = path.with_suffix(".json.tmp")
+            tmp.write_text(json.dumps(data, indent=2))
+            os.replace(tmp, path)
+    except Exception:
+        pass
+
 
 def _save_pipeline_state(sprint_id, state):
     """Save current pipeline state so we know where to resume."""

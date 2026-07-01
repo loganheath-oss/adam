@@ -351,7 +351,8 @@ def _sprint_data(sprint_id: str) -> dict:
     outputs = {
         f: (d / f).exists()
         for f in ["order.json", "context.json", "copy_outputs.json",
-                  "copy_review.csv", "image_prompts.csv", "asset_manifest.csv", "run_summary.json"]
+                  "copy_review.csv", "image_prompts.csv", "asset_manifest.csv",
+                  "run_summary.json", "token_usage.json"]
     }
     gate_info = GATE_LABELS.get(state)
     return {
@@ -366,6 +367,7 @@ def _sprint_data(sprint_id: str) -> dict:
         "targeting": order.get("targeting", ""),
         "delivery_date": order.get("delivery_date", ""),
         "summary": summary,
+        "token_usage": _load_json(d / "token_usage.json"),
         "outputs": outputs,
         "gate": gate_info,
         "order": order,
@@ -1023,6 +1025,7 @@ _DELIVERABLE_FILES = {
     "image_prompts.csv",
     "copy_outputs.json",
     "run_summary.json",
+    "token_usage.json",
     "order.json",
     "context.json",
     "pipeline_state.json",
@@ -2166,6 +2169,7 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
         "image_prompts.csv": "Image Prompts CSV",
         "asset_manifest.csv": "Asset Manifest",
         "run_summary.json": "Run Summary",
+        "token_usage.json": "Token Usage / Cost",
     }
     for fname, label in file_links.items():
         exists = s["outputs"].get(fname, False)
@@ -2188,8 +2192,18 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
         summary_rows += f'<tr><td style="padding:6px 16px;font-size:12px;color:#6b7280;width:120px">{k}</td><td style="padding:6px 16px;font-size:13px">{v}</td></tr>'
 
     run_sum = s["summary"]
+    tok = s.get("token_usage") or {}
+    burn_card = ""
+    if tok:
+        _cost = tok.get("estimated_cost_usd", 0)
+        _tot = (tok.get("input_tokens", 0) + tok.get("output_tokens", 0))
+        burn_card = f"""
+          <div style="padding:12px 20px;background:#fdf2f8;border-radius:6px;text-align:center" title="{tok.get('input_tokens',0):,} in / {tok.get('output_tokens',0):,} out over {tok.get('calls',0)} LLM calls — estimate, model pricing may change">
+            <div style="font-size:22px;font-weight:700;color:#9d174d">${_cost:,.2f}</div>
+            <div style="font-size:11px;color:#6b7280">Burn rate · {_tot/1000:.0f}k tokens</div>
+          </div>"""
     summary_stat = ""
-    if run_sum:
+    if run_sum or tok:
         summary_stat = f"""
         <div style="display:flex;gap:16px;margin:16px 0">
           <div style="padding:12px 20px;background:#f0fdf4;border-radius:6px;text-align:center">
@@ -2203,7 +2217,7 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
           <div style="padding:12px 20px;background:#fefce8;border-radius:6px;text-align:center">
             <div style="font-size:22px;font-weight:700;color:#854d0e">{run_sum.get('images_generated',0)}</div>
             <div style="font-size:11px;color:#6b7280">Images</div>
-          </div>
+          </div>{burn_card}
         </div>"""
 
     # ── Copy Concepts ─────────────────────────────────────────────────────────
