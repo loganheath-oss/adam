@@ -948,7 +948,12 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                 for res in resolutions:
                     size = res.get("size", "1080x1080")
                     ratio = res.get("ratio", "1:1")
-                    asset_id = f"{sprint_id}_{style.lower().replace(' ', '-')}_{size}_{uuid.uuid4().hex[:4]}"
+                    # Filesystem-safe slug: styles like "Tweet / Post Mockup"
+                    # contain "/", which becomes a path separator in the image
+                    # filename and crashes generation. Collapse any run of
+                    # non-alphanumerics to a single hyphen.
+                    style_slug = re.sub(r"[^a-z0-9]+", "-", style.lower()).strip("-")
+                    asset_id = f"{sprint_id}_{style_slug}_{size}_{uuid.uuid4().hex[:4]}"
 
                     # Get style-specific image guidance
                     guidance = style_image_guidance.get(style.upper(), "")
