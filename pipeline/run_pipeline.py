@@ -282,7 +282,7 @@ def stage_02_copy_gen(sprint_id, order, context):
     else:
         # Step 1: Generate 6x copy concepts per style
         print("  Phase 1: Generating 6x concepts per style...")
-        copy_outputs = _generate_real_copy(order, context, api_key)
+        copy_outputs = _generate_real_copy(order, context, api_key, sprint_id)
 
         # Step 2: Self-review — Claude scores all concepts and picks top 3
         if copy_outputs.get("concepts"):
@@ -316,15 +316,23 @@ def _generate_placeholder_copy(order):
     return {"concepts": concepts, "generated_at": datetime.now(timezone.utc).isoformat()}
 
 
-def _generate_real_copy(order, context, api_key):
+def _generate_real_copy(order, context, api_key, sprint_id=None):
     """Generate copy using Anthropic API."""
     import httpx
 
     concepts = []
     OVERGENERATE_MULTIPLIER = 6  # Generate 6x concepts, review picks top 3
 
+    total_styles = sum(
+        len(b.get("visual_styles", ["default"])) for b in order.get("batches", [])
+    )
+    style_idx = 0
+
     for i, batch in enumerate(order.get("batches", [])):
         for style in batch.get("visual_styles", ["default"]):
+            style_idx += 1
+            _save_progress(sprint_id, "stage_02_copy_gen", style_idx, total_styles,
+                           f"Copy: {style}")
             qty = OVERGENERATE_MULTIPLIER  # Always generate 6 regardless of ordered quantity
 
             # Build rich prompt with all reference context
@@ -1134,11 +1142,17 @@ def stage_04_generate_images(sprint_id, image_rows):
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
 
+    img_total = len(prompt_groups)
+    img_idx = 0
     for prompt, rows in prompt_groups.items():
         style = rows[0]["visual_style"]
         headline = rows[0].get("headline", "")
         category = _get_style_category(style)
         max_attempts = 3
+
+        img_idx += 1
+        _save_progress(sprint_id, "stage_04_generate_images", img_idx, img_total,
+                       f"Image: {style}")
 
         print(f"\n  Generating: {style} — \"{headline[:40]}\"")
 
@@ -1982,6 +1996,32 @@ def _save_pipeline_state(sprint_id, state):
             "state": state,
             "updated_at": datetime.now(timezone.utc).isoformat()
         }, f, indent=2)
+
+
+def _save_progress(sprint_id, stage, item_index, item_total, item_label):
+    """Write sub-stage progress (N/total + heartbeat) for the live progress bar.
+
+    Best-effort: a slow style shouldn't be invisible for minutes, but progress
+    reporting must never break the pipeline. Written to a sibling progress.json
+    so it can't clobber the coarse awaiting_gate_* transitions in
+    pipeline_state.json. The SSE endpoint (main.py) reads both."""
+    if not sprint_id:
+        return
+    try:
+        progress_path = RUNS_DIR / sprint_id / "progress.json"
+        tmp = progress_path.with_suffix(".json.tmp")
+        with open(tmp, "w") as f:
+            json.dump({
+                "sprint_id": sprint_id,
+                "current_stage": stage,
+                "item_index": item_index,
+                "item_total": item_total,
+                "item_label": item_label,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }, f)
+        os.replace(tmp, progress_path)  # atomic — reader never sees a half-write
+    except Exception:
+        pass
 
 
 def _print_gate(gate_num, title, sprint_id, review_items):

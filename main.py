@@ -928,7 +928,9 @@ async def pipeline_events(sprint_id: str, request: Request):
             order = json.loads(order_path.read_text())
         except Exception:
             order = {}
+        progress_path = sprint_dir / "progress.json"
         last_state: str | None = None
+        last_item: tuple | None = None
         # Hard cap: 20 min — image gen can be slow but anything longer is a hang.
         deadline = asyncio.get_event_loop().time() + 1200
         # Heartbeat every ~15s to keep proxies from closing the connection.
@@ -942,11 +944,28 @@ async def pipeline_events(sprint_id: str, request: Request):
             except Exception:
                 state = "unknown"
 
-            if state != last_state:
+            # Sub-stage progress (N/total). Best-effort: file may not exist, and
+            # only counts as "current" if it matches the coarse stage we're in.
+            prog = {}
+            try:
+                prog = json.loads(progress_path.read_text())
+            except Exception:
+                prog = {}
+            live = prog if prog.get("current_stage") == state and prog.get("item_total") else {}
+            item = (live.get("item_index"), live.get("item_total"))
+
+            if state != last_state or item != last_item:
                 msg = PIPELINE_STATE_MESSAGES.get(state, f"Pipeline state: {state}")
                 eta = _eta_for_state(state, order)
-                yield f"data: {json.dumps({'type':'status','state':state,'message':msg,'eta_seconds':eta})}\n\n"
+                payload = {'type': 'status', 'state': state, 'message': msg, 'eta_seconds': eta}
+                if live:
+                    payload['item_index'] = live.get('item_index')
+                    payload['item_total'] = live.get('item_total')
+                    payload['item_label'] = live.get('item_label')
+                    payload['progress_updated_at'] = live.get('updated_at')
+                yield f"data: {json.dumps(payload)}\n\n"
                 last_state = state
+                last_item = item
                 # Close stream when we hit a gate or terminal state.
                 if state.startswith("awaiting_gate_") or state in PIPELINE_TERMINAL_STATES:
                     yield f"data: {json.dumps({'type':'done','state':state})}\n\n"

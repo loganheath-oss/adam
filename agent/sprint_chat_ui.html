@@ -779,7 +779,18 @@ function startPipelineNarration() {
       const elapsed = (Date.now() - line.startedAt) / 1000;
       const eta = line.eta || 0;
       let pct, etaLabel, etaClass = 'eta';
-      if (eta > 0) {
+      if (line.itemTotal && line.itemTotal > 0) {
+        // Real progress from the pipeline — "14 / 22 · Copy: Sticky Note".
+        pct = Math.min(100, (line.itemIndex / line.itemTotal) * 100);
+        const lbl = line.itemLabel ? ` · ${escHtml(line.itemLabel)}` : '';
+        etaLabel = `${line.itemIndex} / ${line.itemTotal}${lbl}`;
+        // Stall signal: count frozen while time keeps ticking → likely stuck.
+        const sinceUpdate = (Date.now() - (line.itemChangedAt || line.startedAt)) / 1000;
+        if (sinceUpdate > 90 && line.itemIndex < line.itemTotal) {
+          etaLabel += ` — ⚠ no progress in ${fmtSec(sinceUpdate)}`;
+          etaClass += ' overtime';
+        }
+      } else if (eta > 0) {
         pct = Math.min(95, (elapsed / eta) * 100);
         const remaining = eta - elapsed;
         if (remaining > 0) {
@@ -822,7 +833,22 @@ function startPipelineNarration() {
     let data;
     try { data = JSON.parse(ev.data); } catch { return; }
     if (data.type === 'status') {
-      lines.push({ message: data.message, eta: data.eta_seconds || 0, startedAt: Date.now() });
+      const cur = lines[lines.length - 1];
+      if (cur && cur.state === data.state) {
+        // Same stage, new item count — update the current line in place so the
+        // bar advances instead of stacking a new bubble per style.
+        cur.message = data.message;
+        cur.itemIndex = data.item_index;
+        cur.itemTotal = data.item_total;
+        cur.itemLabel = data.item_label;
+        cur.itemChangedAt = Date.now();
+      } else {
+        lines.push({
+          message: data.message, eta: data.eta_seconds || 0, startedAt: Date.now(),
+          state: data.state, itemIndex: data.item_index, itemTotal: data.item_total,
+          itemLabel: data.item_label, itemChangedAt: Date.now(),
+        });
+      }
       render();
     } else if (data.type === 'done') {
       finalState = data.state;
