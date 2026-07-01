@@ -35,8 +35,8 @@ from agent.routes import router as agent_router
 BASE_DIR = Path(__file__).parent
 ORDER_FORM_PATH = BASE_DIR / "order-form" / "order-form-local.html"
 FONTS_DIR = BASE_DIR / "order-form" / "fonts"
-RUNS_DIR = BASE_DIR / "runs"
-RUNS_DIR.mkdir(exist_ok=True)
+RUNS_DIR = Path(os.environ.get("RUNS_DIR", str(BASE_DIR / "runs")))
+RUNS_DIR.mkdir(parents=True, exist_ok=True)
 SYNC_LOG_PATH = BASE_DIR / "sync_log.jsonl"
 WIKI_DIR = BASE_DIR / "docs" / "wiki"
 

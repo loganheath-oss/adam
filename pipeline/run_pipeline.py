@@ -50,7 +50,8 @@ load_env()
 
 # Project paths
 BASE_DIR = Path(__file__).parent.parent
-RUNS_DIR = BASE_DIR / "runs"
+RUNS_DIR = Path(os.environ.get("RUNS_DIR", str(BASE_DIR / "runs")))
+RUNS_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_PATH = BASE_DIR / "configs" / "upwork_config.json"
 TEMPLATE_REGISTRY_PATH = BASE_DIR / "configs" / "template_registry.json"
 
