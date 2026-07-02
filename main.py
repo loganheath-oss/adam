@@ -1834,6 +1834,54 @@ async def retry_sprint(sprint_id: str):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "message": "Sprint re-queued from interrupted state"})
 
 
+@app.delete("/sprints/{sprint_id}", dependencies=[Depends(require_api_key)])
+async def delete_sprint(sprint_id: str):
+    """Delete a single sprint directory to reclaim volume space."""
+    import shutil
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    if not sprint_dir.exists():
+        return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
+    shutil.rmtree(sprint_dir, ignore_errors=True)
+    return JSONResponse({"ok": True, "deleted": sprint_id})
+
+
+@app.post("/admin/prune", dependencies=[Depends(require_api_key)])
+async def prune_sprints(request: Request):
+    """Bulk-delete sprints to reclaim volume space. JSON body options:
+      {"delete": ["id", ...]}   delete these sprint ids
+      {"keep":   ["id", ...]}   delete ALL sprints EXCEPT these
+      {"errored": true}         also delete any sprint in an error state
+    """
+    import shutil
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    if not isinstance(body, dict):
+        body = {}
+    if not RUNS_DIR.exists():
+        return JSONResponse({"ok": True, "deleted": [], "note": "no runs dir"})
+    all_ids = [d.name for d in RUNS_DIR.iterdir() if d.is_dir()]
+    to_delete = set(sid for sid in (body.get("delete") or []) if sid in all_ids)
+    keep = body.get("keep")
+    if isinstance(keep, list):
+        keep_set = set(keep)
+        to_delete.update(sid for sid in all_ids if sid not in keep_set)
+    if body.get("errored"):
+        for sid in all_ids:
+            st = _load_json(RUNS_DIR / sid / "pipeline_state.json").get("state", "")
+            if "error" in st:
+                to_delete.add(sid)
+    deleted = []
+    for sid in to_delete:
+        d = _safe_sprint_dir(sid)
+        if d.exists():
+            shutil.rmtree(d, ignore_errors=True)
+            deleted.append(sid)
+    return JSONResponse({"ok": True, "deleted": deleted,
+                         "remaining": [s for s in all_ids if s not in deleted]})
+
+
 @app.get("/sprints", response_class=HTMLResponse)
 async def sprints_dashboard():
     sprints = []

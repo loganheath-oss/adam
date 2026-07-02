@@ -1459,16 +1459,24 @@ def stage_05_figma_assembly(sprint_id, image_rows, image_results):
     exports_dir = run_dir / "exports"
     exports_dir.mkdir(exist_ok=True)
 
-    # Copy raw images to exports as pre-assembly versions
+    # Mirror raw images into exports/ as pre-assembly versions. Use hardlinks
+    # (not copies): a full-res sprint is ~66 PNGs at 2–3 MB each, and copying
+    # each twice tripled on-disk size and overran the volume ([Errno 28]).
+    # Hardlinks share the same inode/bytes — nothing rewrites these files in
+    # place after creation, so it's safe. Fall back to copy if link fails
+    # (e.g., cross-device).
     copied = 0
     for asset_id, img_path in image_results.items():
         src = Path(img_path)
         if src.exists():
-            dst = exports_dir / f"{asset_id}.png"
-            shutil.copy2(src, dst)
-            # Also create the _final version (raw, pre-template)
-            dst_final = exports_dir / f"{asset_id}_final.png"
-            shutil.copy2(src, dst_final)
+            for suffix in ("", "_final"):
+                dst = exports_dir / f"{asset_id}{suffix}.png"
+                try:
+                    if dst.exists():
+                        dst.unlink()
+                    os.link(src, dst)
+                except OSError:
+                    shutil.copy2(src, dst)
             copied += 1
 
     # Check if Figma plugin is available
