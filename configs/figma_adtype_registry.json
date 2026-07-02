@@ -1,0 +1,4643 @@
+{
+  "source": "figma:DoDwumxELkuAuKKSP5p00e",
+  "convention": "Template_{Style}_{Variant}_{WxH}",
+  "sizes": [
+    "1440x1440",
+    "1440x1800",
+    "1080x1920"
+  ],
+  "board_master": {
+    "node_id": "5227:3245",
+    "name": "Meta - Static Grouped",
+    "size_slots": {
+      "1440x1440": "5227:3283",
+      "1440x1800": "5227:3284",
+      "1080x1920": "5227:3285"
+    },
+    "left_panel_texts": [
+      {
+        "name": "Copy Version 1",
+        "node_id": "5227:3248",
+        "text": "Copy Version 1"
+      },
+      {
+        "name": "X",
+        "node_id": "5227:3251",
+        "text": "Headline Long:"
+      },
+      {
+        "name": "Lorem ipsum dolor sit amet, consectetur adipiscing",
+        "node_id": "5227:3252",
+        "text": "Lorem ipsum dolor sit amet, consectetur "
+      },
+      {
+        "name": "Primary Text (short):",
+        "node_id": "5227:3254",
+        "text": "Primary Text (short):"
+      },
+      {
+        "name": "Lorem ipsum dolor sit amet, consectetur adipiscing",
+        "node_id": "5227:3255",
+        "text": "Lorem ipsum dolor sit amet, consectetur "
+      },
+      {
+        "name": "CTA:",
+        "node_id": "5227:3257",
+        "text": "CTA:"
+      },
+      {
+        "name": "Sign up",
+        "node_id": "5227:3258",
+        "text": "Sign up"
+      },
+      {
+        "name": "Copy Version 2",
+        "node_id": "5227:3376",
+        "text": "Copy Version 2"
+      },
+      {
+        "name": "Primary_Text_Short",
+        "node_id": "5227:3379",
+        "text": "Headline Short:"
+      },
+      {
+        "name": "Headline_Long",
+        "node_id": "5227:3380",
+        "text": "Lorem ipsum dolor sit amet, consectetur "
+      },
+      {
+        "name": "Primary Text (long):",
+        "node_id": "5227:3382",
+        "text": "Primary Text (long):"
+      },
+      {
+        "name": "Primary_Text_Short",
+        "node_id": "5227:3383",
+        "text": "Lorem ipsum dolor sit amet, consectetur "
+      },
+      {
+        "name": "CTA:",
+        "node_id": "5227:3385",
+        "text": "CTA:"
+      },
+      {
+        "name": "Sign up",
+        "node_id": "5227:3386",
+        "text": "Sign up "
+      }
+    ]
+  },
+  "styles": {
+    "Talent-Profile": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6224:3884",
+            "frame_name": "Template_Adtype_Talent-Profile_1080x1920",
+            "text_layers": [
+              {
+                "name": "Geronimo K.",
+                "node_id": "6224:3968",
+                "role": null
+              },
+              {
+                "name": "Chatbot Developer",
+                "node_id": "6224:3969",
+                "role": null
+              },
+              {
+                "name": "Top Rated",
+                "node_id": "6224:3970",
+                "role": null
+              },
+              {
+                "name": "Completed 18 Mobile App jobs on Upwork",
+                "node_id": "6224:3975",
+                "role": null
+              },
+              {
+                "name": "Has 7 relevant skills to your job",
+                "node_id": "6224:3976",
+                "role": null
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6224:3981",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:3979",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Path",
+                "node_id": "I6224:3973;208:813"
+              },
+              {
+                "name": "Path",
+                "node_id": "I6224:3973;1327:656"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "6044:2481",
+            "frame_name": "Template_Adtype_Talent-Profile_1440x1800",
+            "text_layers": [
+              {
+                "name": "Geronimo K.",
+                "node_id": "6059:317",
+                "role": null
+              },
+              {
+                "name": "Chatbot Developer",
+                "node_id": "6059:318",
+                "role": null
+              },
+              {
+                "name": "Top Rated",
+                "node_id": "6059:319",
+                "role": null
+              },
+              {
+                "name": "Completed 18 Mobile App jobs on Upwork",
+                "node_id": "6059:324",
+                "role": null
+              },
+              {
+                "name": "Has 7 relevant skills to your job",
+                "node_id": "6059:325",
+                "role": null
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6059:330",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6059:328",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Path",
+                "node_id": "I6059:322;208:813"
+              },
+              {
+                "name": "Path",
+                "node_id": "I6059:322;1327:656"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6044:2455",
+            "frame_name": "Template_Adtype_Talent-Profile_1440x1440",
+            "text_layers": [
+              {
+                "name": "Geronimo K.",
+                "node_id": "6058:784",
+                "role": null
+              },
+              {
+                "name": "Chatbot Developer",
+                "node_id": "6058:785",
+                "role": null
+              },
+              {
+                "name": "Top Rated",
+                "node_id": "6059:292",
+                "role": null
+              },
+              {
+                "name": "Completed 18 Mobile App jobs on Upwork",
+                "node_id": "6058:789",
+                "role": null
+              },
+              {
+                "name": "Has 7 relevant skills to your job",
+                "node_id": "6058:790",
+                "role": null
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6059:311",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6059:305",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Path",
+                "node_id": "I6058:787;208:813"
+              },
+              {
+                "name": "Path",
+                "node_id": "I6058:787;1327:656"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Text-with-Button": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6224:3800",
+            "frame_name": "Template_Text-with-Button_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Button",
+                "node_id": "6224:3874",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1800": {
+            "node_id": "5311:5154",
+            "frame_name": "Template_Text-with-Button_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Button",
+                "node_id": "5311:5173",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1440": {
+            "node_id": "5310:438",
+            "frame_name": "Template_Text-with-Button_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Button",
+                "node_id": "5310:466",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Mockup": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6224:3728",
+            "frame_name": "Template_Mockup_1080x1920",
+            "text_layers": [
+              {
+                "name": "Notification_Headline_Text",
+                "node_id": "6224:3797",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Body",
+                "node_id": "6224:3798",
+                "role": "body"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1800": {
+            "node_id": "6043:2216",
+            "frame_name": "Template_Mockup_1440x1800",
+            "text_layers": [
+              {
+                "name": "Notification_Headline_Text",
+                "node_id": "6048:347",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Body",
+                "node_id": "6048:348",
+                "role": "body"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1440": {
+            "node_id": "6043:2192",
+            "frame_name": "Template_Mockup_1440x1440",
+            "text_layers": [
+              {
+                "name": "Notification_Headline_Text",
+                "node_id": "6043:2212",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Body",
+                "node_id": "6043:2213",
+                "role": "body"
+              }
+            ],
+            "image_layers": []
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Poll": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6224:3687",
+            "frame_name": "Template_Poll_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_CTA",
+                "node_id": "6224:3707",
+                "role": "cta"
+              },
+              {
+                "name": "Stat Block Text",
+                "node_id": "6224:3718",
+                "role": "stat"
+              },
+              {
+                "name": "Stat Block Text",
+                "node_id": "6224:3721",
+                "role": "stat"
+              },
+              {
+                "name": "Stat Block Text",
+                "node_id": "6224:3722",
+                "role": "stat"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:3724",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6224:3713"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "6076:2942",
+            "frame_name": "Template_Poll_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_CTA",
+                "node_id": "6082:2999",
+                "role": "cta"
+              },
+              {
+                "name": "Stat Block Text",
+                "node_id": "6082:3012",
+                "role": "stat"
+              },
+              {
+                "name": "Stat Block Text",
+                "node_id": "6082:3015",
+                "role": "stat"
+              },
+              {
+                "name": "Stat Block Text",
+                "node_id": "6082:3016",
+                "role": "stat"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6082:3018",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6082:3007"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6076:2959",
+            "frame_name": "Template_Poll_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_CTA",
+                "node_id": "6082:2991",
+                "role": "cta"
+              },
+              {
+                "name": "Stat Block Text",
+                "node_id": "6082:2995",
+                "role": "stat"
+              },
+              {
+                "name": "Stat Block Text",
+                "node_id": "6082:2993",
+                "role": "stat"
+              },
+              {
+                "name": "Stat Block Text",
+                "node_id": "6076:2984",
+                "role": "stat"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6076:2973",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6076:2980"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Sticky-Note_Single": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6224:3653",
+            "frame_name": "Adtype_Sticky-Note_Single_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:3682",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Body",
+                "node_id": "6224:3685",
+                "role": "body"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Texture",
+                "node_id": "6224:3654"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "6030:2018",
+            "frame_name": "Adtype_Sticky-Note_Single_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Body",
+                "node_id": "6030:2044",
+                "role": "body"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6030:2026",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Texture",
+                "node_id": "6040:1849"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6030:1996",
+            "frame_name": "Adtype_Sticky-Note_Single_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Body",
+                "node_id": "6030:2011",
+                "role": "body"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6030:2005",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "image_placeholder",
+                "node_id": "6030:1999"
+              },
+              {
+                "name": "Texture",
+                "node_id": "6040:1858"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Sticky-Note_Double": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6224:3590",
+            "frame_name": "Adtype_Sticky-Note_Double_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline-Left",
+                "node_id": "6224:3639",
+                "role": null
+              },
+              {
+                "name": "Copy_Headline-Right",
+                "node_id": "6224:3640",
+                "role": null
+              },
+              {
+                "name": "Copy_Left-Bullet1",
+                "node_id": "6224:3645",
+                "role": null
+              },
+              {
+                "name": "Copy_Left-Bullet2",
+                "node_id": "6224:3646",
+                "role": null
+              },
+              {
+                "name": "Copy_Right-Bullet1",
+                "node_id": "6224:3649",
+                "role": null
+              },
+              {
+                "name": "Copy_Right-Bullet2",
+                "node_id": "6224:3650",
+                "role": null
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Texture",
+                "node_id": "6224:3607"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "5230:3548",
+            "frame_name": "Adtype_Sticky-Note_Double_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Headline-Left",
+                "node_id": "5246:490",
+                "role": null
+              },
+              {
+                "name": "Copy_Headline-Right",
+                "node_id": "5246:491",
+                "role": null
+              },
+              {
+                "name": "Copy_Left-Bullet1",
+                "node_id": "5246:496",
+                "role": null
+              },
+              {
+                "name": "Copy_Left-Bullet2",
+                "node_id": "5246:497",
+                "role": null
+              },
+              {
+                "name": "Copy_Right-Bullet1",
+                "node_id": "5246:500",
+                "role": null
+              },
+              {
+                "name": "Copy_Right-Bullet2",
+                "node_id": "5246:501",
+                "role": null
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Texture",
+                "node_id": "6031:1799"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "5230:3528",
+            "frame_name": "Adtype_Sticky-Note_Double_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline-Left",
+                "node_id": "5246:446",
+                "role": null
+              },
+              {
+                "name": "Copy_Headline-Right",
+                "node_id": "5246:447",
+                "role": null
+              },
+              {
+                "name": "Copy_Left-Bullet1",
+                "node_id": "5246:452",
+                "role": null
+              },
+              {
+                "name": "Copy_Left-Bullet2",
+                "node_id": "5246:453",
+                "role": null
+              },
+              {
+                "name": "Copy_Right-Bullet1",
+                "node_id": "5246:456",
+                "role": null
+              },
+              {
+                "name": "Copy_Right-Bullet2",
+                "node_id": "5246:457",
+                "role": null
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Texture",
+                "node_id": "6031:1802"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Meme": {
+      "variants": {
+        "dark": {
+          "1080x1920": {
+            "node_id": "6224:3574",
+            "frame_name": "Template_Meme_Dark_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:3576",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "right_image_placeholder",
+                "node_id": "6224:3587"
+              },
+              {
+                "name": "this-is-fine 1",
+                "node_id": "6224:3588"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "5504:1513",
+            "frame_name": "Template_Meme_Dark_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5504:1527",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "right_image_placeholder",
+                "node_id": "5504:1523"
+              },
+              {
+                "name": "this-is-fine 1",
+                "node_id": "5504:1524"
+              }
+            ]
+          }
+        },
+        "light": {
+          "1080x1920": {
+            "node_id": "6224:3490",
+            "frame_name": "Template_Meme_Light_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:3557",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "right_image_placeholder",
+                "node_id": "6224:3569"
+              },
+              {
+                "name": "this-is-fine 1",
+                "node_id": "6224:3570"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "5504:1530",
+            "frame_name": "Template_Meme_Light_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5504:1544",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "right_image_placeholder",
+                "node_id": "5504:1540"
+              },
+              {
+                "name": "this-is-fine 1",
+                "node_id": "5504:1541"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "5504:1441",
+            "frame_name": "Template_Meme_Light_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5504:1459",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "right_image_placeholder",
+                "node_id": "5504:1451"
+              },
+              {
+                "name": "this-is-fine 1",
+                "node_id": "5504:1511"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Platform-UI": {
+      "variants": {
+        "base": {
+          "1440x1440": {
+            "node_id": "6062:1014",
+            "frame_name": "Template_Platform-UI_1440x1440",
+            "text_layers": [
+              {
+                "name": "Label",
+                "node_id": "I6062:1228;28886:49614",
+                "role": null
+              },
+              {
+                "name": "Label",
+                "node_id": "I6062:1229;28886:49614",
+                "role": null
+              },
+              {
+                "name": "Label",
+                "node_id": "I6062:1230;28886:49614",
+                "role": null
+              },
+              {
+                "name": "Create report",
+                "node_id": "6062:1232",
+                "role": null
+              },
+              {
+                "name": "Marketing Strategy",
+                "node_id": "6062:1234",
+                "role": null
+              },
+              {
+                "name": "Start by drafting an outline of the scope...",
+                "node_id": "6062:1235",
+                "role": null
+              },
+              {
+                "name": "Yesterday",
+                "node_id": "6062:1237",
+                "role": null
+              },
+              {
+                "name": "Brainstorm ideas",
+                "node_id": "6062:1239",
+                "role": null
+              },
+              {
+                "name": "Understood, a combination of design experience and system thinkingsystem thinking",
+                "node_id": "6062:1240",
+                "role": null
+              },
+              {
+                "name": "Online Merch Store Schema",
+                "node_id": "6062:1242",
+                "role": null
+              },
+              {
+                "name": "Designing a database schema for an online merch store involvesithe requirements?",
+                "node_id": "6062:1243",
+                "role": null
+              },
+              {
+                "name": "Past 7 days",
+                "node_id": "6062:1244",
+                "role": null
+              },
+              {
+                "name": "E-commerce Website Code",
+                "node_id": "6062:1246",
+                "role": null
+              },
+              {
+                "name": "Creating an entire e-commerce website involves asystem thinking",
+                "node_id": "6062:1247",
+                "role": null
+              },
+              {
+                "name": "Welcome to Uma",
+                "node_id": "6062:1251",
+                "role": null
+              },
+              {
+                "name": "Uma can help you work on a project, write proposals, and more.",
+                "node_id": "6062:1252",
+                "role": null
+              },
+              {
+                "name": "Disclaimer",
+                "node_id": "I6062:1254;5588:25421",
+                "role": null
+              },
+              {
+                "name": "How can I help?",
+                "node_id": "6062:1255",
+                "role": null
+              },
+              {
+                "name": "Label",
+                "node_id": "I6062:1256;4:264",
+                "role": null
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6062:1296",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6062:1297",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6062:1299",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1800": {
+            "node_id": "6062:1024",
+            "frame_name": "Template_Platform-UI_1440x1800",
+            "text_layers": [
+              {
+                "name": "Label",
+                "node_id": "I6062:1322;28886:49614",
+                "role": null
+              },
+              {
+                "name": "Label",
+                "node_id": "I6062:1323;28886:49614",
+                "role": null
+              },
+              {
+                "name": "Label",
+                "node_id": "I6062:1324;28886:49614",
+                "role": null
+              },
+              {
+                "name": "Create report",
+                "node_id": "6062:1326",
+                "role": null
+              },
+              {
+                "name": "Marketing Strategy",
+                "node_id": "6062:1328",
+                "role": null
+              },
+              {
+                "name": "Start by drafting an outline of the scope...",
+                "node_id": "6062:1329",
+                "role": null
+              },
+              {
+                "name": "Yesterday",
+                "node_id": "6062:1331",
+                "role": null
+              },
+              {
+                "name": "Brainstorm ideas",
+                "node_id": "6062:1333",
+                "role": null
+              },
+              {
+                "name": "Understood, a combination of design experience and system thinkingsystem thinking",
+                "node_id": "6062:1334",
+                "role": null
+              },
+              {
+                "name": "Online Merch Store Schema",
+                "node_id": "6062:1336",
+                "role": null
+              },
+              {
+                "name": "Designing a database schema for an online merch store involvesithe requirements?",
+                "node_id": "6062:1337",
+                "role": null
+              },
+              {
+                "name": "Past 7 days",
+                "node_id": "6062:1338",
+                "role": null
+              },
+              {
+                "name": "E-commerce Website Code",
+                "node_id": "6062:1340",
+                "role": null
+              },
+              {
+                "name": "Creating an entire e-commerce website involves asystem thinking",
+                "node_id": "6062:1341",
+                "role": null
+              },
+              {
+                "name": "Welcome to Uma",
+                "node_id": "6062:1345",
+                "role": null
+              },
+              {
+                "name": "Uma can help you work on a project, write proposals, and more.",
+                "node_id": "6062:1346",
+                "role": null
+              },
+              {
+                "name": "Disclaimer",
+                "node_id": "I6062:1348;5588:25421",
+                "role": null
+              },
+              {
+                "name": "How can I help?",
+                "node_id": "6062:1349",
+                "role": null
+              },
+              {
+                "name": "Label",
+                "node_id": "I6062:1350;4:264",
+                "role": null
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6062:1359",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6062:1360",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6062:1362",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1080x1920": {
+            "node_id": "6224:3217",
+            "frame_name": "Template_Platform-UI_1080x1920",
+            "text_layers": [
+              {
+                "name": "Label",
+                "node_id": "I6224:3449;28886:49614",
+                "role": null
+              },
+              {
+                "name": "Label",
+                "node_id": "I6224:3450;28886:49614",
+                "role": null
+              },
+              {
+                "name": "Label",
+                "node_id": "I6224:3451;28886:49614",
+                "role": null
+              },
+              {
+                "name": "Create report",
+                "node_id": "6224:3453",
+                "role": null
+              },
+              {
+                "name": "Marketing Strategy",
+                "node_id": "6224:3455",
+                "role": null
+              },
+              {
+                "name": "Start by drafting an outline of the scope...",
+                "node_id": "6224:3456",
+                "role": null
+              },
+              {
+                "name": "Yesterday",
+                "node_id": "6224:3458",
+                "role": null
+              },
+              {
+                "name": "Brainstorm ideas",
+                "node_id": "6224:3460",
+                "role": null
+              },
+              {
+                "name": "Understood, a combination of design experience and system thinkingsystem thinking",
+                "node_id": "6224:3461",
+                "role": null
+              },
+              {
+                "name": "Online Merch Store Schema",
+                "node_id": "6224:3463",
+                "role": null
+              },
+              {
+                "name": "Designing a database schema for an online merch store involvesithe requirements?",
+                "node_id": "6224:3464",
+                "role": null
+              },
+              {
+                "name": "Past 7 days",
+                "node_id": "6224:3465",
+                "role": null
+              },
+              {
+                "name": "E-commerce Website Code",
+                "node_id": "6224:3467",
+                "role": null
+              },
+              {
+                "name": "Creating an entire e-commerce website involves asystem thinking",
+                "node_id": "6224:3468",
+                "role": null
+              },
+              {
+                "name": "Welcome to Uma",
+                "node_id": "6224:3472",
+                "role": null
+              },
+              {
+                "name": "Uma can help you work on a project, write proposals, and more.",
+                "node_id": "6224:3473",
+                "role": null
+              },
+              {
+                "name": "Disclaimer",
+                "node_id": "I6224:3475;5588:25421",
+                "role": null
+              },
+              {
+                "name": "How can I help?",
+                "node_id": "6224:3476",
+                "role": null
+              },
+              {
+                "name": "Label",
+                "node_id": "I6224:3477;4:264",
+                "role": null
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:3479",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6224:3480",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6224:3482",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Device-UI": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6221:3033",
+            "frame_name": "Template_Device-UI_1080x1920",
+            "text_layers": [
+              {
+                "name": "Time",
+                "node_id": "6221:3089",
+                "role": null
+              },
+              {
+                "name": "Upwork",
+                "node_id": "6221:3101",
+                "role": null
+              },
+              {
+                "name": "How work should work",
+                "node_id": "6221:3108",
+                "role": null
+              },
+              {
+                "name": "Find top talent and get work done - from web development to design, marketing, and more.",
+                "node_id": "6221:3109",
+                "role": null
+              },
+              {
+                "name": "Get started for free",
+                "node_id": "6221:3111",
+                "role": null
+              },
+              {
+                "name": "Search for any skill",
+                "node_id": "6221:3117",
+                "role": null
+              },
+              {
+                "name": "Popular categories",
+                "node_id": "6221:3121",
+                "role": null
+              },
+              {
+                "name": "Web Dev",
+                "node_id": "6221:3124",
+                "role": null
+              },
+              {
+                "name": "Design",
+                "node_id": "6221:3126",
+                "role": null
+              },
+              {
+                "name": "Marketing",
+                "node_id": "6221:3128",
+                "role": null
+              },
+              {
+                "name": "Writing",
+                "node_id": "6221:3130",
+                "role": null
+              },
+              {
+                "name": "Data Science",
+                "node_id": "6221:3132",
+                "role": null
+              },
+              {
+                "name": "Why Upwork",
+                "node_id": "6221:3134",
+                "role": null
+              },
+              {
+                "name": "Trusted platform",
+                "node_id": "6221:3140",
+                "role": null
+              },
+              {
+                "name": "Secure payments, verified profiles, and a community you can trust.",
+                "node_id": "6221:3141",
+                "role": null
+              },
+              {
+                "name": "Fast results",
+                "node_id": "6221:3147",
+                "role": null
+              },
+              {
+                "name": "Post a job and get proposals from qualified pros in minutes.",
+                "node_id": "6221:3148",
+                "role": null
+              },
+              {
+                "name": "Flexible work",
+                "node_id": "6221:3154",
+                "role": null
+              },
+              {
+                "name": "Hire hourly, part-time, or full-time - whatever your project needs.",
+                "node_id": "6221:3155",
+                "role": null
+              },
+              {
+                "name": "Top Rated Talent",
+                "node_id": "6221:3158",
+                "role": null
+              },
+              {
+                "name": "See all",
+                "node_id": "6221:3159",
+                "role": null
+              },
+              {
+                "name": "Alex Rivera",
+                "node_id": "6221:3164",
+                "role": null
+              },
+              {
+                "name": "4.9",
+                "node_id": "6221:3168",
+                "role": null
+              },
+              {
+                "name": "Senior Web Developer \u2022 React \u2022 Node.js",
+                "node_id": "6221:3169",
+                "role": null
+              },
+              {
+                "name": "$75/hr",
+                "node_id": "6221:3170",
+                "role": null
+              },
+              {
+                "name": "Maya Chen",
+                "node_id": "6221:3175",
+                "role": null
+              },
+              {
+                "name": "4.8",
+                "node_id": "6221:3179",
+                "role": null
+              },
+              {
+                "name": "Product Designer \u2022 Figma \u2022 UX Research",
+                "node_id": "6221:3180",
+                "role": null
+              },
+              {
+                "name": "$60/hr",
+                "node_id": "6221:3181",
+                "role": null
+              },
+              {
+                "name": "Sign Up",
+                "node_id": "6221:3184",
+                "role": null
+              },
+              {
+                "name": "Log In",
+                "node_id": "6221:3186",
+                "role": null
+              },
+              {
+                "name": "\u00a9 2026 Upwork. All rights reserved.",
+                "node_id": "6221:3187",
+                "role": null
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6221:3064",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "avatar",
+                "node_id": "6221:3161"
+              },
+              {
+                "name": "avatar",
+                "node_id": "6221:3172"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "6205:375",
+            "frame_name": "Template_Device-UI_1440x1800",
+            "text_layers": [
+              {
+                "name": "Time",
+                "node_id": "6205:429",
+                "role": null
+              },
+              {
+                "name": "Upwork",
+                "node_id": "6205:441",
+                "role": null
+              },
+              {
+                "name": "How work should work",
+                "node_id": "6205:448",
+                "role": null
+              },
+              {
+                "name": "Find top talent and get work done - from web development to design, marketing, and more.",
+                "node_id": "6205:449",
+                "role": null
+              },
+              {
+                "name": "Get started for free",
+                "node_id": "6205:451",
+                "role": null
+              },
+              {
+                "name": "Search for any skill",
+                "node_id": "6205:457",
+                "role": null
+              },
+              {
+                "name": "Popular categories",
+                "node_id": "6205:461",
+                "role": null
+              },
+              {
+                "name": "Web Dev",
+                "node_id": "6205:464",
+                "role": null
+              },
+              {
+                "name": "Design",
+                "node_id": "6205:466",
+                "role": null
+              },
+              {
+                "name": "Marketing",
+                "node_id": "6205:468",
+                "role": null
+              },
+              {
+                "name": "Writing",
+                "node_id": "6205:470",
+                "role": null
+              },
+              {
+                "name": "Data Science",
+                "node_id": "6205:472",
+                "role": null
+              },
+              {
+                "name": "Why Upwork",
+                "node_id": "6205:474",
+                "role": null
+              },
+              {
+                "name": "Trusted platform",
+                "node_id": "6205:480",
+                "role": null
+              },
+              {
+                "name": "Secure payments, verified profiles, and a community you can trust.",
+                "node_id": "6205:481",
+                "role": null
+              },
+              {
+                "name": "Fast results",
+                "node_id": "6205:487",
+                "role": null
+              },
+              {
+                "name": "Post a job and get proposals from qualified pros in minutes.",
+                "node_id": "6205:488",
+                "role": null
+              },
+              {
+                "name": "Flexible work",
+                "node_id": "6205:494",
+                "role": null
+              },
+              {
+                "name": "Hire hourly, part-time, or full-time - whatever your project needs.",
+                "node_id": "6205:495",
+                "role": null
+              },
+              {
+                "name": "Top Rated Talent",
+                "node_id": "6205:498",
+                "role": null
+              },
+              {
+                "name": "See all",
+                "node_id": "6205:499",
+                "role": null
+              },
+              {
+                "name": "Alex Rivera",
+                "node_id": "6205:504",
+                "role": null
+              },
+              {
+                "name": "4.9",
+                "node_id": "6205:508",
+                "role": null
+              },
+              {
+                "name": "Senior Web Developer \u2022 React \u2022 Node.js",
+                "node_id": "6205:509",
+                "role": null
+              },
+              {
+                "name": "$75/hr",
+                "node_id": "6205:510",
+                "role": null
+              },
+              {
+                "name": "Maya Chen",
+                "node_id": "6205:515",
+                "role": null
+              },
+              {
+                "name": "4.8",
+                "node_id": "6205:519",
+                "role": null
+              },
+              {
+                "name": "Product Designer \u2022 Figma \u2022 UX Research",
+                "node_id": "6205:520",
+                "role": null
+              },
+              {
+                "name": "$60/hr",
+                "node_id": "6205:521",
+                "role": null
+              },
+              {
+                "name": "Sign Up",
+                "node_id": "6205:524",
+                "role": null
+              },
+              {
+                "name": "Log In",
+                "node_id": "6205:526",
+                "role": null
+              },
+              {
+                "name": "\u00a9 2026 Upwork. All rights reserved.",
+                "node_id": "6205:527",
+                "role": null
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6205:392",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "avatar",
+                "node_id": "6205:501"
+              },
+              {
+                "name": "avatar",
+                "node_id": "6205:512"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6063:2073",
+            "frame_name": "Template_Device-UI_1440x1440",
+            "text_layers": [
+              {
+                "name": "Time",
+                "node_id": "6063:2183",
+                "role": null
+              },
+              {
+                "name": "Upwork",
+                "node_id": "6147:313",
+                "role": null
+              },
+              {
+                "name": "How work should work",
+                "node_id": "6147:318",
+                "role": null
+              },
+              {
+                "name": "Find top talent and get work done - from web development to design, marketing, and more.",
+                "node_id": "6147:319",
+                "role": null
+              },
+              {
+                "name": "Get started for free",
+                "node_id": "6147:321",
+                "role": null
+              },
+              {
+                "name": "Search for any skill",
+                "node_id": "6147:325",
+                "role": null
+              },
+              {
+                "name": "Popular categories",
+                "node_id": "6147:328",
+                "role": null
+              },
+              {
+                "name": "Web Dev",
+                "node_id": "6147:331",
+                "role": null
+              },
+              {
+                "name": "Design",
+                "node_id": "6147:333",
+                "role": null
+              },
+              {
+                "name": "Marketing",
+                "node_id": "6147:335",
+                "role": null
+              },
+              {
+                "name": "Writing",
+                "node_id": "6147:337",
+                "role": null
+              },
+              {
+                "name": "Data Science",
+                "node_id": "6147:339",
+                "role": null
+              },
+              {
+                "name": "Why Upwork",
+                "node_id": "6147:341",
+                "role": null
+              },
+              {
+                "name": "Trusted platform",
+                "node_id": "6147:346",
+                "role": null
+              },
+              {
+                "name": "Secure payments, verified profiles, and a community you can trust.",
+                "node_id": "6147:347",
+                "role": null
+              },
+              {
+                "name": "Fast results",
+                "node_id": "6147:352",
+                "role": null
+              },
+              {
+                "name": "Post a job and get proposals from qualified pros in minutes.",
+                "node_id": "6147:353",
+                "role": null
+              },
+              {
+                "name": "Flexible work",
+                "node_id": "6147:358",
+                "role": null
+              },
+              {
+                "name": "Hire hourly, part-time, or full-time - whatever your project needs.",
+                "node_id": "6147:359",
+                "role": null
+              },
+              {
+                "name": "Top Rated Talent",
+                "node_id": "6147:362",
+                "role": null
+              },
+              {
+                "name": "See all",
+                "node_id": "6147:363",
+                "role": null
+              },
+              {
+                "name": "Alex Rivera",
+                "node_id": "6147:368",
+                "role": null
+              },
+              {
+                "name": "4.9",
+                "node_id": "6147:371",
+                "role": null
+              },
+              {
+                "name": "Senior Web Developer \u2022 React \u2022 Node.js",
+                "node_id": "6147:372",
+                "role": null
+              },
+              {
+                "name": "$75/hr",
+                "node_id": "6147:373",
+                "role": null
+              },
+              {
+                "name": "Maya Chen",
+                "node_id": "6147:378",
+                "role": null
+              },
+              {
+                "name": "4.8",
+                "node_id": "6147:381",
+                "role": null
+              },
+              {
+                "name": "Product Designer \u2022 Figma \u2022 UX Research",
+                "node_id": "6147:382",
+                "role": null
+              },
+              {
+                "name": "$60/hr",
+                "node_id": "6147:383",
+                "role": null
+              },
+              {
+                "name": "Sign Up",
+                "node_id": "6147:386",
+                "role": null
+              },
+              {
+                "name": "Log In",
+                "node_id": "6147:388",
+                "role": null
+              },
+              {
+                "name": "\u00a9 2026 Upwork. All rights reserved.",
+                "node_id": "6147:389",
+                "role": null
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6063:2222",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "avatar",
+                "node_id": "6147:365"
+              },
+              {
+                "name": "avatar",
+                "node_id": "6147:375"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Reminder": {
+      "variants": {
+        "base": {
+          "1440x1800": {
+            "node_id": "5355:480",
+            "frame_name": "Template_Reminder_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Reminder",
+                "node_id": "5355:504",
+                "role": "body"
+              },
+              {
+                "name": "Copy_Body",
+                "node_id": "5355:528",
+                "role": "body"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "5355:505",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1440": {
+            "node_id": "5355:454",
+            "frame_name": "Template_Reminder_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Reminder",
+                "node_id": "6063:2064",
+                "role": "body"
+              },
+              {
+                "name": "Copy_Body",
+                "node_id": "6063:2065",
+                "role": "body"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6063:2067",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1080x1920": {
+            "node_id": "6221:2974",
+            "frame_name": "Template_Reminder_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Reminder",
+                "node_id": "6221:3004",
+                "role": "body"
+              },
+              {
+                "name": "Copy_Body",
+                "node_id": "6221:3005",
+                "role": "body"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6221:3007",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Notification": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6221:2928",
+            "frame_name": "Template_Notification_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6221:2969",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6221:2972",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image",
+                "node_id": "6221:2970"
+              },
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6221:2971"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "5310:347",
+            "frame_name": "Template_Notification_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5314:252",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "5314:256",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "5314:253"
+              },
+              {
+                "name": "Image-Placeholder",
+                "node_id": "5314:255"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "5310:337",
+            "frame_name": "Template_Notification_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5310:345",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "5310:358",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "5314:247"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Chat-Bubble": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6216:1325",
+            "frame_name": "Template_Chat-Bubble_1080x1920",
+            "text_layers": [
+              {
+                "name": "cta_text",
+                "node_id": "6216:1359",
+                "role": "cta"
+              },
+              {
+                "name": "ChatBubble_Headline_Text",
+                "node_id": "6216:1362",
+                "role": "headline"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1800": {
+            "node_id": "5246:404",
+            "frame_name": "Template_Chat-Bubble_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Chat-Bubble-1",
+                "node_id": "5246:409",
+                "role": "chat"
+              },
+              {
+                "name": "Copy_Chat-Bubble-2",
+                "node_id": "5246:412",
+                "role": "chat"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1440": {
+            "node_id": "5246:385",
+            "frame_name": "Template_Chat-Bubble_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Chat-Bubble-1",
+                "node_id": "5246:387",
+                "role": "chat"
+              },
+              {
+                "name": "Copy_Chat-Bubble-2",
+                "node_id": "5246:395",
+                "role": "chat"
+              }
+            ],
+            "image_layers": []
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Text-Only": {
+      "variants": {
+        "dark": {
+          "1080x1920": {
+            "node_id": "6216:1230",
+            "frame_name": "Template_Text-Only_Dark_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6216:1320",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6216:1321",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6216:1323",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1800": {
+            "node_id": "6041:1955",
+            "frame_name": "Template_Text-Only_Dark_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6041:1972",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6041:1973",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6041:1975",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1440": {
+            "node_id": "5384:1948",
+            "frame_name": "Template_Text-Only_Dark_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5384:1967",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "5384:1968",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "5384:1970",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          }
+        },
+        "light": {
+          "1080x1920": {
+            "node_id": "6216:1154",
+            "frame_name": "Template_Text-Only_Light_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6216:1225",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6216:1226",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6216:1228",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1800": {
+            "node_id": "5370:1053",
+            "frame_name": "Template_Text-Only_Light_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5384:1922",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "5384:1923",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "5384:1925",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1440": {
+            "node_id": "5370:1027",
+            "frame_name": "Template_Text-Only_Light_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5371:1097",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "5371:1100",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "5371:1102",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Search-Results": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6216:1028",
+            "frame_name": "Adtype_Search-Results_1080x1920",
+            "text_layers": [
+              {
+                "name": "Tab Label",
+                "node_id": "6216:1118",
+                "role": null
+              },
+              {
+                "name": "Copy_Title1",
+                "node_id": "6262:404",
+                "role": "title"
+              },
+              {
+                "name": "Copy_Title2",
+                "node_id": "6262:408",
+                "role": "title"
+              },
+              {
+                "name": "Copy_Title3",
+                "node_id": "6262:412",
+                "role": "title"
+              },
+              {
+                "name": "Button Label",
+                "node_id": "I6216:1142;34182:46976",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6216:1099",
+                "role": "headline"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1800": {
+            "node_id": "6074:2239",
+            "frame_name": "Adtype_Search-Results_1440x1800",
+            "text_layers": [
+              {
+                "name": "Tab Label",
+                "node_id": "6088:12237",
+                "role": null
+              },
+              {
+                "name": "Copy_Title1",
+                "node_id": "6262:380",
+                "role": "title"
+              },
+              {
+                "name": "Copy_Title2",
+                "node_id": "6262:384",
+                "role": "title"
+              },
+              {
+                "name": "Copy_Title3",
+                "node_id": "6262:388",
+                "role": "title"
+              },
+              {
+                "name": "Button Label",
+                "node_id": "I6088:12235;34182:46976",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6074:2273",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6074:2274",
+                "role": "subhead"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1440": {
+            "node_id": "6074:2213",
+            "frame_name": "Adtype_Search-Results_1440x1440",
+            "text_layers": [
+              {
+                "name": "Tab Label",
+                "node_id": "6088:12159",
+                "role": null
+              },
+              {
+                "name": "Copy_Title1",
+                "node_id": "6262:392",
+                "role": "title"
+              },
+              {
+                "name": "Copy_Title2",
+                "node_id": "6262:396",
+                "role": "title"
+              },
+              {
+                "name": "Copy_Title3",
+                "node_id": "6262:400",
+                "role": "title"
+              },
+              {
+                "name": "Button Label",
+                "node_id": "I6088:12157;34182:46976",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6074:2267",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6074:2268",
+                "role": "subhead"
+              }
+            ],
+            "image_layers": []
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Hybrid": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6210:844",
+            "frame_name": "Template_Adtype_Hybrid_1080x1920",
+            "text_layers": [
+              {
+                "name": "Disabled",
+                "node_id": "6211:976",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6211:977",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6211:978",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6211:979",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6211:981",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6211:982",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6211:983",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6211:984",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6211:986",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6211:987",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6211:988",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6211:989",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6211:991",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6211:992",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6211:993",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6211:994",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6211:996",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6211:997",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6211:998",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6211:999",
+                "role": null
+              },
+              {
+                "name": "Job posts",
+                "node_id": "6211:1003",
+                "role": null
+              },
+              {
+                "name": "3",
+                "node_id": "6211:1004",
+                "role": null
+              },
+              {
+                "name": "17% less than last month",
+                "node_id": "6211:1005",
+                "role": null
+              },
+              {
+                "name": "View job posts",
+                "node_id": "6211:1006",
+                "role": null
+              },
+              {
+                "name": "Offers",
+                "node_id": "6211:1008",
+                "role": null
+              },
+              {
+                "name": "5",
+                "node_id": "6211:1009",
+                "role": null
+              },
+              {
+                "name": "17% less than last month",
+                "node_id": "6211:1010",
+                "role": null
+              },
+              {
+                "name": "View offers",
+                "node_id": "6211:1011",
+                "role": null
+              },
+              {
+                "name": "Contracts",
+                "node_id": "6211:1013",
+                "role": null
+              },
+              {
+                "name": "2",
+                "node_id": "6211:1014",
+                "role": null
+              },
+              {
+                "name": "17% less than last month",
+                "node_id": "6211:1015",
+                "role": null
+              },
+              {
+                "name": "View contracts",
+                "node_id": "6211:1016",
+                "role": null
+              },
+              {
+                "name": "Available",
+                "node_id": "6211:1018",
+                "role": null
+              },
+              {
+                "name": "$5,000.00",
+                "node_id": "6211:1019",
+                "role": null
+              },
+              {
+                "name": "this week on 5 contracts",
+                "node_id": "6211:1020",
+                "role": null
+              },
+              {
+                "name": "Purchase Orders",
+                "node_id": "6211:1021",
+                "role": null
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6216:1024",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6210:900",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6210:901",
+                "role": "subhead"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6211:972"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "6061:741",
+            "frame_name": "Template_Adtype_Hybrid_1440x1800",
+            "text_layers": [
+              {
+                "name": "Disabled",
+                "node_id": "6062:940",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6062:941",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6062:942",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6062:943",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6062:945",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6062:946",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6062:947",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6062:948",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6062:950",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6062:951",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6062:952",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6062:953",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6062:955",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6062:956",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6062:957",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6062:958",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6062:960",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6062:961",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6062:962",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6062:963",
+                "role": null
+              },
+              {
+                "name": "Job posts",
+                "node_id": "6062:967",
+                "role": null
+              },
+              {
+                "name": "3",
+                "node_id": "6062:968",
+                "role": null
+              },
+              {
+                "name": "17% less than last month",
+                "node_id": "6062:969",
+                "role": null
+              },
+              {
+                "name": "View job posts",
+                "node_id": "6062:970",
+                "role": null
+              },
+              {
+                "name": "Offers",
+                "node_id": "6062:972",
+                "role": null
+              },
+              {
+                "name": "5",
+                "node_id": "6062:973",
+                "role": null
+              },
+              {
+                "name": "17% less than last month",
+                "node_id": "6062:974",
+                "role": null
+              },
+              {
+                "name": "View offers",
+                "node_id": "6062:975",
+                "role": null
+              },
+              {
+                "name": "Contracts",
+                "node_id": "6062:977",
+                "role": null
+              },
+              {
+                "name": "2",
+                "node_id": "6062:978",
+                "role": null
+              },
+              {
+                "name": "17% less than last month",
+                "node_id": "6062:979",
+                "role": null
+              },
+              {
+                "name": "View contracts",
+                "node_id": "6062:980",
+                "role": null
+              },
+              {
+                "name": "Available",
+                "node_id": "6062:982",
+                "role": null
+              },
+              {
+                "name": "$5,000.00",
+                "node_id": "6062:983",
+                "role": null
+              },
+              {
+                "name": "this week on 5 contracts",
+                "node_id": "6062:984",
+                "role": null
+              },
+              {
+                "name": "Purchase Orders",
+                "node_id": "6062:985",
+                "role": null
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6062:771",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6061:756",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6062:768",
+                "role": "subhead"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6061:751"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6061:717",
+            "frame_name": "Template_Adtype_Hybrid_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_CTA",
+                "node_id": "6061:736",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6061:738",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6061:739",
+                "role": "subhead"
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6062:789",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6062:790",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6062:791",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6062:792",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6062:794",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6062:795",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6062:796",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6062:797",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6062:799",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6062:800",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6062:801",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6062:802",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6062:804",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6062:805",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6062:806",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6062:807",
+                "role": null
+              },
+              {
+                "name": "Disabled",
+                "node_id": "6062:809",
+                "role": null
+              },
+              {
+                "name": "Hover",
+                "node_id": "6062:810",
+                "role": null
+              },
+              {
+                "name": "Inactive",
+                "node_id": "6062:811",
+                "role": null
+              },
+              {
+                "name": "Active",
+                "node_id": "6062:812",
+                "role": null
+              },
+              {
+                "name": "Job posts",
+                "node_id": "6062:816",
+                "role": null
+              },
+              {
+                "name": "3",
+                "node_id": "6062:817",
+                "role": null
+              },
+              {
+                "name": "17% less than last month",
+                "node_id": "6062:818",
+                "role": null
+              },
+              {
+                "name": "View job posts",
+                "node_id": "6062:819",
+                "role": null
+              },
+              {
+                "name": "Offers",
+                "node_id": "6062:821",
+                "role": null
+              },
+              {
+                "name": "5",
+                "node_id": "6062:822",
+                "role": null
+              },
+              {
+                "name": "17% less than last month",
+                "node_id": "6062:823",
+                "role": null
+              },
+              {
+                "name": "View offers",
+                "node_id": "6062:824",
+                "role": null
+              },
+              {
+                "name": "Contracts",
+                "node_id": "6062:826",
+                "role": null
+              },
+              {
+                "name": "2",
+                "node_id": "6062:827",
+                "role": null
+              },
+              {
+                "name": "17% less than last month",
+                "node_id": "6062:828",
+                "role": null
+              },
+              {
+                "name": "View contracts",
+                "node_id": "6062:829",
+                "role": null
+              },
+              {
+                "name": "Available",
+                "node_id": "6062:831",
+                "role": null
+              },
+              {
+                "name": "$5,000.00",
+                "node_id": "6062:832",
+                "role": null
+              },
+              {
+                "name": "this week on 5 contracts",
+                "node_id": "6062:833",
+                "role": null
+              },
+              {
+                "name": "Purchase Orders",
+                "node_id": "6062:834",
+                "role": null
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6061:731"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Pie-Chart": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6210:742",
+            "frame_name": "Adtype_Pie-Chart_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_BottomLeft",
+                "node_id": "6210:800",
+                "role": "quadrant"
+              },
+              {
+                "name": "Copy_BottomRight",
+                "node_id": "6210:806",
+                "role": "quadrant"
+              },
+              {
+                "name": "Copy_TopRight",
+                "node_id": "6210:812",
+                "role": "quadrant"
+              },
+              {
+                "name": "Copy_TopLeft",
+                "node_id": "6210:818",
+                "role": "quadrant"
+              },
+              {
+                "name": "cta_text",
+                "node_id": "6210:820",
+                "role": "cta"
+              },
+              {
+                "name": "TextOnly_Subhead_Text",
+                "node_id": "6210:835",
+                "role": "subhead"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Dark Gradient",
+                "node_id": "6210:823"
+              },
+              {
+                "name": "Light Gradient",
+                "node_id": "6210:824"
+              },
+              {
+                "name": "Dark Gradient",
+                "node_id": "6210:826"
+              },
+              {
+                "name": "Light Gradient",
+                "node_id": "6210:827"
+              },
+              {
+                "name": "Dark Gradient",
+                "node_id": "6210:829"
+              },
+              {
+                "name": "Light Gradient",
+                "node_id": "6210:830"
+              },
+              {
+                "name": "Dark Gradient",
+                "node_id": "6210:832"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "6084:3134",
+            "frame_name": "Adtype_Pie-Chart__1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_BottomRight",
+                "node_id": "6084:3222",
+                "role": "quadrant"
+              },
+              {
+                "name": "Copy_BottomLeft",
+                "node_id": "6084:3228",
+                "role": "quadrant"
+              },
+              {
+                "name": "Copy_TopRight",
+                "node_id": "6084:3234",
+                "role": "quadrant"
+              },
+              {
+                "name": "Copy_TopLeft",
+                "node_id": "6084:3240",
+                "role": "quadrant"
+              },
+              {
+                "name": "TextOnly_Subhead_Text",
+                "node_id": "6084:3257",
+                "role": "subhead"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Dark Gradient",
+                "node_id": "6084:3245"
+              },
+              {
+                "name": "Light Gradient",
+                "node_id": "6084:3246"
+              },
+              {
+                "name": "Dark Gradient",
+                "node_id": "6084:3248"
+              },
+              {
+                "name": "Light Gradient",
+                "node_id": "6084:3249"
+              },
+              {
+                "name": "Dark Gradient",
+                "node_id": "6084:3251"
+              },
+              {
+                "name": "Light Gradient",
+                "node_id": "6084:3252"
+              },
+              {
+                "name": "Dark Gradient",
+                "node_id": "6084:3254"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6084:3093",
+            "frame_name": "Adtype_Pie-Chart_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_BottomRight",
+                "node_id": "6084:3131",
+                "role": "quadrant"
+              },
+              {
+                "name": "Copy_BottomLeft",
+                "node_id": "6084:3187",
+                "role": "quadrant"
+              },
+              {
+                "name": "Copy_TopRight",
+                "node_id": "6084:3181",
+                "role": "quadrant"
+              },
+              {
+                "name": "Copy_TopLeft",
+                "node_id": "6084:3193",
+                "role": "quadrant"
+              },
+              {
+                "name": "TextOnly_Subhead_Text",
+                "node_id": "6084:3210",
+                "role": "subhead"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Dark Gradient",
+                "node_id": "6084:3198"
+              },
+              {
+                "name": "Light Gradient",
+                "node_id": "6084:3199"
+              },
+              {
+                "name": "Dark Gradient",
+                "node_id": "6084:3201"
+              },
+              {
+                "name": "Light Gradient",
+                "node_id": "6084:3202"
+              },
+              {
+                "name": "Dark Gradient",
+                "node_id": "6084:3204"
+              },
+              {
+                "name": "Light Gradient",
+                "node_id": "6084:3205"
+              },
+              {
+                "name": "Dark Gradient",
+                "node_id": "6084:3207"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Social-Media-Profile": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6207:681",
+            "frame_name": "Template_Social-Profile_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Name",
+                "node_id": "6207:700",
+                "role": "profile_name"
+              },
+              {
+                "name": "Copy_Title",
+                "node_id": "6207:703",
+                "role": "profile_title"
+              },
+              {
+                "name": "UsVsThem_Bullet1",
+                "node_id": "6207:708",
+                "role": null
+              },
+              {
+                "name": "UsVsThem_Bullet1",
+                "node_id": "6207:712",
+                "role": null
+              },
+              {
+                "name": "Subhead-Text",
+                "node_id": "6207:713",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6207:725",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image_Placeholder",
+                "node_id": "6256:2181"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "6066:340",
+            "frame_name": "Template_Social-Profile_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Name",
+                "node_id": "6074:2039",
+                "role": "profile_name"
+              },
+              {
+                "name": "Copy_Title",
+                "node_id": "6074:2042",
+                "role": "profile_title"
+              },
+              {
+                "name": "Copy_Left-Column",
+                "node_id": "6074:2047",
+                "role": "column"
+              },
+              {
+                "name": "Copy_Right-Column",
+                "node_id": "6074:2051",
+                "role": "column"
+              },
+              {
+                "name": "Subhead-Text",
+                "node_id": "6074:2052",
+                "role": "subhead"
+              },
+              {
+                "name": "Top Rated",
+                "node_id": "6074:2054",
+                "role": null
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6074:2064",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image_Placeholder",
+                "node_id": "6256:2171"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6066:308",
+            "frame_name": "Template_Social-Profile_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Name",
+                "node_id": "6066:326",
+                "role": "profile_name"
+              },
+              {
+                "name": "Copy_Title",
+                "node_id": "6066:327",
+                "role": "profile_title"
+              },
+              {
+                "name": "\u2705",
+                "node_id": "6066:459",
+                "role": null
+              },
+              {
+                "name": "UsVsThem_Bullet1",
+                "node_id": "6066:460",
+                "role": null
+              },
+              {
+                "name": "Copy_Right-Column",
+                "node_id": "6066:480",
+                "role": "column"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6066:337",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6066:339",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6256:2164"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Testimonial-Photo": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6221:1976",
+            "frame_name": "Template_Testimonial-Photo_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2054",
+                "role": "testimonial"
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2055",
+                "role": "author"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image_Placeholder",
+                "node_id": "6221:2047"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "5317:636",
+            "frame_name": "Template_Testimonial-Photo_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "5317:679",
+                "role": "testimonial"
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "5317:680",
+                "role": "author"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image_Placeholder",
+                "node_id": "5317:672"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "5317:610",
+            "frame_name": "Template_Testimonial-Photo_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "5317:630",
+                "role": "testimonial"
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "5317:631",
+                "role": "author"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image_Placeholder",
+                "node_id": "5317:627"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Testimonial-Text-Only": {
+      "variants": {
+        "light": {
+          "1440x1440": {
+            "node_id": "6221:2294",
+            "frame_name": "Template_Testimonial-Text-Only_Light_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2311",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2313",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2314",
+                "role": "author"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1800": {
+            "node_id": "6221:2446",
+            "frame_name": "Template_Testimonial-Text-Only_Light_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2463",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2465",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2466",
+                "role": "author"
+              }
+            ],
+            "image_layers": []
+          },
+          "1080x1920": {
+            "node_id": "6221:2512",
+            "frame_name": "Template_Testimonial-Text-Only_Light_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2522",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2524",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2525",
+                "role": "author"
+              }
+            ],
+            "image_layers": []
+          }
+        },
+        "dark": {
+          "1440x1440": {
+            "node_id": "6221:2347",
+            "frame_name": "Template_Testimonial-Text-Only_Dark_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2364",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2366",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2367",
+                "role": "author"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1800": {
+            "node_id": "6221:2422",
+            "frame_name": "Template_Testimonial-Text-Only_Dark_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2439",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2441",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2442",
+                "role": "author"
+              }
+            ],
+            "image_layers": []
+          },
+          "1080x1920": {
+            "node_id": "6221:2083",
+            "frame_name": "Template_Testimonial-Text-Only_Dark_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2486",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2488",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2489",
+                "role": "author"
+              }
+            ],
+            "image_layers": []
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Testimonial-Text-and-Photo": {
+      "variants": {
+        "light": {
+          "1440x1440": {
+            "node_id": "6221:2718",
+            "frame_name": "Template_Testimonial-Text-and-Photo_Light_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2738",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2740",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2741",
+                "role": "author"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "image_placeholder",
+                "node_id": "6221:2735"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "6221:2850",
+            "frame_name": "Template_Testimonial-Text-and-Photo_Light_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2870",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2872",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2873",
+                "role": "author"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "image_placeholder",
+                "node_id": "6221:2867"
+              }
+            ]
+          },
+          "1080x1920": {
+            "node_id": "6221:2554",
+            "frame_name": "Template_Testimonial-Text-and-Photo_Light_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2564",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2566",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2567",
+                "role": "author"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "image_placeholder",
+                "node_id": "6221:2889"
+              }
+            ]
+          }
+        },
+        "dark": {
+          "1440x1440": {
+            "node_id": "6221:2691",
+            "frame_name": "Template_Testimonial-Text-and-Photo_Dark_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2711",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2713",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2714",
+                "role": "author"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "image_placeholder",
+                "node_id": "6221:2708"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "6221:2819",
+            "frame_name": "Template_Testimonial-Text-and-Photo_Dark_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2839",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2841",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2842",
+                "role": "author"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "image_placeholder",
+                "node_id": "6221:2836"
+              }
+            ]
+          },
+          "1080x1920": {
+            "node_id": "6221:2537",
+            "frame_name": "Template_Testimonial-Text-and-Photo_Dark_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Testimonial",
+                "node_id": "6221:2547",
+                "role": "testimonial"
+              },
+              {
+                "name": "Em Dash",
+                "node_id": "6221:2549",
+                "role": null
+              },
+              {
+                "name": "Copy_Author",
+                "node_id": "6221:2550",
+                "role": "author"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "image_placeholder",
+                "node_id": "6221:2921"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Lifestyle-Photo-Full-Bleed": {
+      "variants": {
+        "base": {
+          "1440x1440": {
+            "node_id": "5227:3506",
+            "frame_name": "Template_Lifestyle-Photo-Full-Bleed_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5246:519",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "5246:521",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "5227:3507"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "5187:1688",
+            "frame_name": "Template_LifestylePhoto_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5246:507",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "5246:509",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "5187:1689"
+              }
+            ]
+          },
+          "1080x1920": {
+            "node_id": "6207:622",
+            "frame_name": "Template_Lifestyle-Photo-Full-Bleed_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6207:669",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6207:671",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6207:666"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Carousel-Photo_1": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6332:1405",
+            "frame_name": "Template_Carousel-Photo_1_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6332:1409",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6332:1411",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6332:1407"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6332:1377",
+            "frame_name": "Template_Carousel-Photo_1_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6332:1382",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6332:1384",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6332:1379"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Carousel-Photo_2": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6332:1482",
+            "frame_name": "Template_Carousel-Photo_2_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6332:1486",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6332:1488",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6332:1484"
+              },
+              {
+                "name": "UPWORK_CODING_TOGETHER_GRD_02",
+                "node_id": "6332:1521"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6332:1433",
+            "frame_name": "Template_Carousel-Photo_2_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6332:1438",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6332:1440",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6332:1435"
+              },
+              {
+                "name": "UPWORK_CODING_TOGETHER_GRD_02",
+                "node_id": "6332:1461"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Carousel-Photo_3": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6332:1495",
+            "frame_name": "Template_Carousel-Photo_3_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6332:1499",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6332:1501",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6332:1497"
+              },
+              {
+                "name": "UPWORK_CODING_TOGETHER_GRD_02",
+                "node_id": "6332:1523"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6332:1447",
+            "frame_name": "Template_Carousel-Photo_3_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6332:1452",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6332:1454",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6332:1449"
+              },
+              {
+                "name": "UPWORK_CODING_TOGETHER_GRD_02",
+                "node_id": "6332:1463"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Carousel-Photo_4": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6332:1508",
+            "frame_name": "Template_Carousel-Photo_4_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6332:1512",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6332:1514",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6332:1510"
+              },
+              {
+                "name": "UPWORK_CODING_TOGETHER_GRD_02",
+                "node_id": "6332:1525"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6332:1465",
+            "frame_name": "Template_Carousel-Photo_4_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6332:1471",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6332:1473",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6332:1467"
+              },
+              {
+                "name": "UPWORK_CODING_TOGETHER_GRD_02",
+                "node_id": "6332:1468"
+              },
+              {
+                "name": "UPWORK_CODING_TOGETHER_GRD_02",
+                "node_id": "6332:1480"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Carousel_3": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6332:1212",
+            "frame_name": "Template_Carousel_3_1080x1920",
+            "text_layers": [
+              {
+                "name": "TextOnly_headline_text",
+                "node_id": "6332:1233",
+                "role": "headline"
+              },
+              {
+                "name": "TextOnly_Subhead_Text",
+                "node_id": "6332:1234",
+                "role": "subhead"
+              },
+              {
+                "name": "cta_text",
+                "node_id": "6332:1236",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1440": {
+            "node_id": "6332:1300",
+            "frame_name": "Template_Carousel_3_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6332:1319",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6332:1320",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6332:1322",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Carousel_2": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6332:1238",
+            "frame_name": "Template_Carousel_2_1080x1920",
+            "text_layers": [
+              {
+                "name": "PhotoWithText_Headline_Text",
+                "node_id": "6332:1262",
+                "role": "headline"
+              },
+              {
+                "name": "cta_text",
+                "node_id": "6332:1264",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image_Placeholder",
+                "node_id": "6332:1259"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6332:1323",
+            "frame_name": "Template_Carousel_2_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6332:1346",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image_Placeholder",
+                "node_id": "6332:1343"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Carousel_1": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6332:1266",
+            "frame_name": "Template_Carousel_1_1080x1920",
+            "text_layers": [
+              {
+                "name": "PhotoWithText_Headline_Text",
+                "node_id": "6332:1291",
+                "role": "headline"
+              },
+              {
+                "name": "cta_text",
+                "node_id": "6332:1293",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image_Placeholder",
+                "node_id": "6332:1288"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6332:1349",
+            "frame_name": "Template_Carousel_1_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6332:1373",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image_Placeholder",
+                "node_id": "6332:1370"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Photo-with-Text": {
+      "variants": {
+        "dark+alt": {
+          "1080x1920": {
+            "node_id": "6224:4302",
+            "frame_name": "Template_Photo-With-Text-Alt_Dark_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6224:4402",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:4404",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6224:4399"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "5331:283",
+            "frame_name": "Template_Photo-With-Text-Alt_Dark_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Subhead",
+                "node_id": "5331:296",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "5331:298",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "5331:293"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "5331:299",
+            "frame_name": "Template_Photo-With-Text-Alt_Dark_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Subhead",
+                "node_id": "5331:319",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "5331:321",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "5331:316"
+              }
+            ]
+          }
+        },
+        "light+alt": {
+          "1080x1920": {
+            "node_id": "6224:4337",
+            "frame_name": "Template_Photo-With-Text-Alt_Light_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6224:4385",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:4387",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6224:4382"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "5331:257",
+            "frame_name": "Template_Photo-With-Text-Alt_Light_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Subhead",
+                "node_id": "5331:278",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "5331:280",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "5331:275"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "5325:710",
+            "frame_name": "Template_Photo-With-Text-Alt_Light_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Subhead",
+                "node_id": "5325:732",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "5325:734",
+                "role": "headline"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "5331:255"
+              }
+            ]
+          }
+        },
+        "dark": {
+          "1080x1920": {
+            "node_id": "6224:3995",
+            "frame_name": "Template_Photo-With-Text_Dark_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:4188",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6224:4190",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6224:4182"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "6224:4142",
+            "frame_name": "Template_Photo-With-Text_Dark_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:4164",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6224:4166",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6224:4158"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6232:459",
+            "frame_name": "Template_Photo-With-Text_Dark_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6232:478",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6232:480",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6232:475"
+              }
+            ]
+          }
+        },
+        "light": {
+          "1080x1920": {
+            "node_id": "6224:4192",
+            "frame_name": "Template_Photo-With-Text_Light_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:4298",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6224:4300",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6224:4292"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "6224:4252",
+            "frame_name": "Template_Photo-With-Text_Light_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6224:4274",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6224:4276",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6224:4268"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "6232:415",
+            "frame_name": "Template_Photo-With-Text_Light_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6232:434",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6232:436",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Image-Placeholder",
+                "node_id": "6232:431"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    },
+    "Us-Vs-Them": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6207:559",
+            "frame_name": "Template_Us-Vs-Them_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6207:585",
+                "role": "headline"
+              },
+              {
+                "name": "\u274c",
+                "node_id": "6207:588",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet1",
+                "node_id": "6207:589",
+                "role": "bullet"
+              },
+              {
+                "name": "\u274c",
+                "node_id": "6207:592",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet2",
+                "node_id": "6207:593",
+                "role": "bullet"
+              },
+              {
+                "name": "\u274c",
+                "node_id": "6207:596",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet3",
+                "node_id": "6207:597",
+                "role": "bullet"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6207:598",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6207:600",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6207:565",
+                "role": "headline"
+              },
+              {
+                "name": "\u2705",
+                "node_id": "6207:568",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet1",
+                "node_id": "6207:569",
+                "role": "bullet"
+              },
+              {
+                "name": "\u2705",
+                "node_id": "6207:572",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet2",
+                "node_id": "6207:573",
+                "role": "bullet"
+              },
+              {
+                "name": "\u2705",
+                "node_id": "6207:576",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet3",
+                "node_id": "6207:577",
+                "role": "bullet"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6207:578",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6207:580",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1800": {
+            "node_id": "6041:2060",
+            "frame_name": "Template_Us-Vs-Them_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6047:314",
+                "role": "headline"
+              },
+              {
+                "name": "\u274c",
+                "node_id": "6047:317",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet1",
+                "node_id": "6047:318",
+                "role": "bullet"
+              },
+              {
+                "name": "\u274c",
+                "node_id": "6047:321",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet2",
+                "node_id": "6047:322",
+                "role": "bullet"
+              },
+              {
+                "name": "\u274c",
+                "node_id": "6047:325",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet3",
+                "node_id": "6047:326",
+                "role": "bullet"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6047:327",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6047:329",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6047:294",
+                "role": "headline"
+              },
+              {
+                "name": "\u2705",
+                "node_id": "6047:297",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet1",
+                "node_id": "6047:298",
+                "role": "bullet"
+              },
+              {
+                "name": "\u2705",
+                "node_id": "6047:301",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet2",
+                "node_id": "6047:302",
+                "role": "bullet"
+              },
+              {
+                "name": "\u2705",
+                "node_id": "6047:305",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet3",
+                "node_id": "6047:306",
+                "role": "bullet"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6047:307",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6047:309",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          },
+          "1440x1440": {
+            "node_id": "6041:2013",
+            "frame_name": "Template_Us-Vs-Them_1440x1440",
+            "text_layers": [
+              {
+                "name": "UsVsThem_headlinethem_text",
+                "node_id": "6041:2166",
+                "role": null
+              },
+              {
+                "name": "\u274c",
+                "node_id": "6041:2169",
+                "role": null
+              },
+              {
+                "name": "UsVsThem_Bullet4",
+                "node_id": "6041:2171",
+                "role": null
+              },
+              {
+                "name": "\u274c",
+                "node_id": "6041:2173",
+                "role": null
+              },
+              {
+                "name": "UsVsThem_Bullet5",
+                "node_id": "6041:2175",
+                "role": null
+              },
+              {
+                "name": "\u274c",
+                "node_id": "6041:2177",
+                "role": null
+              },
+              {
+                "name": "UsVsThem_Bullet6",
+                "node_id": "6041:2179",
+                "role": null
+              },
+              {
+                "name": "UsVsThem_subheadthem_text",
+                "node_id": "6041:2180",
+                "role": null
+              },
+              {
+                "name": "cta_text",
+                "node_id": "6041:2182",
+                "role": "cta"
+              },
+              {
+                "name": "Copy_Headline",
+                "node_id": "6041:2032",
+                "role": "headline"
+              },
+              {
+                "name": "\u2705",
+                "node_id": "6041:2135",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet1",
+                "node_id": "6041:2033",
+                "role": "bullet"
+              },
+              {
+                "name": "\u2705",
+                "node_id": "6041:2138",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet2",
+                "node_id": "6041:2140",
+                "role": "bullet"
+              },
+              {
+                "name": "\u2705",
+                "node_id": "6041:2142",
+                "role": null
+              },
+              {
+                "name": "Copy_Bullet3",
+                "node_id": "6041:2144",
+                "role": "bullet"
+              },
+              {
+                "name": "Copy_Subhead",
+                "node_id": "6041:2124",
+                "role": "subhead"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6041:2035",
+                "role": "cta"
+              }
+            ],
+            "image_layers": []
+          }
+        }
+      },
+      "routing": "text_only"
+    },
+    "Split-Screen": {
+      "variants": {
+        "base": {
+          "1080x1920": {
+            "node_id": "6207:557",
+            "frame_name": "Template_Split-Screen_1080x1920",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "6207:616",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "6207:618",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Right-Image-Placeholder",
+                "node_id": "6207:608"
+              },
+              {
+                "name": "Left-Image-Placeholder",
+                "node_id": "6207:613"
+              }
+            ]
+          },
+          "1440x1800": {
+            "node_id": "5369:783",
+            "frame_name": "Template_Split-Screen_1440x1800",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5369:801",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "5369:803",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Right-Image-Placeholder",
+                "node_id": "5369:812"
+              },
+              {
+                "name": "Left-Image-Placeholder",
+                "node_id": "5369:814"
+              }
+            ]
+          },
+          "1440x1440": {
+            "node_id": "5369:762",
+            "frame_name": "Template_Split-Screen_1440x1440",
+            "text_layers": [
+              {
+                "name": "Copy_Headline",
+                "node_id": "5369:780",
+                "role": "headline"
+              },
+              {
+                "name": "Copy_CTA",
+                "node_id": "5369:782",
+                "role": "cta"
+              }
+            ],
+            "image_layers": [
+              {
+                "name": "Right-Image-Placeholder",
+                "node_id": "5369:810"
+              },
+              {
+                "name": "Left-Image-Placeholder",
+                "node_id": "5369:808"
+              }
+            ]
+          }
+        }
+      },
+      "routing": "library_photo"
+    }
+  }
+}
