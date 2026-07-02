@@ -458,6 +458,53 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "- poll_pct_b (integer 5-95 — second bar's percentage; meaningfully different from poll_pct_a)\n"
         )
         multi_field_keys = ", poll_question, poll_pct_a, poll_pct_b"
+    elif _sl == "testimonial":
+        multi_field_instructions = (
+            "\n===== EXTRA FIELDS FOR \"Testimonial\" =====\n"
+            "A customer-quote card. The quote goes in body_long. ALSO provide:\n"
+            "- testimonial_author (max 45 chars — 'Firstname L., Role' of a plausible SMB Upwork client; realistic but not a real named person)\n"
+        )
+        multi_field_keys = ", testimonial_author"
+    elif _sl == "searchresults":
+        multi_field_instructions = (
+            "\n===== EXTRA FIELDS FOR \"Search Results\" =====\n"
+            "A talent search-results UI. ALSO provide:\n"
+            "- search_results (array of EXACTLY 3 strings, max 22 chars each — in-demand talent role titles, e.g. 'AI Developer', 'UX Designer')\n"
+        )
+        multi_field_keys = ", search_results"
+    elif _sl == "socialmediaprofile":
+        multi_field_instructions = (
+            "\n===== EXTRA FIELDS FOR \"Social Media Profile\" =====\n"
+            "A freelancer profile card. ALSO provide:\n"
+            "- profile_name (max 18 chars — 'Firstname L.')\n"
+            "- profile_title (max 28 chars — their role, e.g. 'Chatbot Developer')\n"
+            "- profile_left (max 60 chars — short profile blurb, left column)\n"
+            "- profile_right (max 60 chars — short profile blurb, right column)\n"
+        )
+        multi_field_keys = ", profile_name, profile_title, profile_left, profile_right"
+    elif _sl == "chatbubble":
+        multi_field_instructions = (
+            "\n===== EXTRA FIELDS FOR \"Chat Bubble\" =====\n"
+            "A chat/message ad. ALSO provide:\n"
+            "- chat_label (max 24 chars — a short category label, e.g. 'Small Business Wins')\n"
+            "- chat_message (max 90 chars — the chat message body)\n"
+        )
+        multi_field_keys = ", chat_label, chat_message"
+    elif _sl == "textwithbutton":
+        multi_field_instructions = (
+            "\n===== EXTRA FIELDS FOR \"Text with Button\" =====\n"
+            "The entire ad is a single button label — make it punchy. ALSO provide:\n"
+            "- button_text (max 15 chars — the button label, e.g. 'Hire faster now')\n"
+        )
+        multi_field_keys = ", button_text"
+    elif _sl == "piechart":
+        multi_field_instructions = (
+            "\n===== EXTRA FIELDS FOR \"Pie Chart\" =====\n"
+            "A four-quadrant graphic. ALSO provide:\n"
+            "- pie_labels (array of EXACTLY 4 strings, max 24 chars each — the four quadrant labels)\n"
+            "- pie_center (max 24 chars — the short center callout)\n"
+        )
+        multi_field_keys = ", pie_labels, pie_center"
 
     prompt = f"""You are writing paid acquisition ad copy for Upwork. Follow every brand rule below exactly.
 
@@ -1764,6 +1811,18 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Poll_Question": concept.get("poll_question", ""),
             "Poll_Pct_A": concept.get("poll_pct_a", ""),
             "Poll_Pct_B": concept.get("poll_pct_b", ""),
+            # Per-style multi-field copy for the remaining structured templates.
+            "Testimonial_Author": concept.get("testimonial_author", ""),
+            "Search_Results": _join_bullets(concept.get("search_results")),
+            "Profile_Name": concept.get("profile_name", ""),
+            "Profile_Title": concept.get("profile_title", ""),
+            "Profile_Left": concept.get("profile_left", ""),
+            "Profile_Right": concept.get("profile_right", ""),
+            "Chat_Label": concept.get("chat_label", ""),
+            "Chat_Message": concept.get("chat_message", ""),
+            "Button_Text": concept.get("button_text", ""),
+            "Pie_Labels": _join_bullets(concept.get("pie_labels")),
+            "Pie_Center": concept.get("pie_center", ""),
             # Review fields
             "rank": concept.get("rank", ""),
             "selected": concept.get("selected", ""),
