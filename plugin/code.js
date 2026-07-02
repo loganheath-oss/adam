@@ -704,11 +704,26 @@ async function clearResidualLoremIpsum(clone, row) {
   var fields = [row.Headline_On_Creative, row.Headline, row.headline,
                 row.Primary_Text_Short, row.body_short,
                 row.Description, row.description,
-                row.Primary_Text_Long, row.body_long];
+                row.Primary_Text_Long, row.body_long,
+                // structured-style copy, so these styles' unmapped layers still
+                // get real text instead of lorem
+                row.Us_Headline, row.Them_Headline, row.CTA, row.cta,
+                row.Poll_Question, row.Testimonial_Author,
+                row.Chat_Label, row.Chat_Message,
+                row.Profile_Name, row.Profile_Title, row.Profile_Left, row.Profile_Right,
+                row.Headline_V2, row.Primary_Text_V2];
   for (var i = 0; i < fields.length; i++) {
     if (fields[i] && String(fields[i]).trim()) pool.push(String(fields[i]).trim());
   }
-  if (!pool.length) return 0;
+  var listFields = [row.Us_Bullets, row.Them_Bullets, row.Search_Results,
+                    row.Pie_Labels, row.Left_Bullets, row.Right_Bullets];
+  for (var j = 0; j < listFields.length; j++) {
+    var parts = splitPipe(listFields[j]);
+    for (var p = 0; p < parts.length; p++) if (parts[p]) pool.push(parts[p]);
+  }
+  // NEVER leave lorem on a board. If the row carries no usable copy at all, fall
+  // back to a brand-safe line rather than shipping placeholder text.
+  if (!pool.length) pool.push("Find top talent on Upwork");
   var targets = [];
   walkChildren(clone, function (n) {
     if (n.type === "TEXT" && /lorem\s+ipsum/i.test(n.characters || "")) targets.push(n);
@@ -1590,6 +1605,13 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
     }
   }
   if (unfilled > 0) log("  Hidden " + unfilled + " unfilled slot(s)");
+
+  // Board-wide safety net: catch any lorem-ipsum left ANYWHERE on the board —
+  // the left copy panel, un-mapped structured layers (e.g. Us-Vs-Them "them"
+  // bullets), subheads without copy — and replace with real row copy. Guarantees
+  // no board ever ships placeholder text.
+  await clearResidualLoremIpsum(clone, leadRow);
+
   return { imagesApplied: applied, totalRows: conceptRows.length };
 }
 
