@@ -447,46 +447,64 @@ RULES:
 
 Return as JSON array of objects with exactly these keys: headline, body_short, body_long, description, cta, concept_tag{multi_field_keys}. No other text."""
 
-    try:
-        response = httpx.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json"
-            },
-            json={
-                "model": "claude-sonnet-4-6",
-                "max_tokens": 1500,
-                "messages": [{"role": "user", "content": prompt}]
-            },
-            timeout=120
-        )
+    # Retry transient failures with backoff. Previously a single 429/5xx/timeout
+    # silently returned zero concepts for the style, and stage 03 then shipped a
+    # lone placeholder ("Find talent fast") while the sprint reported success.
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            response = httpx.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json"
+                },
+                json={
+                    "model": "claude-sonnet-4-6",
+                    "max_tokens": 1500,
+                    "messages": [{"role": "user", "content": prompt}]
+                },
+                timeout=120
+            )
 
-        if response.status_code == 200:
-            _rj = response.json()
-            text = _rj["content"][0]["text"].strip()
-            _u = _rj.get("usage", {})
-            _add_token_usage(sprint_id, "claude-sonnet-4-6",
-                             _u.get("input_tokens"), _u.get("output_tokens"))
-            if "```json" in text:
-                text = text.split("```json")[1].split("```")[0]
-            elif "```" in text:
-                text = text.split("```")[1].split("```")[0]
+            if response.status_code == 200:
+                _rj = response.json()
+                text = _rj["content"][0]["text"].strip()
+                _u = _rj.get("usage", {})
+                _add_token_usage(sprint_id, "claude-sonnet-4-6",
+                                 _u.get("input_tokens"), _u.get("output_tokens"))
+                if "```json" in text:
+                    text = text.split("```json")[1].split("```")[0]
+                elif "```" in text:
+                    text = text.split("```")[1].split("```")[0]
 
-            parsed = json.loads(text.strip())
-            if isinstance(parsed, list):
-                for j, concept in enumerate(parsed):
-                    concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{j}"
-                    concept["batch_index"] = i
-                    concept["visual_style"] = style
-                    concepts.append(concept)
-            print(f"    {style}: {len(parsed)} concepts generated")
-        else:
-            print(f"    {style}: API error {response.status_code}")
+                parsed = json.loads(text.strip())
+                if isinstance(parsed, list):
+                    for j, concept in enumerate(parsed):
+                        concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{j}"
+                        concept["batch_index"] = i
+                        concept["visual_style"] = style
+                        concepts.append(concept)
+                print(f"    {style}: {len(parsed)} concepts generated")
+                return concepts
 
-    except Exception as e:
-        print(f"    {style}: Error - {str(e)[:60]}")
+            if response.status_code in (429, 500, 502, 503, 529) and attempt < max_attempts - 1:
+                wait = 2 ** attempt
+                print(f"    {style}: API {response.status_code}, retry in {wait}s ({attempt+1}/{max_attempts})")
+                time.sleep(wait)
+                continue
+            print(f"    {style}: API error {response.status_code} (gave up after {attempt+1})")
+            return concepts
+
+        except Exception as e:
+            if attempt < max_attempts - 1:
+                wait = 2 ** attempt
+                print(f"    {style}: {str(e)[:50]}, retry in {wait}s ({attempt+1}/{max_attempts})")
+                time.sleep(wait)
+                continue
+            print(f"    {style}: Error - {str(e)[:60]} (gave up)")
+            return concepts
 
     return concepts
 
@@ -537,9 +555,20 @@ def _generate_real_copy(order, context, api_key, sprint_id=None):
                 print(f"    copy task error: {str(e)[:60]}")
 
     concepts = []
+    failed_styles = []
     for idx in range(total):
-        concepts.extend(results.get(idx, []))
-    return {"concepts": concepts, "generated_at": datetime.now(timezone.utc).isoformat()}
+        res = results.get(idx, [])
+        concepts.extend(res)
+        if not res:
+            failed_styles.append(tasks[idx][2])  # style name
+    out = {"concepts": concepts, "generated_at": datetime.now(timezone.utc).isoformat()}
+    if failed_styles:
+        # Record + surface so the Gate 3 reviewer knows some styles will fall
+        # back to placeholder copy — instead of silently shipping it.
+        out["failed_styles"] = failed_styles
+        print(f"  ⚠ {len(failed_styles)} style(s) produced NO copy "
+              f"(placeholder fallback): {', '.join(failed_styles)}")
+    return out
 
 
 def _review_and_rank_copy(copy_outputs, order, context, api_key, sprint_id=None):
