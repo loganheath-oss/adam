@@ -193,9 +193,8 @@ var STYLES_THAT_SKIP_IMAGE = {
   "platform ui":      true,
   "search results":   true,
   "device ui":        true,
-  // Poll has a right_image_placeholder but ships with built imagery; keep it
-  // until library routing for Poll is confirmed.
-  "poll":             true,
+  // Poll HAS a real Image-Placeholder (full-bleed photo behind the card) — it
+  // must receive a library photo so polls don't all repeat the template image.
   // Pie Chart is a vector/gradient graphic — no photo; the slice is drawn by
   // fillPieChartValue() from the manifest's Chart_Pct.
   "pie chart":        true,
@@ -798,6 +797,55 @@ async function fillPieChartValue(clone, pct) {
   }
 }
 
+// Poll: a question + two horizontal bars. Each bar (Stat-Percent-A / -B) shows a
+// percentage as text AND a fill rectangle whose width encodes that percentage.
+// The template ships with 60%/90% placeholders; we set both the % text and the
+// fill width from the generated poll values, and fill the standalone question.
+async function fillPollCopy(clone, row) {
+  var statBlock = findLayerByName(clone, "Stat Block");
+  if (!statBlock || !statBlock.children) { log("  ⚠ poll: no 'Stat Block' frame"); return false; }
+
+  var question = row.Poll_Question || row.poll_question ||
+                 row.Primary_Text_Short || row.body_short || "";
+  var pctA = parseInt(row.Poll_Pct_A || row.poll_pct_a, 10);
+  var pctB = parseInt(row.Poll_Pct_B || row.poll_pct_b, 10);
+
+  // Question = the "Stat Block Text" that is a DIRECT child of Stat Block
+  // (the % ones live inside the Stat-Percent-* frames, so they're excluded).
+  if (question) {
+    for (var i = 0; i < statBlock.children.length; i++) {
+      var c = statBlock.children[i];
+      if (c.type === "TEXT" && c.name === "Stat Block Text") {
+        await setTextLayer(c, question);
+        break;
+      }
+    }
+  }
+
+  async function fillBar(barName, pct) {
+    if (!isFinite(pct)) return;
+    pct = Math.max(0, Math.min(100, pct));
+    var bar = findLayerByName(clone, barName);
+    if (!bar) return;
+    var trackW = ("width" in bar) ? bar.width : 1000;
+    var txt = null, fill = null;
+    (function walk(n) {
+      if (!txt && n.type === "TEXT" && n.name === "Stat Block Text") txt = n;
+      if (!fill && n.type === "RECTANGLE" && /-fill$/i.test(n.name || "")) fill = n;
+      var ch = n.children; if (ch) for (var i = 0; i < ch.length; i++) walk(ch[i]);
+    })(bar);
+    if (txt) await setTextLayer(txt, Math.round(pct) + "%");
+    if (fill && "resize" in fill) {
+      try { fill.resize(Math.max(1, Math.round((pct / 100) * trackW)), fill.height); }
+      catch (e) { log("  ⚠ poll bar resize (" + barName + "): " + e); }
+    }
+  }
+  await fillBar("Stat-Percent-A", pctA);
+  await fillBar("Stat-Percent-B", pctB);
+  log("  ✓ poll filled (question + bars A=" + pctA + "% B=" + pctB + "%)");
+  return true;
+}
+
 function splitPipe(s) {
   return String(s || "").split("|").map(function (x) { return x.trim(); }).filter(Boolean);
 }
@@ -1124,6 +1172,11 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
     if (key === "us vs them") {
       await fillUsVsThemCopy(clone, row);
       log("  ✓ us-vs-them copy filled (us/them headlines + bullets)");
+    }
+
+    // Poll: question + two bars (% text + fill width) from generated values.
+    if (key === "poll") {
+      await fillPollCopy(clone, row);
     }
 
     // Safety net: no lorem ipsum may ship. Replace any placeholder text left in

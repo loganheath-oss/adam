@@ -446,6 +446,18 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "- right_bullets (array of EXACTLY 2 strings, max 30 chars each)\n"
         )
         multi_field_keys = ", left_headline, right_headline, left_bullets, right_bullets"
+    elif _sl == "poll":
+        multi_field_instructions = (
+            "\n===== EXTRA FIELDS FOR \"Poll\" =====\n"
+            "This is a poll ad: a QUESTION above TWO horizontal bars, each showing a percentage.\n"
+            "The template shows only the two percentages (there are no separate option labels),\n"
+            "so the QUESTION must be self-explanatory and the two percentages must tell a clear,\n"
+            "sensible story together (e.g. a striking contrast). ALSO provide:\n"
+            "- poll_question (max 75 chars — the question shown above the bars)\n"
+            "- poll_pct_a (integer 5-95 — first bar's percentage)\n"
+            "- poll_pct_b (integer 5-95 — second bar's percentage; meaningfully different from poll_pct_a)\n"
+        )
+        multi_field_keys = ", poll_question, poll_pct_a, poll_pct_b"
 
     prompt = f"""You are writing paid acquisition ad copy for Upwork. Follow every brand rule below exactly.
 
@@ -1019,13 +1031,16 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
         # Hybrid (2026-06-22): dashboard mock with a real image_placeholder — fed
         # a library photo like Photo with Text.
         "Hybrid",
+        # Poll (2026-07-02): has a full-bleed Image-Placeholder behind the poll
+        # card — feed it a library photo so polls don't repeat the template image.
+        "Poll",
     }
 
     # Styles that only need a background (no scene generation)
     BACKGROUND_ONLY = {
         "Pie Chart", "Search Results", "Search Bar with Talent Badge",
         "Text Only", "Chat Bubble", "Reminder",
-        "Poll", "Tweet / Post Mockup",
+        "Tweet / Post Mockup",
         "Text with Button", "Text with Button and Cursor",  # latter is legacy
     }
 
@@ -1745,6 +1760,10 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Right_Headline": concept.get("right_headline", ""),
             "Left_Bullets": _join_bullets(concept.get("left_bullets")),
             "Right_Bullets": _join_bullets(concept.get("right_bullets")),
+            # Poll fields — question + two bar percentages (drive % text + bar width).
+            "Poll_Question": concept.get("poll_question", ""),
+            "Poll_Pct_A": concept.get("poll_pct_a", ""),
+            "Poll_Pct_B": concept.get("poll_pct_b", ""),
             # Review fields
             "rank": concept.get("rank", ""),
             "selected": concept.get("selected", ""),
