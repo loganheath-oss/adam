@@ -1939,11 +1939,18 @@ async def storage_report():
     """Volume usage: total + per-sprint sizes (largest first), so you can see
     what's eating the volume and decide what to prune. Read-only."""
     def _dir_size(p):
+        # Count each inode once so hardlinked exports/ (which share bytes with
+        # images/) aren't triple-counted — this reports real disk use, like du.
         total = 0
+        seen = set()
         for root, _, files in os.walk(p):
             for f in files:
                 try:
-                    total += (Path(root) / f).stat().st_size
+                    st = (Path(root) / f).stat()
+                    if st.st_ino and st.st_ino in seen:
+                        continue
+                    seen.add(st.st_ino)
+                    total += st.st_size
                 except OSError:
                     pass
         return total
