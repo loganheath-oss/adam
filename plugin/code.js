@@ -899,29 +899,50 @@ async function fillUsVsThemCopy(clone, row) {
   var usB = splitPipe(row.Us_Bullets || row.us_bullets);
   var themB = splitPipe(row.Them_Bullets || row.them_bullets);
 
-  // Current templates duplicate Copy_Headline / Copy_Bullet{1..3} across BOTH
-  // columns (them-side first in document order, us-side second — matching the
-  // ❌ / ✅ order). Fill positionally. Also cover the legacy per-side names that
-  // still exist on some sizes (UsVsThem_headlinethem_text, UsVsThem_Bullet4..6).
-  async function fillPair(name, themVal, usVal) {
-    var nodes = findAllLayersByName(clone, name);
-    if (nodes.length >= 2) {
-      if (themVal) await setTextLayer(nodes[0], themVal);   // them column (first)
-      if (usVal) await setTextLayer(nodes[1], usVal);       // us column (second)
-    } else if (nodes.length === 1) {
-      if (usVal) await setTextLayer(nodes[0], usVal);
+  // The two columns use inconsistent layer names across sizes (Copy_Headline /
+  // Copy_Bullet duplicated on some, legacy UsVsThem_* on the 1440x1440). Instead
+  // of matching names, identify each side by the ✅ (us) / ❌ (them) marker that
+  // sits in the same container — robust to naming and size. Fall back to document
+  // order (them column first) only if a layer has no nearby marker.
+  function markerSide(node) {
+    var p = node.parent;
+    if (p && "children" in p) {
+      var hasUs = false, hasThem = false;
+      for (var i = 0; i < p.children.length; i++) {
+        var c = p.children[i], t = (c.name || "") + (c.characters || "");
+        if (t.indexOf("✅") >= 0) hasUs = true;      // ✅
+        if (t.indexOf("❌") >= 0) hasThem = true;    // ❌
+      }
+      if (hasThem && !hasUs) return "them";
+      if (hasUs && !hasThem) return "us";
     }
+    return null;
   }
-  // Legacy per-side names (only present on non-standardized sizes)
-  if (themHead) await setFirstTextByCandidates(clone, ["UsVsThem_headlinethem_text"], themHead);
-  if (usHead) await setFirstTextByCandidates(clone, ["UsVsThem_headline_text"], usHead);
-  // Standardized duplicated Copy_* names (both columns)
-  await fillPair("Copy_Headline", themHead, usHead);
-  for (var i = 0; i < 3; i++) {
-    if (usB[i]) await setFirstTextByCandidates(clone, ["UsVsThem_Bullet" + (i + 1)], usB[i]);   // legacy us
-    if (themB[i]) await setFirstTextByCandidates(clone, ["UsVsThem_Bullet" + (i + 4)], themB[i]); // legacy them
-    await fillPair("Copy_Bullet" + (i + 1), themB[i], usB[i]);
+  var heads = [], bullets = [];
+  walkChildren(clone, function (n) {
+    if (n.type !== "TEXT") return;
+    var nm = n.name || "";
+    if (/headline/i.test(nm) && !/subhead/i.test(nm)) heads.push(n);
+    else if (/bullet/i.test(nm)) bullets.push(n);
+  });
+
+  // Headlines rarely have a marker beside them → default to order (them, us).
+  var usHeads = heads.filter(function (n) { return markerSide(n) === "us"; });
+  var themHeads = heads.filter(function (n) { return markerSide(n) === "them"; });
+  if (!usHeads.length && !themHeads.length && heads.length >= 2) { themHeads = [heads[0]]; usHeads = [heads[1]]; }
+  if (themHead && themHeads[0]) await setTextLayer(themHeads[0], themHead);
+  if (usHead && usHeads[0]) await setTextLayer(usHeads[0], usHead);
+
+  // Bullets: group by marker side, fill in order within each side.
+  var usBul = bullets.filter(function (n) { return markerSide(n) === "us"; });
+  var themBul = bullets.filter(function (n) { return markerSide(n) === "them"; });
+  if (!usBul.length && !themBul.length && bullets.length) {           // no markers → split by order
+    var half = Math.floor(bullets.length / 2);
+    themBul = bullets.slice(0, half); usBul = bullets.slice(half);
   }
+  for (var a = 0; a < themBul.length && a < themB.length; a++) if (themB[a]) await setTextLayer(themBul[a], themB[a]);
+  for (var b = 0; b < usBul.length && b < usB.length; b++) if (usB[b]) await setTextLayer(usBul[b], usB[b]);
+  log("  ✓ us-vs-them filled (us bullets=" + usBul.length + ", them bullets=" + themBul.length + " by marker)");
   return true;
 }
 
