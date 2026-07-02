@@ -827,7 +827,6 @@ async function fillPollCopy(clone, row) {
     pct = Math.max(0, Math.min(100, pct));
     var bar = findLayerByName(clone, barName);
     if (!bar) return;
-    var trackW = ("width" in bar) ? bar.width : 1000;
     var txt = null, fill = null;
     (function walk(n) {
       if (!txt && n.type === "TEXT" && n.name === "Stat Block Text") txt = n;
@@ -836,7 +835,16 @@ async function fillPollCopy(clone, row) {
     })(bar);
     if (txt) await setTextLayer(txt, Math.round(pct) + "%");
     if (fill && "resize" in fill) {
-      try { fill.resize(Math.max(1, Math.round((pct / 100) * trackW)), fill.height); }
+      // Size the fill to pct% of the bar's RENDERED width. bar.width can report
+      // LOCAL (unscaled) units (observed 100 while it renders 1000), so use the
+      // absolute bounds for the track and convert the target back into the
+      // fill's own local units via its local/absolute ratio.
+      var frameAbs = (bar.absoluteBoundingBox && bar.absoluteBoundingBox.width)
+        ? bar.absoluteBoundingBox.width : (bar.width || 1000);
+      var ratio = (fill.absoluteBoundingBox && fill.absoluteBoundingBox.width)
+        ? (fill.width / fill.absoluteBoundingBox.width) : 1;
+      var target = Math.max(1, Math.round((pct / 100) * frameAbs * ratio));
+      try { fill.resize(target, fill.height); }
       catch (e) { log("  ⚠ poll bar resize (" + barName + "): " + e); }
     }
   }
