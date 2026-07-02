@@ -590,25 +590,35 @@ async function applyLibraryImageToClone(clone, libraryNodeId) {
   // 3x the clone's footprint so they can't win the largest-target race.
   var maxW = ("width" in clone) ? clone.width * 3 : Infinity;
   var maxH = ("height" in clone) ? clone.height * 3 : Infinity;
+  function isPlaceholderName(nm) {
+    // Match Image-Placeholder / Image_Placeholder / Left-/Right- variants,
+    // regardless of hyphen vs underscore vs case.
+    var s = (nm || "").toLowerCase().replace(/[_\s]+/g, "-");
+    return s === "image-placeholder" || s === "left-image-placeholder" || s === "right-image-placeholder";
+  }
   function consider(n) {
     if (!n || seenIds[n.id]) return;
     if (n.visible === false) return;
     if (!("fills" in n)) return;
     if (!("width" in n) || !("height" in n)) return;
     seenIds[n.id] = true;
+    var nameLower = (n.name || "").toLowerCase();
+    if (/glimmer/.test(nameLower)) return;         // decorative gradient — never a photo target
     if (n.width > maxW || n.height > maxH) return; // decorative oversized fill
     var hasImage = Array.isArray(n.fills) && n.fills.some(function (f) { return f.type === "IMAGE"; });
     if (hasImage) withImageFill.push(n);
-    var nameLower = (n.name || "").toLowerCase();
-    if (nameLower === "image_placeholder") placeholders.push(n);
+    if (isPlaceholderName(n.name)) placeholders.push(n);
   }
   walkChildren(clone, consider);
-  // Pick the canonical target: largest with existing image fill, else largest placeholder.
-  var pool = withImageFill.length > 0 ? withImageFill : placeholders;
+  // Prefer a NAMED image placeholder (the intended photo slot) over the largest
+  // layer that merely has an image fill — this stops the photo landing on a
+  // decorative background when both exist (e.g. Poll's glimmer vs Image-Placeholder).
+  var pool, poolType;
+  if (placeholders.length > 0) { pool = placeholders; poolType = "named image-placeholder"; }
+  else { pool = withImageFill; poolType = "with-existing-image-fill"; }
   pool.sort(function (a, b) { return (b.width * b.height) - (a.width * a.height); });
   var targets = pool.length > 0 ? [pool[0]] : [];
   if (targets.length > 0) {
-    var poolType = withImageFill.length > 0 ? "with-existing-image-fill" : "image_placeholder";
     log("    Image target: '" + targets[0].name + "' (" + Math.round(targets[0].width) + "x" + Math.round(targets[0].height) + ", picked from " + pool.length + " " + poolType + " candidate(s))");
   }
 
@@ -873,13 +883,29 @@ async function fillUsVsThemCopy(clone, row) {
   var themHead = row.Them_Headline || row.them_headline || "";
   var usB = splitPipe(row.Us_Bullets || row.us_bullets);
   var themB = splitPipe(row.Them_Bullets || row.them_bullets);
-  if (usHead) await setFirstTextByCandidates(clone, ["UsVsThem_headline_text", "headline_text"], usHead);
-  if (themHead) await setFirstTextByCandidates(clone, ["UsVsThem_headlinethem_text"], themHead);
-  for (var i = 0; i < 3; i++) {
-    if (usB[i]) await setFirstTextByCandidates(clone, ["UsVsThem_Bullet" + (i + 1)], usB[i]);
+
+  // Current templates duplicate Copy_Headline / Copy_Bullet{1..3} across BOTH
+  // columns (them-side first in document order, us-side second — matching the
+  // ❌ / ✅ order). Fill positionally. Also cover the legacy per-side names that
+  // still exist on some sizes (UsVsThem_headlinethem_text, UsVsThem_Bullet4..6).
+  async function fillPair(name, themVal, usVal) {
+    var nodes = findAllLayersByName(clone, name);
+    if (nodes.length >= 2) {
+      if (themVal) await setTextLayer(nodes[0], themVal);   // them column (first)
+      if (usVal) await setTextLayer(nodes[1], usVal);       // us column (second)
+    } else if (nodes.length === 1) {
+      if (usVal) await setTextLayer(nodes[0], usVal);
+    }
   }
-  for (var k = 0; k < 3; k++) {
-    if (themB[k]) await setFirstTextByCandidates(clone, ["UsVsThem_Bullet" + (k + 4)], themB[k]);
+  // Legacy per-side names (only present on non-standardized sizes)
+  if (themHead) await setFirstTextByCandidates(clone, ["UsVsThem_headlinethem_text"], themHead);
+  if (usHead) await setFirstTextByCandidates(clone, ["UsVsThem_headline_text"], usHead);
+  // Standardized duplicated Copy_* names (both columns)
+  await fillPair("Copy_Headline", themHead, usHead);
+  for (var i = 0; i < 3; i++) {
+    if (usB[i]) await setFirstTextByCandidates(clone, ["UsVsThem_Bullet" + (i + 1)], usB[i]);   // legacy us
+    if (themB[i]) await setFirstTextByCandidates(clone, ["UsVsThem_Bullet" + (i + 4)], themB[i]); // legacy them
+    await fillPair("Copy_Bullet" + (i + 1), themB[i], usB[i]);
   }
   return true;
 }
@@ -925,6 +951,16 @@ function selectVariant(candidates, hint) {
   var alt    = pool.filter(isAlt);
   if (wantCTA && nonAlt.length) pool = nonAlt;
   else if (!wantCTA && alt.length) pool = alt;
+  // Layout-family preference: styles like Testimonial resolve to multiple
+  // families (Photo / Text-Only / Text-and-Photo). When a photo is available,
+  // prefer a template whose name includes "Photo"; when not, prefer "Text-Only".
+  if (hint.hasPhoto === true) {
+    var photoFam = pool.filter(function (c) { return /photo/i.test(c.name); });
+    if (photoFam.length) pool = photoFam;
+  } else if (hint.hasPhoto === false) {
+    var textFam = pool.filter(function (c) { return /text-?only/i.test(c.name); });
+    if (textFam.length) pool = textFam;
+  }
   // Tone preference (only if this family actually has toned variants).
   if (hint.prefer) {
     var toned = pool.filter(function (c) { return tone(c) === hint.prefer; });
@@ -1347,7 +1383,7 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
   // Variant hint: always with-CTA unless the order explicitly says no CTA;
   // alternate Dark/Light across concepts for visual variety.
   var wantCTA = !(leadRow.no_cta === "true" || leadRow.no_cta === true || leadRow.No_CTA === "true");
-  var variantHint = { wantCTA: wantCTA, prefer: (conceptIndex % 2 === 0 ? "light" : "dark") };
+  var variantHint = { wantCTA: wantCTA, prefer: (conceptIndex % 2 === 0 ? "light" : "dark"), hasPhoto: !!leadNodeId };
 
   log("  Lead row: style='" + visualStyle + "', photo=" + (leadRow.figma_asset_name || leadNodeId || "(none)"));
   log("  Headline: '" + leadHeadline.substring(0, 60) + (leadHeadline.length > 60 ? "..." : "") + "'");
@@ -1471,6 +1507,33 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
         if (key === "sticky note") {
           await fillStickyNoteCopy(styledClone, leadHeadline, leadPrimary, leadRow.Primary_Text_Long || leadPrimary);
         }
+
+        // ── Per-style STRUCTURED copy (same fills as the styled_per_row path) ──
+        // Testimonial quote + author
+        var quote = leadRow.Primary_Text_Long || leadRow.body_long || leadPrimary;
+        if (quote) await setFirstTextByCandidates(styledClone, ["Copy_Testimonial"], quote);
+        if (leadRow.Testimonial_Author) await setFirstTextByCandidates(styledClone, ["Copy_Author"], leadRow.Testimonial_Author);
+        // Search Results — up to three role rows
+        var srRows = splitPipe(leadRow.Search_Results);
+        for (var si = 0; si < srRows.length && si < 3; si++) await setFirstTextByCandidates(styledClone, ["Copy_Title" + (si + 1)], srRows[si]);
+        // Social Media Profile
+        if (leadRow.Profile_Name) await setFirstTextByCandidates(styledClone, ["Copy_Name"], leadRow.Profile_Name);
+        if (leadRow.Profile_Title) await setFirstTextByCandidates(styledClone, ["Copy_Title"], leadRow.Profile_Title);
+        if (leadRow.Profile_Left) await setFirstTextByCandidates(styledClone, ["Copy_Left-Column"], leadRow.Profile_Left);
+        if (leadRow.Profile_Right) await setFirstTextByCandidates(styledClone, ["Copy_Right-Column"], leadRow.Profile_Right);
+        // Chat Bubble + Text-with-Button
+        if (leadRow.Chat_Label) await setFirstTextByCandidates(styledClone, ["Copy_Chat-Bubble-1"], leadRow.Chat_Label);
+        if (leadRow.Chat_Message) await setFirstTextByCandidates(styledClone, ["Copy_Chat-Bubble-2"], leadRow.Chat_Message);
+        if (leadRow.Button_Text) await setFirstTextByCandidates(styledClone, ["Copy_Button"], leadRow.Button_Text);
+        // Pie Chart — four quadrant labels + slice value
+        var pieLabels = splitPipe(leadRow.Pie_Labels);
+        var quad = ["Copy_TopLeft", "Copy_TopRight", "Copy_BottomLeft", "Copy_BottomRight"];
+        for (var qi = 0; qi < pieLabels.length && qi < 4; qi++) await setFirstTextByCandidates(styledClone, [quad[qi]], pieLabels[qi]);
+        if (key === "pie chart" && (leadRow.Chart_Pct || leadRow.chart_pct)) await fillPieChartValue(styledClone, leadRow.Chart_Pct || leadRow.chart_pct);
+        // Us vs Them (side headlines + bullets) and Poll (question + bars)
+        if (key === "us vs them") await fillUsVsThemCopy(styledClone, leadRow);
+        if (key === "poll") await fillPollCopy(styledClone, leadRow);
+
         // Safety net: never ship lorem-ipsum placeholder text on the styled ad.
         await clearResidualLoremIpsum(styledClone, leadRow);
 
