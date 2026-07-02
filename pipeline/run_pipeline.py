@@ -1058,6 +1058,11 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
             print(f"  WARNING: could not fetch Figma library ({e}). Photo-based styles will fall back to Gemini.")
             library_cache = None
 
+    # Track library photos already used in THIS sprint so each ad gets a distinct
+    # image. select_photo only excludes what the caller passes, so without this
+    # every photo row re-picks from the same small pool → the same photo repeats.
+    used_photo_ids = []
+
     for i, batch in enumerate(order.get("batches", [])):
         platform = batch.get("platform", "Meta")
         fmt = batch.get("format", "Static Feed")
@@ -1109,13 +1114,17 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                 order=order,
                                 sprint_id=sprint_id,
                                 components=library_cache,
+                                exclude_ids=used_photo_ids or None,
                             )
+                            _rt_excl = list(used_photo_ids)
+                            if picked_left.get("figma_asset_id"):
+                                _rt_excl.append(picked_left.get("figma_asset_id"))
                             picked_right = pick_photo_for_asset(
                                 visual_style=style,
                                 order=order,
                                 sprint_id=sprint_id,
                                 components=library_cache,
-                                exclude_ids=[picked_left.get("figma_asset_id", "")] if picked_left.get("figma_asset_id") else None,
+                                exclude_ids=_rt_excl or None,
                             )
                             left_ok = picked_left.get("is_photo_based") and not picked_left.get("needs_human_selection")
                             right_ok = picked_right.get("is_photo_based") and not picked_right.get("needs_human_selection")
@@ -1126,6 +1135,9 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                 figma_asset_name_left = picked_left.get("figma_asset_name", "")
                                 figma_node_id_right = picked_right.get("figma_asset_id", "")
                                 figma_asset_name_right = picked_right.get("figma_asset_name", "")
+                                for _pid in (figma_node_id_left, figma_node_id_right):
+                                    if _pid:
+                                        used_photo_ids.append(_pid)
                                 # Mirror the left pick into the legacy single-photo
                                 # fields so older readers/plugins still resolve to a photo.
                                 figma_node_id = figma_node_id_left
@@ -1141,7 +1153,8 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                             prompt = ""
                             print(f"    {style} — dual library lookup failed: {e}")
                     elif style in PHOTO_LIBRARY_STYLES and library_cache:
-                        # Pull a photo from Brandon's tagged library
+                        # Pull a photo from the tagged library, EXCLUDING photos
+                        # already used this sprint so each ad gets a distinct image.
                         try:
                             from figma_library import pick_photo_for_asset
                             picked = pick_photo_for_asset(
@@ -1149,13 +1162,25 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                 order=order,
                                 sprint_id=sprint_id,
                                 components=library_cache,
+                                exclude_ids=used_photo_ids or None,
                             )
+                            # If excluding used photos emptied the pool, retry
+                            # allowing repeats (variety is best-effort, never fail).
+                            if used_photo_ids and (not picked.get("is_photo_based") or picked.get("needs_human_selection")):
+                                picked = pick_photo_for_asset(
+                                    visual_style=style,
+                                    order=order,
+                                    sprint_id=sprint_id,
+                                    components=library_cache,
+                                )
                             if picked.get("is_photo_based") and not picked.get("needs_human_selection"):
                                 method = "figma_library"
                                 prompt = ""
                                 figma_node_id = picked.get("figma_asset_id", "")
                                 figma_asset_name = picked.get("figma_asset_name", "")
                                 match_strength = picked.get("match_strength", "")
+                                if figma_node_id:
+                                    used_photo_ids.append(figma_node_id)
                                 print(f"    {style} — picked: {figma_asset_name} ({figma_node_id}, match={match_strength})")
                             else:
                                 # No match in library — flag for human, no Gemini fallback for photo styles

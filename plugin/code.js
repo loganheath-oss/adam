@@ -677,6 +677,33 @@ async function setTextInContainer(clone, containerName, text) {
   return false;
 }
 
+// Safety net so NO lorem ipsum ever ships. Styles whose specific layers aren't
+// mapped yet (Poll options, etc.) can leave placeholder text behind; replace any
+// TEXT node still holding "lorem ipsum" with the row's real copy, cycling fields
+// so multiple placeholder layers don't all get the same line. Logs loudly so a
+// proper per-field mapping still gets done.
+async function clearResidualLoremIpsum(clone, row) {
+  var pool = [];
+  var fields = [row.Headline_On_Creative, row.Headline, row.headline,
+                row.Primary_Text_Short, row.body_short,
+                row.Description, row.description,
+                row.Primary_Text_Long, row.body_long];
+  for (var i = 0; i < fields.length; i++) {
+    if (fields[i] && String(fields[i]).trim()) pool.push(String(fields[i]).trim());
+  }
+  if (!pool.length) return 0;
+  var targets = [];
+  walkChildren(clone, function (n) {
+    if (n.type === "TEXT" && /lorem\s+ipsum/i.test(n.characters || "")) targets.push(n);
+  });
+  var filled = 0;
+  for (var t = 0; t < targets.length; t++) {
+    if (await setTextLayer(targets[t], pool[t % pool.length])) filled++;
+  }
+  if (filled) log("  ⚠ replaced " + filled + " residual lorem-ipsum layer(s) with real copy (needs proper per-field mapping)");
+  return filled;
+}
+
 // Brandon's Sticky Note template has a 4-quadrant layout: Left_Headline_Text,
 // Left_Bullet_Text1/2, right_headline_text, Right_Bullet_Text1/2. The pipeline's
 // copy generation today produces only one headline + one body per concept —
@@ -1099,6 +1126,10 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
       log("  ✓ us-vs-them copy filled (us/them headlines + bullets)");
     }
 
+    // Safety net: no lorem ipsum may ship. Replace any placeholder text left in
+    // unmapped layers with the row's real copy.
+    await clearResidualLoremIpsum(clone, row);
+
     // Position next clone in a flexible grid (8 per row)
     rowItems++;
     maxHeight = Math.max(maxHeight, clone.height);
@@ -1390,9 +1421,24 @@ async function assemble(payload) {
   var baseX, baseY;
   if (destination && "x" in destination) { baseX = 0; baseY = 0; }
   else {
-    var v = figma.viewport.center;
-    baseX = v.x - 800;
-    baseY = v.y - 800;
+    // Place assembled frames in empty space to the RIGHT of everything already
+    // on the page, so a run never lands on top of Elise's templates or prior runs.
+    var maxRight = null, topY = null;
+    var pk = figma.currentPage.children;
+    for (var pi = 0; pi < pk.length; pi++) {
+      var pn = pk[pi];
+      if (!("x" in pn) || !("width" in pn)) continue;
+      var right = pn.x + pn.width;
+      if (maxRight === null || right > maxRight) maxRight = right;
+      if (topY === null || pn.y < topY) topY = pn.y;
+    }
+    if (maxRight === null) {
+      var v = figma.viewport.center;
+      baseX = v.x - 800; baseY = v.y - 800;
+    } else {
+      baseX = maxRight + 2000;   // clear gap to the right of existing content
+      baseY = (topY !== null ? topY : 0);
+    }
   }
 
   var assembled = 0;
