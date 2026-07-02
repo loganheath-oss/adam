@@ -795,11 +795,56 @@ async function fillUsVsThemCopy(clone, row) {
 
 // ── Styled-per-row mode ─────────────────────────────────────────────────────
 
+function normAlnum(s) {
+  return String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+// Preferred convention matcher (Elise's source-of-truth naming):
+//   Template_{Adtype}_{WxH}   e.g. Template_Us-Vs-Them_1440x1800
+// Match by the FULL adtype token in the template name + the size taken from the
+// NAME (some templates are 1440x1805 in their bounding box but named _1440x1800,
+// so name-size beats box-size). Width must match exactly; height within a small
+// tolerance. This replaces the stale hardcoded STYLE_TEMPLATE_PREFIXES for the
+// common case and immunizes against Elise renaming template families.
+function findTemplateByConvention(searchRoot, visualStyle, w, h) {
+  var an = normAlnum(visualStyle);
+  if (!an) return null;
+  var all = findAllByPrefix(searchRoot, "Template");
+  var best = null, bestDelta = 1e9;
+  for (var i = 0; i < all.length; i++) {
+    var c = all[i];
+    if (normAlnum(c.name).indexOf(an) === -1) continue;  // adtype must be in the name
+    var cw, ch;
+    var m = String(c.name).match(/(\d{3,5})\s*[x×]\s*(\d{3,5})/i);
+    if (m) { cw = +m[1]; ch = +m[2]; }
+    else { var wh = nodeWH(c); if (!wh) continue; cw = wh[0]; ch = wh[1]; }
+    if (cw !== w) continue;
+    var delta = Math.abs(ch - h);
+    if (delta <= 12 && delta < bestDelta) {
+      var node = c, viaSet = null;
+      if (c.type === "COMPONENT_SET") { node = pickPreferredVariant(c, []) || c; viaSet = c; }
+      best = { node: node, viaSet: viaSet };
+      bestDelta = delta;
+      if (delta === 0) break;
+    }
+  }
+  return best;
+}
+
 function findStyledTemplate(searchRoot, visualStyle, w, h) {
+  // 1) Elise's naming convention first (source of truth).
+  var conv = findTemplateByConvention(searchRoot, visualStyle, w, h);
+  if (conv) {
+    log("    Found template by convention: '" + conv.node.name + "'");
+    return conv;
+  }
+
+  // 2) Fallback: legacy hardcoded prefix maps (kept so older/renamed families
+  //    still resolve; logs loudly when even this misses).
   var key = normalizeStyle(visualStyle);
   var prefixes = STYLE_TEMPLATE_PREFIXES[key];
   if (!prefixes) {
-    log("    ⚠ Unknown visual_style: '" + visualStyle + "' (normalized '" + key + "')");
+    log("    ⚠ No template by convention and unknown visual_style: '" + visualStyle + "' (normalized '" + key + "')");
     return null;
   }
 
