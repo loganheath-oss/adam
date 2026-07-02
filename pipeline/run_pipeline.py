@@ -1321,7 +1321,15 @@ def stage_04_generate_images(sprint_id, image_rows):
         # Resize and crop for each resolution
         for row in rows:
             size = row["resolution"]
-            w, h = [int(x) for x in size.split("x")]
+            # Parse a WxH pixel size defensively. A ratio ("1:1") or malformed
+            # value used to unpack-crash and abort the whole stage; skip the row
+            # and count it failed instead.
+            m = re.search(r"(\d+)\s*[x×]\s*(\d+)", str(size))
+            if not m:
+                print(f"    Skipping {row.get('asset_id', '?')}: bad resolution {size!r}")
+                failed += 1
+                continue
+            w, h = int(m.group(1)), int(m.group(2))
             resized = _resize_and_crop(master_image, w, h)
 
             img_path = images_dir / f"{row['asset_id']}.png"

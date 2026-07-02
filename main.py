@@ -69,6 +69,26 @@ STAGE_LABELS = {
 
 INTERRUPTED_STATES = {"queued", "running"}
 
+
+def _is_interruptible(state: str) -> bool:
+    """A sprint is mid-flight (and thus stranded by a restart) unless it's
+    terminal (complete/error/interrupted) or legitimately paused waiting for a
+    human (awaiting_gate_*). resuming_gate_* is handled separately so it can be
+    resumed rather than fully re-run."""
+    if not state:
+        return False
+    if state in ("complete", "error", "interrupted"):
+        return False
+    if state.startswith("awaiting_gate_") or state.startswith("resuming_gate_"):
+        return False
+    return True  # queued, running, stage_* → interrupted, safe to re-run
+
+
+# Serializes gate approvals / resumes so a double-click or retried request can't
+# pass the state check twice and spawn the same stage twice (duplicate API spend
+# + racing file writers). Approvals are infrequent, so one global lock is fine.
+_APPROVE_LOCK = asyncio.Lock()
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 _SESSION_COOKIE = "pipeline_sess"
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -264,7 +284,21 @@ async def lifespan(app: FastAPI):
                 continue
             try:
                 state_data = json.loads(state_path.read_text())
-                if state_data.get("state") in INTERRUPTED_STATES:
+                state = state_data.get("state", "")
+                if state.startswith("resuming_gate_"):
+                    # Mid-gate restart: recoverable via /resume (re-runs just this
+                    # gate, preserving prior gates' outputs on the volume).
+                    try:
+                        gate_num = int(state.rsplit("_", 1)[1])
+                    except (ValueError, IndexError):
+                        gate_num = None
+                    state_data["state"] = "error"
+                    if gate_num is not None:
+                        state_data["failed_gate"] = gate_num
+                    state_data["error"] = "Server restarted mid-stage — Resume to re-run this step."
+                    state_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+                    state_path.write_text(json.dumps(state_data, indent=2))
+                elif _is_interruptible(state):
                     state_data["state"] = "interrupted"
                     state_data["updated_at"] = datetime.now(timezone.utc).isoformat()
                     state_data["interrupted_reason"] = "Server restarted while pipeline was in progress"
@@ -1769,16 +1803,9 @@ async def approve_gate(sprint_id: str, gate_num: int, request: Request):
     if not sprint_dir.exists():
         return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
     state_path = sprint_dir / "pipeline_state.json"
-    pipeline_state = _load_json(state_path)
-    current_state = pipeline_state.get("state", "unknown")
-    expected_state = f"awaiting_gate_{gate_num}"
-    if current_state != expected_state:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Sprint is in state '{current_state}', expected '{expected_state}'",
-        )
 
-    # Capture optional rationale note from request body (JSON or form).
+    # Capture optional rationale note from request body (JSON or form) BEFORE
+    # taking the lock (no state dependency, and it's an await point).
     note = ""
     try:
         body = await request.json()
@@ -1787,24 +1814,33 @@ async def approve_gate(sprint_id: str, gate_num: int, request: Request):
     except Exception:
         note = ""
 
-    # Persist the gate decision for cross-sprint memory.
+    expected_state = f"awaiting_gate_{gate_num}"
     GATE_NAMES_LOCAL = {2: "Order + Refs Review", 3: "Copy Review", 4: "Image Prompt Scan", 5: "Assembly Review", 6: "Final QA"}
-    _append_jsonl_safe(sprint_dir / "gate_decisions.jsonl", {
-        "ts": datetime.now(timezone.utc).isoformat(),
-        "sprint_id": sprint_id,
-        "gate": gate_num,
-        "gate_name": GATE_NAMES_LOCAL.get(gate_num, ""),
-        "decision": "approved",
-        "note": note,
-        "source": "http",
-    })
 
-    state_path.write_text(json.dumps({
-        "sprint_id": sprint_id,
-        "state": f"resuming_gate_{gate_num}",
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }, indent=2))
-    asyncio.create_task(_run_gate_task(sprint_id, gate_num))
+    # Atomic check-and-set: two near-simultaneous approvals (double-click,
+    # retried request) must not both pass the guard and spawn the stage twice.
+    async with _APPROVE_LOCK:
+        current_state = _load_json(state_path).get("state", "unknown")
+        if current_state != expected_state:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Sprint is in state '{current_state}', expected '{expected_state}'",
+            )
+        _append_jsonl_safe(sprint_dir / "gate_decisions.jsonl", {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "sprint_id": sprint_id,
+            "gate": gate_num,
+            "gate_name": GATE_NAMES_LOCAL.get(gate_num, ""),
+            "decision": "approved",
+            "note": note,
+            "source": "http",
+        })
+        state_path.write_text(json.dumps({
+            "sprint_id": sprint_id,
+            "state": f"resuming_gate_{gate_num}",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }, indent=2))
+        asyncio.create_task(_run_gate_task(sprint_id, gate_num))
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "gate": gate_num, "note_recorded": bool(note), "message": f"Gate {gate_num} approved, pipeline resuming"})
 
 
@@ -1848,42 +1884,44 @@ async def resume_sprint(sprint_id: str):
     if not sprint_dir.exists():
         return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
     state_path = sprint_dir / "pipeline_state.json"
-    pipeline_state = _load_json(state_path)
-    current_state = pipeline_state.get("state", "unknown")
-    if current_state != "error":
-        raise HTTPException(
-            status_code=409,
-            detail=f"Sprint is in state '{current_state}', expected 'error'",
-        )
+    # Atomic check-and-set (same double-trigger guard as approve_gate).
+    async with _APPROVE_LOCK:
+        pipeline_state = _load_json(state_path)
+        current_state = pipeline_state.get("state", "unknown")
+        if current_state != "error":
+            raise HTTPException(
+                status_code=409,
+                detail=f"Sprint is in state '{current_state}', expected 'error'",
+            )
 
-    failed_gate = pipeline_state.get("failed_gate")
-    if failed_gate in GATE_HANDLERS:
+        failed_gate = pipeline_state.get("failed_gate")
+        if failed_gate in GATE_HANDLERS:
+            state_path.write_text(json.dumps({
+                "sprint_id": sprint_id,
+                "state": f"resuming_gate_{failed_gate}",
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }, indent=2))
+            asyncio.create_task(_run_gate_task(sprint_id, failed_gate))
+            return JSONResponse({"ok": True, "sprint_id": sprint_id,
+                                 "resumed_gate": failed_gate,
+                                 "message": f"Re-running gate {failed_gate} stage"})
+
+        # Pre-gate (intake) error — re-run the whole pipeline from order.json.
+        order_path = sprint_dir / "order.json"
+        if not order_path.exists():
+            return JSONResponse(
+                {"ok": False,
+                 "error": "No failed_gate recorded and order.json missing — cannot resume"},
+                status_code=400)
+        payload = _load_json(order_path)
+        payload["sprint_id"] = sprint_id
         state_path.write_text(json.dumps({
-            "sprint_id": sprint_id,
-            "state": f"resuming_gate_{failed_gate}",
+            "sprint_id": sprint_id, "state": "queued",
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }, indent=2))
-        asyncio.create_task(_run_gate_task(sprint_id, failed_gate))
+        asyncio.create_task(_run_pipeline_task(payload))
         return JSONResponse({"ok": True, "sprint_id": sprint_id,
-                             "resumed_gate": failed_gate,
-                             "message": f"Re-running gate {failed_gate} stage"})
-
-    # Pre-gate (intake) error — re-run the whole pipeline from order.json.
-    order_path = sprint_dir / "order.json"
-    if not order_path.exists():
-        return JSONResponse(
-            {"ok": False,
-             "error": "No failed_gate recorded and order.json missing — cannot resume"},
-            status_code=400)
-    payload = _load_json(order_path)
-    payload["sprint_id"] = sprint_id
-    state_path.write_text(json.dumps({
-        "sprint_id": sprint_id, "state": "queued",
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }, indent=2))
-    asyncio.create_task(_run_pipeline_task(payload))
-    return JSONResponse({"ok": True, "sprint_id": sprint_id,
-                         "message": "Re-running pipeline from intake"})
+                             "message": "Re-running pipeline from intake"})
 
 
 @app.delete("/sprints/{sprint_id}", dependencies=[Depends(require_api_key)])
@@ -1917,7 +1955,17 @@ async def prune_sprints(request: Request):
     to_delete = set(sid for sid in (body.get("delete") or []) if sid in all_ids)
     keep = body.get("keep")
     if isinstance(keep, list):
+        # Guardrail: an empty (or all-mismatched) keep list would delete EVERY
+        # sprint. Require at least one keep id that actually exists, so a typo or
+        # blank list can't silently wipe the volume.
         keep_set = set(keep)
+        if not (keep_set & set(all_ids)):
+            return JSONResponse(
+                {"ok": False,
+                 "error": "keep-mode refused: no id in 'keep' matches an existing "
+                          "sprint (would delete everything). Pass valid keep ids, "
+                          "or use 'delete' for explicit removal."},
+                status_code=400)
         to_delete.update(sid for sid in all_ids if sid not in keep_set)
     if body.get("errored"):
         for sid in all_ids:
