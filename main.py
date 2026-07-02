@@ -89,6 +89,19 @@ def _is_interruptible(state: str) -> bool:
 # + racing file writers). Approvals are infrequent, so one global lock is fine.
 _APPROVE_LOCK = asyncio.Lock()
 
+# Dedicated pool for pipeline/gate STAGES so they don't compete with FastAPI's
+# own default run_in_executor offloads (and vice versa). Each stage holds one
+# slot for minutes; PIPELINE_WORKERS caps concurrent sprints — excess queue here
+# instead of starving the shared default pool. Inner copy/review pools (in
+# run_pipeline.py) are separate and unaffected.
+from concurrent.futures import ThreadPoolExecutor as _ThreadPoolExecutor
+try:
+    _PIPELINE_WORKERS = max(1, int(os.environ.get("PIPELINE_WORKERS", "4") or "4"))
+except ValueError:
+    _PIPELINE_WORKERS = 4
+_PIPELINE_EXECUTOR = _ThreadPoolExecutor(max_workers=_PIPELINE_WORKERS,
+                                         thread_name_prefix="pipeline")
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 _SESSION_COOKIE = "pipeline_sess"
 _api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -423,7 +436,7 @@ async def _run_pipeline_task(payload: dict):
     try:
         # Use the gated pipeline so the run pauses at Gate 2 (Order + Refs)
         # for human approval before spending API credits on copy/image gen.
-        result = await loop.run_in_executor(None, run_full_pipeline, payload)
+        result = await loop.run_in_executor(_PIPELINE_EXECUTOR, run_full_pipeline, payload)
         if result is None:
             # Only flag as error if the pipeline didn't already set a more
             # specific state (e.g. awaiting_gate_2). run_full_pipeline writes
@@ -449,7 +462,7 @@ async def _run_gate_task(sprint_id: str, gate_num: int):
     loop = asyncio.get_event_loop()
     handler = GATE_HANDLERS[gate_num]
     try:
-        await loop.run_in_executor(None, handler, sprint_id)
+        await loop.run_in_executor(_PIPELINE_EXECUTOR, handler, sprint_id)
     except Exception as exc:
         sprint_dir = RUNS_DIR / sprint_id
         (sprint_dir / "pipeline_state.json").write_text(json.dumps({
