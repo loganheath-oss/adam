@@ -1774,6 +1774,23 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
                 {}
             )
 
+        # Second-best copy for this board's left panel (the board shows the top-2
+        # scored copy versions). V2 = the concept ranked immediately after this
+        # one within the same style/batch; empty if there's no runner-up (the
+        # plugin then hides Copy Version 2 rather than showing a placeholder).
+        _style_concepts = sorted(
+            [c for c in concepts
+             if str(c.get("batch_index", "")) == row_bi and c.get("visual_style", "") == row_style],
+            key=lambda c: c.get("rank", 99),
+        )
+        concept_v2 = {}
+        if concept in _style_concepts:
+            _i = _style_concepts.index(concept)
+            if _i + 1 < len(_style_concepts):
+                concept_v2 = _style_concepts[_i + 1]
+        elif len(_style_concepts) >= 2:
+            concept_v2 = _style_concepts[1]
+
         manifest_rows.append({
             # Order form fields
             "Delivery_Date": order.get("delivery_date", ""),
@@ -1793,6 +1810,10 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Headline": concept.get("headline", row.get("headline", "")),
             "Description": concept.get("description", ""),
             "CTA": concept.get("cta", ""),
+            # Copy Version 2 (second-best scored copy) — top-2 shown on the board.
+            "Headline_V2": concept_v2.get("headline", ""),
+            "Primary_Text_V2": concept_v2.get("body_short", concept_v2.get("body", "")),
+            "CTA_V2": concept_v2.get("cta", ""),
             # Pie Chart data value (0-100) parsed from the copy — drives the slice
             # angle + center callout in the plugin. Empty for non-chart styles.
             "Chart_Pct": _extract_chart_pct(concept, row)

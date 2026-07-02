@@ -203,6 +203,14 @@ var STYLES_THAT_SKIP_IMAGE = {
   "talent profile":   true,
   // Mockup is a notification graphic — no photo slot.
   "tweet / post mockup":           true,
+  // Bespoke = blank text-only starter (headline + subhead + CTA, no image) per
+  // the product spec; leave its image placeholders empty for the designer.
+  "bespoke":                       true,
+  // Illustration / Graphic-with-Text use a built-in Illustration_Card graphic;
+  // a generated illustration is a pipeline concern (PNG→Figma) not yet wired,
+  // so don't overwrite with a library photo.
+  "illustration":                  true,
+  "graphic with text":             true,
 };
 
 // Styles whose template has MORE THAN ONE image placeholder. Today's filler
@@ -894,16 +902,51 @@ var STYLE_ADTYPE_ALIAS = {
   "socialmediaprofile": "socialprofile",        // Template_Social-Profile
   "tweetpostmockup": "mockup",                  // Template_Mockup
   "searchbarwithtalentbadge": "searchresults",  // Adtype_Search-Results
+  "graphicwithtext": "illustration",            // order-form "Graphic with Text" = Figma Illustration family
+  "lifestylephoto": "lifestylephotofullbleed",  // order-form "Lifestyle Photo" = Lifestyle-Photo-Full-Bleed
 };
 
-function findTemplateByConvention(searchRoot, visualStyle, w, h) {
+// Variant selection among templates that match style+size. `hint` carries:
+//   wantCTA  (bool)  — true (default) picks a WITH-CTA layout, skipping "Alt"
+//                      (Elise's No-CTA variant); false prefers the Alt layout.
+//   prefer   ("dark"|"light") — tone to prefer; alternated per concept for variety.
+// Falls back gracefully: if the preferred combination isn't present, it relaxes
+// (any tone, then any variant) rather than returning nothing.
+function selectVariant(candidates, hint) {
+  if (candidates.length <= 1) return candidates[0] || null;
+  hint = hint || {};
+  var wantCTA = hint.wantCTA !== false;   // default true
+  function isAlt(c)  { return /(_|\b)alt(_|\b)/i.test(c.name); }
+  function tone(c)   { return /(_|\b)dark(_|\b)/i.test(c.name) ? "dark"
+                            : /(_|\b)light(_|\b)/i.test(c.name) ? "light" : ""; }
+  var pool = candidates.slice();
+  // CTA preference: with-CTA => drop Alt; no-CTA => keep only Alt if any exist.
+  var nonAlt = pool.filter(function (c) { return !isAlt(c); });
+  var alt    = pool.filter(isAlt);
+  if (wantCTA && nonAlt.length) pool = nonAlt;
+  else if (!wantCTA && alt.length) pool = alt;
+  // Tone preference (only if this family actually has toned variants).
+  if (hint.prefer) {
+    var toned = pool.filter(function (c) { return tone(c) === hint.prefer; });
+    if (toned.length) pool = toned;
+    else {
+      var anyTone = pool.filter(function (c) { return tone(c) !== ""; });
+      if (anyTone.length) pool = anyTone;   // family is toned but not our pref — take any tone
+    }
+  }
+  return pool[0];
+}
+
+function findTemplateByConvention(searchRoot, visualStyle, w, h, hint) {
   var raw = normAlnum(visualStyle);
   var an = STYLE_ADTYPE_ALIAS[raw] || raw;
   if (!an) return null;
   // Elise names some template frames Template_* and others Adtype_*_{WxH} — search
   // both so Pie-Chart / Search-Results / Sticky-Note (Adtype_-named) are found too.
   var all = findAllByPrefix(searchRoot, "Template").concat(findAllByPrefix(searchRoot, "Adtype"));
-  var best = null, bestDelta = 1e9;
+  // Collect EVERY template that matches this adtype + exact width + near-exact
+  // height, so selectVariant can choose the right Dark/Light/Alt among them.
+  var matches = [];
   for (var i = 0; i < all.length; i++) {
     var c = all[i];
     if (normAlnum(c.name).indexOf(an) === -1) continue;  // adtype must be in the name
@@ -912,21 +955,18 @@ function findTemplateByConvention(searchRoot, visualStyle, w, h) {
     if (m) { cw = +m[1]; ch = +m[2]; }
     else { var wh = nodeWH(c); if (!wh) continue; cw = wh[0]; ch = wh[1]; }
     if (cw !== w) continue;
-    var delta = Math.abs(ch - h);
-    if (delta <= 12 && delta < bestDelta) {
-      var node = c, viaSet = null;
-      if (c.type === "COMPONENT_SET") { node = pickPreferredVariant(c, []) || c; viaSet = c; }
-      best = { node: node, viaSet: viaSet };
-      bestDelta = delta;
-      if (delta === 0) break;
-    }
+    if (Math.abs(ch - h) <= 12) matches.push(c);
   }
-  return best;
+  if (!matches.length) return null;
+  var chosen = selectVariant(matches, hint) || matches[0];
+  var node = chosen, viaSet = null;
+  if (chosen.type === "COMPONENT_SET") { node = pickPreferredVariant(chosen, []) || chosen; viaSet = chosen; }
+  return { node: node, viaSet: viaSet };
 }
 
-function findStyledTemplate(searchRoot, visualStyle, w, h) {
+function findStyledTemplate(searchRoot, visualStyle, w, h, hint) {
   // 1) Elise's naming convention first (source of truth).
-  var conv = findTemplateByConvention(searchRoot, visualStyle, w, h);
+  var conv = findTemplateByConvention(searchRoot, visualStyle, w, h, hint);
   if (conv) {
     log("    Found template by convention: '" + conv.node.name + "'");
     return conv;
@@ -1304,12 +1344,20 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
   var leadPrimary = leadRow.Primary_Text_Short || leadRow.body_short || leadRow.body || leadRow.Primary_Text_Long || "";
   var leadCta = leadRow.CTA || leadRow.cta || "";
 
+  // Variant hint: always with-CTA unless the order explicitly says no CTA;
+  // alternate Dark/Light across concepts for visual variety.
+  var wantCTA = !(leadRow.no_cta === "true" || leadRow.no_cta === true || leadRow.No_CTA === "true");
+  var variantHint = { wantCTA: wantCTA, prefer: (conceptIndex % 2 === 0 ? "light" : "dark") };
+
   log("  Lead row: style='" + visualStyle + "', photo=" + (leadRow.figma_asset_name || leadNodeId || "(none)"));
   log("  Headline: '" + leadHeadline.substring(0, 60) + (leadHeadline.length > 60 ? "..." : "") + "'");
 
-  // Hide Copy Version 2
-  var f14 = findLayerByName(clone, "Frame 14");
-  if (f14) f14.visible = false;
+  // Copy Version 2 (second-best scored copy for this board). Carried in the
+  // manifest as *_V2 columns; shown so the reviewer sees the top-2 options.
+  var v2Headline = leadRow.Headline_V2 || leadRow.headline_v2 || "";
+  var v2Primary  = leadRow.Primary_Text_V2 || leadRow.primary_text_v2 || leadRow.Primary_V2 || "";
+  var v2Cta      = leadRow.CTA_V2 || leadRow.cta_v2 || "";
+  var haveV2 = !!(v2Headline || v2Primary);
 
   // Fill Copy Version 1 panel (Notes > Copy Frame > [groups] > [last TEXT child])
   var f13 = findLayerByName(clone, "Frame 13");
@@ -1318,15 +1366,26 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
     var slots = getCopyFrameTextValueLayers(notes);
     if (slots.headline) {
       var ok = await setTextLayer(slots.headline, leadHeadline);
-      log("  Copy Version 1 headline slot: " + (ok ? "filled" : "EMPTY (no text or font load failed)"));
+      log("  Copy Version 1 headline: " + (ok ? "filled" : "EMPTY (no text or font load failed)"));
+    } else { log("  Copy Version 1 headline: NOT FOUND in template structure"); }
+    if (slots.primary) await setTextLayer(slots.primary, leadPrimary);
+    if (slots.cta && leadCta) await setTextLayer(slots.cta, leadCta);
+  }
+
+  // Copy Version 2 panel — fill when we have a second version, otherwise hide it
+  // so the board never shows placeholder/lorem text.
+  var f14 = findLayerByName(clone, "Frame 14");
+  if (f14) {
+    if (haveV2) {
+      var notes2 = findDirectChildByName(f14, "Notes");
+      var slots2 = getCopyFrameTextValueLayers(notes2);
+      if (slots2.headline) await setTextLayer(slots2.headline, v2Headline);
+      if (slots2.primary)  await setTextLayer(slots2.primary, v2Primary || leadRow.Primary_Text_Long || leadPrimary);
+      if (slots2.cta && (v2Cta || leadCta)) await setTextLayer(slots2.cta, v2Cta || leadCta);
+      log("  Copy Version 2: filled (second-best copy)");
     } else {
-      log("  Copy Version 1 headline slot: NOT FOUND in template structure");
-    }
-    if (slots.primary) {
-      var ok2 = await setTextLayer(slots.primary, leadPrimary);
-      log("  Copy Version 1 primary slot:  " + (ok2 ? "filled" : "EMPTY"));
-    } else {
-      log("  Copy Version 1 primary slot:  NOT FOUND");
+      f14.visible = false;
+      log("  Copy Version 2: hidden (no second copy version in manifest)");
     }
   }
 
@@ -1383,7 +1442,7 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
     // correctly-sized styled template.
 
     if (styledSearchRoot) {
-      var found = findStyledTemplate(styledSearchRoot, visualStyle, w, h);
+      var found = findStyledTemplate(styledSearchRoot, visualStyle, w, h, variantHint);
       if (found) {
         var styledClone = found.node.clone();
         styledClone.name = "STYLED_concept-" + (conceptIndex + 1) + "_" + w + "x" + h;
@@ -1504,6 +1563,83 @@ function findBoardMaster() {
   }
   walk(figma.root);
   return match;
+}
+
+// ── Normalize layer names (one-time Figma cleanup) ───────────────────────────
+// Standardizes off-convention layer names to the scheme ADAM expects, so Figma
+// stays the clean source of truth. COLLISION-AWARE: a layer is only renamed when
+// the new name isn't already used elsewhere in its enclosing template — never
+// collapses two layers onto one name (verified: 36 safe renames, 1 skip).
+async function normalizeLayerNames() {
+  await figma.loadAllPagesAsync();
+  var IMG_MAP = { "Image_Placeholder": "Image-Placeholder", "image_placeholder": "Image-Placeholder",
+                  "right_image_placeholder": "Right-Image-Placeholder", "left_image_placeholder": "Left-Image-Placeholder" };
+  var TXT_MAP = { "TextOnly_headline_text": "Copy_Headline", "TextOnly_Subhead_Text": "Copy_Subhead",
+                  "cta_text": "Copy_CTA", "Notification_Headline_Text": "Copy_Headline", "Subhead-Text": "Copy_Subhead" };
+  var renamed = 0, skipped = 0;
+
+  function walkAll(n, fn) { fn(n); if ("children" in n) for (var i = 0; i < n.children.length; i++) walkAll(n.children[i], fn); }
+  function enclosingTemplate(node) {
+    var p = node.parent;
+    while (p) {
+      if (p.name && (p.name.indexOf("Template_") === 0 || p.name.indexOf("Adtype") === 0)) return p;
+      p = p.parent;
+    }
+    return node.parent || node;
+  }
+  function nameExistsIn(root, target, except) {
+    var found = false;
+    (function w(n) { if (found) return; if (n !== except && n.name === target) { found = true; return; }
+      if ("children" in n) for (var i = 0; i < n.children.length; i++) w(n.children[i]); })(root);
+    return found;
+  }
+  function tryRename(node, target) {
+    if (node.name === target) return;
+    if (nameExistsIn(enclosingTemplate(node), target, node)) { skipped++; return; }
+    node.name = target; renamed++;
+  }
+
+  walkAll(figma.root, function (node) {
+    var nm = node.name || "";
+    // frame names → convention (no collision risk; names are unique per frame)
+    if ((node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE") && nm.indexOf("Template_") === 0) {
+      var nn = nm.replace("Template_Adtype_Hybrid_", "Template_Hybrid_")
+                 .replace("Template_Adtype_Talent-Profile_", "Template_Talent-Profile_")
+                 .replace("Template_LifestylePhoto_", "Template_Lifestyle-Photo-Full-Bleed_")
+                 .replace(/_1440x1880$/, "_1440x1800");
+      if (nn !== nm) { node.name = nn; renamed++; }
+    }
+    // image layers (must actually carry an IMAGE fill)
+    if (IMG_MAP[nm] && node.fills && node.fills.length &&
+        node.fills.some(function (f) { return f.type === "IMAGE"; })) {
+      tryRename(node, IMG_MAP[nm]);
+    }
+    // legacy text layers → Copy_*
+    if (node.type === "TEXT" && TXT_MAP[nm]) tryRename(node, TXT_MAP[nm]);
+  });
+
+  // board master: left-panel value layers → CopyV{n}_{field}; slot 1440x1080 → 1440x1800
+  var board = findBoardMaster();
+  if (board) {
+    walkAll(board, function (n) { if (n.name === "1440x1080") { n.name = "1440x1800"; renamed++; } });
+    var panel = findLayerByName(board, "Frame 15");
+    if (panel) {
+      ["Frame 13", "Frame 14"].forEach(function (fname, idx) {
+        var vframe = findLayerByName(panel, fname);
+        if (!vframe) return;
+        var notes = findDirectChildByName(vframe, "Notes");
+        var slots = getCopyFrameTextValueLayers(notes);
+        var v = idx + 1;
+        if (slots.headline) { slots.headline.name = "CopyV" + v + "_Headline"; renamed++; }
+        if (slots.primary)  { slots.primary.name  = "CopyV" + v + "_Primary";  renamed++; }
+        if (slots.cta)      { slots.cta.name       = "CopyV" + v + "_CTA";      renamed++; }
+      });
+    }
+  }
+
+  log("✓ Normalize complete: " + renamed + " renamed, " + skipped + " skipped (collision-avoided).");
+  figma.notify("Layer names normalized: " + renamed + " renamed, " + skipped + " skipped.");
+  figma.ui.postMessage({ type: "normalize-complete", renamed: renamed, skipped: skipped });
 }
 
 async function assemble(payload) {
@@ -1667,5 +1803,6 @@ figma.ui.onmessage = async function (msg) {
   if (msg.type === "capture-template") captureTemplate();
   else if (msg.type === "capture-destination") captureDestination();
   else if (msg.type === "assemble") await assemble(msg);
+  else if (msg.type === "normalize-names") await normalizeLayerNames();
   else if (msg.type === "close") figma.closePlugin();
 };
