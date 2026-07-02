@@ -662,6 +662,21 @@ async function setFirstTextByCandidates(clone, candidateNames, text) {
   return false;
 }
 
+// Fill the first TEXT descendant inside a named container (component/frame).
+// Used when a label like the CTA is wrapped in a "CTA" component rather than a
+// bare text layer, so a plain name lookup can't reach it.
+async function setTextInContainer(clone, containerName, text) {
+  if (!text) return false;
+  var container = findLayerByName(clone, containerName);
+  if (!container || !container.children) return false;
+  var textNode = null;
+  walkChildren(container, function (n) {
+    if (!textNode && n.type === "TEXT") textNode = n;
+  });
+  if (textNode) return await setTextLayer(textNode, text);
+  return false;
+}
+
 // Brandon's Sticky Note template has a 4-quadrant layout: Left_Headline_Text,
 // Left_Bullet_Text1/2, right_headline_text, Right_Bullet_Text1/2. The pipeline's
 // copy generation today produces only one headline + one body per concept —
@@ -969,27 +984,32 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
         if (ctaOk) log("  ✓ reminder CTA filled (Notification_SubjectName_Text)");
       }
     } else {
-      var headlineCandidates = STYLE_HEADLINE_LAYERS[key] || ["headline_text"];
+      // Style-specific names first (so styles that already work don't regress),
+      // then the universal "Copy_Headline" — Brandon's current templates renamed
+      // the headline layer to that, and the old per-style names are stale.
+      var headlineCandidates = (STYLE_HEADLINE_LAYERS[key] || ["headline_text"]).concat(["Copy_Headline"]);
       var headlineText = row.Headline_On_Creative || row.Headline_Long || row.Headline || row.headline || "";
       var hlOk = await setFirstTextByCandidates(clone, headlineCandidates, headlineText);
       if (hlOk) log("  ✓ headline filled");
+      else if (headlineText) log("  ⚠ headline NOT filled — no layer matched [" + headlineCandidates.join(", ") + "]");
 
       // CTA — skipped for styles where the CTA layer is the headline target
       if (ctaText && !STYLES_THAT_SKIP_CTA[key]) {
-        var ctaOk = await setFirstTextByCandidates(clone, ["cta_text", "CTA_Text", "CTA", "cta"], ctaText);
+        var ctaOk = await setFirstTextByCandidates(clone, ["cta_text", "CTA_Text", "Copy_CTA", "cta"], ctaText);
+        // Current templates wrap the CTA label in a "CTA" component/frame rather
+        // than a bare text layer — fill its inner text node as a fallback.
+        if (!ctaOk) ctaOk = await setTextInContainer(clone, "CTA", ctaText);
         if (ctaOk) log("  ✓ cta filled");
+        else log("  ⚠ cta NOT filled");
       }
 
-      // Subhead / stat line — the secondary on-creative copy for styles that have
-      // one (Photo with Text, Hybrid, Poll's stat block, etc.). Short copy fits
-      // best, so prefer description, then body_short.
-      var subLayers = STYLE_SUBHEAD_LAYERS[key];
-      if (subLayers) {
-        var subText = row.Description || row.description || row.Primary_Text_Short || row.body_short || "";
-        if (subText) {
-          var subOk = await setFirstTextByCandidates(clone, subLayers, subText);
-          if (subOk) log("  ✓ subhead/stat filled");
-        }
+      // Subhead / stat line — style-specific layers first, then the universal
+      // "Copy_Subhead" (current template convention). Short copy fits best.
+      var subLayers = (STYLE_SUBHEAD_LAYERS[key] || []).concat(["Copy_Subhead"]);
+      var subText = row.Description || row.description || row.Primary_Text_Short || row.body_short || "";
+      if (subText) {
+        var subOk = await setFirstTextByCandidates(clone, subLayers, subText);
+        if (subOk) log("  ✓ subhead/stat filled");
       }
 
       // Sticky Note: also try to fill the right-side headline if we have a body
