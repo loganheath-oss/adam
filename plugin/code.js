@@ -889,10 +889,20 @@ function normAlnum(s) {
 // so name-size beats box-size). Width must match exactly; height within a small
 // tolerance. This replaces the stale hardcoded STYLE_TEMPLATE_PREFIXES for the
 // common case and immunizes against Elise renaming template families.
+// Order-form style names whose Figma template/adtype is named differently.
+var STYLE_ADTYPE_ALIAS = {
+  "socialmediaprofile": "socialprofile",        // Template_Social-Profile
+  "tweetpostmockup": "mockup",                  // Template_Mockup
+  "searchbarwithtalentbadge": "searchresults",  // Adtype_Search-Results
+};
+
 function findTemplateByConvention(searchRoot, visualStyle, w, h) {
-  var an = normAlnum(visualStyle);
+  var raw = normAlnum(visualStyle);
+  var an = STYLE_ADTYPE_ALIAS[raw] || raw;
   if (!an) return null;
-  var all = findAllByPrefix(searchRoot, "Template");
+  // Elise names some template frames Template_* and others Adtype_*_{WxH} — search
+  // both so Pie-Chart / Search-Results / Sticky-Note (Adtype_-named) are found too.
+  var all = findAllByPrefix(searchRoot, "Template").concat(findAllByPrefix(searchRoot, "Adtype"));
   var best = null, bestDelta = 1e9;
   for (var i = 0; i < all.length; i++) {
     var c = all[i];
@@ -1139,6 +1149,14 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
         var subOk = await setFirstTextByCandidates(clone, subLayers, subText);
         if (subOk) log("  ✓ subhead/stat filled");
       }
+
+      // Body copy — templates that use "Copy_Body" (Sticky-Note, Mockup, Reminder).
+      var bodyText = row.Primary_Text_Short || row.body_short || row.Primary_Text_Long || row.body_long || "";
+      if (bodyText && await setFirstTextByCandidates(clone, ["Copy_Body"], bodyText)) log("  ✓ body filled");
+
+      // Testimonial quote — the long-form copy goes in Copy_Testimonial.
+      var quote = row.Primary_Text_Long || row.body_long || row.Primary_Text_Short || row.body_short || "";
+      if (quote && await setFirstTextByCandidates(clone, ["Copy_Testimonial"], quote)) log("  ✓ testimonial quote filled");
 
       // Sticky Note: also try to fill the right-side headline if we have a body
       if (key === "sticky note") {
