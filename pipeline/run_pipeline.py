@@ -2170,14 +2170,17 @@ def _add_token_usage(sprint_id, model, input_tokens, output_tokens):
 
 
 def _save_pipeline_state(sprint_id, state):
-    """Save current pipeline state so we know where to resume."""
+    """Save current pipeline state so we know where to resume. Atomic write
+    (temp + os.replace) so a concurrent SSE/status reader never sees a torn
+    file — consistent with token_usage.json / progress.json."""
     state_path = RUNS_DIR / sprint_id / "pipeline_state.json"
-    with open(state_path, "w") as f:
-        json.dump({
-            "sprint_id": sprint_id,
-            "state": state,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }, f, indent=2)
+    tmp = state_path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps({
+        "sprint_id": sprint_id,
+        "state": state,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }, indent=2))
+    os.replace(tmp, state_path)
 
 
 def _save_progress(sprint_id, stage, item_index, item_total, item_label):
