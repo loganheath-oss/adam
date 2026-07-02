@@ -421,6 +421,7 @@ async def _run_gate_task(sprint_id: str, gate_num: int):
         (sprint_dir / "pipeline_state.json").write_text(json.dumps({
             "sprint_id": sprint_id, "state": "error",
             "error": str(exc),
+            "failed_gate": gate_num,  # so /resume can re-run the stage that died
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }, indent=2))
     finally:
@@ -1834,6 +1835,57 @@ async def retry_sprint(sprint_id: str):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "message": "Sprint re-queued from interrupted state"})
 
 
+@app.post("/sprints/{sprint_id}/resume", dependencies=[Depends(require_api_key_or_session)])
+async def resume_sprint(sprint_id: str):
+    """Re-run an errored sprint from where it died.
+
+    A gate stage that throws leaves state='error' + failed_gate=N; re-run that
+    gate — its inputs from prior gates are already on the volume. If the error
+    happened pre-gate (intake), re-run the whole pipeline from order.json.
+    (Distinct from /retry, which only handles the 'interrupted' state.)
+    """
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    if not sprint_dir.exists():
+        return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
+    state_path = sprint_dir / "pipeline_state.json"
+    pipeline_state = _load_json(state_path)
+    current_state = pipeline_state.get("state", "unknown")
+    if current_state != "error":
+        raise HTTPException(
+            status_code=409,
+            detail=f"Sprint is in state '{current_state}', expected 'error'",
+        )
+
+    failed_gate = pipeline_state.get("failed_gate")
+    if failed_gate in GATE_HANDLERS:
+        state_path.write_text(json.dumps({
+            "sprint_id": sprint_id,
+            "state": f"resuming_gate_{failed_gate}",
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }, indent=2))
+        asyncio.create_task(_run_gate_task(sprint_id, failed_gate))
+        return JSONResponse({"ok": True, "sprint_id": sprint_id,
+                             "resumed_gate": failed_gate,
+                             "message": f"Re-running gate {failed_gate} stage"})
+
+    # Pre-gate (intake) error — re-run the whole pipeline from order.json.
+    order_path = sprint_dir / "order.json"
+    if not order_path.exists():
+        return JSONResponse(
+            {"ok": False,
+             "error": "No failed_gate recorded and order.json missing — cannot resume"},
+            status_code=400)
+    payload = _load_json(order_path)
+    payload["sprint_id"] = sprint_id
+    state_path.write_text(json.dumps({
+        "sprint_id": sprint_id, "state": "queued",
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }, indent=2))
+    asyncio.create_task(_run_pipeline_task(payload))
+    return JSONResponse({"ok": True, "sprint_id": sprint_id,
+                         "message": "Re-running pipeline from intake"})
+
+
 @app.delete("/sprints/{sprint_id}", dependencies=[Depends(require_api_key)])
 async def delete_sprint(sprint_id: str):
     """Delete a single sprint directory to reclaim volume space."""
@@ -2182,7 +2234,12 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
         gate_section = f"""
         <div style="margin:24px 0;padding:16px;background:#fee2e2;border:1px solid #fca5a5;border-radius:8px">
           <div style="font-weight:600;color:#991b1b;margin-bottom:4px">Pipeline Error</div>
-          <div style="font-size:13px;color:#7f1d1d">{s['error'] or 'Unknown error — check the log.'}</div>
+          <div style="font-size:13px;color:#7f1d1d;margin-bottom:14px">{s['error'] or 'Unknown error — check the log.'}</div>
+          <button onclick="resumeSprint()"
+            style="padding:10px 24px;background:#991b1b;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer">
+            ↺ Resume from failed step
+          </button>
+          <span id="resume-msg" style="margin-left:12px;font-size:12px;color:#6b7280"></span>
         </div>"""
 
     # Sync-overlap notice
@@ -2458,6 +2515,25 @@ async function retrySprint() {{
     }} else {{
       if (msg) msg.textContent = 'Error: ' + (d.error || d.detail || 'unknown');
       if (btn) {{ btn.disabled = false; btn.textContent = '↺ Retry from beginning'; }}
+    }}
+  }} catch(e) {{
+    if (msg) msg.textContent = 'Network error';
+    if (btn) {{ btn.disabled = false; }}
+  }}
+}}
+async function resumeSprint() {{
+  const btn = document.querySelector('button[onclick="resumeSprint()"]');
+  const msg = document.getElementById('resume-msg');
+  if (btn) {{ btn.disabled = true; btn.textContent = 'Resuming…'; }}
+  try {{
+    const r = await fetch('/sprints/{sprint_id}/resume', {{method:'POST', credentials:'same-origin'}});
+    const d = await r.json();
+    if (d.ok) {{
+      if (msg) msg.textContent = (d.message || 'Resuming') + ' — refreshing…';
+      setTimeout(() => location.reload(), 2000);
+    }} else {{
+      if (msg) msg.textContent = 'Error: ' + (d.error || d.detail || 'unknown');
+      if (btn) {{ btn.disabled = false; btn.textContent = '↺ Resume from failed step'; }}
     }}
   }} catch(e) {{
     if (msg) msg.textContent = 'Network error';
