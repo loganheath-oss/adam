@@ -1756,18 +1756,36 @@ async function normalizeLayerNames() {
 
 // Delete ONLY boards this plugin produced (names starting ASSEMBLED_concept- or
 // STYLED_concept-). Never touches Template_*/Adtype_* or any reference build.
+// The output area: a 'Generated Tests' SECTION whose FRAME child is the per-sprint
+// container template. The plugin clones that frame each run, so the destination is
+// fully controlled — no capture needed. Returns {park, template} (either may be null).
+function findGeneratedArea() {
+  var park = null;
+  (function walk(n) {
+    if (park) return;
+    if (n.type === "SECTION" && /generated tests/i.test(n.name || "")) { park = n; return; }
+    if ("children" in n) for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
+  })(figma.root);
+  var tmpl = null;
+  if (park && park.children) {
+    for (var i = 0; i < park.children.length; i++) {
+      if (park.children[i].type === "FRAME") { tmpl = park.children[i]; break; }
+    }
+  }
+  return { park: park, template: tmpl };
+}
+
 async function cleanupTestBoards() {
   await figma.loadAllPagesAsync();
   var re = /^(ASSEMBLED|STYLED)_concept-/;
   var toDelete = [];
   function walk(n) {
-    if (n.type === "SECTION") {
-      // Delete a whole 'Sprint ·' section (boards inside go with it), but NEVER
-      // recurse into any other section — leave boards the user filed there alone.
-      if (/^Sprint · /.test(n.name || "")) toDelete.push(n);
-      return;
-    }
-    if (n.name && re.test(n.name)) { toDelete.push(n); return; }  // loose board
+    // A whole 'Sprint · ' container (the cloned frame, or a legacy section) goes
+    // wholesale — its boards with it. Then any loose ASSEMBLED_/STYLED_concept
+    // board. Never matches the container TEMPLATE ('Testing_...' / 'Meta - Static
+    // Grouped'), so your 'Generated Tests' template stays intact.
+    if (/^Sprint · /.test(n.name || "")) { toDelete.push(n); return; }
+    if (n.name && re.test(n.name)) { toDelete.push(n); return; }
     if ("children" in n) for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
   }
   for (var p = 0; p < figma.root.children.length; p++) walk(figma.root.children[p]);
@@ -1876,24 +1894,50 @@ async function assemble(payload) {
     var styledSearchRoot = figma.currentPage;
     log("Styled-template search root: current page (will place styled clones inside image slots)");
 
-    // Park this run's boards inside a labeled Section, so every sprint lives in
-    // one tidy container instead of loose boards on the canvas. If the user
-    // captured an explicit destination, honor that instead.
-    var GAP = 240, PAD = 160;
-    var section = null;
-    if (!(destination && "appendChild" in destination)) {
-      section = figma.createSection();
+    // Output goes into a CLONE of the 'Generated Tests' container (the frame
+    // inside the 'Generated Tests' section). Each run = one cloned container,
+    // named per sprint, parked inside 'Generated Tests' to the right of existing
+    // sprints — the plugin controls the destination, no capture needed. Honors an
+    // explicit captured destination if one was set; falls back to loose page
+    // placement if the area isn't in the file.
+    var area = findGeneratedArea();
+    var insetX = 579, insetY = 460, pitch = template.height + 240;
+    var sprintContainer = null;
+    if (!(destination && "appendChild" in destination) && area.template) {
+      // Learn the layout (inset + board pitch) from the container's own boards.
+      var tmplKids = (area.template.children || []).filter(function (c) { return "width" in c && "x" in c; });
+      if (tmplKids.length) {
+        insetX = tmplKids[0].x; insetY = tmplKids[0].y;
+        if (tmplKids.length >= 2) pitch = tmplKids[1].y - tmplKids[0].y;
+      }
+      sprintContainer = area.template.clone();
       var first = manifest[0] || {};
       var runLabel = first.sprint_id || first.Sprint_Id ||
         [first.Driver, first.Platform, first.Delivery_Date].filter(function (x) { return x; }).join(" · ");
       if (!runLabel) runLabel = "Generated " + new Date().toISOString().slice(0, 16).replace("T", " ");
-      section.name = "Sprint · " + runLabel;
-      figma.currentPage.appendChild(section);
-      section.x = baseX;
-      section.y = baseY;
-      try { section.resizeWithoutConstraints(template.width + PAD * 2, groups.length * (template.height + GAP) + PAD); } catch (e) {}
+      sprintContainer.name = "Sprint · " + runLabel;
+      // Clear the placeholder boards inside the clone.
+      var placeholders = (sprintContainer.children || []).slice();
+      for (var pr = 0; pr < placeholders.length; pr++) { try { placeholders[pr].remove(); } catch (e) {} }
+      // Park it: append to the 'Generated Tests' section, right of existing content.
+      if (area.park && "appendChild" in area.park) area.park.appendChild(sprintContainer);
+      else figma.currentPage.appendChild(sprintContainer);
+      var px = area.template.x + area.template.width + 600, py = area.template.y;
+      if (area.park && area.park.children) {
+        var maxR = null;
+        for (var q = 0; q < area.park.children.length; q++) {
+          var ch = area.park.children[q];
+          if (ch !== sprintContainer && "x" in ch && "width" in ch) { var rr = ch.x + ch.width; if (maxR === null || rr > maxR) maxR = rr; }
+        }
+        if (maxR !== null) px = maxR + 600;
+      }
+      sprintContainer.x = px; sprintContainer.y = py;
+      try { sprintContainer.resizeWithoutConstraints(sprintContainer.width, insetY + groups.length * pitch); } catch (e) {}
+      log("Output: cloned '" + area.template.name + "' → '" + sprintContainer.name + "' in 'Generated Tests'.");
+    } else if (!area.template) {
+      log("⚠ 'Generated Tests' container not found — placing boards loose on the page.");
     }
-    var container = section || destination;
+    var container = sprintContainer || destination;
 
     for (var g = 0; g < groups.length; g++) {
       var group = groups[g];
@@ -1905,19 +1949,14 @@ async function assemble(payload) {
       detachAllInstances(clone);
       if (container && "appendChild" in container) container.appendChild(clone);
       else figma.currentPage.appendChild(clone);
-      // Absolute page coords; the Section auto-encompasses whatever falls inside.
-      clone.x = baseX + PAD;
-      clone.y = baseY + PAD + (g * (template.height + GAP));
+      if (sprintContainer) { clone.x = insetX; clone.y = insetY + (g * pitch); }   // relative to the container frame
+      else { clone.x = baseX; clone.y = baseY + (g * (template.height + 240)); }
       var r = await fillConceptBoard(clone, group.rows, g, styledSearchRoot);
       log("  Slots filled: " + r.imagesApplied + "/" + r.totalRows);
       if (r.imagesApplied > 0) { assembled++; assembledIds.push(clone.id); }
       await new Promise(function (r) { setTimeout(r, 50); });
     }
-    // Snug the section around the boards now that we know the real count.
-    if (section) {
-      try { section.resizeWithoutConstraints(template.width + PAD * 2, groups.length * (template.height + GAP) - (GAP - PAD) + PAD); } catch (e) {}
-    }
-    log("\n✓ Assembly complete: " + assembled + "/" + groups.length + " boards" + (section ? " (in section '" + section.name + "')" : ""));
+    log("\n✓ Assembly complete: " + assembled + "/" + groups.length + " boards" + (sprintContainer ? " (in '" + sprintContainer.name + "')" : ""));
   } else {
     // Legacy
     for (var idx = 0; idx < manifest.length; idx++) {

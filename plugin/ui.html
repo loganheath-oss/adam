@@ -133,19 +133,7 @@
   <p class="subtitle">Assembles ads using library photos directly from Figma — no PNG uploads.</p>
 
   <div class="step">
-    <div class="step-instruction"><b>Step 1 (optional).</b> The plugin auto-finds the board master ("Meta - Static Grouped") and produces the standard board — you don't need to capture anything. Only use this to override with a specific template.</div>
-    <button id="capture-template">Capture Template (override)</button>
-    <div class="step-status empty" id="template-status">Auto: board master, no capture needed</div>
-  </div>
-
-  <div class="step">
-    <div class="step-instruction"><b>Step 2 (optional).</b> Pick a destination frame where assembled ads should appear. If skipped, they'll appear at your current viewport center.</div>
-    <button id="capture-destination">Capture Destination</button>
-    <div class="step-status empty" id="destination-status">No destination — assembled ads go to viewport center</div>
-  </div>
-
-  <div class="step">
-    <div class="step-instruction"><b>Step 3.</b> Load the manifest CSV from the demo run.</div>
+    <div class="step-instruction">Load the manifest CSV, then Assemble. The plugin auto-finds the board master ("Meta - Static Grouped") and clones the "Generated Tests" container as the destination — nothing to capture.</div>
     <div class="file-row">
       <label for="csv-file" class="file-label">Choose CSV file…</label>
       <input type="file" id="csv-file" accept=".csv,text/csv" />
@@ -173,8 +161,6 @@
     var logEl = document.getElementById("log");
     var fileInput = document.getElementById("csv-file");
     var fileNameEl = document.getElementById("file-name");
-    var templateStatus = document.getElementById("template-status");
-    var destinationStatus = document.getElementById("destination-status");
     var csvText = "";
 
     function appendLog(msg, level) {
@@ -199,14 +185,6 @@
         appendLog("Loaded: " + file.name + " — " + lineCount + " lines (incl. header).", "success");
       };
       reader.readAsText(file);
-    });
-
-    document.getElementById("capture-template").addEventListener("click", function () {
-      parent.postMessage({ pluginMessage: { type: "capture-template" } }, "*");
-    });
-
-    document.getElementById("capture-destination").addEventListener("click", function () {
-      parent.postMessage({ pluginMessage: { type: "capture-destination" } }, "*");
     });
 
     document.getElementById("assemble").addEventListener("click", function () {
@@ -242,12 +220,6 @@
         appendLog(msg.text);
       } else if (msg.type === "error") {
         appendLog("ERROR: " + msg.text, "error");
-      } else if (msg.type === "template-captured") {
-        templateStatus.classList.remove("empty");
-        templateStatus.textContent = "✓ Template captured: " + msg.name;
-      } else if (msg.type === "destination-captured") {
-        destinationStatus.classList.remove("empty");
-        destinationStatus.textContent = "✓ Destination: " + msg.name;
       } else if (msg.type === "assembly-complete") {
         appendLog("Assembly complete: " + msg.assembled + " of " + msg.total + " assets assembled.", "success");
       } else if (msg.type === "normalize-complete") {
