@@ -160,6 +160,9 @@
     <button id="normalize" class="secondary">Normalize Layer Names (one-time cleanup)</button>
   </div>
   <div class="row">
+    <button id="cleanup" class="secondary">Delete My Test Boards (ASSEMBLED_/STYLED_concept-*)</button>
+  </div>
+  <div class="row">
     <button id="close" class="secondary">Close</button>
   </div>
 
@@ -222,6 +225,12 @@
       parent.postMessage({ pluginMessage: { type: "normalize-names" } }, "*");
     });
 
+    document.getElementById("cleanup").addEventListener("click", function () {
+      logEl.innerHTML = "";
+      appendLog("Deleting my test boards…");
+      parent.postMessage({ pluginMessage: { type: "cleanup-boards" } }, "*");
+    });
+
     document.getElementById("close").addEventListener("click", function () {
       parent.postMessage({ pluginMessage: { type: "close" } }, "*");
     });
@@ -243,6 +252,8 @@
         appendLog("Assembly complete: " + msg.assembled + " of " + msg.total + " assets assembled.", "success");
       } else if (msg.type === "normalize-complete") {
         appendLog("Normalize complete: " + msg.renamed + " renamed, " + msg.skipped + " skipped (collision-avoided).", "success");
+      } else if (msg.type === "cleanup-complete") {
+        appendLog("Deleted " + msg.count + " test board(s).", "success");
       }
     };
   </script>

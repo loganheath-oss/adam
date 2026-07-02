@@ -1733,6 +1733,24 @@ async function normalizeLayerNames() {
   figma.ui.postMessage({ type: "normalize-complete", renamed: renamed, skipped: skipped });
 }
 
+// Delete ONLY boards this plugin produced (names starting ASSEMBLED_concept- or
+// STYLED_concept-). Never touches Template_*/Adtype_* or any reference build.
+async function cleanupTestBoards() {
+  await figma.loadAllPagesAsync();
+  var re = /^(ASSEMBLED|STYLED)_concept-/;
+  var toDelete = [];
+  function walk(n) {
+    if (n.name && re.test(n.name)) { toDelete.push(n); return; }  // don't recurse into a doomed board
+    if ("children" in n) for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
+  }
+  for (var p = 0; p < figma.root.children.length; p++) walk(figma.root.children[p]);
+  var count = toDelete.length;
+  for (var d = 0; d < toDelete.length; d++) { try { toDelete[d].remove(); } catch (e) {} }
+  log("🧹 Deleted " + count + " test board(s) (ASSEMBLED_concept-* / STYLED_concept-*).");
+  figma.notify("Deleted " + count + " test boards.");
+  figma.ui.postMessage({ type: "cleanup-complete", count: count });
+}
+
 async function assemble(payload) {
   await figma.loadAllPagesAsync();
 
@@ -1895,5 +1913,6 @@ figma.ui.onmessage = async function (msg) {
   else if (msg.type === "capture-destination") captureDestination();
   else if (msg.type === "assemble") await assemble(msg);
   else if (msg.type === "normalize-names") await normalizeLayerNames();
+  else if (msg.type === "cleanup-boards") await cleanupTestBoards();
   else if (msg.type === "close") figma.closePlugin();
 };
