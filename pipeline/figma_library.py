@@ -68,8 +68,10 @@ FIGMA_API_BASE      = "https://api.figma.com/v1"
 FIGMA_ACCESS_TOKEN  = os.environ.get("FIGMA_ACCESS_TOKEN", "")
 FIGMA_FILE_ID       = os.environ.get("FIGMA_FILE_ID", "DoDwumxELkuAuKKSP5p00e")
 
-# Where recently-used photo IDs are tracked (to avoid repeats across sprints)
-HISTORY_FILE        = Path(__file__).parent.parent / "runs" / "_library_history.json"
+# Where recently-used photo IDs are tracked (to avoid repeats across sprints).
+# Must live on the RUNS_DIR volume — using BASE_DIR/runs put it on the ephemeral
+# disk, so the "don't reuse" memory reset every deploy and photos repeated.
+HISTORY_FILE        = Path(os.environ.get("RUNS_DIR", str(Path(__file__).parent.parent / "runs"))) / "_library_history.json"
 RECENT_SPRINT_COUNT = 3
 
 # Rights expiration tag pattern: `rights_YYYY_MM`
