@@ -543,14 +543,16 @@ def _generate_real_copy(order, context, api_key, sprint_id=None):
 
 
 def _review_and_rank_copy(copy_outputs, order, context, api_key, sprint_id=None):
-    """Self-review: Claude scores all 6 concepts per style, ranks them, picks top 3.
+    """Self-review: Claude scores all 6 concepts per style, ranks, picks top 3.
 
-    Returns the same structure but with added fields:
-    - rank (1-6, 1 is best)
-    - selected (true for top 3, false for rest)
-    - review_notes (why Claude ranked it where it did)
+    Groups are reviewed CONCURRENTLY (one Claude call per style, ~I/O-bound).
+    A serial loop was the slow leg on wide sprints; bounded by COPY_CONCURRENCY
+    (default 5), mirroring copy generation. Each reviewed concept gains:
+    rank (1-6), selected (top 3), score, review_notes.
     """
     import httpx
+    import threading
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
     concepts = copy_outputs.get("concepts", [])
     if not concepts:
@@ -569,11 +571,10 @@ def _review_and_rank_copy(copy_outputs, order, context, api_key, sprint_id=None)
     claims = context.get("approved_claims", "")
     copy_style_rules = context.get("copy_style_rules", "")
 
-    reviewed_concepts = []
-
-    for group_key, group_concepts in groups.items():
+    def _review_one_group(group_key, group_concepts):
+        """Review + rank one style's concepts (one Claude call)."""
+        reviewed = []
         style = group_concepts[0].get("visual_style", "unknown")
-        print(f"    Reviewing {len(group_concepts)} concepts for {style}...", end=" ", flush=True)
 
         # Build the concepts as a numbered list for review
         concepts_text = ""
@@ -673,10 +674,10 @@ Return ONLY the JSON array. No other text."""
                         concept["selected"] = ranking.get("selected", False)
                         concept["score"] = ranking.get("score", 0)
                         concept["review_notes"] = ranking.get("review_notes", "")
-                        reviewed_concepts.append(concept)
+                        reviewed.append(concept)
 
                 selected_count = sum(1 for r in rankings if r.get("selected"))
-                print(f"done (top {selected_count} selected)")
+                print(f"    Reviewed {style}: top {selected_count} selected")
 
             else:
                 print(f"API error {response.status_code}, keeping all unranked")
@@ -685,7 +686,7 @@ Return ONLY the JSON array. No other text."""
                     c["selected"] = True
                     c["score"] = 0
                     c["review_notes"] = "Review failed — kept as unranked"
-                    reviewed_concepts.append(c)
+                    reviewed.append(c)
 
         except Exception as e:
             print(f"error ({str(e)[:40]}), keeping all unranked")
@@ -694,23 +695,50 @@ Return ONLY the JSON array. No other text."""
                 c["selected"] = True
                 c["score"] = 0
                 c["review_notes"] = f"Review error: {str(e)[:60]}"
-                reviewed_concepts.append(c)
+                reviewed.append(c)
+        return reviewed
 
-        time.sleep(1)
+    group_items = list(groups.items())
+    total = len(group_items)
+    try:
+        workers = int(os.environ.get("COPY_CONCURRENCY", "5") or "5")
+    except ValueError:
+        workers = 5
+    workers = max(1, min(workers, total))
+
+    reviewed_concepts = []
+    done = 0
+    lock = threading.Lock()
+
+    def _run(group_key, group_concepts):
+        nonlocal done
+        res = _review_one_group(group_key, group_concepts)
+        with lock:
+            done += 1
+            _save_progress(sprint_id, "stage_02_copy_review", done, total,
+                           f"Review: {group_concepts[0].get('visual_style', '')}")
+        return res
+
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        futures = [ex.submit(_run, gk, gc) for gk, gc in group_items]
+        for fut in as_completed(futures):
+            try:
+                reviewed_concepts.extend(fut.result())
+            except Exception as e:
+                print(f"    review task error: {str(e)[:60]}")
 
     # Sort by style then rank
     reviewed_concepts.sort(key=lambda x: (x.get("visual_style", ""), x.get("rank", 99)))
 
-    # Summary
-    total = len(reviewed_concepts)
+    total_c = len(reviewed_concepts)
     selected = sum(1 for c in reviewed_concepts if c.get("selected"))
-    print(f"  Review complete: {total} concepts scored, {selected} selected as top picks")
+    print(f"  Review complete: {total_c} concepts scored, {selected} selected as top picks")
 
     return {
         "concepts": reviewed_concepts,
         "generated_at": copy_outputs.get("generated_at"),
         "reviewed_at": datetime.now(timezone.utc).isoformat(),
-        "total_generated": total,
+        "total_generated": total_c,
         "total_selected": selected,
     }
 
