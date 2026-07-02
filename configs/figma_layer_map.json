@@ -1,0 +1,540 @@
+{
+  "source": "Figma DoDwumxELkuAuKKSP5p00e (ADAM 2026) · Meta Templates · 1440x1800",
+  "harvested_at": "2026-07-02T05:48:16.906016+00:00",
+  "adtypes": {
+    "Lifestyle-Photo-Full-Bleed": {
+      "template": "Template_LifestylePhoto_1440x1800",
+      "roles": {
+        "headline": [
+          "Copy_Headline"
+        ],
+        "cta": [
+          "Copy_CTA"
+        ]
+      },
+      "images": [
+        "Image-Placeholder"
+      ],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_CTA",
+        "Copy_Headline"
+      ]
+    },
+    "Text-Only": {
+      "template": "Template_Text-Only_Dark_1440x1800",
+      "roles": {
+        "headline": [
+          "Copy_Headline"
+        ],
+        "subhead": [
+          "Copy_Subhead"
+        ],
+        "cta": [
+          "Copy_CTA"
+        ]
+      },
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_CTA",
+        "Copy_Headline",
+        "Copy_Subhead"
+      ]
+    },
+    "Bespoke": {
+      "template": "Template_Split-Screen_1440x1800",
+      "roles": {
+        "subhead": [
+          "TextOnly_Subhead_Text"
+        ],
+        "cta": [
+          "cta_text"
+        ]
+      },
+      "images": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "bar_fills": [],
+      "all_text_layers": [
+        "TextOnly_Subhead_Text",
+        "TextOnly_headline_text",
+        "cta_text"
+      ]
+    },
+    "Split-Screen": {
+      "template": "Template_Split-Screen_1440x1800",
+      "roles": {
+        "headline": [
+          "Copy_Headline"
+        ],
+        "cta": [
+          "Copy_CTA"
+        ]
+      },
+      "images": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_CTA",
+        "Copy_Headline"
+      ]
+    },
+    "Us-Vs-Them": {
+      "template": "Template_Us-Vs-Them_1440x1800",
+      "roles": {
+        "headline": [
+          "Copy_Headline"
+        ],
+        "bullet": [
+          "Copy_Bullet1",
+          "Copy_Bullet2",
+          "Copy_Bullet3"
+        ],
+        "subhead": [
+          "Copy_Subhead"
+        ],
+        "cta": [
+          "Copy_CTA"
+        ]
+      },
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_Bullet1",
+        "Copy_Bullet2",
+        "Copy_Bullet3",
+        "Copy_CTA",
+        "Copy_Headline",
+        "Copy_Subhead",
+        "✅",
+        "❌"
+      ]
+    },
+    "Illustration": {
+      "template": "Template_Testimonial-Text-Only_Light_1440x1800",
+      "roles": {
+        "headline": [
+          "Copy_Headline"
+        ],
+        "cta": [
+          "Copy_CTA"
+        ]
+      },
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_CTA",
+        "Copy_Headline"
+      ]
+    },
+    "Search-Results": {
+      "template": "Adtype_Search-Results_1440x1800",
+      "roles": {
+        "search_result": [
+          "Copy_Title1",
+          "Copy_Title2",
+          "Copy_Title3"
+        ],
+        "headline": [
+          "Copy_Headline"
+        ],
+        "subhead": [
+          "Copy_Subhead"
+        ]
+      },
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Button Label",
+        "Copy_Headline",
+        "Copy_Subhead",
+        "Copy_Title1",
+        "Copy_Title2",
+        "Copy_Title3",
+        "Tab Label"
+      ]
+    },
+    "Device-UI": {
+      "template": "Template_Device-UI_1440x1800",
+      "roles": {
+        "headline": [
+          "Copy_Headline"
+        ]
+      },
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "$60/hr",
+        "$75/hr",
+        "4.8",
+        "4.9",
+        "Alex Rivera",
+        "Copy_Headline",
+        "Data Science",
+        "Design",
+        "Fast results",
+        "Find top talent and get work done - from web development to design, marketing, and more.",
+        "Flexible work",
+        "Get started for free",
+        "Hire hourly, part-time, or full-time - whatever your project needs.",
+        "How work should work",
+        "Log In",
+        "Marketing",
+        "Maya Chen",
+        "Popular categories",
+        "Post a job and get proposals from qualified pros in minutes.",
+        "Product Designer • Figma • UX Research",
+        "Search for any skill",
+        "Secure payments, verified profiles, and a community you can trust.",
+        "See all",
+        "Senior Web Developer • React • Node.js",
+        "Sign Up",
+        "Time",
+        "Top Rated Talent",
+        "Trusted platform",
+        "Upwork",
+        "Web Dev",
+        "Why Upwork",
+        "Writing",
+        "© 2026 Upwork. All rights reserved."
+      ]
+    },
+    "Notification": {
+      "template": "Template_Notification_1440x1800",
+      "roles": {
+        "headline": [
+          "Copy_Headline"
+        ],
+        "cta": [
+          "Copy_CTA"
+        ]
+      },
+      "images": [
+        "Image-Placeholder"
+      ],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_CTA",
+        "Copy_Headline"
+      ]
+    },
+    "Chat-Bubble": {
+      "template": "Template_Chat-Bubble_1440x1800",
+      "roles": {},
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_Chat-Bubble-1",
+        "Copy_Chat-Bubble-2"
+      ]
+    },
+    "Hybrid": {
+      "template": "Template_Adtype_Hybrid_1440x1800",
+      "roles": {
+        "cta": [
+          "Copy_CTA"
+        ],
+        "headline": [
+          "Copy_Headline"
+        ],
+        "subhead": [
+          "Copy_Subhead"
+        ]
+      },
+      "images": [
+        "Image-Placeholder"
+      ],
+      "bar_fills": [],
+      "all_text_layers": [
+        "$5,000.00",
+        "17% less than last month",
+        "2",
+        "3",
+        "5",
+        "Active",
+        "Available",
+        "Contracts",
+        "Copy_CTA",
+        "Copy_Headline",
+        "Copy_Subhead",
+        "Disabled",
+        "Hover",
+        "Inactive",
+        "Job posts",
+        "Offers",
+        "Purchase Orders",
+        "View contracts",
+        "View job posts",
+        "View offers",
+        "this week on 5 contracts"
+      ]
+    },
+    "Pie-Chart": {
+      "template": "Adtype_Pie-Chart__1440x1800",
+      "roles": {
+        "pie_quadrant": [
+          "Copy_BottomLeft",
+          "Copy_BottomRight",
+          "Copy_TopLeft",
+          "Copy_TopRight"
+        ],
+        "subhead": [
+          "TextOnly_Subhead_Text"
+        ]
+      },
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_BottomLeft",
+        "Copy_BottomRight",
+        "Copy_TopLeft",
+        "Copy_TopRight",
+        "TextOnly_Subhead_Text"
+      ]
+    },
+    "Social-Media-Profile": {
+      "template": "Template_Social-Profile_1440x1800",
+      "roles": {
+        "name": [
+          "Copy_Name"
+        ],
+        "title": [
+          "Copy_Title"
+        ],
+        "column": [
+          "Copy_Left-Column",
+          "Copy_Right-Column"
+        ],
+        "subhead": [
+          "Subhead-Text"
+        ],
+        "cta": [
+          "Copy_CTA"
+        ]
+      },
+      "images": [
+        "Image_Placeholder"
+      ],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_CTA",
+        "Copy_Left-Column",
+        "Copy_Name",
+        "Copy_Right-Column",
+        "Copy_Title",
+        "Subhead-Text",
+        "Top Rated"
+      ]
+    },
+    "Reminder": {
+      "template": "Template_Reminder_1440x1800",
+      "roles": {
+        "body": [
+          "Copy_Body"
+        ],
+        "cta": [
+          "Copy_CTA"
+        ]
+      },
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_Body",
+        "Copy_CTA",
+        "Copy_Reminder"
+      ]
+    },
+    "Platform-UI": {
+      "template": "Template_Platform-UI_1440x1800",
+      "roles": {
+        "headline": [
+          "Copy_Headline"
+        ],
+        "subhead": [
+          "Copy_Subhead"
+        ],
+        "cta": [
+          "Copy_CTA"
+        ]
+      },
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Brainstorm ideas",
+        "Copy_CTA",
+        "Copy_Headline",
+        "Copy_Subhead",
+        "Create report",
+        "Creating an entire e-commerce website involves asystem thinking",
+        "Designing a database schema for an online merch store involvesithe requirements?",
+        "Disclaimer",
+        "E-commerce Website Code",
+        "How can I help?",
+        "Label",
+        "Marketing Strategy",
+        "Online Merch Store Schema",
+        "Past 7 days",
+        "Start by drafting an outline of the scope...",
+        "Uma can help you work on a project, write proposals, and more.",
+        "Understood, a combination of design experience and system thinkingsystem thinking",
+        "Welcome to Uma",
+        "Yesterday"
+      ]
+    },
+    "Meme": {
+      "template": "Template_Meme_Dark_1440x1880",
+      "roles": {
+        "headline": [
+          "Copy_Headline"
+        ]
+      },
+      "images": [
+        "right_image_placeholder"
+      ],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_Headline"
+      ]
+    },
+    "Poll": {
+      "template": "Template_Poll_1440x1800",
+      "roles": {
+        "cta": [
+          "Copy_CTA"
+        ],
+        "poll_percent": [
+          "Stat Block Text"
+        ],
+        "poll_question": [
+          "Stat Block Text"
+        ],
+        "headline": [
+          "Copy_Headline"
+        ]
+      },
+      "images": [
+        "Image-Placeholder"
+      ],
+      "bar_fills": [
+        "Stat-Percent-A-Fill",
+        "Stat-Percent-B-Fill"
+      ],
+      "all_text_layers": [
+        "Copy_CTA",
+        "Copy_Headline",
+        "Stat Block Text"
+      ]
+    },
+    "Mockup": {
+      "template": "Template_Mockup_1440x1800",
+      "roles": {
+        "headline": [
+          "Notification_Headline_Text"
+        ],
+        "body": [
+          "Copy_Body"
+        ]
+      },
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_Body",
+        "Notification_Headline_Text"
+      ]
+    },
+    "Text-with-Button": {
+      "template": "Template_Text-with-Button_1440x1800",
+      "roles": {},
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_Button"
+      ]
+    },
+    "Talent-Profile": {
+      "template": "Template_Adtype_Talent-Profile_1440x1800",
+      "roles": {
+        "cta": [
+          "Copy_CTA"
+        ],
+        "headline": [
+          "Copy_Headline"
+        ]
+      },
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Chatbot Developer",
+        "Completed 18 Mobile App jobs on Upwork",
+        "Copy_CTA",
+        "Copy_Headline",
+        "Geronimo K.",
+        "Has 7 relevant skills to your job",
+        "Top Rated"
+      ]
+    },
+    "Sticky-Note": {
+      "template": "Adtype_Sticky-Note_Single_1440x1800",
+      "roles": {
+        "body": [
+          "Copy_Body"
+        ],
+        "headline": [
+          "Copy_Headline"
+        ]
+      },
+      "images": [],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_Body",
+        "Copy_Headline"
+      ]
+    },
+    "Photo-with-Text": {
+      "template": "Template_Photo-With-Text-Alt_Dark_1440x1800",
+      "roles": {
+        "subhead": [
+          "Copy_Subhead"
+        ],
+        "headline": [
+          "Copy_Headline"
+        ]
+      },
+      "images": [
+        "Image-Placeholder"
+      ],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_Headline",
+        "Copy_Subhead"
+      ]
+    },
+    "Carousel": {
+      "template": null,
+      "note": "no 1440x1800 template frame"
+    },
+    "Testimonial": {
+      "template": "Template_Testimonial-Photo_1440x1800",
+      "roles": {
+        "testimonial_quote": [
+          "Copy_Testimonial"
+        ],
+        "author": [
+          "Copy_Author"
+        ]
+      },
+      "images": [
+        "Image_Placeholder"
+      ],
+      "bar_fills": [],
+      "all_text_layers": [
+        "Copy_Author",
+        "Copy_Testimonial"
+      ]
+    }
+  }
+}
