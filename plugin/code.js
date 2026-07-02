@@ -1378,12 +1378,9 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
     var h = Math.round(imageFrame.height);
     slotFilled.push(false);
 
-    // Hard skip 9:16 (1080x1920) slots — Brandon hasn't built styled templates
-    // for that ratio yet, and we don't want to fall back to a raw photo.
-    if (w === 1080 && h === 1920) {
-      log("    ⏭ " + w + "x" + h + " slot: skipped (9:16 not yet supported)");
-      continue;
-    }
+    // All three sizes (1:1 1440x1440, 4:5 1440x1800, 9:16 1080x1920) now have
+    // styled templates from Elise, so no size is skipped — each slot gets its
+    // correctly-sized styled template.
 
     if (styledSearchRoot) {
       var found = findStyledTemplate(styledSearchRoot, visualStyle, w, h);
@@ -1492,6 +1489,23 @@ async function fillLegacyTemplate(clone, row) {
 
 // ── Assemble ────────────────────────────────────────────────────────────────
 
+// The standard output frame the plugin clones once per concept. Elise owns it;
+// ADAM never rebuilds the layout, only clones + fills it. Found by exact name so
+// there's no "Capture Template" click.
+var BOARD_MASTER_NAME = "Meta - Static Grouped";
+function findBoardMaster() {
+  var match = null;
+  function walk(n) {
+    if (match) return;
+    if (n.name === BOARD_MASTER_NAME && n.type === "FRAME") { match = n; return; }
+    if ("children" in n) {
+      for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
+    }
+  }
+  walk(figma.root);
+  return match;
+}
+
 async function assemble(payload) {
   await figma.loadAllPagesAsync();
 
@@ -1505,17 +1519,28 @@ async function assemble(payload) {
       capturedTemplateId = null;
     }
   }
+  var forcedMode = null;
   if (!template) {
-    template = findTemplatesRoot();
-    var rootLabel = (template === figma.root) ? "entire document" : ("page '" + template.name + "'");
-    log("No template captured — auto-discovering templates across the " + rootLabel + " (styled_per_row mode).");
+    // Standard output: clone the board master ('Meta - Static Grouped') per
+    // concept — no "Capture Template" click required. Fall back to template
+    // auto-discovery only if the board master isn't in the file.
+    var boardMaster = findBoardMaster();
+    if (boardMaster) {
+      template = boardMaster;
+      forcedMode = "concept_board";
+      log("No template captured — using board master '" + boardMaster.name + "' (concept_board mode; no click needed).");
+    } else {
+      template = findTemplatesRoot();
+      var rootLabel = (template === figma.root) ? "entire document" : ("page '" + template.name + "'");
+      log("Board master not found — auto-discovering templates across the " + rootLabel + " (styled_per_row mode).");
+    }
   }
 
   var manifest;
   try { manifest = parseCSV(payload.csv); }
   catch (e) { err("CSV parse error: " + e.message); return; }
 
-  var mode = detectTemplateMode(template);
+  var mode = forcedMode || detectTemplateMode(template);
   log("\n=== Assembly start: mode=" + mode + ", " + manifest.length + " rows ===");
 
   var destination = null;
