@@ -1761,7 +1761,13 @@ async function cleanupTestBoards() {
   var re = /^(ASSEMBLED|STYLED)_concept-/;
   var toDelete = [];
   function walk(n) {
-    if (n.name && re.test(n.name)) { toDelete.push(n); return; }  // don't recurse into a doomed board
+    if (n.type === "SECTION") {
+      // Delete a whole 'Sprint ·' section (boards inside go with it), but NEVER
+      // recurse into any other section — leave boards the user filed there alone.
+      if (/^Sprint · /.test(n.name || "")) toDelete.push(n);
+      return;
+    }
+    if (n.name && re.test(n.name)) { toDelete.push(n); return; }  // loose board
     if ("children" in n) for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
   }
   for (var p = 0; p < figma.root.children.length; p++) walk(figma.root.children[p]);
@@ -1869,6 +1875,26 @@ async function assemble(payload) {
     // place them inside each concept board's image frame slots.
     var styledSearchRoot = figma.currentPage;
     log("Styled-template search root: current page (will place styled clones inside image slots)");
+
+    // Park this run's boards inside a labeled Section, so every sprint lives in
+    // one tidy container instead of loose boards on the canvas. If the user
+    // captured an explicit destination, honor that instead.
+    var GAP = 240, PAD = 160;
+    var section = null;
+    if (!(destination && "appendChild" in destination)) {
+      section = figma.createSection();
+      var first = manifest[0] || {};
+      var runLabel = first.sprint_id || first.Sprint_Id ||
+        [first.Driver, first.Platform, first.Delivery_Date].filter(function (x) { return x; }).join(" · ");
+      if (!runLabel) runLabel = "Generated " + new Date().toISOString().slice(0, 16).replace("T", " ");
+      section.name = "Sprint · " + runLabel;
+      figma.currentPage.appendChild(section);
+      section.x = baseX;
+      section.y = baseY;
+      try { section.resizeWithoutConstraints(template.width + PAD * 2, groups.length * (template.height + GAP) + PAD); } catch (e) {}
+    }
+    var container = section || destination;
+
     for (var g = 0; g < groups.length; g++) {
       var group = groups[g];
       log("\n[Concept " + (g + 1) + "/" + groups.length + "] " + group.tag);
@@ -1877,16 +1903,21 @@ async function assemble(payload) {
       // Detach instances so the entire concept board (including its embedded
       // copy/notes panels and pills) is fully editable for Brandon's polish.
       detachAllInstances(clone);
-      if (destination && "appendChild" in destination) destination.appendChild(clone);
+      if (container && "appendChild" in container) container.appendChild(clone);
       else figma.currentPage.appendChild(clone);
-      clone.x = baseX;
-      clone.y = baseY + (g * (template.height + 200));
+      // Absolute page coords; the Section auto-encompasses whatever falls inside.
+      clone.x = baseX + PAD;
+      clone.y = baseY + PAD + (g * (template.height + GAP));
       var r = await fillConceptBoard(clone, group.rows, g, styledSearchRoot);
       log("  Slots filled: " + r.imagesApplied + "/" + r.totalRows);
       if (r.imagesApplied > 0) { assembled++; assembledIds.push(clone.id); }
       await new Promise(function (r) { setTimeout(r, 50); });
     }
-    log("\n✓ Assembly complete: " + assembled + "/" + groups.length + " boards");
+    // Snug the section around the boards now that we know the real count.
+    if (section) {
+      try { section.resizeWithoutConstraints(template.width + PAD * 2, groups.length * (template.height + GAP) - (GAP - PAD) + PAD); } catch (e) {}
+    }
+    log("\n✓ Assembly complete: " + assembled + "/" + groups.length + " boards" + (section ? " (in section '" + section.name + "')" : ""));
   } else {
     // Legacy
     for (var idx = 0; idx < manifest.length; idx++) {
