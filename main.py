@@ -1934,6 +1934,32 @@ async def prune_sprints(request: Request):
                          "remaining": [s for s in all_ids if s not in deleted]})
 
 
+@app.get("/sprints.json", dependencies=[Depends(require_api_key)])
+async def sprints_json():
+    """Machine-readable sprint list — the JSON sibling of /sprints, so tooling
+    doesn't have to scrape HTML or probe ids one at a time."""
+    items = []
+    if RUNS_DIR.exists():
+        for d in sorted(RUNS_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
+            if not d.is_dir():
+                continue
+            try:
+                s = _sprint_data(d.name)
+                items.append({
+                    "sprint_id": s["sprint_id"],
+                    "state": s["state"],
+                    "state_label": s["state_label"],
+                    "driver": s["driver"],
+                    "platform": s["platform"],
+                    "updated_at": s["updated_at"],
+                    "gate": (s["gate"] or {}).get("num") if s["gate"] else None,
+                    "error": s["error"],
+                })
+            except Exception:
+                continue  # one malformed sprint dir must not blank the list
+    return JSONResponse({"ok": True, "count": len(items), "sprints": items})
+
+
 @app.get("/sprints", response_class=HTMLResponse)
 async def sprints_dashboard():
     sprints = []

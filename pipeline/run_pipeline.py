@@ -981,7 +981,10 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                     # filename and crashes generation. Collapse any run of
                     # non-alphanumerics to a single hyphen.
                     style_slug = re.sub(r"[^a-z0-9]+", "-", style.lower()).strip("-")
-                    asset_id = f"{sprint_id}_{style_slug}_{size}_{uuid.uuid4().hex[:4]}"
+                    # Drop spaces from size too ("1440 x 1800" -> "1440x1800") so
+                    # the image filename has no spaces for the Figma plugin / CSV.
+                    size_slug = re.sub(r"\s+", "", str(size))
+                    asset_id = f"{sprint_id}_{style_slug}_{size_slug}_{uuid.uuid4().hex[:4]}"
 
                     # Get style-specific image guidance
                     guidance = style_image_guidance.get(style.upper(), "")
