@@ -318,6 +318,76 @@ def _generate_placeholder_copy(order):
     return {"concepts": concepts, "generated_at": datetime.now(timezone.utc).isoformat()}
 
 
+_TEMPLATE_REGISTRY = None
+# Order-form style names that differ from the Figma Adtype key.
+_STYLE_REGISTRY_ALIASES = {
+    "lifestyle-photo": "Lifestyle-Photo-Full-Bleed",
+    "tweet-post-mockup": "Mockup",
+}
+
+
+def _load_template_registry():
+    """Elise's Figma-derived template rules (configs/figma_template_registry.json).
+    Source of truth for per-style on-creative character limits + template naming.
+    Best-effort: absent/malformed registry just means no template limits applied."""
+    global _TEMPLATE_REGISTRY
+    if _TEMPLATE_REGISTRY is None:
+        try:
+            p = BASE_DIR / "configs" / "figma_template_registry.json"
+            _TEMPLATE_REGISTRY = json.loads(p.read_text()).get("adtypes", {})
+        except Exception:
+            _TEMPLATE_REGISTRY = {}
+    return _TEMPLATE_REGISTRY
+
+
+def _norm_style(s):
+    return re.sub(r"[^a-z0-9]+", "-", str(s).lower()).strip("-")
+
+
+def _limits_for_style(style):
+    """Per-style on-creative char limits from the registry ({} if none/no match)."""
+    reg = _load_template_registry()
+    if not reg:
+        return {}
+    norm = _norm_style(style)
+    for k, v in reg.items():
+        if _norm_style(k) == norm:
+            return v.get("limits", {}) or {}
+    alias = _STYLE_REGISTRY_ALIASES.get(norm)
+    if alias and alias in reg:
+        return reg[alias].get("limits", {}) or {}
+    for k, v in reg.items():
+        kn = _norm_style(k)
+        if kn.startswith(norm) or norm.startswith(kn):
+            return v.get("limits", {}) or {}
+    return {}
+
+
+def _template_limit_block(style):
+    """Prompt block: the template's hard character caps, or '' if none."""
+    lim = _limits_for_style(style)
+    if not lim:
+        return ""
+    lines = []
+    if "headline" in lim:
+        lines.append(f"- headline: MAX {lim['headline']} characters")
+    if "subhead" in lim:
+        lines.append(f"- body_short AND description: MAX {lim['subhead']} characters (on-creative subhead)")
+    if "cta" in lim:
+        lines.append(f"- cta: MAX {lim['cta']} characters")
+    if "bullet_total" in lim:
+        lines.append(f"- total bullet text combined: MAX {lim['bullet_total']} characters")
+    if not lines:
+        return ""
+    return (
+        "\n===== TEMPLATE CHARACTER LIMITS (from Elise's Figma — HARD CAPS) =====\n"
+        "These OVERRIDE the generic field maxes below. The on-creative text MUST fit "
+        "or it overflows the template. Count characters INCLUDING spaces; rewrite "
+        "shorter if a concept would exceed a cap.\n"
+        + "\n".join(lines) + "\n"
+    )
+
+
 def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id=None):
     """Generate 6 copy concepts for one visual style (one Claude call).
 
@@ -428,7 +498,7 @@ Format: {batch.get('format', 'Static Feed')}
 Visual Style: {style}
 Targeting: {targeting_type}
 Brief: {order.get('brief', 'Showcase how Upwork helps businesses find freelancers fast')}
-
+{_template_limit_block(style)}
 For each concept provide these exact fields:
 - headline (max 40 characters — this goes on the ad creative AND in the ad platform headline field)
 - body_short (max 125 characters — Primary Text short variant for the ad platform)

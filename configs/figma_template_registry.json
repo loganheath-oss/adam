@@ -1,0 +1,759 @@
+{
+  "source": "Figma DoDwumxELkuAuKKSP5p00e (ADAM 2026) · Meta Templates page",
+  "harvested_at": "2026-07-02T04:23:44.381706+00:00",
+  "convention": {
+    "template": "Template_{Adtype}_{WxH}",
+    "layers": [
+      "Copy_Headline",
+      "Copy_Subhead",
+      "Copy_CTA",
+      "CTA (component)"
+    ],
+    "images": [
+      "Image-Placeholder",
+      "Left-Image-Placeholder",
+      "Right-Image-Placeholder"
+    ]
+  },
+  "adtypes": {
+    "Lifestyle-Photo-Full-Bleed": {
+      "figma_container": "Adtype_Lifestyle-Photo-Full-Bleed",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Copy": 80,
+        "CTA": 19
+      },
+      "limits": {
+        "headline": 80,
+        "cta": 19
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Lifestyle-Photo-Full-Bleed_1080x1920",
+        "Template_Lifestyle-Photo-Full-Bleed_1440x1440",
+        "Template_LifestylePhoto_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA",
+        "Copy_Headline"
+      ],
+      "image_placeholders": [
+        "Image-Placeholder"
+      ]
+    },
+    "Text-Only": {
+      "figma_container": "Adtype_Text-Only",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 20,
+        "Subhead": 60,
+        "CTA": 22
+      },
+      "limits": {
+        "headline": 20,
+        "subhead": 60,
+        "cta": 22
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1805"
+      ],
+      "templates": [
+        "Template_Text-Only_Dark_1080x1920",
+        "Template_Text-Only_Dark_1440x1440",
+        "Template_Text-Only_Dark_1440x1800",
+        "Template_Text-Only_Light_1080x1920",
+        "Template_Text-Only_Light_1440x1440",
+        "Template_Text-Only_Light_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA",
+        "Copy_Headline",
+        "Copy_Subhead"
+      ],
+      "image_placeholders": []
+    },
+    "Bespoke": {
+      "figma_container": "Adtype_Bespoke/",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {},
+      "limits": {},
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Split-Screen_1080x1920",
+        "Template_Split-Screen_1440x1440",
+        "Template_Split-Screen_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA"
+      ],
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ]
+    },
+    "Split-Screen": {
+      "figma_container": "Adtype_Split-Screen",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 49,
+        "CTA": 14
+      },
+      "limits": {
+        "headline": 49,
+        "cta": 14
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Split-Screen_1080x1920",
+        "Template_Split-Screen_1440x1440",
+        "Template_Split-Screen_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA",
+        "Copy_Headline"
+      ],
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder",
+        "📌 Image call outs: Right-Image-Placeholder Left-Image-Placeholder"
+      ]
+    },
+    "Us-Vs-Them": {
+      "figma_container": "AdType_Us-Vs-Them",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Left Headline": 18,
+        "Total Bullet Text": 176,
+        "Left “Us": 31,
+        "Right Headline": 18,
+        "Right Subhead": 31
+      },
+      "limits": {
+        "bullet_total": 176,
+        "subhead": 31
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Us-Vs-Them_1080x1920",
+        "Template_Us-Vs-Them_1440x1440",
+        "Template_Us-Vs-Them_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_Bullet1",
+        "Copy_Bullet2",
+        "Copy_Bullet3",
+        "Copy_CTA",
+        "Copy_Headline",
+        "Copy_Subhead"
+      ],
+      "image_placeholders": []
+    },
+    "Illustration": {
+      "figma_container": "Adtype_Illustration/",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 38,
+        "CTA": 16
+      },
+      "limits": {
+        "headline": 38,
+        "cta": 16
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Testimonial-Text-Only_Light_1080x1920",
+        "Template_Testimonial-Text-Only_Light_1440x1440",
+        "Template_Testimonial-Text-Only_Light_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA",
+        "Copy_Headline"
+      ],
+      "image_placeholders": []
+    },
+    "Search-Results": {
+      "figma_container": "Adtype_Search-Results",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 38,
+        "Talent Tag": 32
+      },
+      "limits": {
+        "headline": 38
+      },
+      "sizes": [],
+      "templates": [],
+      "copy_layers": [
+        "Copy_Headline",
+        "Copy_Subhead",
+        "Copy_Title1",
+        "Copy_Title2",
+        "Copy_Title3"
+      ],
+      "image_placeholders": []
+    },
+    "Device-UI": {
+      "figma_container": "Adtype_Device-UI",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 38
+      },
+      "limits": {
+        "headline": 38
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1805"
+      ],
+      "templates": [
+        "Template_Device-UI_1080x1920",
+        "Template_Device-UI_1440x1440",
+        "Template_Device-UI_1440x1800"
+      ],
+      "copy_layers": [
+        "Copy_Headline"
+      ],
+      "image_placeholders": []
+    },
+    "Notification": {
+      "figma_container": "Adtype_Notification",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 52,
+        "CTA": 12
+      },
+      "limits": {
+        "headline": 52,
+        "cta": 12
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Notification_1080x1920",
+        "Template_Notification_1440x1440",
+        "Template_Notification_1440x1800"
+      ],
+      "copy_layers": [
+        "Copy_CTA",
+        "Copy_Headline"
+      ],
+      "image_placeholders": [
+        "Image-Placeholder"
+      ]
+    },
+    "Chat-Bubble": {
+      "figma_container": "Adtype_Chat-Bubble",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {},
+      "limits": {},
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Chat-Bubble_1080x1920",
+        "Template_Chat-Bubble_1440x1440",
+        "Template_Chat-Bubble_1440x1800"
+      ],
+      "copy_layers": [
+        "Copy_Chat-Bubble-1",
+        "Copy_Chat-Bubble-2"
+      ],
+      "image_placeholders": []
+    },
+    "Hybrid": {
+      "figma_container": "Adtype_Hybrid",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 36,
+        "Subhead": 60,
+        "CTA": 22
+      },
+      "limits": {
+        "headline": 36,
+        "subhead": 60,
+        "cta": 22
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Adtype_Hybrid_1080x1920",
+        "Template_Adtype_Hybrid_1440x1440",
+        "Template_Adtype_Hybrid_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA",
+        "Copy_Headline",
+        "Copy_Subhead"
+      ],
+      "image_placeholders": [
+        "Image-Placeholder"
+      ]
+    },
+    "Pie-Chart": {
+      "figma_container": "Adtype_Pie-Chart",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Quadrant Copy": 30,
+        "Center Callout": 28
+      },
+      "limits": {},
+      "sizes": [],
+      "templates": [],
+      "copy_layers": [
+        "Copy_BottomLeft",
+        "Copy_BottomRight",
+        "Copy_TopLeft",
+        "Copy_TopRight"
+      ],
+      "image_placeholders": []
+    },
+    "Social-Media-Profile": {
+      "figma_container": "Adtype_Social-Media-Profile",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Right": 65,
+        "Subhead": 28
+      },
+      "limits": {
+        "subhead": 28
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1805"
+      ],
+      "templates": [
+        "Template_Social-Profile_1080x1920",
+        "Template_Social-Profile_1440x1440",
+        "Template_Social-Profile_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA",
+        "Copy_Left-Column",
+        "Copy_Name",
+        "Copy_Right-Column",
+        "Copy_Subhead",
+        "Copy_Title"
+      ],
+      "image_placeholders": [
+        "Image-Placeholder",
+        "Image_Placeholder"
+      ]
+    },
+    "Reminder": {
+      "figma_container": "Adtype_Reminder",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Copy": 52,
+        "CTA": 20
+      },
+      "limits": {
+        "headline": 52,
+        "cta": 20
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1805"
+      ],
+      "templates": [
+        "Template_Reminder_1080x1920",
+        "Template_Reminder_1440x1440",
+        "Template_Reminder_1440x1800"
+      ],
+      "copy_layers": [
+        "Copy_Body",
+        "Copy_CTA",
+        "Copy_Reminder"
+      ],
+      "image_placeholders": []
+    },
+    "Platform-UI": {
+      "figma_container": "Adtype_Platform-UI",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 25,
+        "Subhead": 18,
+        "CTA": 16
+      },
+      "limits": {
+        "headline": 25,
+        "subhead": 18,
+        "cta": 16
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Platform-UI_1080x1920",
+        "Template_Platform-UI_1440x1440",
+        "Template_Platform-UI_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA",
+        "Copy_Headline",
+        "Copy_Subhead"
+      ],
+      "image_placeholders": []
+    },
+    "Meme": {
+      "figma_container": "Adtype: Meme",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 43
+      },
+      "limits": {
+        "headline": 43
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Meme_Dark_1080x1920",
+        "Template_Meme_Dark_1440x1440",
+        "Template_Meme_Dark_1440x1880",
+        "Template_Meme_Light_1080x1920",
+        "Template_Meme_Light_1440x1440",
+        "Template_Meme_Light_1440x1800"
+      ],
+      "copy_layers": [
+        "Copy_Headline"
+      ],
+      "image_placeholders": [
+        "right_image_placeholder"
+      ]
+    },
+    "Poll": {
+      "figma_container": "Adtype_Poll",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 36,
+        "Subhead/Stat": 75,
+        "CTA": 12
+      },
+      "limits": {
+        "headline": 36,
+        "subhead": 75,
+        "cta": 12
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Poll_1080x1920",
+        "Template_Poll_1440x1440",
+        "Template_Poll_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA",
+        "Copy_Headline"
+      ],
+      "image_placeholders": [
+        "Image-Placeholder"
+      ]
+    },
+    "Mockup": {
+      "figma_container": "Adtype_Mockup",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Copy": 115
+      },
+      "limits": {
+        "headline": 115
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1805"
+      ],
+      "templates": [
+        "Template_Mockup_1080x1920",
+        "Template_Mockup_1440x1440",
+        "Template_Mockup_1440x1800"
+      ],
+      "copy_layers": [
+        "Copy_Body"
+      ],
+      "image_placeholders": []
+    },
+    "Text-with-Button": {
+      "figma_container": "Adtype_Text-with-Button",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "CTA/Button": 15
+      },
+      "limits": {
+        "cta": 15
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Text-with-Button_1080x1920",
+        "Template_Text-with-Button_1440x1440",
+        "Template_Text-with-Button_1440x1800"
+      ],
+      "copy_layers": [
+        "Copy_Button"
+      ],
+      "image_placeholders": []
+    },
+    "Talent-Profile": {
+      "figma_container": "Adtype_Talent-Profile",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 36,
+        "CTA": 21
+      },
+      "limits": {
+        "headline": 36,
+        "cta": 21
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1805"
+      ],
+      "templates": [
+        "Template_Adtype_Talent-Profile_1080x1920",
+        "Template_Adtype_Talent-Profile_1440x1440",
+        "Template_Adtype_Talent-Profile_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA",
+        "Copy_Headline"
+      ],
+      "image_placeholders": []
+    },
+    "Sticky-Note": {
+      "figma_container": "Adtype_Sticky-Note",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 12,
+        "B": 136,
+        "Single Headline": 26,
+        "Single Column": 112
+      },
+      "limits": {
+        "headline": 12
+      },
+      "sizes": [],
+      "templates": [],
+      "copy_layers": [
+        "Copy_Body",
+        "Copy_Headline",
+        "Copy_Headline-Left",
+        "Copy_Headline-Right",
+        "Copy_Left-Bullet1",
+        "Copy_Left-Bullet2",
+        "Copy_Right-Bullet1",
+        "Copy_Right-Bullet2"
+      ],
+      "image_placeholders": [
+        "image_placeholder"
+      ]
+    },
+    "Photo-with-Text": {
+      "figma_container": "Adtype_Photo-with-Text",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 24,
+        "Subhead": 43,
+        "CTA": 19
+      },
+      "limits": {
+        "headline": 24,
+        "subhead": 43,
+        "cta": 19
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800"
+      ],
+      "templates": [
+        "Template_Photo-With-Text-Alt_Dark_1080x1920",
+        "Template_Photo-With-Text-Alt_Dark_1440x1440",
+        "Template_Photo-With-Text-Alt_Dark_1440x1800",
+        "Template_Photo-With-Text-Alt_Light_1080x1920",
+        "Template_Photo-With-Text-Alt_Light_1440x1440",
+        "Template_Photo-With-Text-Alt_Light_1440x1800",
+        "Template_Photo-With-Text_Dark_1080x1920",
+        "Template_Photo-With-Text_Dark_1440x1440",
+        "Template_Photo-With-Text_Dark_1440x1800",
+        "Template_Photo-With-Text_Light_1080x1920",
+        "Template_Photo-With-Text_Light_1440x1440",
+        "Template_Photo-With-Text_Light_1440x1800"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA",
+        "Copy_Headline",
+        "Copy_Subhead"
+      ],
+      "image_placeholders": [
+        "Image-Placeholder"
+      ]
+    },
+    "Carousel": {
+      "figma_container": "Adtype_Carousel",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Headline": 36,
+        "CTA": 22
+      },
+      "limits": {
+        "headline": 36,
+        "cta": 22
+      },
+      "sizes": [
+        "1041x1041",
+        "1080x1920",
+        "1440x1440"
+      ],
+      "templates": [
+        "Template_Carousel-Photo_1_1080x1920",
+        "Template_Carousel-Photo_1_1440x1440",
+        "Template_Carousel-Photo_2_1080x1920",
+        "Template_Carousel-Photo_2_1440x1440",
+        "Template_Carousel-Photo_3_1080x1920",
+        "Template_Carousel-Photo_3_1440x1440",
+        "Template_Carousel-Photo_4_1080x1920",
+        "Template_Carousel-Photo_4_1440x1440",
+        "Template_Carousel_1_1080x1920",
+        "Template_Carousel_1_1440x1440",
+        "Template_Carousel_2_1080x1920",
+        "Template_Carousel_2_1440x1440",
+        "Template_Carousel_3_1080x1920",
+        "Template_Carousel_3_1440x1440",
+        "Template_Lo_1440x1400"
+      ],
+      "copy_layers": [
+        "CTA",
+        "Copy_CTA",
+        "Copy_Headline",
+        "Copy_Subhead"
+      ],
+      "image_placeholders": [
+        "Image-Placeholder",
+        "Image_Placeholder"
+      ]
+    },
+    "Testimonial": {
+      "figma_container": "Adtype_Testimonial",
+      "copy_rules_v1_complete": true,
+      "labeling_complete": true,
+      "limits_raw": {
+        "Testimonial Copy": 100,
+        "Credit Name/Title": 51
+      },
+      "limits": {
+        "headline": 100
+      },
+      "sizes": [
+        "1080x1920",
+        "1440x1440",
+        "1440x1800",
+        "1440x1805"
+      ],
+      "templates": [
+        "Template_Testimonial-Photo_1080x1920",
+        "Template_Testimonial-Photo_1440x1440",
+        "Template_Testimonial-Photo_1440x1800",
+        "Template_Testimonial-Text-Only_Dark_1080x1920",
+        "Template_Testimonial-Text-Only_Dark_1440x1440",
+        "Template_Testimonial-Text-Only_Dark_1440x1800",
+        "Template_Testimonial-Text-Only_Light_1080x1920",
+        "Template_Testimonial-Text-Only_Light_1440x1440",
+        "Template_Testimonial-Text-Only_Light_1440x1800",
+        "Template_Testimonial-Text-and-Photo_Dark_1080x1920",
+        "Template_Testimonial-Text-and-Photo_Dark_1440x1440",
+        "Template_Testimonial-Text-and-Photo_Dark_1440x1800",
+        "Template_Testimonial-Text-and-Photo_Light_1080x1920",
+        "Template_Testimonial-Text-and-Photo_Light_1440x1440",
+        "Template_Testimonial-Text-and-Photo_Light_1440x1800"
+      ],
+      "copy_layers": [
+        "Copy_Author",
+        "Copy_Testimonial"
+      ],
+      "image_placeholders": [
+        "Image_Placeholder",
+        "image_placeholder"
+      ]
+    }
+  }
+}
