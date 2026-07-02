@@ -243,6 +243,8 @@ VISUAL_STYLE_TO_TAG = {
     "Split Screen":      "lifestyle_photo",
     # Hybrid (2026-06-22): dashboard mock with a photo_with_text-style image slot.
     "Hybrid":            "photo_with_text",
+    # Poll (2026-07-02): full-bleed lifestyle photo behind the poll card.
+    "Poll":              "lifestyle_photo",
     # Aliases for styles that reuse a photo template
     "Social Media Profile": "testimonial",
     "Talent Profile":       "testimonial",
@@ -252,7 +254,7 @@ VISUAL_STYLE_TO_TAG = {
 # Notification was here previously; it's now photo-based (the Figma template
 # has a photo slot we want filled from the library for diversity).
 NON_PHOTO_STYLES = {
-    "Text Only", "Chat Bubble", "Reminder", "Poll",
+    "Text Only", "Chat Bubble", "Reminder",
     "Tweet / Post Mockup", "Graphic with Text", "Pie Chart",
     "Search Results", "Search Bar with Talent Badge",
     "Text with Button", "Text with Button and Cursor",
