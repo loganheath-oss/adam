@@ -1934,6 +1934,36 @@ async def prune_sprints(request: Request):
                          "remaining": [s for s in all_ids if s not in deleted]})
 
 
+@app.get("/admin/storage", dependencies=[Depends(require_api_key)])
+async def storage_report():
+    """Volume usage: total + per-sprint sizes (largest first), so you can see
+    what's eating the volume and decide what to prune. Read-only."""
+    def _dir_size(p):
+        total = 0
+        for root, _, files in os.walk(p):
+            for f in files:
+                try:
+                    total += (Path(root) / f).stat().st_size
+                except OSError:
+                    pass
+        return total
+    sprints = []
+    grand = 0
+    if RUNS_DIR.exists():
+        for d in RUNS_DIR.iterdir():
+            if d.is_dir():
+                sz = _dir_size(d)
+                grand += sz
+                st = _load_json(d / "pipeline_state.json").get("state", "unknown")
+                sprints.append({"sprint_id": d.name, "state": st,
+                                "size_mb": round(sz / 1_000_000, 1)})
+    sprints.sort(key=lambda x: x["size_mb"], reverse=True)
+    return JSONResponse({"ok": True,
+                         "total_mb": round(grand / 1_000_000, 1),
+                         "sprint_count": len(sprints),
+                         "sprints": sprints})
+
+
 @app.get("/sprints.json", dependencies=[Depends(require_api_key)])
 async def sprints_json():
     """Machine-readable sprint list — the JSON sibling of /sprints, so tooling
