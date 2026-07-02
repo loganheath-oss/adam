@@ -842,6 +842,9 @@ async function fillPollCopy(clone, row) {
                  row.Primary_Text_Short || row.body_short || "";
   var pctA = parseInt(row.Poll_Pct_A || row.poll_pct_a, 10);
   var pctB = parseInt(row.Poll_Pct_B || row.poll_pct_b, 10);
+  // Answer labels so each bar MEANS something (e.g. "Yes  81%"). Optional.
+  var optA = row.Poll_Option_A || row.poll_option_a || "";
+  var optB = row.Poll_Option_B || row.poll_option_b || "";
 
   // Question = the "Stat Block Text" that is a DIRECT child of Stat Block
   // (the % ones live inside the Stat-Percent-* frames, so they're excluded).
@@ -855,7 +858,7 @@ async function fillPollCopy(clone, row) {
     }
   }
 
-  async function fillBar(barName, pct) {
+  async function fillBar(barName, pct, label) {
     if (!isFinite(pct)) return;
     pct = Math.max(0, Math.min(100, pct));
     var bar = findLayerByName(clone, barName);
@@ -866,7 +869,8 @@ async function fillPollCopy(clone, row) {
       if (!fill && n.type === "RECTANGLE" && /-fill$/i.test(n.name || "")) fill = n;
       var ch = n.children; if (ch) for (var i = 0; i < ch.length; i++) walk(ch[i]);
     })(bar);
-    if (txt) await setTextLayer(txt, Math.round(pct) + "%");
+    // Show "Yes  81%" when an answer label is supplied, else just "81%".
+    if (txt) await setTextLayer(txt, (label ? String(label).trim() + "   " : "") + Math.round(pct) + "%");
     if (fill && "resize" in fill) {
       // Size the fill to pct% of the bar's RENDERED width. bar.width can report
       // LOCAL (unscaled) units (observed 100 while it renders 1000), so use the
@@ -881,9 +885,9 @@ async function fillPollCopy(clone, row) {
       catch (e) { log("  ⚠ poll bar resize (" + barName + "): " + e); }
     }
   }
-  await fillBar("Stat-Percent-A", pctA);
-  await fillBar("Stat-Percent-B", pctB);
-  log("  ✓ poll filled (question + bars A=" + pctA + "% B=" + pctB + "%)");
+  await fillBar("Stat-Percent-A", pctA, optA);
+  await fillBar("Stat-Percent-B", pctB, optB);
+  log("  ✓ poll filled (question + bars " + (optA || "A") + "=" + pctA + "% " + (optB || "B") + "=" + pctB + "%)");
   return true;
 }
 

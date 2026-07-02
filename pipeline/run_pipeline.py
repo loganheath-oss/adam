@@ -449,15 +449,18 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     elif _sl == "poll":
         multi_field_instructions = (
             "\n===== EXTRA FIELDS FOR \"Poll\" =====\n"
-            "This is a poll ad: a QUESTION above TWO horizontal bars, each showing a percentage.\n"
-            "The template shows only the two percentages (there are no separate option labels),\n"
-            "so the QUESTION must be self-explanatory and the two percentages must tell a clear,\n"
-            "sensible story together (e.g. a striking contrast). ALSO provide:\n"
+            "This is a poll ad: a QUESTION above TWO horizontal bars. Each bar shows an ANSWER\n"
+            "LABEL and its percentage (e.g. 'Yes  81%' / 'No  19%'), so the poll actually means\n"
+            "something. Provide:\n"
             "- poll_question (max 75 chars — the question shown above the bars)\n"
-            "- poll_pct_a (integer 5-95 — first bar's percentage)\n"
-            "- poll_pct_b (integer 5-95 — second bar's percentage; meaningfully different from poll_pct_a)\n"
+            "- poll_option_a (max 14 chars — the FIRST answer label, e.g. 'Yes', 'Agree', or a short choice)\n"
+            "- poll_pct_a (integer 5-95 — the percentage who chose option A)\n"
+            "- poll_option_b (max 14 chars — the SECOND answer label, e.g. 'No', 'Disagree', the other choice)\n"
+            "- poll_pct_b (integer 5-95 — the percentage who chose option B; poll_pct_a + poll_pct_b should = 100)\n"
+            "The question + the two labeled percentages must read as one clear, sensible story\n"
+            "(a striking, on-brand stat that supports the ad's message).\n"
         )
-        multi_field_keys = ", poll_question, poll_pct_a, poll_pct_b"
+        multi_field_keys = ", poll_question, poll_option_a, poll_pct_a, poll_option_b, poll_pct_b"
     elif _sl == "testimonial":
         multi_field_instructions = (
             "\n===== EXTRA FIELDS FOR \"Testimonial\" =====\n"
@@ -1830,7 +1833,9 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Right_Bullets": _join_bullets(concept.get("right_bullets")),
             # Poll fields — question + two bar percentages (drive % text + bar width).
             "Poll_Question": concept.get("poll_question", ""),
+            "Poll_Option_A": concept.get("poll_option_a", ""),
             "Poll_Pct_A": concept.get("poll_pct_a", ""),
+            "Poll_Option_B": concept.get("poll_option_b", ""),
             "Poll_Pct_B": concept.get("poll_pct_b", ""),
             # Per-style multi-field copy for the remaining structured templates.
             "Testimonial_Author": concept.get("testimonial_author", ""),
