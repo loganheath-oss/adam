@@ -1459,14 +1459,20 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
           log("    (style '" + visualStyle + "' skips image override; keeping template imagery)");
         }
 
-        var headlineCandidates = STYLE_HEADLINE_LAYERS[key] || ["headline_text"];
+        // Fill text by ROLE. Copy_* is Elise's current convention, so try it
+        // FIRST, then fall back to the legacy per-style layer names.
+        var headlineCandidates = ["Copy_Headline"].concat(STYLE_HEADLINE_LAYERS[key] || []).concat(["headline_text"]);
         if (leadHeadline) await setFirstTextByCandidates(styledClone, headlineCandidates, leadHeadline);
+        var subheadCandidates = ["Copy_Subhead"].concat(STYLE_SUBHEAD_LAYERS[key] || []);
+        if (leadPrimary) await setFirstTextByCandidates(styledClone, subheadCandidates, leadPrimary);
         if (leadCta && !STYLES_THAT_SKIP_CTA[key]) {
-          await setFirstTextByCandidates(styledClone, ["cta_text", "CTA_Text", "CTA", "cta"], leadCta);
+          await setFirstTextByCandidates(styledClone, ["Copy_CTA", "cta_text", "CTA_Text", "CTA", "cta"], leadCta);
         }
         if (key === "sticky note") {
           await fillStickyNoteCopy(styledClone, leadHeadline, leadPrimary, leadRow.Primary_Text_Long || leadPrimary);
         }
+        // Safety net: never ship lorem-ipsum placeholder text on the styled ad.
+        await clearResidualLoremIpsum(styledClone, leadRow);
 
         // Place styled clone inside the slot frame
         if ("appendChild" in imageFrame) {
