@@ -40,6 +40,7 @@ Standalone testing:
     python3 figma_library.py --find <tags>    # find matches for a comma-separated tag list
 """
 
+import csv
 import json
 import os
 import random
@@ -73,6 +74,16 @@ FIGMA_FILE_ID       = os.environ.get("FIGMA_FILE_ID", "DoDwumxELkuAuKKSP5p00e")
 # disk, so the "don't reuse" memory reset every deploy and photos repeated.
 HISTORY_FILE        = Path(os.environ.get("RUNS_DIR", str(Path(__file__).parent.parent / "runs"))) / "_library_history.json"
 RECENT_SPRINT_COUNT = 3
+
+# Human-audited photo tags (the source of truth for tag ACCURACY — see
+# refs/photo_tag_standard.md). Every photo was viewed and its tags checked
+# against the image. When present, these OVERRIDE the tags embedded as hidden
+# layers in the Figma file (which are known to contain errors, e.g. a white
+# woman mistagged asian/man). Rights tokens are NOT in the CSV, so the Figma
+# rights_* tag is always preserved. The Figma layers remain the eventual
+# source of truth; re-sync them via Elise's tag plugin, then this overlay
+# becomes a no-op.
+TAGS_CSV = Path(__file__).parent.parent / "refs" / "photo_library_tags.csv"
 
 # Rights expiration tag pattern: `rights_YYYY_MM`
 RIGHTS_PATTERN = re.compile(r"^rights_(\d{4})_(\d{2})$")
@@ -359,7 +370,59 @@ def fetch_library_components(file_id: Optional[str] = None) -> list[dict]:
 
     found: list[dict] = []
     _walk_for_tagged_photos(document, found)
+    _apply_csv_tag_overrides(found)
     return found
+
+
+def load_csv_tag_overrides(path: Optional[Path] = None) -> dict:
+    """Load per-photo audited tags from refs/photo_library_tags.csv, keyed by node_id.
+
+    The structured columns are flattened into the flat tag vocabulary the matcher
+    uses (comma-separated cells become multiple tags). Rights are not stored in
+    the CSV — callers preserve the Figma-embedded rights_* tag separately.
+    """
+    path = path or TAGS_CSV
+    overrides: dict = {}
+    if not path.exists():
+        return overrides
+    tag_cols = ["people", "demographic", "age", "device", "location",
+                "color_palette", "style_fit", "activity"]
+    with open(path, newline="") as f:
+        for row in csv.DictReader(f):
+            nid = (row.get("node_id") or "").strip()
+            if not nid:
+                continue
+            tags: list[str] = []
+            for col in tag_cols:
+                raw = (row.get(col) or "").strip()
+                if not raw:
+                    continue
+                for part in raw.split(","):
+                    t = part.strip()
+                    if t and t not in tags:
+                        tags.append(t)
+            overrides[nid] = tags
+    return overrides
+
+
+def _apply_csv_tag_overrides(components: list[dict]) -> None:
+    """Replace each photo's descriptive tags with the audited CSV tags (by node_id).
+
+    Rights tokens from the Figma layers are preserved so rights-expiry still works.
+    Photos absent from the CSV keep their Figma-derived tags untouched.
+    """
+    overrides = load_csv_tag_overrides()
+    if not overrides:
+        return
+    for c in components:
+        new_tags = overrides.get(c.get("node_id"))
+        if not new_tags:
+            continue
+        rights = [t for t in (c.get("tags") or []) if RIGHTS_PATTERN.match(t)]
+        merged = new_tags + rights
+        c["tags"]        = merged
+        c["tags_by_dim"] = group_tags_by_dimension(merged)
+        c["rights_valid"] = _rights_are_valid(merged)
 
 
 def _walk_for_tagged_photos(node: dict, results: list[dict]) -> None:
