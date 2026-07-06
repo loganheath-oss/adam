@@ -567,13 +567,22 @@ Visual Style: {style}
 Targeting: {targeting_type}
 Brief: {order.get('brief', 'Showcase how Upwork helps businesses find freelancers fast')}
 {_template_limit_block(style)}
-For each concept provide these exact fields:
-- headline (max 40 characters — this goes on the ad creative AND is the LONG ad-platform headline)
-- headline_short (max 27 characters — a punchy CONDENSED headline for the short-copy version of the SAME ad, same message/concept)
-- body_short (max 125 characters — Primary Text short variant for the ad platform)
-- body_long (max 300 characters — Primary Text long variant with more detail)
-- description (max 25 characters — ad platform description field)
-- cta (max 20 characters — this goes on the CTA button in the creative)
+For each concept provide these exact fields. There are TWO separate buckets of
+copy and they must NOT reuse each other's text:
+
+ON-CREATIVE copy — the words BAKED INTO the ad image. Punchy and short so it
+fits the design. This is the ONLY copy that appears on the image itself:
+- creative_headline (max 30 characters — the main hook shown ON the ad image)
+- creative_subhead (max 55 characters — ONE short supporting line ON the image; must NOT repeat the primary text below)
+- cta (max 20 characters — the CTA button label on the image)
+
+AD-PLATFORM copy — the Meta feed fields shown AROUND the image (caption + headline).
+NEVER printed on the image itself; distinct wording from the on-creative copy:
+- headline (max 40 characters — the LONG Meta headline field)
+- headline_short (max 27 characters — the SHORT Meta headline, same message condensed)
+- body_short (max 125 characters — Primary Text SHORT variant)
+- body_long (max 300 characters — Primary Text LONG variant with more detail)
+- description (max 25 characters — Meta description field)
 - concept_tag (short slug like "talent-speed-v1")
 {multi_field_instructions}
 RULES:
@@ -584,7 +593,7 @@ RULES:
 - No generic marketing speak — be specific about what Upwork offers
 - Headlines should follow the 95/5 rule: 95% informative, 5% personality
 
-Return as JSON array of objects with exactly these keys: headline, headline_short, body_short, body_long, description, cta, concept_tag{multi_field_keys}. No other text."""
+Return as JSON array of objects with exactly these keys: creative_headline, creative_subhead, headline, headline_short, body_short, body_long, description, cta, concept_tag{multi_field_keys}. No other text."""
 
     # Retry transient failures with backoff. Previously a single 429/5xx/timeout
     # silently returned zero concepts for the style, and stage 03 then shipped a
@@ -1797,17 +1806,20 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Additional_Info": order.get("brief", ""),
             "Ads_Base_Count": 1,
             # Copy fields — map to Figma layer names
+            # AD-PLATFORM copy — shown in the board's left panels ONLY (the Meta
+            # feed fields around the image). Never printed on the creative.
             "Primary_Text_Short": concept.get("body_short", concept.get("body", "")),
             "Primary_Text_Long": concept.get("body_long", ""),
-            "Headline_On_Creative": concept.get("headline", row.get("headline", "")),
-            "Headline": concept.get("headline", row.get("headline", "")),
+            "Headline": concept.get("headline", row.get("headline", "")),        # LONG Meta headline
+            "Headline_Short": concept.get("headline_short", ""),                 # SHORT Meta headline
             "Description": concept.get("description", ""),
             "CTA": concept.get("cta", ""),
-            # Short-copy headline — the board's Copy Version 2 pairs this with the
-            # SHORT primary text (a "short ad" of the SAME concept; Meta wants a
-            # long + short version per ad using the same visual). V1 pairs the main
-            # headline with the LONG primary text.
-            "Headline_Short": concept.get("headline_short", ""),
+            # ON-CREATIVE copy — the ONLY copy baked onto the ad image. Distinct
+            # wording from the platform copy above so nothing is duplicated onto
+            # the creative. Falls back to the platform headline for older concepts
+            # that predate the split.
+            "Headline_On_Creative": concept.get("creative_headline", concept.get("headline", row.get("headline", ""))),
+            "Subhead_On_Creative": concept.get("creative_subhead", ""),
             # Pie Chart data value (0-100) parsed from the copy — drives the slice
             # angle + center callout in the plugin. Empty for non-chart styles.
             "Chart_Pct": _extract_chart_pct(concept, row)
@@ -1890,7 +1902,8 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "rank": c.get("rank", ""),
             "selected": "YES" if c.get("selected") else "NO",
             "score": c.get("score", ""),
-            "Headline_On_Creative": c.get("headline", ""),
+            "Headline_On_Creative": c.get("creative_headline", c.get("headline", "")),
+            "Subhead_On_Creative": c.get("creative_subhead", ""),
             "Primary_Text_Short": c.get("body_short", c.get("body", "")),
             "Primary_Text_Long": c.get("body_long", ""),
             "Description": c.get("description", ""),

@@ -701,17 +701,18 @@ async function setTextInContainer(clone, containerName, text) {
 // proper per-field mapping still gets done.
 async function clearResidualLoremIpsum(clone, row) {
   var pool = [];
-  var fields = [row.Headline_On_Creative, row.Headline, row.headline,
-                row.Primary_Text_Short, row.body_short,
+  // NOTE: the Meta Primary Text (short/long) is deliberately EXCLUDED from this
+  // fallback pool. This net also runs on the ad creative, and primary text must
+  // never be printed on the image (it belongs only in the left panels). Unmapped
+  // lorem falls back to on-creative/headline/structured copy instead.
+  var fields = [row.Headline_On_Creative, row.Subhead_On_Creative, row.Headline, row.headline,
                 row.Description, row.description,
-                row.Primary_Text_Long, row.body_long,
                 // structured-style copy, so these styles' unmapped layers still
                 // get real text instead of lorem
                 row.Us_Headline, row.Them_Headline, row.CTA, row.cta,
                 row.Poll_Question, row.Testimonial_Author,
                 row.Chat_Label, row.Chat_Message,
-                row.Profile_Name, row.Profile_Title, row.Profile_Left, row.Profile_Right,
-                row.Headline_V2, row.Primary_Text_V2];
+                row.Profile_Name, row.Profile_Title, row.Profile_Left, row.Profile_Right];
   for (var i = 0; i < fields.length; i++) {
     if (fields[i] && String(fields[i]).trim()) pool.push(String(fields[i]).trim());
   }
@@ -1559,8 +1560,13 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
         // FIRST, then fall back to the legacy per-style layer names.
         var headlineCandidates = ["Copy_Headline"].concat(STYLE_HEADLINE_LAYERS[key] || []).concat(["headline_text"]);
         if (leadHeadline) await setFirstTextByCandidates(styledClone, headlineCandidates, leadHeadline);
+        // On-creative subhead ONLY. The Meta Primary Text (short/long) belongs in
+        // the left panels — it must NEVER be printed on the image. Use the
+        // dedicated Subhead_On_Creative; if a manifest predates the copy split and
+        // has none, clear the subhead rather than duplicating the primary text.
         var subheadCandidates = ["Copy_Subhead"].concat(STYLE_SUBHEAD_LAYERS[key] || []);
-        if (leadPrimary) await setFirstTextByCandidates(styledClone, subheadCandidates, leadPrimary);
+        var creativeSubhead = leadRow.Subhead_On_Creative || leadRow.subhead_on_creative || "";
+        await setFirstTextByCandidates(styledClone, subheadCandidates, creativeSubhead);
         if (leadCta && !STYLES_THAT_SKIP_CTA[key]) {
           await setFirstTextByCandidates(styledClone, ["Copy_CTA", "cta_text", "CTA_Text", "CTA", "cta"], leadCta);
         }
