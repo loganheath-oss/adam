@@ -851,6 +851,7 @@ PIPELINE_STATE_MESSAGES = {
     "running":                  "Pipeline is running…",
     "stage_01_load_refs":       "Loading brand references and targeting examples from Drive…",
     "stage_02_copy_gen":        "Generating ad copy concepts with Claude (usually ~30s)…",
+    "stage_02_copy_review":     "Scoring and ranking the copy concepts…",
     "stage_03_image_prompts":   "Building image prompts for each ad slot…",
     "stage_04_generate_images": "Generating images — this is the slow one, can take a few minutes…",
     "stage_05_figma_assembly":  "Assembling the layouts in Figma…",
