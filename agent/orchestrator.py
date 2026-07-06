@@ -27,7 +27,12 @@ def _is_safe_sprint_id(sprint_id: str) -> bool:
     return bool(sprint_id and _SPRINT_ID_RE.match(sprint_id) and ".." not in sprint_id)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-RUNS_DIR = BASE_DIR / "runs"
+# Read sprints from the SAME location main.py writes them. On Railway that's
+# the persistent volume (/data/runs via the RUNS_DIR env var), NOT the empty
+# runs/ folder baked into the image. Without this the chat's list_sprints /
+# get_sprint tools look in the wrong directory and report "no sprints found"
+# even while the web UI (which honors RUNS_DIR) shows the sprint at its gate.
+RUNS_DIR = Path(os.environ.get("RUNS_DIR", str(BASE_DIR / "runs")))
 LEARNINGS_PATH = BASE_DIR / "learnings.md"
 
 GATE_NAMES = {
