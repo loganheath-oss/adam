@@ -3228,6 +3228,10 @@ _ASK_ADAM_WIDGET = r"""
   .aa-head{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;
     border-bottom:1px solid #eee;font-size:13px;color:#374151}
   .aa-head .aa-logo{color:#14a800;font-weight:700;letter-spacing:.04em}
+  .aa-beta{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.08em;
+    padding:2px 6px;border-radius:6px;background:#ffedd5;color:#9a3412;vertical-align:middle;
+    text-transform:uppercase}
+  .aa-bar .aa-beta{background:rgba(255,255,255,.16);color:#fbbf24}
   .aa-close{background:none;border:none;font-size:16px;cursor:pointer;color:#9ca3af;line-height:1}
   .aa-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:11px}
   .aa-empty{color:#9ca3af;font-size:13px;line-height:1.7}
@@ -3254,10 +3258,11 @@ _ASK_ADAM_WIDGET = r"""
   <button class="aa-bar" onclick="aaToggle()">
     <span class="aa-bar-icon">💬</span>
     <span class="aa-bar-text">Ask ADAM about this tool…</span>
+    <span class="aa-beta">BETA</span>
     <span class="aa-bar-chev">▴</span>
   </button>
   <div class="aa-panel">
-    <div class="aa-head"><span><span class="aa-logo">Ask ADAM</span> · wiki helper</span>
+    <div class="aa-head"><span><span class="aa-logo">Ask ADAM</span> <span class="aa-beta">BETA</span> · wiki helper</span>
       <button class="aa-close" onclick="aaToggle()">✕</button></div>
     <div class="aa-msgs" id="aa-msgs">
       <div class="aa-empty">Ask me how the tool works and I'll answer with links to the wiki.
