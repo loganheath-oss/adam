@@ -152,7 +152,13 @@ def stage_00_intake(payload):
         print(f"  Validation FAILED:")
         for e in errors:
             print(f"    - {e}")
-        return None
+        # Raise (rather than return None) so the real reasons reach the user.
+        # main.py's task runner writes str(exc) into pipeline_state.json, which
+        # the Sprint tab + chat surface — instead of the opaque generic
+        # "check order payload for validation errors" the user saw before.
+        raise ValueError(
+            "Order form couldn't be accepted:\n" + "\n".join(f"  • {e}" for e in errors)
+        )
 
     sprint_id = payload.get("sprint_id") or intake.generate_sprint_id(payload)
     order = intake.build_order(payload, sprint_id)

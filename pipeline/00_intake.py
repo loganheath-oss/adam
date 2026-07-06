@@ -180,10 +180,14 @@ def validate_payload(payload: dict) -> list[str]:
             elif not isinstance(slides, int) or not (2 <= slides <= 10):
                 errors.append(f"{prefix}: carousel_slides must be an integer between 2 and 10")
 
-        # Audience (only required for Prospecting and Retargeting orders)
-        if targeting == "Prospecting and Retargeting":
-            if not batch.get("audience"):
-                errors.append(f"{prefix}: audience is required for Prospecting and Retargeting orders")
+        # Audience refines which segment a batch targets, and only applies to
+        # "Prospecting and Retargeting" orders. The order form defaults this
+        # pill to "Both"; if the payload omits it (older form, or the JS didn't
+        # emit it), default to "Both" here rather than hard-failing the whole
+        # order — the top-level targeting already captures intent, and blocking
+        # a multi-asset order over an optional refinement is the wrong tradeoff.
+        if targeting == "Prospecting and Retargeting" and not batch.get("audience"):
+            batch["audience"] = "Both"
 
     return errors
 
