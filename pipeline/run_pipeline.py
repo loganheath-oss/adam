@@ -515,7 +515,14 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
         )
         multi_field_keys = ", pie_labels, pie_center"
 
+    copy_instructions = context.get("copy_instructions", "")
+
     prompt = f"""You are writing paid acquisition ad copy for Upwork. Follow every brand rule below exactly.
+
+===== AUTHORITATIVE COPY INSTRUCTIONS (BINDING — Adrie's spec) =====
+These govern voice, field limits, formatting, legal, and QA. They take precedence
+over everything except the order brief. Apply them to every field you output.
+{copy_instructions[:6000]}
 
 ===== ORDER BRIEF (HIGHEST PRIORITY) =====
 {f"This brief is the most current instruction. If it contradicts any reference document below, follow the brief." if order_brief else "No specific brief provided."}

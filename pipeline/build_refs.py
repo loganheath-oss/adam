@@ -24,6 +24,10 @@ OUTPUT_PATH = BASE_DIR / "configs" / "refs_context.json"
 
 # Map reference files to context keys
 REF_FILES = {
+    # Adrie's authoritative copy INSTRUCTIONS (field specs, voice, formatting,
+    # legal guardrails, QA). Highest authority in the copy-gen prompt. Edit this
+    # .txt + rerun build_refs.py to update ADAM's copy rules — no Python change.
+    "copy_instructions": "meta_copy_instructions.txt",
     "brand_voice": "Claude * Upwork Brand Tone of Voice for Paid Ad copy .txt",
     "writing_style": "Upwork Writing Style Guide Audit - 2025 .txt",
     "compliance": "Revised Legal Guidance Content Guidelines .txt",
