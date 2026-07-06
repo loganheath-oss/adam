@@ -1428,41 +1428,33 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
   log("  Lead row: style='" + visualStyle + "', photo=" + (leadRow.figma_asset_name || leadNodeId || "(none)"));
   log("  Headline: '" + leadHeadline.substring(0, 60) + (leadHeadline.length > 60 ? "..." : "") + "'");
 
-  // Copy Version 2 (second-best scored copy for this board). Carried in the
-  // manifest as *_V2 columns; shown so the reviewer sees the top-2 options.
-  var v2Headline = leadRow.Headline_V2 || leadRow.headline_v2 || "";
-  var v2Primary  = leadRow.Primary_Text_V2 || leadRow.primary_text_v2 || leadRow.Primary_V2 || "";
-  var v2Cta      = leadRow.CTA_V2 || leadRow.cta_v2 || "";
-  var haveV2 = !!(v2Headline || v2Primary);
+  // Meta wants a LONG and a SHORT copy version of the SAME concept, on the same
+  // visual (per Adrie). Copy Version 1 = long (main headline + long primary text);
+  // Copy Version 2 = short (short headline + short primary text). Same CTA.
+  var longHeadline  = leadRow.Headline_Long || leadRow.Headline_On_Creative || leadHeadline;
+  var longPrimary   = leadRow.Primary_Text_Long || leadRow.body_long || leadPrimary;
+  var shortHeadline = leadRow.Headline_Short || leadRow.headline_short || leadHeadline;
+  var shortPrimary  = leadRow.Primary_Text_Short || leadRow.body_short || leadPrimary;
 
-  // Fill Copy Version 1 panel (Notes > Copy Frame > [groups] > [last TEXT child])
+  // Copy Version 1 panel (long): Notes > Copy Frame > [groups] > [last TEXT child]
   var f13 = findLayerByName(clone, "Frame 13");
   if (f13) {
     var notes = findDirectChildByName(f13, "Notes");
     var slots = getCopyFrameTextValueLayers(notes);
-    if (slots.headline) {
-      var ok = await setTextLayer(slots.headline, leadHeadline);
-      log("  Copy Version 1 headline: " + (ok ? "filled" : "EMPTY (no text or font load failed)"));
-    } else { log("  Copy Version 1 headline: NOT FOUND in template structure"); }
-    if (slots.primary) await setTextLayer(slots.primary, leadPrimary);
+    if (slots.headline) await setTextLayer(slots.headline, longHeadline);
+    if (slots.primary)  await setTextLayer(slots.primary, longPrimary);
     if (slots.cta && leadCta) await setTextLayer(slots.cta, leadCta);
+    log("  Copy Version 1 (long): filled");
   }
-
-  // Copy Version 2 panel — fill when we have a second version, otherwise hide it
-  // so the board never shows placeholder/lorem text.
+  // Copy Version 2 panel (short)
   var f14 = findLayerByName(clone, "Frame 14");
   if (f14) {
-    if (haveV2) {
-      var notes2 = findDirectChildByName(f14, "Notes");
-      var slots2 = getCopyFrameTextValueLayers(notes2);
-      if (slots2.headline) await setTextLayer(slots2.headline, v2Headline);
-      if (slots2.primary)  await setTextLayer(slots2.primary, v2Primary || leadRow.Primary_Text_Long || leadPrimary);
-      if (slots2.cta && (v2Cta || leadCta)) await setTextLayer(slots2.cta, v2Cta || leadCta);
-      log("  Copy Version 2: filled (second-best copy)");
-    } else {
-      f14.visible = false;
-      log("  Copy Version 2: hidden (no second copy version in manifest)");
-    }
+    var notes2 = findDirectChildByName(f14, "Notes");
+    var slots2 = getCopyFrameTextValueLayers(notes2);
+    if (slots2.headline) await setTextLayer(slots2.headline, shortHeadline);
+    if (slots2.primary)  await setTextLayer(slots2.primary, shortPrimary);
+    if (slots2.cta && leadCta) await setTextLayer(slots2.cta, leadCta);
+    log("  Copy Version 2 (short): filled");
   }
 
   // Update the "Ad Concept #" and "Ad Type" pills

@@ -562,7 +562,8 @@ Targeting: {targeting_type}
 Brief: {order.get('brief', 'Showcase how Upwork helps businesses find freelancers fast')}
 {_template_limit_block(style)}
 For each concept provide these exact fields:
-- headline (max 40 characters — this goes on the ad creative AND in the ad platform headline field)
+- headline (max 40 characters — this goes on the ad creative AND is the LONG ad-platform headline)
+- headline_short (max 27 characters — a punchy CONDENSED headline for the short-copy version of the SAME ad, same message/concept)
 - body_short (max 125 characters — Primary Text short variant for the ad platform)
 - body_long (max 300 characters — Primary Text long variant with more detail)
 - description (max 25 characters — ad platform description field)
@@ -577,7 +578,7 @@ RULES:
 - No generic marketing speak — be specific about what Upwork offers
 - Headlines should follow the 95/5 rule: 95% informative, 5% personality
 
-Return as JSON array of objects with exactly these keys: headline, body_short, body_long, description, cta, concept_tag{multi_field_keys}. No other text."""
+Return as JSON array of objects with exactly these keys: headline, headline_short, body_short, body_long, description, cta, concept_tag{multi_field_keys}. No other text."""
 
     # Retry transient failures with backoff. Previously a single 429/5xx/timeout
     # silently returned zero concepts for the style, and stage 03 then shipped a
@@ -1777,23 +1778,6 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
                 {}
             )
 
-        # Second-best copy for this board's left panel (the board shows the top-2
-        # scored copy versions). V2 = the concept ranked immediately after this
-        # one within the same style/batch; empty if there's no runner-up (the
-        # plugin then hides Copy Version 2 rather than showing a placeholder).
-        _style_concepts = sorted(
-            [c for c in concepts
-             if str(c.get("batch_index", "")) == row_bi and c.get("visual_style", "") == row_style],
-            key=lambda c: c.get("rank", 99),
-        )
-        concept_v2 = {}
-        if concept in _style_concepts:
-            _i = _style_concepts.index(concept)
-            if _i + 1 < len(_style_concepts):
-                concept_v2 = _style_concepts[_i + 1]
-        elif len(_style_concepts) >= 2:
-            concept_v2 = _style_concepts[1]
-
         manifest_rows.append({
             # Order form fields
             "Delivery_Date": order.get("delivery_date", ""),
@@ -1813,10 +1797,11 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Headline": concept.get("headline", row.get("headline", "")),
             "Description": concept.get("description", ""),
             "CTA": concept.get("cta", ""),
-            # Copy Version 2 (second-best scored copy) — top-2 shown on the board.
-            "Headline_V2": concept_v2.get("headline", ""),
-            "Primary_Text_V2": concept_v2.get("body_short", concept_v2.get("body", "")),
-            "CTA_V2": concept_v2.get("cta", ""),
+            # Short-copy headline — the board's Copy Version 2 pairs this with the
+            # SHORT primary text (a "short ad" of the SAME concept; Meta wants a
+            # long + short version per ad using the same visual). V1 pairs the main
+            # headline with the LONG primary text.
+            "Headline_Short": concept.get("headline_short", ""),
             # Pie Chart data value (0-100) parsed from the copy — drives the slice
             # angle + center callout in the plugin. Empty for non-chart styles.
             "Chart_Pct": _extract_chart_pct(concept, row)
