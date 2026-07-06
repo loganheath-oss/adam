@@ -548,10 +548,16 @@ async def root():
 <style>
   *{{box-sizing:border-box;margin:0;padding:0}}
   body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f7f5;color:#111827;min-height:100vh}}
-  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
-  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
-  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
-  .nav a:hover{{background:#f3f4f6;color:#111}}
+  nav.nav{{border-bottom:1px solid #e5e7eb;background:#fff;position:sticky;top:0;z-index:20;padding:0;height:auto;display:block}}
+  nav.nav .nav-in{{max-width:1080px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;gap:14px}}
+  nav.nav .brand{{display:flex;align-items:center;gap:12px;font-weight:700;text-decoration:none;color:#111}}
+  nav.nav .brand .up{{color:#14a800;font-size:19px;letter-spacing:-.01em}}
+  nav.nav .brand .bar{{width:1px;height:18px;background:#d1d5db}}
+  nav.nav .brand .adam{{letter-spacing:.42em;font-weight:600;font-size:14px;padding-left:2px;color:#111}}
+  nav.nav .nav-links{{margin-left:auto;display:flex;gap:26px;font-size:14px}}
+  nav.nav .nav-links a{{padding:0 0 3px 0;text-decoration:none;color:#6b7280;border-radius:0;border-bottom:2px solid transparent}}
+  nav.nav .nav-links a:hover{{color:#111;background:none}}
+  nav.nav .nav-links a.active{{color:#111;font-weight:600;border-bottom:2px solid #14a800}}
   .nav a.active{{color:#111;font-weight:600}}
   .container{{max-width:980px;margin:0 auto;padding:56px 24px 80px}}
   .hero{{text-align:center;margin-bottom:48px}}
@@ -587,13 +593,16 @@ async def root():
 </style>
 </head><body>
 <nav class="nav">
-  <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/" class="active">Home</a>
-  <a href="/new">New Order</a>
-  <a href="/wiki">Wiki</a>
-  <a href="/agent">Ask ADAM</a>
-  <a href="/sprints">Sprints</a>
-  <a href="/sync-log">Sync Log</a>
+  <div class="nav-in">
+    <a class="brand" href="/"><span class="up">upwork</span><span class="bar"></span><span class="adam">ADAM</span></a>
+    <div class="nav-links">
+      <a href="/new">New Order</a>
+      <a href="/sprints">Sprints</a>
+      <a href="/wiki">Wiki</a>
+      <a href="/agent">Ask ADAM</a>
+      <a href="/sync-log">Sync Log</a>
+    </div>
+  </div>
 </nav>
 <div class="container">
   <div class="hero">
@@ -2137,10 +2146,16 @@ async def sprints_dashboard():
 <style>
   *{{box-sizing:border-box;margin:0;padding:0}}
   body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;color:#111827}}
-  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
-  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
-  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
-  .nav a:hover{{background:#f3f4f6;color:#111}}
+  nav.nav{{border-bottom:1px solid #e5e7eb;background:#fff;position:sticky;top:0;z-index:20;padding:0;height:auto;display:block}}
+  nav.nav .nav-in{{max-width:1080px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;gap:14px}}
+  nav.nav .brand{{display:flex;align-items:center;gap:12px;font-weight:700;text-decoration:none;color:#111}}
+  nav.nav .brand .up{{color:#14a800;font-size:19px;letter-spacing:-.01em}}
+  nav.nav .brand .bar{{width:1px;height:18px;background:#d1d5db}}
+  nav.nav .brand .adam{{letter-spacing:.42em;font-weight:600;font-size:14px;padding-left:2px;color:#111}}
+  nav.nav .nav-links{{margin-left:auto;display:flex;gap:26px;font-size:14px}}
+  nav.nav .nav-links a{{padding:0 0 3px 0;text-decoration:none;color:#6b7280;border-radius:0;border-bottom:2px solid transparent}}
+  nav.nav .nav-links a:hover{{color:#111;background:none}}
+  nav.nav .nav-links a.active{{color:#111;font-weight:600;border-bottom:2px solid #14a800}}
   .container{{max-width:1100px;margin:0 auto;padding:32px 24px}}
   h1{{font-size:22px;font-weight:700;margin-bottom:4px}}
   .sub{{font-size:13px;color:#6b7280;margin-bottom:24px}}
@@ -2156,12 +2171,16 @@ async def sprints_dashboard():
 </head>
 <body>
 <nav class="nav">
-  <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Home</a>
-  <a href="/new">New Order</a>
-  <a href="/wiki">Wiki</a>
-  <a href="/sprints" style="color:#111;font-weight:600">Sprints</a>
-  <a href="/sync-log">Sync Log</a>
+  <div class="nav-in">
+    <a class="brand" href="/"><span class="up">upwork</span><span class="bar"></span><span class="adam">ADAM</span></a>
+    <div class="nav-links">
+      <a href="/new">New Order</a>
+      <a href="/sprints" class="active">Sprints</a>
+      <a href="/wiki">Wiki</a>
+      <a href="/agent">Ask ADAM</a>
+      <a href="/sync-log">Sync Log</a>
+    </div>
+  </div>
 </nav>
 <div class="container">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -2587,10 +2606,16 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
 <style>
   *{{box-sizing:border-box;margin:0;padding:0}}
   body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;color:#111827}}
-  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
-  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
-  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
-  .nav a:hover{{background:#f3f4f6;color:#111}}
+  nav.nav{{border-bottom:1px solid #e5e7eb;background:#fff;position:sticky;top:0;z-index:20;padding:0;height:auto;display:block}}
+  nav.nav .nav-in{{max-width:1080px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;gap:14px}}
+  nav.nav .brand{{display:flex;align-items:center;gap:12px;font-weight:700;text-decoration:none;color:#111}}
+  nav.nav .brand .up{{color:#14a800;font-size:19px;letter-spacing:-.01em}}
+  nav.nav .brand .bar{{width:1px;height:18px;background:#d1d5db}}
+  nav.nav .brand .adam{{letter-spacing:.42em;font-weight:600;font-size:14px;padding-left:2px;color:#111}}
+  nav.nav .nav-links{{margin-left:auto;display:flex;gap:26px;font-size:14px}}
+  nav.nav .nav-links a{{padding:0 0 3px 0;text-decoration:none;color:#6b7280;border-radius:0;border-bottom:2px solid transparent}}
+  nav.nav .nav-links a:hover{{color:#111;background:none}}
+  nav.nav .nav-links a.active{{color:#111;font-weight:600;border-bottom:2px solid #14a800}}
   .container{{max-width:900px;margin:0 auto;padding:32px 24px}}
   .card{{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden}}
   .card-head{{padding:14px 16px;border-bottom:1px solid #f3f4f6;font-size:12px;font-weight:600;color:#6b7280;letter-spacing:0.05em;text-transform:uppercase}}
@@ -2600,13 +2625,16 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
 </head>
 <body>
 <nav class="nav">
-  <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Home</a>
-  <a href="/new">New Order</a>
-  <a href="/wiki">Wiki</a>
-  <a href="/agent">Ask ADAM</a>
-  <a href="/sprints">Sprints</a>
-  <span style="font-size:13px;color:#111;font-weight:600">› {sprint_id}</span>
+  <div class="nav-in">
+    <a class="brand" href="/"><span class="up">upwork</span><span class="bar"></span><span class="adam">ADAM</span></a>
+    <div class="nav-links">
+      <a href="/new">New Order</a>
+      <a href="/sprints" class="active">Sprints</a>
+      <a href="/wiki">Wiki</a>
+      <a href="/agent">Ask ADAM</a>
+      <a href="/sync-log">Sync Log</a>
+    </div>
+  </div>
 </nav>
 <div class="container">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
@@ -2818,10 +2846,16 @@ async def sync_log_page(request: Request):
 <style>
   *{{box-sizing:border-box;margin:0;padding:0}}
   body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;color:#111827}}
-  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
-  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
-  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
-  .nav a:hover{{background:#f3f4f6;color:#111}}
+  nav.nav{{border-bottom:1px solid #e5e7eb;background:#fff;position:sticky;top:0;z-index:20;padding:0;height:auto;display:block}}
+  nav.nav .nav-in{{max-width:1080px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;gap:14px}}
+  nav.nav .brand{{display:flex;align-items:center;gap:12px;font-weight:700;text-decoration:none;color:#111}}
+  nav.nav .brand .up{{color:#14a800;font-size:19px;letter-spacing:-.01em}}
+  nav.nav .brand .bar{{width:1px;height:18px;background:#d1d5db}}
+  nav.nav .brand .adam{{letter-spacing:.42em;font-weight:600;font-size:14px;padding-left:2px;color:#111}}
+  nav.nav .nav-links{{margin-left:auto;display:flex;gap:26px;font-size:14px}}
+  nav.nav .nav-links a{{padding:0 0 3px 0;text-decoration:none;color:#6b7280;border-radius:0;border-bottom:2px solid transparent}}
+  nav.nav .nav-links a:hover{{color:#111;background:none}}
+  nav.nav .nav-links a.active{{color:#111;font-weight:600;border-bottom:2px solid #14a800}}
   .container{{max-width:1100px;margin:0 auto;padding:32px 24px}}
   h1{{font-size:22px;font-weight:700;margin-bottom:4px}}
   .sub{{font-size:13px;color:#6b7280;margin-bottom:24px}}
@@ -2834,13 +2868,16 @@ async def sync_log_page(request: Request):
 </head>
 <body>
 <nav class="nav">
-  <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Home</a>
-  <a href="/new">New Order</a>
-  <a href="/wiki">Wiki</a>
-  <a href="/agent">Ask ADAM</a>
-  <a href="/sprints">Sprints</a>
-  <a href="/sync-log" style="color:#111;font-weight:600">Sync Log</a>
+  <div class="nav-in">
+    <a class="brand" href="/"><span class="up">upwork</span><span class="bar"></span><span class="adam">ADAM</span></a>
+    <div class="nav-links">
+      <a href="/new">New Order</a>
+      <a href="/sprints">Sprints</a>
+      <a href="/wiki">Wiki</a>
+      <a href="/agent">Ask ADAM</a>
+      <a href="/sync-log" class="active">Sync Log</a>
+    </div>
+  </div>
 </nav>
 <div class="container">
   <h1>GitHub Sync History</h1>
@@ -3350,10 +3387,16 @@ def _wiki_shell(current: str, body_html: str) -> str:
 <style>
   *{{box-sizing:border-box;margin:0;padding:0}}
   body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f7f5;color:#111827}}
-  .nav{{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;display:flex;align-items:center;gap:24px;height:52px}}
-  .nav-logo{{font-weight:700;font-size:15px;letter-spacing:0.05em;color:#14a800}}
-  .nav a{{font-size:13px;color:#6b7280;text-decoration:none;padding:4px 10px;border-radius:4px}}
-  .nav a:hover{{background:#f3f4f6;color:#111}}
+  nav.nav{{border-bottom:1px solid #e5e7eb;background:#fff;position:sticky;top:0;z-index:20;padding:0;height:auto;display:block}}
+  nav.nav .nav-in{{max-width:1080px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;gap:14px}}
+  nav.nav .brand{{display:flex;align-items:center;gap:12px;font-weight:700;text-decoration:none;color:#111}}
+  nav.nav .brand .up{{color:#14a800;font-size:19px;letter-spacing:-.01em}}
+  nav.nav .brand .bar{{width:1px;height:18px;background:#d1d5db}}
+  nav.nav .brand .adam{{letter-spacing:.42em;font-weight:600;font-size:14px;padding-left:2px;color:#111}}
+  nav.nav .nav-links{{margin-left:auto;display:flex;gap:26px;font-size:14px}}
+  nav.nav .nav-links a{{padding:0 0 3px 0;text-decoration:none;color:#6b7280;border-radius:0;border-bottom:2px solid transparent}}
+  nav.nav .nav-links a:hover{{color:#111;background:none}}
+  nav.nav .nav-links a.active{{color:#111;font-weight:600;border-bottom:2px solid #14a800}}
   .nav a.active{{color:#111;font-weight:600}}
   .wiki-wrap{{display:flex;max-width:1180px;margin:0 auto;gap:32px;padding:28px 24px 80px}}
   .wiki-side{{flex:0 0 220px;position:sticky;top:28px;align-self:flex-start;display:flex;flex-direction:column;gap:2px}}
@@ -3385,13 +3428,16 @@ def _wiki_shell(current: str, body_html: str) -> str:
 </style>
 </head><body>
 <nav class="nav">
-  <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Home</a>
-  <a href="/new">New Order</a>
-  <a href="/wiki" class="active">Wiki</a>
-  <a href="/agent">Ask ADAM</a>
-  <a href="/sprints">Sprints</a>
-  <a href="/sync-log">Sync Log</a>
+  <div class="nav-in">
+    <a class="brand" href="/"><span class="up">upwork</span><span class="bar"></span><span class="adam">ADAM</span></a>
+    <div class="nav-links">
+      <a href="/new">New Order</a>
+      <a href="/sprints">Sprints</a>
+      <a href="/wiki" class="active">Wiki</a>
+      <a href="/agent">Ask ADAM</a>
+      <a href="/sync-log">Sync Log</a>
+    </div>
+  </div>
 </nav>
 <div class="wiki-wrap">
   <aside class="wiki-side"><h4>ADAM Wiki</h4>{sidebar}</aside>
