@@ -1033,6 +1033,34 @@ function findTemplateByConvention(searchRoot, visualStyle, w, h, hint) {
     if (cw !== w) continue;
     if (Math.abs(ch - h) <= 12) matches.push(c);
   }
+  // Fallback: a template frame's OWN name can be wrong — e.g. the Bespoke
+  // starter's size frames are mislabeled 'Template_Split-Screen_*' in Figma.
+  // But Elise's 'Adtype_{Style}/' SECTION is the reliable owner. If nothing
+  // matched by frame name, trust the section: find the Adtype container for
+  // this style and take its size-matched child frames (name-agnostic).
+  if (!matches.length) {
+    var wantSect = "adtype" + an;
+    var sects = findAllByPrefix(searchRoot, "Adtype");
+    var container = null;
+    for (var si = 0; si < sects.length; si++) {
+      if (normAlnum(sects[si].name).indexOf(wantSect) === 0) { container = sects[si]; break; }
+    }
+    if (container) {
+      var kids = findAllByPrefix(container, "Template");
+      for (var ki = 0; ki < kids.length; ki++) {
+        var kc = kids[ki], kw, kh;
+        var km = String(kc.name).match(/(\d{3,5})\s*[x×]\s*(\d{3,5})/i);
+        if (km) { kw = +km[1]; kh = +km[2]; }
+        else { var kwh = nodeWH(kc); if (!kwh) continue; kw = kwh[0]; kh = kwh[1]; }
+        if (kw === w && Math.abs(kh - h) <= 12) matches.push(kc);
+      }
+      if (matches.length) {
+        log("    Matched via section '" + container.name + "' (child frame '" +
+            matches[0].name + "' is mislabeled in Figma — should be Template_Adtype_" +
+            visualStyle.replace(/\s+/g, "-") + "_" + w + "x" + h + ")");
+      }
+    }
+  }
   if (!matches.length) return null;
   var chosen = selectVariant(matches, hint) || matches[0];
   var node = chosen, viaSet = null;
@@ -1484,7 +1512,7 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
   var layout = content ? findDirectChildByName(content, "Layout - Static Feed") : null;
   if (!layout) {
     log("  ✗ 'Layout - Static Feed' frame not found in board");
-    return { imagesApplied: 0, totalRows: conceptRows.length };
+    return { imagesApplied: 0, totalRows: conceptRows.length, boardSlots: 0 };
   }
 
   // Collect all FRAME children of layout that look like image slots (non-text).
@@ -1629,7 +1657,7 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
   // no board ever ships placeholder text.
   await clearResidualLoremIpsum(clone, leadRow);
 
-  return { imagesApplied: applied, totalRows: conceptRows.length };
+  return { imagesApplied: applied, totalRows: conceptRows.length, boardSlots: slotFrames.length };
 }
 
 function groupRowsByConcept(rows) {
@@ -1948,7 +1976,7 @@ async function assemble(payload) {
       if (sprintContainer) { clone.x = insetX; clone.y = insetY + (g * pitch); }   // relative to the container frame
       else { clone.x = baseX; clone.y = baseY + (g * (template.height + 240)); }
       var r = await fillConceptBoard(clone, group.rows, g, styledSearchRoot);
-      log("  Slots filled: " + r.imagesApplied + "/" + r.totalRows);
+      log("  Slots filled: " + r.imagesApplied + "/" + (r.boardSlots != null ? r.boardSlots : r.totalRows));
       if (r.imagesApplied > 0) { assembled++; assembledIds.push(clone.id); }
       await new Promise(function (r) { setTimeout(r, 50); });
     }
