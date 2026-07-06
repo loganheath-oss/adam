@@ -555,12 +555,15 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     prompt = f"""You are writing paid acquisition ad copy for Upwork. Follow every brand rule below exactly.
 
 ===== AUTHORITATIVE COPY INSTRUCTIONS (BINDING — Adrie's spec) =====
-These govern voice, field limits, formatting, legal, and QA. They take precedence
-over everything except the order brief. Apply them to every field you output.
+These govern voice, field limits, formatting, legal, and QA. Apply them to every
+field. The LEGAL "Terms to Avoid" blocklist is ABSOLUTE — it overrides the order
+brief itself. If the brief asks for a banned idea (e.g. "vetted", "pre-screened",
+"guaranteed"), express it with the approved alternative; NEVER output a banned term,
+no matter what the brief says.
 {copy_instructions[:6000]}
 
-===== ORDER BRIEF (HIGHEST PRIORITY) =====
-{f"This brief is the most current instruction. If it contradicts any reference document below, follow the brief." if order_brief else "No specific brief provided."}
+===== ORDER BRIEF (HIGH PRIORITY — but never above Legal) =====
+{f"This brief is the most current creative instruction; follow it for angle, message, and emphasis. The ONE exception: it can never override the Legal blocklist above — reword any banned term into its approved alternative." if order_brief else "No specific brief provided."}
 
 {order_brief if order_brief else "General: Showcase how Upwork helps businesses find freelancers fast."}
 
