@@ -394,6 +394,41 @@ def _template_limit_block(style):
     )
 
 
+# ── LEGAL BANNED-TERMS GUARDRAIL ──────────────────────────────────────────────
+# Deterministic backstop for legal compliance. The prompt now surfaces Upwork
+# Legal's full "Terms to Avoid" list (previously truncated off the prompt), but a
+# model is probabilistic — so we ALSO scan every generated field. Only unambiguous,
+# low-false-positive terms live here; borderline/context-dependent ones stay
+# prompt-only to avoid mangling good copy. Flagged concepts are de-selected in the
+# ranking pass so clean copy is what ships.
+_LEGAL_BANNED = [
+    r"vet(?:ted|ting|s)?", r"pre-?screen(?:ed|ing|s)?",
+    r"screen(?:ed|ing)?\s+(?:talent|freelancers|candidates|pros)",
+    r"background\s+check", r"employ(?:ee|ees|er|ers|ment)?", r"staffing", r"payroll",
+    r"guarantee(?:d|s)?", r"salary", r"salaries", r"wages", r"paycheck",
+    r"resum[eé]s?", r"\bCVs?\b",
+    r"upwork'?s\s+(?:freelancers|talent|pros|professionals)", r"our\s+freelancers",
+]
+_LEGAL_BANNED_RE = [re.compile(p, re.IGNORECASE) for p in _LEGAL_BANNED]
+_LEGAL_SCAN_FIELDS = ["text_on_visual", "creative_headline", "creative_subhead",
+                      "headline", "headline_long", "headline_short",
+                      "body_short", "body_long", "description", "cta"]
+
+
+def _scan_banned_terms(concept):
+    """Return banned terms found in a concept's copy fields (empty list = clean)."""
+    hits = []
+    for f in _LEGAL_SCAN_FIELDS:
+        val = concept.get(f)
+        if not val:
+            continue
+        for rx in _LEGAL_BANNED_RE:
+            m = rx.search(str(val))
+            if m:
+                hits.append(f"{f}:'{m.group(0)}'")
+    return hits
+
+
 def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id=None):
     """Generate 6 copy concepts for one visual style (one Claude call).
 
@@ -536,7 +571,7 @@ over everything except the order brief. Apply them to every field you output.
 {writing_style[:4000]}
 
 ===== COMPLIANCE AND LEGAL RULES =====
-{compliance[:4000]}
+{compliance[:20000]}
 
 ===== COPY PLAYBOOK =====
 {playbook[:2000]}
@@ -640,6 +675,10 @@ Return as JSON array of objects with exactly these keys: creative_headline, crea
                         concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{j}"
                         concept["batch_index"] = i
                         concept["visual_style"] = style
+                        _flags = _scan_banned_terms(concept)
+                        if _flags:
+                            concept["legal_flags"] = _flags
+                            print(f"    ⚠ LEGAL: {style} concept {j} uses banned term(s): {', '.join(_flags)}")
                         concepts.append(concept)
                 print(f"    {style}: {len(parsed)} concepts generated")
                 return concepts
@@ -858,7 +897,26 @@ Return ONLY the JSON array. No other text."""
                         concept["selected"] = ranking.get("selected", False)
                         concept["score"] = ranking.get("score", 0)
                         concept["review_notes"] = ranking.get("review_notes", "")
+                        # Legal backstop: a concept that tripped the banned-terms
+                        # scan is never shipped — de-select it and push it to the
+                        # bottom so a compliant concept takes its place.
+                        if concept.get("legal_flags"):
+                            concept["selected"] = False
+                            concept["rank"] = 99
+                            concept["review_notes"] = ("⚠ LEGAL — banned term(s): "
+                                + ", ".join(concept["legal_flags"]) + ". "
+                                + concept.get("review_notes", ""))
                         reviewed.append(concept)
+
+                # Backfill: if de-selecting flagged concepts left fewer than 3
+                # picks, promote the highest-ranked CLEAN concepts so the style
+                # still ships copy (never promote a flagged one).
+                _clean = [c for c in reviewed if not c.get("legal_flags")]
+                if sum(1 for c in reviewed if c.get("selected")) < 3 and _clean:
+                    for c in sorted(_clean, key=lambda c: c.get("rank", 99)):
+                        if sum(1 for x in reviewed if x.get("selected")) >= 3:
+                            break
+                        c["selected"] = True
 
                 selected_count = sum(1 for r in rankings if r.get("selected"))
                 print(f"    Reviewed {style}: top {selected_count} selected")

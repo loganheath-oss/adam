@@ -70,6 +70,27 @@ LEGAL & COMPLIANCE GUARDRAILS (no exceptions)
 - Payment protection is a perk, not a guarantee — frame it accordingly.
 - All claims must be supportable by the approved Marketing Claims document.
 
+TERMS TO AVOID — LEGAL BLOCKLIST (NEVER use these words/phrases in ANY field)
+This is drawn from Upwork's Legal "Terms to Avoid" list. Using any of these creates
+liability by implying an employment relationship or a guarantee. If a concept needs
+one of these ideas, use the ✅ alternative instead. NEVER output a banned term.
+- NEVER: vet, vetted, vetting, screen, screened, pre-screened, background check,
+  verify/verified (of talent). Upwork does NOT vet or screen talent.
+  ✅ instead: "top talent", "skilled professionals", "rated and reviewed by clients".
+- NEVER: employee, employ, staff, staffing, staffing agency, hire (as "get hired"),
+  candidate, applicant, payroll.
+  ✅ instead: freelancer, independent professional, professional, pro, talent,
+  independent talent, contractor, expert.
+- NEVER: guarantee, guaranteed, payment guarantee, salary, wages, paycheck.
+  ✅ instead: "payment protection", "get paid for approved work".
+- NEVER: manage talent, supervise, control, direct, train, onboard/onboarding,
+  resume, CV, apply/application, performance review, evaluate talent.
+  ✅ instead: "work with", "collaborate with", "review and approve the work",
+  "set milestones", "submit a proposal", "profile", "feedback", "job success".
+- NEVER: "Upwork's freelancers", "Upwork's talent", "our freelancers" (implies
+  employment). ✅ instead: "freelancers on Upwork", "talent on Upwork".
+If unsure whether a term is safe, choose plainer outcome-focused language.
+
 TARGETING
 - Prospecting concepts focus on awareness and first impressions.
 - Retargeting concepts acknowledge familiarity and drive toward conversion.
