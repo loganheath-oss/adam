@@ -980,6 +980,7 @@ async def pipeline_events(sprint_id: str, request: Request):
             order = {}
         progress_path = sprint_dir / "progress.json"
         last_state: str | None = None
+        last_sub: str | None = None
         last_item: tuple | None = None
         # Hard cap: 20 min — image gen can be slow but anything longer is a hang.
         deadline = asyncio.get_event_loop().time() + 1200
@@ -994,19 +995,43 @@ async def pipeline_events(sprint_id: str, request: Request):
             except Exception:
                 state = "unknown"
 
-            # Sub-stage progress (N/total). Best-effort: file may not exist, and
-            # only counts as "current" if it matches the coarse stage we're in.
+            # Sub-stage progress (N/total). The gate handlers keep the coarse
+            # state pinned at "resuming_gate_N" for the whole stage, while the
+            # pipeline writes the REAL sub-stage + N/total to progress.json.
+            # Surface that whenever it's FRESH — do NOT require current_stage to
+            # equal the coarse state (on the gated web flow they never match, so
+            # the old `== state` guard silently dropped every detailed update and
+            # the user saw only the coarse "kicking off…" bookends: the black box).
             prog = {}
             try:
                 prog = json.loads(progress_path.read_text())
             except Exception:
                 prog = {}
-            live = prog if prog.get("current_stage") == state and prog.get("item_total") else {}
+            live = {}
+            if prog.get("item_total") and not (
+                state.startswith("awaiting_gate_") or state in PIPELINE_TERMINAL_STATES
+            ):
+                # Only trust progress.json if written recently — a stale file from
+                # an earlier stage must not leak into a later one.
+                try:
+                    _updated = datetime.fromisoformat(prog["updated_at"])
+                    if _updated.tzinfo is None:
+                        _updated = _updated.replace(tzinfo=timezone.utc)
+                    if (datetime.now(timezone.utc) - _updated).total_seconds() < 120:
+                        live = prog
+                except Exception:
+                    live = {}
+
+            # The effective sub-stage (from progress.json when live) drives the
+            # human message + change detection, so "Copy: Sticky Note 14/22" shows
+            # instead of the generic "copy generation" umbrella.
+            sub_stage = live.get("current_stage") or state
             item = (live.get("item_index"), live.get("item_total"))
 
-            if state != last_state or item != last_item:
-                msg = PIPELINE_STATE_MESSAGES.get(state, f"Pipeline state: {state}")
-                eta = _eta_for_state(state, order)
+            if state != last_state or sub_stage != last_sub or item != last_item:
+                msg = PIPELINE_STATE_MESSAGES.get(
+                    sub_stage, PIPELINE_STATE_MESSAGES.get(state, f"Pipeline state: {state}"))
+                eta = _eta_for_state(sub_stage if live else state, order)
                 payload = {'type': 'status', 'state': state, 'message': msg, 'eta_seconds': eta}
                 if live:
                     payload['item_index'] = live.get('item_index')
@@ -1015,6 +1040,7 @@ async def pipeline_events(sprint_id: str, request: Request):
                     payload['progress_updated_at'] = live.get('updated_at')
                 yield f"data: {json.dumps(payload)}\n\n"
                 last_state = state
+                last_sub = sub_stage
                 last_item = item
                 # Close stream when we hit a gate or terminal state.
                 if state.startswith("awaiting_gate_") or state in PIPELINE_TERMINAL_STATES:
