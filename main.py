@@ -2921,8 +2921,29 @@ async def learnings_editor():
   .status{color:#0a7a3a;font-size:13px;}
   .err{color:#b00;font-size:13px;}
   a{color:#1a4fd1;}
+  nav.nav{border-bottom:1px solid #e5e7eb;background:#fff;margin:-2rem -1rem 1.5rem;padding:0}
+  nav.nav .nav-in{max-width:880px;margin:0 auto;padding:16px 1rem;display:flex;align-items:center;gap:14px}
+  nav.nav .brand{display:flex;align-items:center;gap:12px;font-weight:700;text-decoration:none;color:#111}
+  nav.nav .brand .up{color:#14a800;font-size:19px;letter-spacing:-.01em}
+  nav.nav .brand .bar{width:1px;height:18px;background:#d1d5db}
+  nav.nav .brand .adam{letter-spacing:.42em;font-weight:600;font-size:14px;padding-left:2px;color:#111}
+  nav.nav .nav-links{margin-left:auto;display:flex;gap:26px;font-size:14px}
+  nav.nav .nav-links a{padding:0 0 3px 0;text-decoration:none;color:#6b7280;border-bottom:2px solid transparent}
+  nav.nav .nav-links a.active{color:#111;font-weight:600;border-bottom:2px solid #14a800}
 </style></head>
 <body>
+<nav class="nav">
+  <div class="nav-in">
+    <a class="brand" href="/"><span class="up">upwork</span><span class="bar"></span><span class="adam">ADAM</span></a>
+    <div class="nav-links">
+      <a href="/new">New Order</a>
+      <a href="/sprints">Sprints</a>
+      <a href="/wiki">Wiki</a>
+      <a href="/agent">Ask ADAM</a>
+      <a href="/learnings" class="active">Learnings</a>
+    </div>
+  </div>
+</nav>
 <h1>ADAM Learnings</h1>
 <div class="sub">Institutional memory shared across every sprint. Loaded into Claude's context on every chat. Edit freely — saves to <code>learnings.md</code> at the project root, also editable in the Replit file editor.</div>
 <form id="f">
