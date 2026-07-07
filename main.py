@@ -345,16 +345,15 @@ _V95_CSS = """/*__v95__*/
 body{font-family:'PP Neue Montreal',-apple-system,system-ui,'Segoe UI',sans-serif!important;color:var(--ink);-webkit-font-smoothing:antialiased;background:var(--bg)}
 pre,code,.recent-id,textarea#t{font-family:ui-monospace,'SF Mono',Menlo,monospace!important}
 h1,h2,h3{font-weight:600;letter-spacing:-.02em;color:var(--ink)}
-.container{max-width:1080px;margin:0 auto;padding:0 28px}
-.hero{text-align:center}
-.hero h1{font-size:52px;line-height:1.02;letter-spacing:-.025em;font-weight:600;margin-bottom:10px}
 .hero p,.hero .sub,.sub{color:var(--ink-dim)}
-.action-card,.recent-card,.card,.box{border:1px solid var(--rule)!important;border-radius:18px!important;box-shadow:var(--shadow-soft)!important;background:var(--paper)}
+.kick{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);font-weight:500}
+.kick .line{width:28px;height:1.5px;background:var(--brand-green);display:inline-block}
+.action-card,.recent-card,.card,.box{border:1px solid var(--rule)!important;border-radius:20px!important;box-shadow:var(--shadow-soft)!important;background:var(--paper)}
 .action-card{transition:transform .15s,box-shadow .15s,border-color .15s}
 .action-card:hover{border-color:var(--brand-green-light)!important;box-shadow:var(--shadow-lift)!important;transform:translateY(-2px)}
-.action-card.primary{background:linear-gradient(135deg,var(--brand-green),var(--brand-green-deep))!important;border-color:transparent!important;color:#fff}
+.action-card.primary{background:var(--tint)!important;border-color:var(--brand-green-light)!important;color:var(--ink)}
 .action-card h2,.card h2,.card-head{font-weight:600;letter-spacing:-.01em}
-.action-card .icon{font-size:24px}
+.icon-tile{width:44px;height:44px;border-radius:12px;border:1px solid var(--rule);background:#fff;display:flex;align-items:center;justify-content:center}
 .recent-badge{border-radius:999px;font-weight:500}
 .recent-row:hover{background:var(--hover)}
 .all-link,a.all-link{color:var(--brand-green);font-weight:500}
@@ -605,7 +604,7 @@ async def root():
 <title>ADAM Pipeline</title>
 <style>
   *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f7f7f5;color:#111827;min-height:100vh}}
+  body{{font-family:'PP Neue Montreal',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#FFFFFF;color:#0A0A0A;min-height:100vh}}
   nav.nav{{border-bottom:1px solid #e5e7eb;background:#fff;position:sticky;top:0;z-index:20;padding:0;height:auto;display:block}}
   nav.nav .nav-in{{max-width:1080px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;gap:14px}}
   nav.nav .brand{{display:flex;align-items:center;gap:12px;font-weight:700;text-decoration:none;color:#111}}
@@ -617,22 +616,18 @@ async def root():
   nav.nav .nav-links a:hover{{color:#111;background:none}}
   nav.nav .nav-links a.active{{color:#111;font-weight:600;border-bottom:2px solid #14a800}}
   .nav a.active{{color:#111;font-weight:600}}
-  .container{{max-width:980px;margin:0 auto;padding:56px 24px 80px}}
-  .hero{{text-align:center;margin-bottom:48px}}
-  .hero h1{{font-size:32px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px;color:#111}}
-  .hero p{{font-size:15px;color:#6b7280;max-width:520px;margin:0 auto}}
-  .actions{{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:36px}}
+  .container{{max-width:1080px;margin:0 auto;padding:64px 28px 100px}}
+  .hero{{text-align:left;margin-bottom:44px;max-width:760px}}
+  .hero h1{{font-size:56px;line-height:1.0;font-weight:600;letter-spacing:-.025em;margin:20px 0;color:#0A0A0A}}
+  .hero p{{font-size:16px;color:#5C5C5C;max-width:440px;line-height:1.5}}
+  .actions{{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px}}
   @media(max-width:680px){{.actions{{grid-template-columns:1fr}}}}
-  .action-card{{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px 26px;
-    text-decoration:none;color:#111;display:block;
-    transition:border-color .15s,box-shadow .15s,transform .15s;}}
-  .action-card:hover{{border-color:#14a800;box-shadow:0 4px 14px rgba(20,168,0,.08);transform:translateY(-1px)}}
-  .action-card.primary{{background:linear-gradient(135deg,#14a800,#0f8500);color:#fff;border-color:transparent}}
-  .action-card.primary:hover{{box-shadow:0 6px 20px rgba(20,168,0,.25)}}
-  .action-card .icon{{font-size:24px;margin-bottom:14px;display:inline-block}}
-  .action-card h2{{font-size:18px;font-weight:600;margin-bottom:4px}}
-  .action-card p{{font-size:13px;opacity:.85;line-height:1.5}}
-  .action-card .arrow{{font-size:14px;margin-top:14px;opacity:.7}}
+  .action-card{{padding:28px 28px 26px;text-decoration:none;color:#0A0A0A;display:block}}
+  .action-card.primary .icon-tile{{border-color:#C4F4C0}}
+  .icon-tile{{margin-bottom:22px}}
+  .action-card h2{{font-size:19px;font-weight:600;letter-spacing:-.01em;margin-bottom:8px}}
+  .action-card p{{font-size:14px;color:#5C5C5C;line-height:1.5}}
+  .action-card .arrow{{font-size:14px;margin-top:18px;color:#14A800;font-weight:500}}
 
   .recent-card{{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:20px 22px}}
   .recent-card.empty{{text-align:center;color:#9ca3af;font-size:14px;padding:36px 22px}}
@@ -664,32 +659,33 @@ async def root():
 </nav>
 <div class="container">
   <div class="hero">
-    <h1>ADAM Ad Creative Pipeline</h1>
-    <p>Generate Upwork ad creative end-to-end. Submit a new order, or pick up a sprint in progress.</p>
+    <div class="kick"><span class="line"></span>Upwork Paid Acquisition</div>
+    <h1>Ad creative,<br>produced end-to-end.</h1>
+    <p>Submit a brief and ADAM produces copy and assembled creative across every size and visual style.</p>
   </div>
   <div class="actions">
     <a class="action-card primary" href="/new">
-      <span class="icon">＋</span>
-      <h2>Start a new order</h2>
-      <p>Open the order form. The creative team will be notified and can pick it up from the handoff page.</p>
-      <div class="arrow">Go to form →</div>
+      <span class="icon-tile"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#14A800" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+      <h2>New order</h2>
+      <p>Open the order form. The creative team is notified and assets arrive by your delivery date.</p>
+      <div class="arrow">Open form →</div>
     </a>
     <a class="action-card" href="/sprints">
-      <span class="icon">📋</span>
-      <h2>Revisit past orders</h2>
+      <span class="icon-tile"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="6" height="6" rx="1.4" stroke="#0A0A0A" stroke-width="1.6"/><rect x="11" y="3" width="6" height="6" rx="1.4" stroke="#0A0A0A" stroke-width="1.6"/><rect x="3" y="11" width="6" height="6" rx="1.4" stroke="#0A0A0A" stroke-width="1.6"/><rect x="11" y="11" width="6" height="6" rx="1.4" stroke="#0A0A0A" stroke-width="1.6"/></svg></span>
+      <h2>Sprint runs</h2>
       <p>Browse every sprint, resume an in-progress chat, or review what was delivered.</p>
       <div class="arrow">View sprints →</div>
     </a>
     <a class="action-card" href="/agent">
-      <span class="icon">💬</span>
+      <span class="icon-tile"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 4h12a1 1 0 011 1v8a1 1 0 01-1 1H8l-3.5 3V14H4a1 1 0 01-1-1V5a1 1 0 011-1z" stroke="#0A0A0A" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
       <h2>Ask ADAM</h2>
-      <p>Chat with the assistant — ask how the tool works, where things live, or how to run it. Answers come with clickable source previews from the wiki.</p>
+      <p>Chat with the assistant about how the tool works, where things live, or how to run it.</p>
       <div class="arrow">Start chatting →</div>
     </a>
     <a class="action-card" href="/wiki">
-      <span class="icon">📚</span>
+      <span class="icon-tile"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 4.5A1.5 1.5 0 015.5 3H10v13H5.5A1.5 1.5 0 014 14.5v-10z" stroke="#0A0A0A" stroke-width="1.5" stroke-linejoin="round"/><path d="M16 4.5A1.5 1.5 0 0014.5 3H10v13h4.5a1.5 1.5 0 001.5-1.5v-10z" stroke="#0A0A0A" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
       <h2>Read the wiki</h2>
-      <p>The full handoff knowledge base — architecture, pipeline, the Figma plugin, deployment, troubleshooting, and FAQ.</p>
+      <p>The full knowledge base — architecture, pipeline, the Figma plugin, deployment, and FAQ.</p>
       <div class="arrow">Open wiki →</div>
     </a>
   </div>
