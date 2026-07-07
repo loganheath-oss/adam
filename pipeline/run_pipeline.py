@@ -534,9 +534,10 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "A customer-quote card with a headshot. The on-image quote fills the "
             "Copy_Testimonial slot and MUST fit its cap — do NOT reuse body_long here. "
             "ALSO provide:\n"
-            "- testimonial_quote (max 100 chars INCLUDING the surrounding quotes and spaces "
-            "— a specific, believable SMB result in the customer's own first-person voice, "
-            "e.g. '“We hired an AI analyst and cut reporting time in half.”')\n"
+            "- testimonial_quote (max 100 chars — the customer's own first-person quote as "
+            "PLAIN text with NO surrounding quotation marks and NO double-quote (\") "
+            "characters anywhere (the template adds the quotation marks); a specific, "
+            "believable SMB result, e.g. We hired an AI analyst and cut reporting time in half.)\n"
             "- testimonial_author (max 51 chars — 'Firstname Lastname, Title, Company' of a "
             "plausible SMB Upwork client; realistic but not a real named person)\n"
         )
@@ -687,7 +688,11 @@ Return as JSON array of objects with exactly these keys: creative_headline, crea
                 },
                 json={
                     "model": "claude-sonnet-4-6",
-                    "max_tokens": 1500,
+                    # 6 concepts × many fields (incl. 300-char body_long + per-style
+                    # extras like testimonial_quote) can exceed a tight cap and get
+                    # truncated mid-JSON ("Unterminated string" → 0 concepts). Give
+                    # ample headroom; billing is by tokens actually produced.
+                    "max_tokens": 4000,
                     "messages": [{"role": "user", "content": prompt}]
                 },
                 timeout=120
