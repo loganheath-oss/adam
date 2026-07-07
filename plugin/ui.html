@@ -196,7 +196,7 @@
       } else if (msg.type === "error") {
         appendLog("ERROR: " + msg.text, "error");
       } else if (msg.type === "assembly-complete") {
-        appendLog("Assembly complete: " + msg.assembled + " of " + msg.total + " assets assembled.", "success");
+        appendLog("Assembly complete: " + msg.assembled + " of " + msg.total + " " + (msg.unit || "assets") + " assembled.", "success");
       }
     };
   </script>

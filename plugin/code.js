@@ -1894,6 +1894,11 @@ async function assemble(payload) {
 
   var assembled = 0;
   var assembledIds = [];
+  // What the final count is OUT OF. In concept_board mode we build one board per
+  // CONCEPT, so the denominator is the concept count — NOT manifest.length (rows),
+  // which was making "9 of 54 assets" look like a failure when it was 9/9 boards.
+  var outputTotal = manifest.length;
+  var outputUnit = "assets";
 
   if (mode === "styled_per_row") {
     // Use the captured frame as the search root for templates.
@@ -1918,6 +1923,7 @@ async function assemble(payload) {
     log("\n✓ Assembly complete: " + assembled + " assembled, " + result.failed + " failed");
   } else if (mode === "concept_board") {
     var groups = groupRowsByConcept(manifest);
+    outputTotal = groups.length; outputUnit = "boards";
     log("Grouped " + manifest.length + " rows into " + groups.length + " concepts");
     // For concept_board mode, look for styled templates on the entire page so we can
     // place them inside each concept board's image frame slots.
@@ -2009,8 +2015,9 @@ async function assemble(payload) {
   figma.ui.postMessage({
     type: "assembly-complete",
     assembled: assembled,
-    failed: manifest.length - assembled,
-    total: manifest.length,
+    failed: outputTotal - assembled,
+    total: outputTotal,
+    unit: outputUnit,
     frameIds: assembledIds,
   });
 
