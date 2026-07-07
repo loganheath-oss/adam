@@ -1254,6 +1254,11 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                 matching = all_matching[:3] if all_matching else [{"headline": "Find talent fast", "concept_tag": "default-v1"}]
 
             for concept in matching:
+                # Pin the library photo per concept: pick once on the first size and
+                # reuse it for the other sizes, so all sizes of a concept show the
+                # SAME photo (previously each size re-picked → different faces on the
+                # same concept). Non-library styles keep regenerating per size.
+                _concept_photo = None
                 for res in resolutions:
                     size = res.get("size", "1080x1080")
                     ratio = res.get("ratio", "1:1")
@@ -1280,7 +1285,19 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                     figma_node_id_right = ""
                     figma_asset_name_right = ""
 
-                    if style in DUAL_PHOTO_LIBRARY_STYLES and library_cache:
+                    if _concept_photo is not None:
+                        # Reuse the per-concept library pick for this concept's
+                        # other sizes — one photo across 1:1 / 4:5 / 9:16.
+                        figma_node_id = _concept_photo["figma_node_id"]
+                        figma_asset_name = _concept_photo["figma_asset_name"]
+                        match_strength = _concept_photo["match_strength"]
+                        figma_node_id_left = _concept_photo["figma_node_id_left"]
+                        figma_asset_name_left = _concept_photo["figma_asset_name_left"]
+                        figma_node_id_right = _concept_photo["figma_node_id_right"]
+                        figma_asset_name_right = _concept_photo["figma_asset_name_right"]
+                        method = _concept_photo["method"]
+                        prompt = _concept_photo["prompt"]
+                    elif style in DUAL_PHOTO_LIBRARY_STYLES and library_cache:
                         # Style needs TWO distinct library photos (one per
                         # placeholder). Pick the second with exclude_ids so it
                         # cannot collide with the first.
@@ -1382,6 +1399,23 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                         method = "gemini_generate"
                         headline = concept.get("headline", "")
                         prompt = _build_style_prompt(style, headline, platform)
+
+                    # Cache this concept's library pick so its remaining sizes reuse
+                    # the SAME photo (set once, on the first size). Only library-photo
+                    # styles are pinned; Gemini/skip styles re-run per size as before.
+                    if _concept_photo is None and library_cache and (
+                        style in DUAL_PHOTO_LIBRARY_STYLES or style in PHOTO_LIBRARY_STYLES):
+                        _concept_photo = {
+                            "figma_node_id": figma_node_id,
+                            "figma_asset_name": figma_asset_name,
+                            "match_strength": match_strength,
+                            "figma_node_id_left": figma_node_id_left,
+                            "figma_asset_name_left": figma_asset_name_left,
+                            "figma_node_id_right": figma_node_id_right,
+                            "figma_asset_name_right": figma_asset_name_right,
+                            "method": method,
+                            "prompt": prompt,
+                        }
 
                     # Variant expansion: styles in MULTI_VARIANT_STYLES emit one
                     # row per registered variant. Brandon wants every variant as
