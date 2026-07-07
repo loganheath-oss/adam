@@ -526,16 +526,6 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "- profile_right (max 60 chars — short profile blurb, right column)\n"
         )
         multi_field_keys = ", profile_name, profile_title, profile_left, profile_right"
-    elif _sl == "talentprofile":
-        multi_field_instructions = (
-            "\n===== EXTRA FIELDS FOR \"Talent Profile\" =====\n"
-            "This ad is a freelancer's profile card (headshot + name + role). Each concept MUST\n"
-            "feature a DIFFERENT freelancer relevant to the brief — vary gender/name across\n"
-            "concepts so the batch never shows the same person twice. ALSO provide:\n"
-            "- profile_name (max 18 chars — 'Firstname L.', realistic but not a real person; different every concept)\n"
-            "- profile_title (max 26 chars — their role, tied to this concept's focus, e.g. 'AI Data Analyst')\n"
-        )
-        multi_field_keys = ", profile_name, profile_title"
     elif _sl == "chatbubble":
         multi_field_instructions = (
             "\n===== EXTRA FIELDS FOR \"Chat Bubble\" =====\n"
@@ -1178,11 +1168,6 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
         # Poll (2026-07-02): has a full-bleed Image-Placeholder behind the poll
         # card — feed it a library photo so polls don't repeat the template image.
         "Poll",
-        # Talent Profile (2026-07-06): the freelancer card's headshot was baked in,
-        # so every board showed the same person. Feed it a DISTINCT library portrait
-        # per concept (VISUAL_STYLE_TO_TAG maps Talent Profile -> testimonial/portrait)
-        # so the avatar varies. Name + title are varied via copy-gen.
-        "Talent Profile",
     }
 
     # Styles that only need a background (no scene generation)
@@ -1201,10 +1186,10 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                   # New graphic/UI-only styles (2026-06-22) — no photo slot; the
                   # plugin keeps their built imagery (STYLES_THAT_SKIP_IMAGE).
                   "Us vs Them", "Device UI", "Pie Chart",
-                  # Social Media Profile: avatar/UI baked in, no library photo slot.
-                  # (Talent Profile MOVED to the photo library above so its headshot
-                  # varies per concept — 2026-07-06.)
-                  "Social Media Profile"}
+                  # Profile mocks: avatar/UI baked in, no library photo slot. Talent
+                  # Profile's headshot is overlaid in the plugin from the curated
+                  # Example Profiles, so it needs no pipeline photo. (2026-07-07)
+                  "Social Media Profile", "Talent Profile"}
 
     # Pre-fetch the Figma library once if any photo-based style is in the order.
     # Cached for the duration of this stage.
