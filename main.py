@@ -2205,17 +2205,19 @@ async def sprints_dashboard():
   nav.nav .nav-links a{{padding:0 0 3px 0;text-decoration:none;color:#6b7280;border-radius:0;border-bottom:2px solid transparent}}
   nav.nav .nav-links a:hover{{color:#111;background:none}}
   nav.nav .nav-links a.active{{color:#111;font-weight:600;border-bottom:2px solid #14a800}}
-  .container{{max-width:1100px;margin:0 auto;padding:32px 24px}}
-  h1{{font-size:22px;font-weight:700;margin-bottom:4px}}
-  .sub{{font-size:13px;color:#6b7280;margin-bottom:24px}}
-  table{{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)}}
-  thead tr{{background:#f9fafb;border-bottom:1px solid #e5e7eb}}
-  th{{padding:10px 16px;text-align:left;font-size:11px;font-weight:600;color:#6b7280;letter-spacing:0.05em;text-transform:uppercase}}
-  tbody tr{{border-bottom:1px solid #f3f4f6}}
+  body{{background:#fff;color:#0A0A0A}}
+  .container{{max-width:1040px;margin:0 auto;padding:56px 28px 80px}}
+  h1{{font-size:40px;font-weight:600;letter-spacing:-.02em;margin-bottom:6px}}
+  .sub{{font-size:14px;color:#9A9A9A;margin-bottom:26px}}
+  table{{width:100%;border-collapse:collapse;background:#fff;border:1px solid #ECECEC;border-radius:16px;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,.04),0 10px 28px rgba(0,0,0,.05)}}
+  thead tr{{background:#FAFAFA;border-bottom:1px solid #ECECEC}}
+  th{{padding:14px 20px;text-align:left;font-size:11px;font-weight:500;color:#9A9A9A;letter-spacing:0.08em;text-transform:uppercase}}
+  tbody tr{{border-bottom:1px solid #F2F2F2}}
   tbody tr:last-child{{border-bottom:none}}
-  tbody tr:hover{{background:#f9fafb}}
-  .refresh{{float:right;padding:6px 14px;background:#fff;border:1px solid #d1d5db;border-radius:6px;font-size:12px;cursor:pointer;color:#374151}}
-  .refresh:hover{{background:#f9fafb}}
+  tbody tr:hover{{background:#F7F8F6}}
+  td{{padding:16px 20px!important}}
+  .refresh{{padding:11px 18px;background:#fff;border:1px solid #E0E0E0;border-radius:999px;font-size:14px;cursor:pointer;color:#0A0A0A;font-family:inherit;font-weight:500}}
+  .refresh:hover{{background:#F7F8F6}}
 </style>
 </head>
 <body>
@@ -2241,26 +2243,10 @@ async def sprints_dashboard():
   </div>
   <p class="sub">{len(sprints)} sprint{"s" if len(sprints)!=1 else ""} · click any row to view details</p>
   <table>
-    <thead><tr><th>Time</th><th>Sprint ID</th><th>Driver</th><th>Platform</th><th>Status</th></tr></thead>
+    <thead><tr><th>Updated</th><th>Sprint ID</th><th>Driver</th><th>Platform</th><th>Status</th></tr></thead>
     <tbody>{rows}{empty}</tbody>
   </table>
-  <div id="sync-mini-panel">{_sync_mini_panel()}</div>
 </div>
-<script>
-(function() {{
-  var INTERVAL = 30000;
-  function refresh() {{
-    fetch('/sprints/sync-panel')
-      .then(function(r) {{ return r.text(); }})
-      .then(function(html) {{
-        var el = document.getElementById('sync-mini-panel');
-        if (el) el.innerHTML = html;
-      }})
-      .catch(function() {{}});
-  }}
-  setInterval(refresh, INTERVAL);
-}})();
-</script>
 </body>
 </html>""")
 
