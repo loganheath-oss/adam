@@ -329,6 +329,7 @@ _TEMPLATE_REGISTRY = None
 _STYLE_REGISTRY_ALIASES = {
     "lifestyle-photo": "Lifestyle-Photo-Full-Bleed",
     "tweet-post-mockup": "Mockup",
+    "graphic-with-text": "Illustration",   # shares Illustration's caps (Headline 38 / CTA 16)
 }
 
 
@@ -369,27 +370,52 @@ def _limits_for_style(style):
     return {}
 
 
+def _limits_raw_for_style(style):
+    """Verbatim per-slot caps read from the Figma 'Rules' layer for this style
+    ({label: max}, or {} if none). Same lookup order as _limits_for_style."""
+    reg = _load_template_registry()
+    if not reg:
+        return {}
+    norm = _norm_style(style)
+    def raw(v):
+        return v.get("limits_raw", {}) or {}
+    for k, v in reg.items():
+        if _norm_style(k) == norm:
+            return raw(v)
+    alias = _STYLE_REGISTRY_ALIASES.get(norm)
+    if alias and alias in reg:
+        return raw(reg[alias])
+    for k, v in reg.items():
+        kn = _norm_style(k)
+        if kn.startswith(norm) or norm.startswith(kn):
+            return raw(v)
+    return {}
+
+
 def _template_limit_block(style):
-    """Prompt block: the template's hard character caps, or '' if none."""
-    lim = _limits_for_style(style)
-    if not lim:
+    """Prompt block listing this template's on-creative text slots and their HARD
+    caps, read verbatim from the well-named Figma 'Rules' layer (source of truth,
+    synced by scripts/harvest_figma_rules.py). Empty string if the style has none."""
+    raw = _limits_raw_for_style(style)
+    if not raw:
         return ""
     lines = []
-    if "headline" in lim:
-        lines.append(f"- headline: MAX {lim['headline']} characters")
-    if "subhead" in lim:
-        lines.append(f"- body_short AND description: MAX {lim['subhead']} characters (on-creative subhead)")
-    if "cta" in lim:
-        lines.append(f"- cta: MAX {lim['cta']} characters")
-    if "bullet_total" in lim:
-        lines.append(f"- total bullet text combined: MAX {lim['bullet_total']} characters")
+    for label, n in raw.items():
+        clean = " ".join(str(label).split())          # collapse newlines/dbl-spaces
+        lines.append(f"- {clean}: MAX {n} characters")
     if not lines:
         return ""
     return (
-        "\n===== TEMPLATE CHARACTER LIMITS (from Elise's Figma — HARD CAPS) =====\n"
-        "These OVERRIDE the generic field maxes below. The on-creative text MUST fit "
-        "or it overflows the template. Count characters INCLUDING spaces; rewrite "
-        "shorter if a concept would exceed a cap.\n"
+        "\n===== TEMPLATE CHARACTER LIMITS (from Elise's Figma 'Rules' layer — HARD CAPS) =====\n"
+        "Below are the EXACT text slots on THIS ad's template and their hard character\n"
+        "caps. These OVERRIDE the generic field maxes below. Every piece of text that\n"
+        "appears ON the image must fit its slot — count characters INCLUDING spaces and\n"
+        "rewrite shorter if a concept would exceed a cap. Never overflow the template.\n"
+        "Map the slots to your output fields: a 'Headline' slot is creative_headline; a\n"
+        "'Subhead'/'Stat'/'Copy' slot is creative_subhead; a 'CTA'/'Button' slot is cta;\n"
+        "any other named slot (Testimonial Copy, Chat Bubble, Column, Quadrant, Talent\n"
+        "Tag, Credit, etc.) is the primary on-creative text for that slot — keep the\n"
+        "creative_headline/creative_subhead you emit within the tightest applicable cap.\n"
         + "\n".join(lines) + "\n"
     )
 

@@ -1,5 +1,5 @@
 {
-  "source": "Figma DoDwumxELkuAuKKSP5p00e (ADAM 2026) · Meta Templates page",
+  "source": "Figma DoDwumxELkuAuKKSP5p00e (ADAM 2026) \u00b7 Meta Templates page",
   "harvested_at": "2026-07-02T04:23:44.381706+00:00",
   "convention": {
     "template": "Template_{Adtype}_{WxH}",
@@ -137,7 +137,7 @@
       "image_placeholders": [
         "Left-Image-Placeholder",
         "Right-Image-Placeholder",
-        "📌 Image call outs: Right-Image-Placeholder Left-Image-Placeholder"
+        "\ud83d\udccc Image call outs: Right-Image-Placeholder Left-Image-Placeholder"
       ]
     },
     "Us-Vs-Them": {
@@ -147,7 +147,7 @@
       "limits_raw": {
         "Left Headline": 18,
         "Total Bullet Text": 176,
-        "Left “Us": 31,
+        "Left \u201cUs": 31,
         "Right Headline": 18,
         "Right Subhead": 31
       },
@@ -286,7 +286,10 @@
       "figma_container": "Adtype_Chat-Bubble",
       "copy_rules_v1_complete": true,
       "labeling_complete": true,
-      "limits_raw": {},
+      "limits_raw": {
+        "Chat Bubble 1": 18,
+        "Chat Bubble 2": 91
+      },
       "limits": {},
       "sizes": [
         "1080x1920",
@@ -362,7 +365,7 @@
       "copy_rules_v1_complete": true,
       "labeling_complete": true,
       "limits_raw": {
-        "Right": 65,
+        "Column Left & Right": 65,
         "Subhead": 28
       },
       "limits": {
@@ -601,7 +604,7 @@
       "labeling_complete": true,
       "limits_raw": {
         "Headline": 12,
-        "B": 136,
+        "Column A & B": 136,
         "Single Headline": 26,
         "Single Column": 112
       },
@@ -672,8 +675,9 @@
       "copy_rules_v1_complete": true,
       "labeling_complete": true,
       "limits_raw": {
-        "Headline": 36,
-        "CTA": 22
+        "Headline": 60,
+        "CTA": 22,
+        "Carousel\nHeadline": 36
       },
       "limits": {
         "headline": 36,
