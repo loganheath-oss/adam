@@ -17,25 +17,25 @@
     overflow: hidden;
   }
 
-  .nav {
-    background: #fff;
-    border-bottom: 1px solid #e5e7eb;
-    padding: 0 20px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    height: 48px;
-    flex-shrink: 0;
-  }
-  .nav-logo { font-weight: 700; font-size: 14px; letter-spacing: 0.05em; color: #14a800; }
-  .nav-sprint { font-size: 12px; color: #6b7280; font-family: monospace; }
-  .nav a { font-size: 12px; color: #6b7280; text-decoration: none; padding: 3px 8px; border-radius: 4px; margin-left: auto; }
-  .nav a:hover { background: #f3f4f6; color: #111; }
+  nav.nav { border-bottom:1px solid #ECECEC; background:#fff; flex-shrink:0; padding:0; }
+  nav.nav .nav-in { max-width:1180px; margin:0 auto; padding:14px 28px; display:flex; align-items:center; gap:14px; }
+  nav.nav .brand { display:flex; align-items:center; gap:12px; font-weight:700; text-decoration:none; color:#0A0A0A; }
+  nav.nav .brand .up { color:#14A800; font-size:19px; letter-spacing:-.01em; }
+  nav.nav .brand .bar { width:1px; height:18px; background:#E0E0E0; }
+  nav.nav .brand .adam { letter-spacing:.42em; font-weight:600; font-size:14px; padding-left:2px; color:#0A0A0A; }
+  .nav-sprint { font-size:12px; color:#9A9A9A; font-family:ui-monospace,'SF Mono',Menlo,monospace; }
+  nav.nav .nav-links { margin-left:auto; display:flex; gap:26px; font-size:14px; align-items:center; }
+  nav.nav .nav-links a { padding:0 0 3px 0; text-decoration:none; color:#5C5C5C; border-bottom:2px solid transparent; }
+  nav.nav .nav-links a:hover { color:#0A0A0A; }
+  nav.nav .nav-links a.active { color:#0A0A0A; font-weight:600; border-bottom:2px solid #14A800; }
 
   .workspace {
     flex: 1;
     display: flex;
     min-height: 0;
+    max-width: 1180px;
+    width: 100%;
+    margin: 0 auto;
   }
 
   /* ── Left: chat ── */
@@ -314,9 +314,17 @@
 <body>
 
 <nav class="nav">
-  <span class="nav-logo">ADAM</span>
-  <span class="nav-sprint">__SPRINT_ID__</span>
-  <a href="/sprints">← All sprints</a>
+  <div class="nav-in">
+    <a class="brand" href="/"><span class="up">upwork</span><span class="bar"></span><span class="adam">ADAM</span></a>
+    <span class="nav-sprint">__SPRINT_ID__</span>
+    <div class="nav-links">
+      <a href="/new">New Order</a>
+      <a href="/sprints" class="active">Sprints</a>
+      <a href="/wiki">Wiki</a>
+      <a href="/agent">Ask ADAM</a>
+      <a href="/sync-log">Sync Log</a>
+    </div>
+  </div>
 </nav>
 
 <div class="workspace">

@@ -16,20 +16,16 @@
     flex-direction: column;
   }
 
-  .nav {
-    background: #fff;
-    border-bottom: 1px solid #e5e7eb;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    height: 52px;
-    flex-shrink: 0;
-  }
-  .nav-logo { font-weight: 700; font-size: 15px; letter-spacing: 0.05em; color: #14a800; }
-  .nav a { font-size: 13px; color: #6b7280; text-decoration: none; padding: 4px 10px; border-radius: 4px; }
-  .nav a:hover { background: #f3f4f6; color: #111; }
-  .nav .active { color: #111; font-weight: 600; }
+  nav.nav { border-bottom:1px solid #ECECEC; background:#fff; flex-shrink:0; padding:0; height:auto; display:block; }
+  nav.nav .nav-in { max-width:1080px; margin:0 auto; padding:16px 28px; display:flex; align-items:center; gap:14px; }
+  nav.nav .brand { display:flex; align-items:center; gap:12px; font-weight:700; text-decoration:none; color:#0A0A0A; }
+  nav.nav .brand .up { color:#14A800; font-size:19px; letter-spacing:-.01em; }
+  nav.nav .brand .bar { width:1px; height:18px; background:#E0E0E0; }
+  nav.nav .brand .adam { letter-spacing:.42em; font-weight:600; font-size:14px; padding-left:2px; color:#0A0A0A; }
+  nav.nav .nav-links { margin-left:auto; display:flex; gap:26px; font-size:14px; }
+  nav.nav .nav-links a { padding:0 0 3px 0; text-decoration:none; color:#5C5C5C; border-bottom:2px solid transparent; }
+  nav.nav .nav-links a:hover { color:#0A0A0A; }
+  nav.nav .nav-links a.active { color:#0A0A0A; font-weight:600; border-bottom:2px solid #14A800; }
 
   .chat-container {
     flex: 1;
@@ -173,7 +169,7 @@
     color: #6b7280;
     padding-bottom: 60px;
   }
-  .empty-state .icon { font-size: 40px; }
+  .empty-state .icon { line-height: 0; margin-bottom: 16px; }
   .empty-state h2 { font-size: 18px; font-weight: 600; color: #374151; }
   .empty-state p { font-size: 13px; text-align: center; max-width: 380px; line-height: 1.6; }
 
@@ -215,18 +211,31 @@
 <body>
 
 <nav class="nav">
-  <span class="nav-logo">ADAM Pipeline</span>
-  <a href="/">Home</a>
-  <a href="/new">New Order</a>
-  <a href="/wiki">Wiki</a>
-  <a href="/agent" class="active">Ask ADAM</a>
-  <a href="/sprints">Sprints</a>
+  <div class="nav-in">
+    <a class="brand" href="/"><span class="up">upwork</span><span class="bar"></span><span class="adam">ADAM</span></a>
+    <div class="nav-links">
+      <a href="/new">New Order</a>
+      <a href="/sprints">Sprints</a>
+      <a href="/wiki">Wiki</a>
+      <a href="/agent" class="active">Ask ADAM</a>
+      <a href="/sync-log">Sync Log</a>
+    </div>
+  </div>
 </nav>
 
 <div class="chat-container">
   <div class="messages" id="messages">
     <div class="empty-state" id="empty-state">
-      <div class="icon">🤖</div>
+      <div class="icon"><svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="54" height="54" rx="15" fill="#F4FAF1" stroke="#E0E0E0"/>
+        <circle cx="28" cy="13" r="2.4" fill="#14A800"/>
+        <line x1="28" y1="15.4" x2="28" y2="19" stroke="#14A800" stroke-width="2.2" stroke-linecap="round"/>
+        <rect x="15.5" y="19" width="25" height="20" rx="7" stroke="#14A800" stroke-width="2.2"/>
+        <line x1="13" y1="26" x2="13" y2="32" stroke="#14A800" stroke-width="2.2" stroke-linecap="round"/>
+        <line x1="43" y1="26" x2="43" y2="32" stroke="#14A800" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="23" cy="29" r="2.3" fill="#14A800"/>
+        <circle cx="33" cy="29" r="2.3" fill="#14A800"/>
+      </svg></div>
       <h2>ADAM Pipeline Agent</h2>
       <p>Ask me to inspect sprints, review copy concepts, check image prompts, or approve pipeline gates.</p>
       <div class="suggestions">
