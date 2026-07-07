@@ -455,6 +455,45 @@ def _scan_banned_terms(concept):
     return hits
 
 
+# Adrie's copy rule (refs/meta_copy_instructions.txt): headlines + CTAs are SENTENCE
+# CASE — capitalize the first word and proper nouns only, keep acronyms (AI, ROI),
+# no trailing period unless the line is two distinct sentences. The model still
+# emits title case despite the prompt, so we enforce it deterministically.
+_CASE_MAP = {
+    "ai": "AI", "roi": "ROI", "seo": "SEO", "ml": "ML", "ui": "UI", "ux": "UX",
+    "api": "API", "crm": "CRM", "ceo": "CEO", "cto": "CTO", "b2b": "B2B",
+    "saas": "SaaS", "smb": "SMB", "upwork": "Upwork",
+}
+
+
+def _to_sentence_case(text):
+    """Convert a headline/CTA to Adrie's sentence-case rules. Lowercases everything
+    except sentence starts, the pronoun 'I', and known acronyms/brand names; strips a
+    lone trailing period (keeps periods when the line is genuinely two sentences)."""
+    if not text or not isinstance(text, str):
+        return text
+
+    def fix_word(m):
+        low = m.group(0).lower()
+        return _CASE_MAP.get(low, low)
+
+    s = re.sub(r"[A-Za-z][A-Za-z']*", fix_word, text)          # baseline lowercase (acronyms kept)
+    s = re.sub(r"(^|[.?!]\s+)([a-z])", lambda m: m.group(1) + m.group(2).upper(), s)  # cap sentence starts
+    s = re.sub(r"\bi\b", "I", s)                                # pronoun I
+    s = re.sub(r"\bi'", "I'", s)                                # I'll / I'm / I've
+    s = s.strip()
+    if s.endswith(".") and s.count(".") == 1:                   # lone trailing period -> drop
+        s = s[:-1].rstrip()
+    return s
+
+
+# Copy fields that appear ON the creative or as the headline/CTA — these follow the
+# sentence-case rule. NOT applied to names/titles (testimonial_author, profile_*),
+# which are proper nouns and keep their own casing.
+_SENTENCE_CASE_FIELDS = ("creative_headline", "creative_subhead", "headline",
+                         "headline_short", "cta")
+
+
 def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id=None):
     """Generate 6 copy concepts for one visual style (one Claude call).
 
@@ -715,6 +754,10 @@ Return as JSON array of objects with exactly these keys: creative_headline, crea
                         concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{j}"
                         concept["batch_index"] = i
                         concept["visual_style"] = style
+                        # Enforce Adrie's sentence-case rule on headlines/CTAs.
+                        for _cf in _SENTENCE_CASE_FIELDS:
+                            if concept.get(_cf):
+                                concept[_cf] = _to_sentence_case(concept[_cf])
                         _flags = _scan_banned_terms(concept)
                         if _flags:
                             concept["legal_flags"] = _flags
