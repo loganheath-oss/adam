@@ -683,18 +683,6 @@ async def root():
       <p>Browse every sprint, resume an in-progress chat, or review what was delivered.</p>
       <div class="arrow">View sprints →</div>
     </a>
-    <a class="action-card" href="/agent">
-      <span class="icon-tile"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 4h12a1 1 0 011 1v8a1 1 0 01-1 1H8l-3.5 3V14H4a1 1 0 01-1-1V5a1 1 0 011-1z" stroke="#0A0A0A" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
-      <h2>Ask ADAM</h2>
-      <p>Chat with the assistant about how the tool works, where things live, or how to run it.</p>
-      <div class="arrow">Start chatting →</div>
-    </a>
-    <a class="action-card" href="/wiki">
-      <span class="icon-tile"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 4.5A1.5 1.5 0 015.5 3H10v13H5.5A1.5 1.5 0 014 14.5v-10z" stroke="#0A0A0A" stroke-width="1.5" stroke-linejoin="round"/><path d="M16 4.5A1.5 1.5 0 0014.5 3H10v13h4.5a1.5 1.5 0 001.5-1.5v-10z" stroke="#0A0A0A" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
-      <h2>Read the wiki</h2>
-      <p>The full knowledge base — architecture, pipeline, the Figma plugin, deployment, and FAQ.</p>
-      <div class="arrow">Open wiki →</div>
-    </a>
   </div>
   {recent_block}
 </div>
