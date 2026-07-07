@@ -62,6 +62,26 @@ a latent bug where a real Split-Screen order could grab these Bespoke frames.
 
 ---
 
+## 4. Detach the Talent Profile avatar so its headshot can be swapped
+
+In the Talent Profile templates, the freelancer card's headshot is an **external
+library component** — `Avatar Icon/100px` (`component 6057:449`, `remote: True`).
+Because it's a locked external component, ADAM **cannot swap the photo**, so every
+Talent Profile board shows the same person even though ADAM picks a distinct
+library portrait per concept.
+
+Fix (in each `Template_Adtype_Talent-Profile_*` size): select the `Avatar Icon/100px`
+instance in the Freelancer card and **Detach instance** (right-click → Detach, or
+⌘⌥B), OR replace it with a plain local image fill / `Image-Placeholder`. Once the
+avatar is an editable local image, ADAM swaps the headshot automatically — the
+name, title, and photo all vary per concept with no further changes.
+
+(ADAM already generates a different name + title + portrait per Talent Profile
+concept — this is the only thing standing between that and different people on
+every board.)
+
+---
+
 None of these change the visual design — they're labels, layer structure, and names
 so ADAM can fill the boards reliably. Happy to hop on a quick call if anything's
 unclear.
