@@ -1426,6 +1426,38 @@ function getCopyFrameTextValueLayers(notesFrame) {
   };
 }
 
+// Fill a copy panel (Notes > Copy Frame) by matching each row's LABEL text rather
+// than by position. The board template's value-layer NAMES are inconsistent
+// (e.g. V2's headline value is literally named "Headline_Long"), which made the
+// positional fill drop V1's CTA. This walks each row, reads its label to know
+// what it is, sets the value, and — critically — REWRITES the swapped Primary
+// Text label so it matches the copy we fill (V1 long / V2 short), so the panel
+// no longer reads "Primary Text (short)" above a long paragraph.
+async function fillCopyPanelByLabel(notesFrame, headlineVal, primaryVal, primaryLabelText) {
+  if (!notesFrame) return;
+  var copyFrame = findDirectChildByName(notesFrame, "Copy Frame");
+  if (!copyFrame || !("children" in copyFrame)) return;
+  for (var i = 0; i < copyFrame.children.length; i++) {
+    var group = copyFrame.children[i];
+    if (group.type !== "FRAME" || !("children" in group)) continue;
+    var texts = [];
+    for (var j = 0; j < group.children.length; j++) if (group.children[j].type === "TEXT") texts.push(group.children[j]);
+    if (texts.length < 2) continue;
+    var label = texts[0], value = texts[texts.length - 1];
+    var lc = (label.characters || "").toLowerCase();
+    if (lc.indexOf("headline") !== -1) {
+      if (headlineVal) await setTextLayer(value, headlineVal);
+    } else if (lc.indexOf("primary") !== -1 || lc.indexOf("body") !== -1) {
+      if (primaryVal) await setTextLayer(value, primaryVal);
+      if (primaryLabelText) await setTextLayer(label, primaryLabelText);
+    } else if (lc.indexOf("cta") !== -1) {
+      // Meta ads use a platform CTA BUTTON, not a CTA line in the feed copy — so
+      // hide the whole CTA row in the left panel rather than filling it.
+      if ("visible" in group) group.visible = false;
+    }
+  }
+}
+
 function findImageFrameByDimensions(layoutFrame, w, h) {
   if (!layoutFrame || !("children" in layoutFrame)) return null;
   for (var i = 0; i < layoutFrame.children.length; i++) {
@@ -1465,24 +1497,20 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
   var shortHeadline = leadRow.Headline_Short || leadRow.headline_short || leadHeadline;
   var shortPrimary  = leadRow.Primary_Text_Short || leadRow.body_short || leadPrimary;
 
-  // Copy Version 1 panel (long): Notes > Copy Frame > [groups] > [last TEXT child]
+  // Copy Version 1 panel = the LONG version (long headline + long primary text).
+  // Filled by label, and its "Primary Text (short)" label is corrected to "(long)".
   var f13 = findLayerByName(clone, "Frame 13");
   if (f13) {
-    var notes = findDirectChildByName(f13, "Notes");
-    var slots = getCopyFrameTextValueLayers(notes);
-    if (slots.headline) await setTextLayer(slots.headline, longHeadline);
-    if (slots.primary)  await setTextLayer(slots.primary, longPrimary);
-    if (slots.cta && leadCta) await setTextLayer(slots.cta, leadCta);
+    await fillCopyPanelByLabel(findDirectChildByName(f13, "Notes"),
+      longHeadline, longPrimary, "Primary Text (long):");
     log("  Copy Version 1 (long): filled");
   }
-  // Copy Version 2 panel (short)
+  // Copy Version 2 panel = the SHORT version. Its "Primary Text (long)" label is
+  // corrected to "(short)".
   var f14 = findLayerByName(clone, "Frame 14");
   if (f14) {
-    var notes2 = findDirectChildByName(f14, "Notes");
-    var slots2 = getCopyFrameTextValueLayers(notes2);
-    if (slots2.headline) await setTextLayer(slots2.headline, shortHeadline);
-    if (slots2.primary)  await setTextLayer(slots2.primary, shortPrimary);
-    if (slots2.cta && leadCta) await setTextLayer(slots2.cta, leadCta);
+    await fillCopyPanelByLabel(findDirectChildByName(f14, "Notes"),
+      shortHeadline, shortPrimary, "Primary Text (short):");
     log("  Copy Version 2 (short): filled");
   }
 
