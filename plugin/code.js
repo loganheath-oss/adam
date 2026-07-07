@@ -200,10 +200,10 @@ var STYLES_THAT_SKIP_IMAGE = {
   "pie chart":        true,
   // Social Media Profile ships with its own avatar/UI; no library photo slot.
   "social media profile": true,
-  // Talent Profile: its avatar was baked in, so every board showed the same
-  // person. It now receives a distinct library headshot per concept (the card's
-  // avatar is the only non-glimmer image-fill, so the photo lands there).
-  // 2026-07-06.
+  // Talent Profile keeps its template imagery here (no general-library swap).
+  // Its headshot is instead OVERLAID from the curated Example Profiles at
+  // assembly time — see overlayTalentProfile(). 2026-07-07.
+  "talent profile":   true,
   // Mockup is a notification graphic — no photo slot.
   "tweet / post mockup":           true,
   // Bespoke = blank text-only starter (headline + subhead + CTA, no image) per
@@ -693,6 +693,82 @@ async function setTextByCurrentValue(clone, currentValue, newText) {
   });
   if (target) return await setTextLayer(target, newText);
   return false;
+}
+
+// ── Talent Profile: curated Example Profiles ──────────────────────────────────
+// The "Avatars" area holds ~26 rights-cleared talent: each a circular headshot
+// ELLIPSE (image fill, ~133px) with a name+role text block beside it. We pull a
+// DIFFERENT real profile per Talent Profile concept and overlay its headshot on
+// the ad card's (locked) avatar, plus fill the card's name + role — so every
+// board shows a genuine, different person that matches its name and role.
+
+function _parseProfileText(txt) {
+  txt = String(txt || "");
+  var name = txt.split("Location:")[0].split("\u2013")[0].split("-")[0].replace(/\s+/g, " ").trim();
+  var role = "";
+  var m = txt.match(/Freelance Role:\s*([\s\S]*?)(?:Client Role:|Industry:|Fun Fact:|$)/i);
+  if (m) role = m[1].replace(/\s+/g, " ").trim();
+  return { name: name, role: role };
+}
+
+var _exampleProfilesCache = null;
+async function getExampleProfiles() {
+  if (_exampleProfilesCache) return _exampleProfilesCache;
+  var profiles = [];
+  // Find every "Avatars" frame anywhere in the file.
+  var frames = [];
+  function findAvatars(n) {
+    if (n.name && n.name.toLowerCase() === "avatars") frames.push(n);
+    if ("children" in n) for (var i = 0; i < n.children.length; i++) findAvatars(n.children[i]);
+  }
+  try { findAvatars(figma.root); } catch (e) {}
+  for (var f = 0; f < frames.length; f++) {
+    var ellipses = [], texts = [];
+    walkChildren(frames[f], function (n) {
+      if (n.type === "ELLIPSE" && "width" in n && n.width >= 100 && n.width <= 180 &&
+          Array.isArray(n.fills) && n.fills.some(function (p) { return p.type === "IMAGE"; })) ellipses.push(n);
+      if (n.type === "TEXT" && /freelance role/i.test(n.characters || "")) texts.push(n);
+    });
+    // Pair each headshot with the name/role text block on the same row to its right.
+    for (var e = 0; e < ellipses.length; e++) {
+      var eb = ellipses[e].absoluteBoundingBox; if (!eb) continue;
+      var ecy = eb.y + eb.height / 2, best = null, bestDx = Infinity;
+      for (var t = 0; t < texts.length; t++) {
+        var tb = texts[t].absoluteBoundingBox; if (!tb) continue;
+        if (Math.abs((tb.y + tb.height / 2) - ecy) > 220) continue;   // different row
+        var dx = tb.x - eb.x;
+        if (dx > -20 && dx < bestDx) { bestDx = dx; best = texts[t]; }
+      }
+      if (!best) continue;
+      var p = _parseProfileText(best.characters || "");
+      if (p.name) profiles.push({ photo: ellipses[e], name: p.name, role: p.role });
+    }
+  }
+  _exampleProfilesCache = profiles;
+  log("  Curated Example Profiles available: " + profiles.length);
+  return profiles;
+}
+
+async function overlayTalentProfile(styledClone, conceptIndex) {
+  var profiles = await getExampleProfiles();
+  if (!profiles.length) { log("  ⚠ Talent Profile: no Example Profiles found — kept template avatar"); return; }
+  var p = profiles[((conceptIndex % profiles.length) + profiles.length) % profiles.length];
+  // Real name + role onto the card (overwrites the baked "Geronimo K." / "Chatbot Developer").
+  await setTextByCurrentValue(styledClone, "Geronimo K.", p.name);
+  await setTextByCurrentValue(styledClone, "Chatbot Developer", p.role);
+  // Overlay the real headshot on the (locked) avatar slot.
+  var avatar = findLayerByName(styledClone, "Avatar Icon/100px") || findLayerByName(styledClone, "Switch");
+  if (!avatar || !avatar.absoluteBoundingBox || !styledClone.absoluteBoundingBox) {
+    log("  ⚠ Talent Profile: avatar slot not found — name/role set, headshot not placed"); return;
+  }
+  var ab = avatar.absoluteBoundingBox, sb = styledClone.absoluteBoundingBox;
+  var clone = p.photo.clone();
+  styledClone.appendChild(clone);              // last child → renders on top of the old avatar
+  try { clone.resize(ab.width, ab.height); } catch (e) {}
+  clone.x = ab.x - sb.x;
+  clone.y = ab.y - sb.y;
+  clone.name = "ProfilePhoto_" + p.name;
+  log("  ✓ Talent Profile: " + p.name + " — " + p.role + " (headshot overlaid on avatar)");
 }
 
 // Fill the first TEXT descendant inside a named container (component/frame).
@@ -1631,12 +1707,10 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
         if (leadRow.Profile_Title) await setFirstTextByCandidates(styledClone, ["Copy_Title"], leadRow.Profile_Title);
         if (leadRow.Profile_Left) await setFirstTextByCandidates(styledClone, ["Copy_Left-Column"], leadRow.Profile_Left);
         if (leadRow.Profile_Right) await setFirstTextByCandidates(styledClone, ["Copy_Right-Column"], leadRow.Profile_Right);
-        // Talent Profile — freelancer card name + role are baked into the template,
-        // so every board showed the same person. Overwrite them with this concept's
-        // generated profile (headshot is varied via the library photo swap above).
+        // Talent Profile — give every board a real, different person by overlaying
+        // one of the curated Example Profiles (headshot + name + role) per concept.
         if (key === "talent profile") {
-          await setTextByCurrentValue(styledClone, "Geronimo K.", leadRow.Profile_Name);
-          await setTextByCurrentValue(styledClone, "Chatbot Developer", leadRow.Profile_Title);
+          await overlayTalentProfile(styledClone, conceptIndex);
         }
         // Chat Bubble + Text-with-Button
         if (leadRow.Chat_Label) await setFirstTextByCandidates(styledClone, ["Copy_Chat-Bubble-1"], leadRow.Chat_Label);
