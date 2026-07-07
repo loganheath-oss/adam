@@ -1320,6 +1320,7 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                 sprint_id=sprint_id,
                                 components=library_cache,
                                 exclude_ids=used_photo_ids or None,
+                                concept=concept,
                             )
                             _rt_excl = list(used_photo_ids)
                             if picked_left.get("figma_asset_id"):
@@ -1330,6 +1331,7 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                 sprint_id=sprint_id,
                                 components=library_cache,
                                 exclude_ids=_rt_excl or None,
+                                concept=concept,
                             )
                             left_ok = picked_left.get("is_photo_based") and not picked_left.get("needs_human_selection")
                             right_ok = picked_right.get("is_photo_based") and not picked_right.get("needs_human_selection")
@@ -1368,6 +1370,7 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                 sprint_id=sprint_id,
                                 components=library_cache,
                                 exclude_ids=used_photo_ids or None,
+                                concept=concept,
                             )
                             # If excluding used photos emptied the pool, retry
                             # allowing repeats (variety is best-effort, never fail).
@@ -1377,6 +1380,7 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                     order=order,
                                     sprint_id=sprint_id,
                                     components=library_cache,
+                                    concept=concept,
                                 )
                             if picked.get("is_photo_based") and not picked.get("needs_human_selection"):
                                 method = "figma_library"

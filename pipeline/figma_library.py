@@ -671,12 +671,102 @@ def record_usage(sprint_id: str, node_ids: list[str]) -> None:
     save_history(history)
 
 
+# Words that carry no photo-matching signal — dropped when deriving a concept's
+# keywords so the relevance score keys on the specific scene/industry/activity.
+_KEYWORD_STOP = {
+    "the", "a", "an", "and", "or", "but", "for", "to", "of", "in", "on", "with",
+    "your", "you", "our", "we", "it", "is", "are", "be", "that", "this", "now",
+    "get", "got", "more", "less", "up", "no", "not", "so", "at", "by", "from",
+    # generic ad/brand words present in almost every concept — no signal
+    "ai", "upwork", "freelancer", "freelancers", "talent", "expert", "experts",
+    "specialist", "specialists", "business", "businesses", "small", "help",
+    "hire", "hired", "find", "found", "need", "needs", "fast", "start", "started",
+    "smarter", "better", "grow", "growth", "results", "real", "skills", "skill",
+    "work", "working", "team", "make", "made", "hiring", "demand", "on-demand",
+}
+
+# Bridge common concept themes to the industries/scenes the photo library actually
+# shoots (photo names encode these: coding_together, finance_traveller, food_warehouse,
+# music_company, plant_supply, space_solutions, fashion_week, latenight_ai …).
+_THEME_TO_SCENE = {
+    "data": ["coding", "finance", "latenight", "ai"],
+    "analytics": ["coding", "finance", "latenight"],
+    "analyst": ["coding", "finance", "latenight"],
+    "dashboard": ["coding", "finance"],
+    "report": ["finance", "coding"],
+    "reporting": ["finance", "coding"],
+    "invoice": ["finance"], "invoicing": ["finance"], "revenue": ["finance"],
+    "finance": ["finance"], "financial": ["finance"], "bookkeeping": ["finance"],
+    "automate": ["coding", "latenight", "ai"], "automation": ["coding", "latenight", "ai"],
+    "workflow": ["coding", "latenight"], "code": ["coding"], "coding": ["coding"],
+    "developer": ["coding"], "engineer": ["coding"], "build": ["coding"], "app": ["coding"],
+    "chatbot": ["coding", "latenight", "ai"], "software": ["coding"],
+    "content": ["music", "fashion"], "writer": ["music", "fashion"], "copy": ["music", "fashion"],
+    "creative": ["music", "fashion"], "design": ["fashion", "music"], "brand": ["fashion"],
+    "marketing": ["fashion", "music"], "social": ["fashion", "music"], "ads": ["fashion"],
+    "food": ["food", "warehouse"], "restaurant": ["food"], "kitchen": ["food"],
+    "retail": ["warehouse", "food"], "ecommerce": ["warehouse", "food"], "store": ["warehouse"],
+    "shipping": ["warehouse"], "inventory": ["warehouse", "plant"], "supply": ["plant", "warehouse"],
+    "music": ["music"], "audio": ["music"], "video": ["music", "fashion"],
+    "plant": ["plant"], "garden": ["plant"], "sustainability": ["plant"],
+    "space": ["space"], "travel": ["finance", "space"], "consultant": ["finance", "coding"],
+}
+
+
+def _concept_keywords(concept: Optional[dict], order: Optional[dict] = None) -> set[str]:
+    """Meaningful, lowercased tokens describing what a concept is ABOUT — used to
+    rank photos by scene/industry relevance. Pulls from the concept's copy and the
+    order brief, drops stopwords/generic-ad words, and expands theme->scene hints."""
+    if not concept:
+        return set()
+    text_parts = [
+        concept.get("headline", ""), concept.get("creative_headline", ""),
+        concept.get("creative_subhead", ""), concept.get("body_short", ""),
+        concept.get("concept_tag", ""),
+    ]
+    if order:
+        text_parts.append(order.get("brief", ""))
+    words = re.findall(r"[a-z]+", " ".join(str(p) for p in text_parts).lower())
+    kws = {w for w in words if len(w) >= 3 and w not in _KEYWORD_STOP}
+    # Expand with library scene hints so a concept about "data" reaches the
+    # coding/finance shoots even when the copy never says those scene words.
+    for w in list(kws):
+        for scene in _THEME_TO_SCENE.get(w, []):
+            kws.add(scene)
+    return kws
+
+
+def _photo_tokens(candidate: dict) -> set[str]:
+    """All lowercased tokens describing a photo — its tags AND its descriptive
+    name (e.g. 'coding_together_10' -> {coding, together}, minus the trailing index)."""
+    toks = set()
+    for t in candidate.get("tags", []) or []:
+        toks.update(re.findall(r"[a-z]+", str(t).lower()))
+    for w in re.findall(r"[a-z]+", str(candidate.get("name", "")).lower()):
+        toks.add(w)
+    return toks
+
+
+def _relevance(candidate: dict, keywords: set[str]) -> int:
+    """How closely a photo matches a concept: count of overlapping tokens between
+    the concept's keywords and the photo's tags+name. 0 = no signal."""
+    if not keywords:
+        return 0
+    return len(keywords & _photo_tokens(candidate))
+
+
 def select_photo(
     candidates: list[dict],
     history: Optional[dict] = None,
     exclude_ids: Optional[list[str]] = None,
+    concept_keywords: Optional[set[str]] = None,
 ) -> Optional[dict]:
     """Pick one photo, preferring candidates not used in the last 3 sprints.
+
+    When `concept_keywords` is provided, candidates are first RANKED by relevance
+    to the concept (overlap of the concept's keywords with each photo's tags +
+    descriptive name) so the chosen photo is closely related to the ad's message.
+    Ties (and the no-signal case) fall back to the freshness-then-random behavior.
 
     `exclude_ids` lets the caller filter out specific node_ids (used by Split
     Screen to guarantee the second picked photo is different from the first).
@@ -689,6 +779,12 @@ def select_photo(
     eligible = [c for c in candidates if c.get("node_id") not in excluded]
     if not eligible:
         return None
+    # Narrow to the most concept-relevant candidates when we have keyword signal.
+    if concept_keywords:
+        scored = [(_relevance(c, concept_keywords), c) for c in eligible]
+        best = max(s for s, _ in scored)
+        if best > 0:
+            eligible = [c for s, c in scored if s == best]
     fresh = [c for c in eligible if c.get("node_id") not in recent]
     pool = fresh if fresh else eligible
     return random.choice(pool)
@@ -734,6 +830,7 @@ def pick_photo_for_asset(
     sprint_id: str,
     components: Optional[list[dict]] = None,
     exclude_ids: Optional[list[str]] = None,
+    concept: Optional[dict] = None,
 ) -> dict:
     """Main entry point for Stage 03.
 
@@ -769,7 +866,8 @@ def pick_photo_for_asset(
             "needs_human_selection": True,
         }
 
-    chosen = select_photo(candidates, exclude_ids=exclude_ids)
+    keywords = _concept_keywords(concept, order)
+    chosen = select_photo(candidates, exclude_ids=exclude_ids, concept_keywords=keywords)
     if not chosen:
         return {"is_photo_based": True, "needs_human_selection": True}
 
@@ -782,6 +880,7 @@ def pick_photo_for_asset(
         "required_tags":         required,
         "matched_tags_used":     used_tags,
         "photo_tags":            chosen["tags"],
+        "relevance":             _relevance(chosen, keywords),
         "needs_human_selection": False,
     }
 
