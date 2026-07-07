@@ -661,6 +661,7 @@ async def root():
       <a href="/wiki">Wiki</a>
       <a href="/agent">Ask ADAM</a>
       <a href="/sync-log">Sync Log</a>
+      <a href="/learnings">Learnings</a>
     </div>
   </div>
 </nav>
@@ -2230,6 +2231,7 @@ async def sprints_dashboard():
       <a href="/wiki">Wiki</a>
       <a href="/agent">Ask ADAM</a>
       <a href="/sync-log">Sync Log</a>
+      <a href="/learnings">Learnings</a>
     </div>
   </div>
 </nav>
@@ -2671,6 +2673,7 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
       <a href="/wiki">Wiki</a>
       <a href="/agent">Ask ADAM</a>
       <a href="/sync-log">Sync Log</a>
+      <a href="/learnings">Learnings</a>
     </div>
   </div>
 </nav>
@@ -2917,6 +2920,7 @@ async def sync_log_page(request: Request):
       <a href="/wiki">Wiki</a>
       <a href="/agent">Ask ADAM</a>
       <a href="/sync-log" class="active">Sync Log</a>
+      <a href="/learnings">Learnings</a>
     </div>
   </div>
 </nav>
@@ -2981,6 +2985,7 @@ async def learnings_editor():
       <a href="/sprints">Sprints</a>
       <a href="/wiki">Wiki</a>
       <a href="/agent">Ask ADAM</a>
+      <a href="/sync-log">Sync Log</a>
       <a href="/learnings" class="active">Learnings</a>
     </div>
   </div>
@@ -3500,6 +3505,7 @@ def _wiki_shell(current: str, body_html: str) -> str:
       <a href="/wiki" class="active">Wiki</a>
       <a href="/agent">Ask ADAM</a>
       <a href="/sync-log">Sync Log</a>
+      <a href="/learnings">Learnings</a>
     </div>
   </div>
 </nav>
