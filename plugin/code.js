@@ -198,9 +198,12 @@ var STYLES_THAT_SKIP_IMAGE = {
   // Pie Chart is a vector/gradient graphic — no photo; the slice is drawn by
   // fillPieChartValue() from the manifest's Chart_Pct.
   "pie chart":        true,
-  // Profile mocks ship with their own avatar/UI; no library photo slot.
+  // Social Media Profile ships with its own avatar/UI; no library photo slot.
   "social media profile": true,
-  "talent profile":   true,
+  // Talent Profile: its avatar was baked in, so every board showed the same
+  // person. It now receives a distinct library headshot per concept (the card's
+  // avatar is the only non-glimmer image-fill, so the photo lands there).
+  // 2026-07-06.
   // Mockup is a notification graphic — no photo slot.
   "tweet / post mockup":           true,
   // Bespoke = blank text-only starter (headline + subhead + CTA, no image) per
@@ -676,6 +679,19 @@ async function setFirstTextByCandidates(clone, candidateNames, text) {
       return await setTextLayer(node, text);
     }
   }
+  return false;
+}
+
+// Overwrite a TEXT layer identified by its CURRENT (baked) text — used for the
+// Talent Profile card whose name/role are baked strings ("Geronimo K." /
+// "Chatbot Developer") rather than editable-named layers.
+async function setTextByCurrentValue(clone, currentValue, newText) {
+  if (!newText) return false;
+  var target = null;
+  walkChildren(clone, function (n) {
+    if (!target && n.type === "TEXT" && (n.characters || "").trim() === currentValue) target = n;
+  });
+  if (target) return await setTextLayer(target, newText);
   return false;
 }
 
@@ -1615,6 +1631,13 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
         if (leadRow.Profile_Title) await setFirstTextByCandidates(styledClone, ["Copy_Title"], leadRow.Profile_Title);
         if (leadRow.Profile_Left) await setFirstTextByCandidates(styledClone, ["Copy_Left-Column"], leadRow.Profile_Left);
         if (leadRow.Profile_Right) await setFirstTextByCandidates(styledClone, ["Copy_Right-Column"], leadRow.Profile_Right);
+        // Talent Profile — freelancer card name + role are baked into the template,
+        // so every board showed the same person. Overwrite them with this concept's
+        // generated profile (headshot is varied via the library photo swap above).
+        if (key === "talent profile") {
+          await setTextByCurrentValue(styledClone, "Geronimo K.", leadRow.Profile_Name);
+          await setTextByCurrentValue(styledClone, "Chatbot Developer", leadRow.Profile_Title);
+        }
         // Chat Bubble + Text-with-Button
         if (leadRow.Chat_Label) await setFirstTextByCandidates(styledClone, ["Copy_Chat-Bubble-1"], leadRow.Chat_Label);
         if (leadRow.Chat_Message) await setFirstTextByCandidates(styledClone, ["Copy_Chat-Bubble-2"], leadRow.Chat_Message);
