@@ -26,7 +26,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, Response, Security
 from fastapi.security.api_key import APIKeyHeader, APIKeyQuery
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
@@ -328,6 +328,64 @@ app.include_router(agent_router)
 
 if FONTS_DIR.exists():
     app.mount("/fonts", StaticFiles(directory=FONTS_DIR), name="fonts")
+
+
+# ── SHARED v9.5 DESIGN SYSTEM (Ravi's order-form language, applied app-wide) ──
+# One override stylesheet injected into every HTML page's <head> by the
+# middleware below, so the dashboard, sprints, wiki, etc. all match the order
+# form: PP Neue Montreal, the Upwork-green token palette, soft-shadow rounded
+# cards. Styled by the class names the pages already use, so no per-page edits.
+_V95_CSS = """/*__v95__*/
+@font-face{font-family:'PP Neue Montreal';src:url('/fonts/PPNeueMontreal-Light.woff2') format('woff2');font-weight:300;font-display:swap}
+@font-face{font-family:'PP Neue Montreal';src:url('/fonts/PPNeueMontreal-Regular.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'PP Neue Montreal';src:url('/fonts/PPNeueMontreal-Medium.woff2') format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'PP Neue Montreal';src:url('/fonts/PPNeueMontreal-SemiBold.woff2') format('woff2');font-weight:600;font-display:swap}
+@font-face{font-family:'PP Neue Montreal';src:url('/fonts/PPNeueMontreal-Bold.woff2') format('woff2');font-weight:700;font-display:swap}
+:root{--bg:#FFFFFF;--paper:#FFFFFF;--ink:#0A0A0A;--ink-mid:#5C5C5C;--ink-dim:#9A9A9A;--rule:#ECECEC;--rule-strong:#E0E0E0;--hover:#F7F8F6;--tint:#F4FAF1;--brand-green:#14A800;--brand-green-deep:#108700;--brand-green-light:#C4F4C0;--shadow-soft:0 2px 4px rgba(0,0,0,.04),0 10px 28px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.03);--shadow-lift:0 8px 24px rgba(0,0,0,.10),0 24px 60px rgba(0,0,0,.12);--r:14px;--r-sm:10px}
+body{font-family:'PP Neue Montreal',-apple-system,system-ui,'Segoe UI',sans-serif!important;color:var(--ink);-webkit-font-smoothing:antialiased;background:var(--bg)}
+pre,code,.recent-id,textarea#t{font-family:ui-monospace,'SF Mono',Menlo,monospace!important}
+h1,h2,h3{font-weight:600;letter-spacing:-.02em;color:var(--ink)}
+.container{max-width:1080px;margin:0 auto;padding:0 28px}
+.hero{text-align:center}
+.hero h1{font-size:52px;line-height:1.02;letter-spacing:-.025em;font-weight:600;margin-bottom:10px}
+.hero p,.hero .sub,.sub{color:var(--ink-dim)}
+.action-card,.recent-card,.card,.box{border:1px solid var(--rule)!important;border-radius:18px!important;box-shadow:var(--shadow-soft)!important;background:var(--paper)}
+.action-card{transition:transform .15s,box-shadow .15s,border-color .15s}
+.action-card:hover{border-color:var(--brand-green-light)!important;box-shadow:var(--shadow-lift)!important;transform:translateY(-2px)}
+.action-card.primary{background:linear-gradient(135deg,var(--brand-green),var(--brand-green-deep))!important;border-color:transparent!important;color:#fff}
+.action-card h2,.card h2,.card-head{font-weight:600;letter-spacing:-.01em}
+.action-card .icon{font-size:24px}
+.recent-badge{border-radius:999px;font-weight:500}
+.recent-row:hover{background:var(--hover)}
+.all-link,a.all-link{color:var(--brand-green);font-weight:500}
+input[type=text],input[type=number],textarea,select{border:1px solid var(--rule-strong);border-radius:var(--r-sm);font-family:inherit;color:var(--ink)}
+table td,table th{border-color:var(--rule)}
+.wiki-side{border-color:var(--rule)}
+.wiki-side-link:hover{background:var(--hover)}
+"""
+
+
+@app.middleware("http")
+async def _inject_v95_theme(request, call_next):
+    """Inject the shared v9.5 stylesheet into HTML page responses so every page
+    matches the order form. Skips non-HTML (SSE streams, downloads) and any page
+    that already carries the design (the order form), and is a no-op if the
+    marker is already present."""
+    resp = await call_next(request)
+    ctype = (resp.headers.get("content-type") or "").lower()
+    if "text/html" not in ctype:
+        return resp
+    body = b""
+    async for chunk in resp.body_iterator:
+        body += chunk if isinstance(chunk, (bytes, bytearray)) else str(chunk).encode()
+    html = body.decode("utf-8", "ignore")
+    # Skip if the page already has the design language (order form) or was themed.
+    if "PP Neue Montreal" not in html and "</head>" in html:
+        html = html.replace("</head>", "<style>" + _V95_CSS + "</style></head>", 1)
+    headers = dict(resp.headers)
+    headers.pop("content-length", None)
+    return Response(content=html, status_code=resp.status_code,
+                    headers=headers, media_type="text/html")
 
 
 # ── HELPERS ──────────────────────────────────────────────────────────────────
