@@ -82,6 +82,37 @@ every board.)
 
 ---
 
+## 5. Cropping / safe-area on the 9:16 (and some 4:5) templates
+
+ADAM places each styled template into its matching board slot at the exact size
+(1440×1440 / 1440×1800 / 1080×1920, aligned to 0,0) — so what shows is exactly
+what's in the template. On a few templates, content sits **outside the frame** and
+gets clipped by the frame's "clip content". Most overflow is intentional (oversized
+gradient backgrounds), but these read as bugs and should be pulled into the frame's
+safe area for the **9:16 (1080×1920)** and **4:5 (1440×1800)** sizes:
+
+- **Platform-UI (1080×1920 and 1440×1800):** the "Uma" app-window card is much larger
+  than the frame (one element overflows the right edge by ~1,185px) and its bottom row
+  ("Ask anything…") falls below the frame, so it looks cut off. Scale/reposition the
+  card so the whole window (including the input row) sits inside the frame with a
+  margin, or crop the mock intentionally at a natural edge.
+- **Hybrid (1080×1920):** the `Image-Placeholder` is wider than the 1080 frame, so a
+  landscape photo loses its sides. Consider a portrait-friendlier crop box for 9:16 so
+  the subject stays centered.
+- **Lifestyle-Photo-Full-Bleed (1080×1920):** same full-bleed situation; also confirm
+  the bottom headline/CTA sit above the frame's bottom safe margin (the headline read
+  as clipped in testing).
+- **Notification (1080×1920):** confirm the green border/card has an even margin on all
+  four sides at 9:16 (the border read as tight/cut on one edge).
+
+Note on photos: ADAM now uses **one photo per concept across all three sizes** (so the
+same person appears in 1:1, 4:5, and 9:16). A single landscape photo can't be cropped
+perfectly for both a square and a tall 9:16 frame — the more the 9:16 art direction
+relies on a portrait-safe crop box, the better these will look. (If we ever want per-size
+photos, that's a product decision — say the word.)
+
+---
+
 None of these change the visual design — they're labels, layer structure, and names
 so ADAM can fill the boards reliably. Happy to hop on a quick call if anything's
 unclear.
