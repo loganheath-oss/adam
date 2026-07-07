@@ -179,6 +179,7 @@ var STYLE_SUBHEAD_LAYERS = {
 var STYLES_THAT_SKIP_IMAGE = {
   "testimonial":      true,
   "text with button": true,
+  "text with button and cursor": true,  // shares the Text-with-Button family; no photo slot
   "chat bubble":      true,
   // Text Only and Reminder are gradient/notification graphics with no photo slot.
   "text only":        true,
@@ -229,6 +230,7 @@ var STYLES_WITH_DUAL_IMAGE = {
 //     not a CTA — Brandon edits it manually per concept
 var STYLES_THAT_SKIP_CTA = {
   "text with button": true,
+  "text with button and cursor": true,  // same template — cta_text doubles as headline
   // Meme: the cta_text layer exists but its parent Cta Pill frame is hidden
   // in Brandon's design. Writing a CTA would be a no-op visually anyway —
   // skip to avoid clobbering the template's intentional hidden state.
@@ -1061,8 +1063,11 @@ var STYLE_ADTYPE_ALIAS = {
   "socialmediaprofile": "socialprofile",        // Template_Social-Profile
   "tweetpostmockup": "mockup",                  // Template_Mockup
   "searchbarwithtalentbadge": "searchresults",  // Adtype_Search-Results
-  "graphicwithtext": "illustration",            // order-form "Graphic with Text" = Figma Illustration family
+  "textwithbuttonandcursor": "textwithbutton",  // order-form "Text with Button and Cursor" = Text-with-Button family
   "lifestylephoto": "lifestylephotofullbleed",  // order-form "Lifestyle Photo" = Lifestyle-Photo-Full-Bleed
+  // NOTE: "Graphic with Text" now has its own Template_Graphic-With-Text family
+  // in Figma, so it needs NO alias — it matches by its own name. (The old
+  // graphicwithtext->illustration alias pointed at the wrong family. 2026-07-07)
 };
 
 // Variant selection among templates that match style+size. `hint` carries:
