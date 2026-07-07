@@ -378,8 +378,10 @@ async def _inject_v95_theme(request, call_next):
     async for chunk in resp.body_iterator:
         body += chunk if isinstance(chunk, (bytes, bytearray)) else str(chunk).encode()
     html = body.decode("utf-8", "ignore")
-    # Skip if the page already has the design language (order form) or was themed.
-    if "PP Neue Montreal" not in html and "</head>" in html:
+    # Skip only if the sheet is already present (marker). Pages may reference the
+    # font in their own CSS without carrying the full sheet, so we key on the
+    # marker, not the font name.
+    if "/*__v95__*/" not in html and "</head>" in html:
         html = html.replace("</head>", "<style>" + _V95_CSS + "</style></head>", 1)
     headers = dict(resp.headers)
     headers.pop("content-length", None)
