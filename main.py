@@ -625,7 +625,7 @@ async def root():
   .nav a.active{{color:#111;font-weight:600}}
   .container{{max-width:1080px;margin:0 auto;padding:64px 28px 100px}}
   .hero{{text-align:left;margin-bottom:44px;max-width:760px}}
-  .hero h1{{font-size:56px;line-height:1.0;font-weight:600;letter-spacing:-.025em;margin:20px 0;color:#0A0A0A}}
+  .hero h1{{font-size:58px;line-height:.98;font-weight:600;letter-spacing:-.02em;margin:20px 0;color:#0A0A0A}}
   .hero p{{font-size:16px;color:#5C5C5C;max-width:440px;line-height:1.5}}
   .actions{{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px}}
   @media(max-width:680px){{.actions{{grid-template-columns:1fr}}}}
@@ -667,7 +667,7 @@ async def root():
 <div class="container">
   <div class="hero">
     <div class="kick"><span class="line"></span>Upwork Paid Acquisition</div>
-    <h1>Ad creative,<br>produced end-to-end.</h1>
+    <h1>Ad creative, produced<br>end-to-end.</h1>
     <p>Submit a brief and ADAM produces copy and assembled creative across every size and visual style.</p>
   </div>
   <div class="actions">
