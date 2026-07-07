@@ -345,6 +345,7 @@ _V95_CSS = """/*__v95__*/
 body{font-family:'PP Neue Montreal',-apple-system,system-ui,'Segoe UI',sans-serif!important;color:var(--ink);-webkit-font-smoothing:antialiased;background:var(--bg)}
 pre,code,.recent-id,textarea#t{font-family:ui-monospace,'SF Mono',Menlo,monospace!important}
 h1,h2,h3{font-weight:600;letter-spacing:-.02em;color:var(--ink)}
+.brand .adam::after{content:".";color:var(--brand-green);font-weight:700}
 .hero p,.hero .sub,.sub{color:var(--ink-dim)}
 .kick{display:flex;align-items:center;gap:12px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);font-weight:500}
 .kick .line{width:28px;height:1.5px;background:var(--brand-green);display:inline-block}
@@ -354,6 +355,10 @@ h1,h2,h3{font-weight:600;letter-spacing:-.02em;color:var(--ink)}
 .action-card.primary{background:var(--tint)!important;border-color:var(--brand-green-light)!important;color:var(--ink)}
 .action-card h2,.card h2,.card-head{font-weight:600;letter-spacing:-.01em}
 .icon-tile{width:44px;height:44px;border-radius:12px;border:1px solid var(--rule);background:#fff;display:flex;align-items:center;justify-content:center}
+.btn{border-radius:999px;padding:11px 20px;font-size:14px;cursor:pointer;border:1px solid var(--rule-strong);background:#fff;color:var(--ink);display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-family:inherit;font-weight:500}
+.btn:hover{background:var(--hover)}
+.btn-primary{background:var(--brand-green);border-color:var(--brand-green);color:#fff}
+.btn-primary:hover{background:var(--brand-green-deep)}
 .recent-badge{border-radius:999px;font-weight:500}
 .recent-row:hover{background:var(--hover)}
 .all-link,a.all-link{color:var(--brand-green);font-weight:500}
@@ -2241,7 +2246,10 @@ async def sprints_dashboard():
 <div class="container">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
     <h1>Sprint Runs</h1>
-    <button class="refresh" onclick="location.reload()">↻ Refresh</button>
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="refresh" onclick="location.reload()">↻ Refresh</button>
+      <a class="btn btn-primary" href="/new">+ New Order</a>
+    </div>
   </div>
   <p class="sub">{len(sprints)} sprint{"s" if len(sprints)!=1 else ""} · click any row to view details</p>
   <table>
@@ -3000,16 +3008,18 @@ async def learnings_editor():
     </div>
   </div>
 </nav>
-<h1>ADAM Learnings</h1>
-<div class="sub">Institutional memory shared across every sprint. Loaded into Claude's context on every chat. Edit freely — saves to <code>learnings.md</code> at the project root, also editable in the Replit file editor.</div>
-<form id="f">
-  <textarea id="t" name="content">__CONTENT__</textarea>
-  <div class="row">
-    <button type="submit">Save</button>
-    <span id="s" class="status"></span>
-  </div>
-</form>
-<p style="margin-top:2rem;"><a href="/">← Back to home</a></p>
+<div class="kick" style="margin-bottom:18px"><span class="line"></span>Institutional Memory</div>
+<div class="card" style="padding:30px 32px;border-radius:20px;box-shadow:var(--shadow-soft);border:1px solid var(--rule)">
+  <h1 style="font-size:26px;margin-bottom:10px">ADAM Learnings</h1>
+  <div class="sub" style="margin-bottom:22px">Shared across every sprint and loaded into Claude's context on every chat. Edit below — saves to <code>learnings.md</code>.</div>
+  <form id="f">
+    <textarea id="t" name="content">__CONTENT__</textarea>
+    <div class="row" style="margin-top:14px">
+      <button type="submit" class="btn btn-primary">Save</button>
+      <span id="s" class="status"></span>
+    </div>
+  </form>
+</div>
 <script>
 const f=document.getElementById('f'),t=document.getElementById('t'),s=document.getElementById('s');
 f.addEventListener('submit',async e=>{
