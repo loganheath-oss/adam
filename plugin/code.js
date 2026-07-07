@@ -751,17 +751,20 @@ async function getExampleProfiles() {
   return profiles;
 }
 
-async function overlayTalentProfile(styledClone, conceptIndex) {
+// Clone a curated Example Profile headshot ellipse and overlay it on a card's
+// avatar slot (first of avatarCandidates found by name). Returns {profile, placed}
+// or null if there are no curated profiles at all. Rotates by conceptIndex so
+// every board shows a different real face.
+async function overlayCuratedHeadshot(styledClone, conceptIndex, avatarCandidates) {
   var profiles = await getExampleProfiles();
-  if (!profiles.length) { log("  ⚠ Talent Profile: no Example Profiles found — kept template avatar"); return; }
+  if (!profiles.length) return null;
   var p = profiles[((conceptIndex % profiles.length) + profiles.length) % profiles.length];
-  // Real name + role onto the card (overwrites the baked "Geronimo K." / "Chatbot Developer").
-  await setTextByCurrentValue(styledClone, "Geronimo K.", p.name);
-  await setTextByCurrentValue(styledClone, "Chatbot Developer", p.role);
-  // Overlay the real headshot on the (locked) avatar slot.
-  var avatar = findLayerByName(styledClone, "Avatar Icon/100px") || findLayerByName(styledClone, "Switch");
+  var avatar = null;
+  for (var i = 0; i < avatarCandidates.length && !avatar; i++) {
+    avatar = findLayerByName(styledClone, avatarCandidates[i]);
+  }
   if (!avatar || !avatar.absoluteBoundingBox || !styledClone.absoluteBoundingBox) {
-    log("  ⚠ Talent Profile: avatar slot not found — name/role set, headshot not placed"); return;
+    return { profile: p, placed: false };
   }
   var ab = avatar.absoluteBoundingBox, sb = styledClone.absoluteBoundingBox;
   var clone = p.photo.clone();
@@ -769,8 +772,29 @@ async function overlayTalentProfile(styledClone, conceptIndex) {
   try { clone.resize(ab.width, ab.height); } catch (e) {}
   clone.x = ab.x - sb.x;
   clone.y = ab.y - sb.y;
-  clone.name = "ProfilePhoto_" + p.name;
-  log("  ✓ Talent Profile: " + p.name + " — " + p.role + " (headshot overlaid on avatar)");
+  clone.name = "CuratedHeadshot_" + p.name;
+  return { profile: p, placed: true };
+}
+
+async function overlayTalentProfile(styledClone, conceptIndex) {
+  var r = await overlayCuratedHeadshot(styledClone, conceptIndex, ["Avatar Icon/100px", "Switch"]);
+  if (!r) { log("  ⚠ Talent Profile: no Example Profiles found — kept template avatar"); return; }
+  var p = r.profile;
+  // Real name + role onto the card (overwrites the baked "Geronimo K." / "Chatbot Developer").
+  await setTextByCurrentValue(styledClone, "Geronimo K.", p.name);
+  await setTextByCurrentValue(styledClone, "Chatbot Developer", p.role);
+  if (r.placed) log("  ✓ Talent Profile: " + p.name + " — " + p.role + " (headshot overlaid on avatar)");
+  else log("  ⚠ Talent Profile: avatar slot not found — name/role set, headshot not placed");
+}
+
+// Testimonial: vary the baked-in customer headshot per concept so testimonials
+// don't all show the same face (the author name/title is filled separately from
+// Testimonial_Author). Overlays a curated headshot on the customer-photo ellipse.
+async function overlayTestimonialHeadshot(styledClone, conceptIndex) {
+  var r = await overlayCuratedHeadshot(styledClone, conceptIndex, ["image_placeholder", "Image_Placeholder"]);
+  if (!r) { log("  ⚠ Testimonial: no Example Profiles found — kept template headshot"); return; }
+  if (r.placed) log("  ✓ Testimonial: headshot varied (" + r.profile.name + ")");
+  else log("  ⚠ Testimonial: customer-photo slot not found — headshot not varied");
 }
 
 // Fill the first TEXT descendant inside a named container (component/frame).
@@ -804,7 +828,7 @@ async function clearResidualLoremIpsum(clone, row) {
                 // structured-style copy, so these styles' unmapped layers still
                 // get real text instead of lorem
                 row.Us_Headline, row.Them_Headline, row.CTA, row.cta,
-                row.Poll_Question, row.Testimonial_Author,
+                row.Poll_Question, row.Testimonial_Quote, row.Testimonial_Author,
                 row.Chat_Label, row.Chat_Message,
                 row.Profile_Name, row.Profile_Title, row.Profile_Left, row.Profile_Right];
   for (var i = 0; i < fields.length; i++) {
@@ -1396,8 +1420,9 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
       var bodyText = row.Primary_Text_Short || row.body_short || row.Primary_Text_Long || row.body_long || "";
       if (bodyText && await setFirstTextByCandidates(clone, ["Copy_Body"], bodyText)) log("  ✓ body filled");
 
-      // Testimonial quote — the long-form copy goes in Copy_Testimonial.
-      var quote = row.Primary_Text_Long || row.body_long || row.Primary_Text_Short || row.body_short || "";
+      // Testimonial quote — prefer the dedicated, cap-fit Testimonial_Quote (≤100)
+      // over the long platform body, which overflows the Copy_Testimonial slot.
+      var quote = row.Testimonial_Quote || row.Primary_Text_Long || row.body_long || row.Primary_Text_Short || row.body_short || "";
       if (quote && await setFirstTextByCandidates(clone, ["Copy_Testimonial"], quote)) log("  ✓ testimonial quote filled");
 
       // ── Per-style structured copy (fields generated by the tool) ──────────────
@@ -1700,10 +1725,14 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
         }
 
         // ── Per-style STRUCTURED copy (same fills as the styled_per_row path) ──
-        // Testimonial quote + author
-        var quote = leadRow.Primary_Text_Long || leadRow.body_long || leadPrimary;
+        // Testimonial quote + author. Prefer the dedicated, cap-fit Testimonial_Quote
+        // (≤100 chars) — the old fallback dumped Primary_Text_Long (the long platform
+        // body) into the quote slot, which overflowed the card.
+        var quote = leadRow.Testimonial_Quote || leadRow.Primary_Text_Long || leadRow.body_long || leadPrimary;
         if (quote) await setFirstTextByCandidates(styledClone, ["Copy_Testimonial"], quote);
         if (leadRow.Testimonial_Author) await setFirstTextByCandidates(styledClone, ["Copy_Author"], leadRow.Testimonial_Author);
+        // Vary the testimonial headshot per concept (was stuck on one baked-in face).
+        if (key === "testimonial") await overlayTestimonialHeadshot(styledClone, conceptIndex);
         // Search Results — up to three role rows
         var srRows = splitPipe(leadRow.Search_Results);
         for (var si = 0; si < srRows.length && si < 3; si++) await setFirstTextByCandidates(styledClone, ["Copy_Title" + (si + 1)], srRows[si]);

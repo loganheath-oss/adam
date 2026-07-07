@@ -531,10 +531,16 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     elif _sl == "testimonial":
         multi_field_instructions = (
             "\n===== EXTRA FIELDS FOR \"Testimonial\" =====\n"
-            "A customer-quote card. The quote goes in body_long. ALSO provide:\n"
-            "- testimonial_author (max 45 chars — 'Firstname L., Role' of a plausible SMB Upwork client; realistic but not a real named person)\n"
+            "A customer-quote card with a headshot. The on-image quote fills the "
+            "Copy_Testimonial slot and MUST fit its cap — do NOT reuse body_long here. "
+            "ALSO provide:\n"
+            "- testimonial_quote (max 100 chars INCLUDING the surrounding quotes and spaces "
+            "— a specific, believable SMB result in the customer's own first-person voice, "
+            "e.g. '“We hired an AI analyst and cut reporting time in half.”')\n"
+            "- testimonial_author (max 51 chars — 'Firstname Lastname, Title, Company' of a "
+            "plausible SMB Upwork client; realistic but not a real named person)\n"
         )
-        multi_field_keys = ", testimonial_author"
+        multi_field_keys = ", testimonial_quote, testimonial_author"
     elif _sl == "searchresults":
         multi_field_instructions = (
             "\n===== EXTRA FIELDS FOR \"Search Results\" =====\n"
@@ -1971,6 +1977,7 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Poll_Option_B": concept.get("poll_option_b", ""),
             "Poll_Pct_B": concept.get("poll_pct_b", ""),
             # Per-style multi-field copy for the remaining structured templates.
+            "Testimonial_Quote": concept.get("testimonial_quote", ""),
             "Testimonial_Author": concept.get("testimonial_author", ""),
             "Search_Results": _join_bullets(concept.get("search_results")),
             "Profile_Name": concept.get("profile_name", ""),
