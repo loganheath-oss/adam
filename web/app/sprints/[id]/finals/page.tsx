@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FinalCard } from "@/components/final-card";
+import { FinalsUpload } from "@/components/finals-upload";
 import { apiGet } from "@/lib/backend";
 
 export const dynamic = "force-dynamic";
@@ -23,20 +24,25 @@ export default async function FinalsPage({ params }: { params: Promise<{ id: str
   return (
     <>
       <Link href={`/sprints/${id}`} className="text-sm text-muted-foreground hover:text-foreground">← Sprint</Link>
-      <h1 className="mb-1 mt-4 text-2xl font-bold tracking-tight">Finals review</h1>
-      <p className="mb-8 text-sm text-muted-foreground">
-        {finals.length} finals
-        {s.approved != null && (
-          <>
-            <span className="mx-2 text-border">·</span>
-            <span className="text-green-700">{s.approved} approved</span>
-            <span className="mx-2 text-border">·</span>
-            <span className="text-amber-700">{s.changes_requested ?? 0} changes</span>
-            <span className="mx-2 text-border">·</span>
-            <span>{s.pending ?? 0} pending</span>
-          </>
-        )}
-      </p>
+      <div className="mb-8 mt-4 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Finals review</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {finals.length} finals
+            {s.approved != null && (
+              <>
+                <span className="mx-2 text-border">·</span>
+                <span className="text-green-700">{s.approved} approved</span>
+                <span className="mx-2 text-border">·</span>
+                <span className="text-amber-700">{s.changes_requested ?? 0} changes</span>
+                <span className="mx-2 text-border">·</span>
+                <span>{s.pending ?? 0} pending</span>
+              </>
+            )}
+          </p>
+        </div>
+        <FinalsUpload sprintId={id} />
+      </div>
 
       {finals.length === 0 ? (
         <div className="rounded-xl border bg-muted/30 p-8 text-center text-muted-foreground">
