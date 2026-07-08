@@ -51,6 +51,7 @@ export default async function SprintDetailPage({
   const links: [string, string][] = [];
   if (has("copy_outputs.json")) links.push(["Copy review", `/sprints/${s.sprint_id}/copy`]);
   if (has("asset_manifest.csv")) links.push(["Finals", `/sprints/${s.sprint_id}/finals`]);
+  links.push(["Log", `/sprints/${s.sprint_id}/log`]);
   links.push(["Chat", `/sprints/${s.sprint_id}/chat`]);
 
   return (
