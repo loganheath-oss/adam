@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -27,8 +28,8 @@ export default async function SprintsPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline">Refresh</Button>
-          <Button>New Order</Button>
+          <Link href="/sprints" className={buttonVariants({ variant: "outline" })}>Refresh</Link>
+          <Link href="/new" className={buttonVariants()}>New Order</Link>
         </div>
       </header>
 
@@ -48,16 +49,17 @@ export default async function SprintsPage() {
             {sprints.map((s) => (
               <TableRow key={s.id} className="cursor-pointer">
                 <TableCell className="font-mono text-muted-foreground tabular-nums">{s.updated}</TableCell>
-                <TableCell className="font-mono font-semibold">{s.id}</TableCell>
+                <TableCell className="font-mono font-semibold">
+                  <Link href={`/sprints/${s.id}`} className="hover:text-primary hover:underline">{s.id}</Link>
+                </TableCell>
                 <TableCell>{s.driver}</TableCell>
                 <TableCell>{s.platform}</TableCell>
                 <TableCell><StatusBadge status={s.status} /></TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-2">
-                    {s.status !== "complete" && (
-                      <Button variant="outline" size="sm">Review</Button>
-                    )}
-                    <Button variant="outline" size="sm">Chat</Button>
+                    <Link href={`/sprints/${s.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                      {s.status === "complete" ? "View" : "Review"}
+                    </Link>
                   </div>
                 </TableCell>
               </TableRow>

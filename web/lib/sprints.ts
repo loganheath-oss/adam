@@ -53,3 +53,51 @@ export async function getSprints(): Promise<SprintsResult> {
     return { sprints: MOCK_SPRINTS, live: false };
   }
 }
+
+export type SprintDetail = {
+  sprint_id: string;
+  state: string;
+  state_label?: string;
+  driver?: string;
+  platform?: string;
+  targeting?: string;
+  delivery_date?: string;
+  updated_at?: string;
+  error?: string;
+  gate?: { num?: number; label?: string; action?: string } | null;
+  summary?: Record<string, unknown> | null;
+  token_usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    calls?: number;
+    estimated_cost_usd?: number;
+  } | null;
+  outputs?: Record<string, boolean> | null;
+  order?: {
+    brief?: string;
+    targeting?: string;
+    delivery_date?: string;
+    deliverable?: string;
+    batches?: Array<{
+      visual_styles?: string[];
+      resolutions?: Array<{ size: string; ratio: string }>;
+      audience?: string;
+    }>;
+  } | null;
+};
+
+export async function getSprint(id: string): Promise<SprintDetail | null> {
+  const base = process.env.ADAM_API_URL;
+  const key = process.env.ADAM_API_KEY;
+  if (!base || !key) return null;
+  try {
+    const res = await fetch(`${base}/api/sprints/${encodeURIComponent(id)}`, {
+      headers: { "X-API-Key": key },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as SprintDetail;
+  } catch {
+    return null;
+  }
+}
