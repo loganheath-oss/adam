@@ -64,6 +64,7 @@ export type SprintDetail = {
   delivery_date?: string;
   updated_at?: string;
   error?: string;
+  interrupted_reason?: string;
   gate?: { num?: number; label?: string; action?: string } | null;
   summary?: Record<string, unknown> | null;
   token_usage?: {

@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { GateActions } from "@/components/gate-actions";
+import { SprintProgress } from "@/components/sprint-progress";
+import { SprintActions } from "@/components/sprint-actions";
 import { getSprint } from "@/lib/sprints";
 
 export const dynamic = "force-dynamic";
@@ -42,6 +45,13 @@ export default async function SprintDetailPage({
   const tu = s.token_usage ?? {};
   const artifacts = Object.entries(s.outputs ?? {}).filter(([, v]) => v).map(([k]) => k);
   const awaiting = s.state?.startsWith("awaiting_gate");
+  const errored = s.state === "error";
+  const running = !awaiting && !errored && s.state !== "complete";
+  const has = (f: string) => artifacts.includes(f);
+  const links: [string, string][] = [];
+  if (has("copy_outputs.json")) links.push(["Copy review", `/sprints/${s.sprint_id}/copy`]);
+  if (has("asset_manifest.csv")) links.push(["Finals", `/sprints/${s.sprint_id}/finals`]);
+  links.push(["Chat", `/sprints/${s.sprint_id}/chat`]);
 
   return (
     <>
@@ -51,9 +61,34 @@ export default async function SprintDetailPage({
         <h1 className="font-mono text-2xl font-bold tracking-tight">{s.sprint_id}</h1>
         <StatusBadge status={s.state} />
       </header>
-      <p className="-mt-4 mb-8 text-sm text-muted-foreground">
+      <p className="-mt-4 mb-6 text-sm text-muted-foreground">
         {[s.driver, s.platform, s.targeting].filter(Boolean).join(" · ")}
       </p>
+
+      <SprintProgress sprintId={s.sprint_id} running={running} />
+
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        {links.map(([label, href]) => (
+          <Link key={href} href={href} className={buttonVariants({ variant: "outline", size: "sm" })}>{label}</Link>
+        ))}
+        {has("asset_manifest.csv") && (
+          <a href={`/api/sprints/${s.sprint_id}/file/asset_manifest.csv`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+            ↓ manifest.csv
+          </a>
+        )}
+      </div>
+
+      {errored && (
+        <Card className="mb-6 border-red-200 bg-red-50/50">
+          <CardContent className="flex flex-wrap items-center justify-between gap-4 pt-6">
+            <div>
+              <div className="font-mono text-xs uppercase tracking-wider text-red-700">Error</div>
+              <div className="mt-1 text-sm text-muted-foreground">{s.error || s.interrupted_reason || "The pipeline stopped."}</div>
+            </div>
+            <SprintActions sprintId={s.sprint_id} />
+          </CardContent>
+        </Card>
+      )}
 
       {awaiting && s.gate && (
         <Card className="mb-6 border-amber-200 bg-amber-50/50">
