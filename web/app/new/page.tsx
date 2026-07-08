@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// ── data (from the live order form) ──────────────────────────────────────────
+// ── data (verbatim from the live order form) ─────────────────────────────────
 const STYLES: [string, string][] = [
   ["Graphic with Text", "Illustrated graphic paired with text."],
   ["Split Screen", "Two or more photos on opposite sides paired with copy."],
@@ -31,12 +31,51 @@ const STYLES: [string, string][] = [
   ["Bespoke", "A newly concepted design layout that must be created from scratch."],
 ];
 
-type Res = { size: string; ratio: string };
-const META_STATIC: Res[] = [
-  { size: "1440 x 1800", ratio: "4:5" },
-  { size: "1440 x 1440", ratio: "1:1" },
-  { size: "1080 x 1920", ratio: "9:16" },
-];
+type Resolution = { size: string; ratio: string; label?: string };
+type Format = { carousel: boolean; resolutions: Resolution[] };
+type PlatformDef = { desc: string; formats: Record<string, Format> };
+
+const PLATFORMS: Record<string, PlatformDef> = {
+  Meta: {
+    desc: "3 formats · Static, Motion, Carousel",
+    formats: {
+      Static: { carousel: false, resolutions: [{ size: "1440 x 1800", ratio: "4:5" }, { size: "1440 x 1440", ratio: "1:1" }, { size: "1080 x 1920", ratio: "9:16" }] },
+      Motion: { carousel: false, resolutions: [{ size: "1440 x 1800", ratio: "4:5" }, { size: "1440 x 1440", ratio: "1:1" }, { size: "1080 x 1920", ratio: "9:16" }] },
+      Carousel: { carousel: true, resolutions: [{ size: "1080 x 1620", ratio: "2:3" }, { size: "1080 x 1080", ratio: "1:1" }] },
+    },
+  },
+  LinkedIn: {
+    desc: "3 formats · Single Image, Dynamic Spotlight, Carousel",
+    formats: {
+      "Single Image": { carousel: false, resolutions: [{ size: "1200 x 1200", ratio: "1:1" }] },
+      "Dynamic Spotlight": { carousel: false, resolutions: [{ size: "100 x 100", ratio: "1:1", label: "Logo" }] },
+      Carousel: { carousel: true, resolutions: [{ size: "1080 x 1080", ratio: "1:1" }] },
+    },
+  },
+  Reddit: {
+    desc: "1 format · Image Feed — 2 sizes",
+    formats: { "Image Feed": { carousel: false, resolutions: [{ size: "1440 x 1080", ratio: "4:3" }, { size: "1080 x 1350", ratio: "4:5" }] } },
+  },
+  YouTube: {
+    desc: "2 formats · Static Image, Carousel",
+    formats: {
+      Image: { carousel: false, resolutions: [{ size: "1200 x 1200", ratio: "1:1" }, { size: "1200 x 628", ratio: "~1.91:1" }, { size: "960 x 1200", ratio: "4:5", label: "Optional" }, { size: "1080 x 1920", ratio: "9:16", label: "Optional" }] },
+      Carousel: { carousel: true, resolutions: [{ size: "1200 x 1200", ratio: "1:1" }, { size: "1200 x 628", ratio: "~1.91:1" }, { size: "960 x 1200", ratio: "4:5" }] },
+    },
+  },
+  "3rd Party / Affiliate": {
+    desc: "1 format · 4 display ad sizes",
+    formats: { "Display Ads": { carousel: false, resolutions: [{ size: "1200 x 1200", ratio: "1:1" }, { size: "970 x 250", ratio: "~3.88:1" }, { size: "970 x 90", ratio: "~10.8:1" }, { size: "300 x 250", ratio: "6:5" }] } },
+  },
+  "Google / Bing": {
+    desc: "3 formats · Display, Performance Max, SEM",
+    formats: {
+      Display: { carousel: false, resolutions: [{ size: "1200 x 1200", ratio: "1:1", label: "Square Logo" }, { size: "1200 x 628", ratio: "~1.91:1" }, { size: "960 x 1200", ratio: "4:5" }] },
+      "Performance Max": { carousel: false, resolutions: [{ size: "1200 x 1200", ratio: "1:1", label: "Square Logo" }, { size: "1200 x 628", ratio: "~1.91:1" }, { size: "960 x 1200", ratio: "4:5" }, { size: "1200 x 300", ratio: "4:1", label: "Horizontal Logo" }] },
+      SEM: { carousel: false, resolutions: [{ size: "1200 x 1200", ratio: "1:1" }, { size: "1200 x 628", ratio: "~1.91:1" }] },
+    },
+  },
+};
 
 const DELIVERABLES = [
   ["images-copy", "Images & Copy", "Visual assets and written copy produced together"],
@@ -48,61 +87,36 @@ const DELIVERABLES = [
 function addBusinessDays(from: Date, n: number) {
   const d = new Date(from);
   let added = 0;
-  while (added < n) {
-    d.setDate(d.getDate() + 1);
-    const dow = d.getDay();
-    if (dow !== 0 && dow !== 6) added++;
-  }
+  while (added < n) { d.setDate(d.getDate() + 1); const dow = d.getDay(); if (dow !== 0 && dow !== 6) added++; }
   return d;
 }
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 const DOW = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-// ── calendar ─────────────────────────────────────────────────────────────────
 function Calendar({ value, onPick }: { value: string; onPick: (v: string) => void }) {
   const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
   const minDate = useMemo(() => addBusinessDays(today, 5), [today]);
   const [view, setView] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-
-  const year = view.getFullYear();
-  const month = view.getMonth();
+  const year = view.getFullYear(); const month = view.getMonth();
   const firstDow = new Date(year, month, 1).getDay();
   const days = new Date(year, month + 1, 0).getDate();
   const cells: (number | null)[] = [...Array(firstDow).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
-
   return (
     <div className="rounded-xl border border-[#E0E0E0] p-4">
       <div className="relative mb-3 flex items-center justify-center">
-        <button
-          type="button" aria-label="Previous month"
-          onClick={() => setView(new Date(year, month - 1, 1))}
-          className="absolute left-0 flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#E0E0E0] text-[#5b6660] hover:bg-[#F7F8F6]"
-        >‹</button>
+        <button type="button" aria-label="Previous month" onClick={() => setView(new Date(year, month - 1, 1))} className="absolute left-0 flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#E0E0E0] text-[#5b6660] hover:bg-[#F7F8F6]">‹</button>
         <span className="text-[15px]">{MONTHS[month]} {year}</span>
-        <button
-          type="button" aria-label="Next month"
-          onClick={() => setView(new Date(year, month + 1, 1))}
-          className="absolute right-0 flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#E0E0E0] text-[#5b6660] hover:bg-[#F7F8F6]"
-        >›</button>
+        <button type="button" aria-label="Next month" onClick={() => setView(new Date(year, month + 1, 1))} className="absolute right-0 flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#E0E0E0] text-[#5b6660] hover:bg-[#F7F8F6]">›</button>
       </div>
       <div className="grid grid-cols-7 gap-0.5 text-center">
         {DOW.map((d) => <div key={d} className="py-1.5 text-[10px] tracking-wider text-[#9aa0a6]">{d}</div>)}
         {cells.map((day, i) => {
           if (day === null) return <div key={i} />;
           const date = new Date(year, month, day);
-          const disabled = date < minDate;
-          const selected = value === iso(date);
+          const disabled = date < minDate; const selected = value === iso(date);
           return (
-            <button
-              key={i} type="button" disabled={disabled}
-              onClick={() => onPick(iso(date))}
-              className={[
-                "rounded-[9px] py-2.5 text-sm",
-                disabled ? "cursor-not-allowed text-[#D4D4D4]" : "cursor-pointer text-[#1d1d1b] hover:bg-[#F7F8F6]",
-                selected ? "!bg-[#14A800] font-medium !text-white" : "",
-              ].join(" ")}
-            >{day}</button>
+            <button key={i} type="button" disabled={disabled} onClick={() => onPick(iso(date))} className={["rounded-[9px] py-2.5 text-sm", disabled ? "cursor-not-allowed text-[#D4D4D4]" : "cursor-pointer text-[#1d1d1b] hover:bg-[#F7F8F6]", selected ? "!bg-[#14A800] font-medium !text-white" : ""].join(" ")}>{day}</button>
           );
         })}
       </div>
@@ -110,7 +124,6 @@ function Calendar({ value, onPick }: { value: string; onPick: (v: string) => voi
   );
 }
 
-// ── small primitives matching the real form ──────────────────────────────────
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <p className="mb-2 text-[13px] font-medium text-[#1d1d1b]">{children}<span className="text-[#14A800]"> *</span></p>;
 }
@@ -118,130 +131,105 @@ function StepFoot({ children }: { children: React.ReactNode }) {
   return <div className="mt-8 flex items-center justify-between border-t border-[#ECECEC] pt-6">{children}</div>;
 }
 
+type StyleRow = { style: string; qty: number };
+type Batch = { styles: StyleRow[]; res: boolean[]; slides: number };
+
 export default function NewOrderPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [done, setDone] = useState<{ [k: number]: boolean }>({});
-
-  // step 1
   const [driver, setDriver] = useState("");
   const [aud, setAud] = useState<Set<string>>(new Set());
   const [deliveryDate, setDeliveryDate] = useState("");
-  // step 2
-  const [deliverable, setDeliverable] = useState<string>("");
-  const [platform, setPlatform] = useState<string>("");
-  const [sizes, setSizes] = useState<string[]>(META_STATIC.map((r) => r.size));
-  const [styles, setStyles] = useState<string[]>([]);
-  const [styleSearch, setStyleSearch] = useState("");
-  const [qty, setQty] = useState(1);
-  // step 3
+  const [deliverable, setDeliverable] = useState("");
+  const [platform, setPlatform] = useState("");
+  const [batches, setBatches] = useState<Record<string, Batch>>({});
+  const [picker, setPicker] = useState<{ fmt: string; row: number } | null>(null);
+  const [search, setSearch] = useState("");
   const [brief, setBrief] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   const needsImages = deliverable !== "" && deliverable !== "copy-only";
   const step1ok = driver.trim() && aud.size > 0 && deliveryDate;
-  const step2ok =
-    deliverable !== "" &&
-    (!needsImages || (platform && sizes.length > 0 && styles.length > 0));
+  const anyStyleChosen = Object.values(batches).some((b) => b.styles.some((s) => s.style));
+  const step2ok = deliverable !== "" && (!needsImages || (!!platform && Object.keys(batches).length > 0 && anyStyleChosen));
+  const targeting = aud.has("Prospecting") && aud.has("Retargeting") ? "Prospecting and Retargeting" : aud.has("Prospecting") ? "Prospecting" : aud.has("Retargeting") ? "Retargeting" : "";
 
-  const targeting =
-    aud.has("Prospecting") && aud.has("Retargeting") ? "Prospecting and Retargeting"
-      : aud.has("Prospecting") ? "Prospecting" : aud.has("Retargeting") ? "Retargeting" : "";
-
-  function go(n: number) { setStep(n); }
-  function toggle(set: React.Dispatch<React.SetStateAction<string[]>>, list: string[], v: string) {
-    set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+  function toggleAud(a: string) { setAud((p) => { const n = new Set(p); n.has(a) ? n.delete(a) : n.add(a); return n; }); }
+  function pickPlatform(p: string) { setPlatform(p); setBatches({}); }
+  function toggleFormat(fmt: string) {
+    setBatches((prev) => {
+      const next = { ...prev };
+      if (next[fmt]) delete next[fmt];
+      else next[fmt] = { styles: [{ style: "", qty: 1 }], res: PLATFORMS[platform].formats[fmt].resolutions.map(() => true), slides: 3 };
+      return next;
+    });
   }
-  function toggleAud(a: string) {
-    setAud((prev) => { const n = new Set(prev); n.has(a) ? n.delete(a) : n.add(a); return n; });
+  function updateBatch(fmt: string, fn: (b: Batch) => Batch) { setBatches((prev) => ({ ...prev, [fmt]: fn(prev[fmt]) })); }
+  function chooseStyle(name: string) {
+    if (picker) updateBatch(picker.fmt, (b) => { const s = [...b.styles]; s[picker.row] = { ...s[picker.row], style: name }; return { ...b, styles: s }; });
+    setPicker(null); setSearch("");
   }
 
   async function submit() {
     setError(""); setBusy(true);
-    const resolutions = needsImages ? META_STATIC.filter((r) => sizes.includes(r.size)) : META_STATIC;
-    const chosenStyles = needsImages ? styles : ["Text Only"];
+    const orderBatches = needsImages
+      ? Object.entries(batches).map(([fmt, b]) => {
+          const fd = PLATFORMS[platform].formats[fmt];
+          const styles = b.styles.filter((s) => s.style);
+          const resolutions = fd.resolutions.filter((_, i) => b.res[i]);
+          return {
+            platform, format: fmt, quantity: styles.reduce((n, s) => n + s.qty, 0),
+            styles, visual_styles: styles.map((s) => s.style),
+            style_quantities: styles.reduce<Record<string, number>>((a, s) => { a[s.style] = (a[s.style] || 0) + s.qty; return a; }, {}),
+            resolutions, carousel: fd.carousel, carousel_slides: fd.carousel ? b.slides : null,
+          };
+        }).filter((b) => b.visual_styles.length)
+      : [];
+    const order = { delivery_date: deliveryDate, driver, targeting, deliverable, platform: platform || null, batches: orderBatches, brief };
     try {
-      const res = await fetch("/api/submit", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          driver, brief, targeting, deliverable,
-          styles: chosenStyles,
-          sizes: resolutions, quantity: qty, deliveryDate,
-        }),
-      });
+      const res = await fetch("/api/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(order) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Submit failed");
       router.push(`/sprints/${data.sprint_id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Submit failed"); setBusy(false);
-    }
+    } catch (e) { setError(e instanceof Error ? e.message : "Submit failed"); setBusy(false); }
   }
 
   const stepTabs: [number, string, string][] = [[1, "Step 01", "Details"], [2, "Step 02", "Creative"], [3, "Step 03", "Review"]];
-  const filteredStyles = STYLES.filter(([n, d]) =>
-    !styleSearch || (n + d).toLowerCase().includes(styleSearch.toLowerCase()));
+  const filtered = STYLES.filter(([n, d]) => !search || (n + d).toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="mt-2 mb-8 text-[52px] font-semibold leading-[0.98] tracking-tight">
-        Ad Creative<span className="block text-[#9aa0a6]">Request</span>
-      </h1>
+      <h1 className="mt-2 mb-8 text-[52px] font-semibold leading-[0.98] tracking-tight">Ad Creative<span className="block text-[#9aa0a6]">Request</span></h1>
 
       <div className="overflow-hidden rounded-[20px] border border-[#ECECEC] bg-white shadow-[0_2px_4px_rgba(0,0,0,.04),0_10px_28px_rgba(0,0,0,.07)]">
-        {/* step tabs */}
         <div className="grid grid-cols-3 border-b border-[#ECECEC]">
           {stepTabs.map(([n, num, label]) => {
-            const active = step === n;
-            const isDone = done[n];
+            const active = step === n; const isDone = done[n];
             const disabled = (n === 2 && !step1ok) || (n === 3 && !(step1ok && step2ok));
             return (
-              <button
-                key={n} type="button" disabled={disabled}
-                onClick={() => !disabled && go(n)}
-                className={[
-                  "flex items-center gap-3 border-b-2 px-6 py-5 text-left",
-                  active ? "border-[#14A800]" : "border-transparent",
-                  disabled ? "cursor-not-allowed" : "cursor-pointer",
-                ].join(" ")}
-              >
-                <span className={[
-                  "flex h-5 w-5 flex-none items-center justify-center rounded-full border-[1.5px] text-[11px] text-white",
-                  isDone ? "border-[#14A800] bg-[#14A800]" : active ? "border-[#14A800]" : "border-[#E0E0E0]",
-                ].join(" ")}>{isDone ? "✓" : ""}</span>
-                <span>
-                  <span className={["block text-[10px] uppercase tracking-[0.14em]", active ? "text-[#14A800]" : "text-[#9aa0a6]"].join(" ")}>{num}</span>
-                  <span className={["text-[15px]", active ? "font-medium text-[#1d1d1b]" : "text-[#5b6660]"].join(" ")}>{label}</span>
-                </span>
+              <button key={n} type="button" disabled={disabled} onClick={() => !disabled && setStep(n)} className={["flex items-center gap-3 border-b-2 px-6 py-5 text-left", active ? "border-[#14A800]" : "border-transparent", disabled ? "cursor-not-allowed" : "cursor-pointer"].join(" ")}>
+                <span className={["flex h-5 w-5 flex-none items-center justify-center rounded-full border-[1.5px] text-[11px] text-white", isDone ? "border-[#14A800] bg-[#14A800]" : active ? "border-[#14A800]" : "border-[#E0E0E0]"].join(" ")}>{isDone ? "✓" : ""}</span>
+                <span><span className={["block text-[10px] uppercase tracking-[0.14em]", active ? "text-[#14A800]" : "text-[#9aa0a6]"].join(" ")}>{num}</span><span className={["text-[15px]", active ? "font-medium text-[#1d1d1b]" : "text-[#5b6660]"].join(" ")}>{label}</span></span>
               </button>
             );
           })}
         </div>
 
-        {/* STEP 1 */}
         {step === 1 && (
           <div className="p-8">
             <div className="grid gap-8 md:grid-cols-2">
               <div>
                 <FieldLabel>Your Name</FieldLabel>
-                <input
-                  value={driver} onChange={(e) => setDriver(e.target.value)} placeholder="Full name"
-                  className="w-full rounded-lg border border-[#E0E0E0] px-3.5 py-2.5 text-sm outline-none focus:border-[#14A800]"
-                />
+                <input value={driver} onChange={(e) => setDriver(e.target.value)} placeholder="Full name" className="w-full rounded-lg border border-[#E0E0E0] px-3.5 py-2.5 text-sm outline-none focus:border-[#14A800]" />
                 <p className="mb-2 mt-6 text-[13px] font-medium text-[#1d1d1b]">Audience<span className="text-[#14A800]"> *</span></p>
                 <div className="flex flex-wrap gap-3.5">
                   {["Prospecting", "Retargeting"].map((a) => {
                     const on = aud.has(a);
                     return (
-                      <button
-                        key={a} type="button" onClick={() => toggleAud(a)}
-                        className={[
-                          "flex items-center gap-2.5 rounded-full border px-4 py-2.5 text-sm",
-                          on ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] bg-white hover:bg-[#F7F8F6]",
-                        ].join(" ")}
-                      >
-                        <span className={["h-4 w-4 flex-none rounded-full border-[1.5px]", on ? "border-[#14A800] bg-[#14A800] shadow-[inset_0_0_0_3px_#fff]" : "border-[#E0E0E0]"].join(" ")} />
-                        {a}
+                      <button key={a} type="button" onClick={() => toggleAud(a)} className={["flex items-center gap-2.5 rounded-full border px-4 py-2.5 text-sm", on ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] bg-white hover:bg-[#F7F8F6]"].join(" ")}>
+                        <span className={["h-4 w-4 flex-none rounded-full border-[1.5px]", on ? "border-[#14A800] bg-[#14A800] shadow-[inset_0_0_0_3px_#fff]" : "border-[#E0E0E0]"].join(" ")} />{a}
                       </button>
                     );
                   })}
@@ -249,25 +237,17 @@ export default function NewOrderPage() {
                 <p className="mt-2 text-xs text-[#9aa0a6]">Select one or both</p>
               </div>
               <div>
-                <div className="flex items-baseline justify-between">
-                  <FieldLabel>Delivery Date</FieldLabel>
-                  <span className="text-xs text-[#9aa0a6]">5 business days minimum</span>
-                </div>
+                <div className="flex items-baseline justify-between"><FieldLabel>Delivery Date</FieldLabel><span className="text-xs text-[#9aa0a6]">5 business days minimum</span></div>
                 <Calendar value={deliveryDate} onPick={setDeliveryDate} />
               </div>
             </div>
             <StepFoot>
               <span />
-              <button
-                type="button" disabled={!step1ok}
-                onClick={() => { setDone((d) => ({ ...d, 1: true })); go(2); }}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-[#14A800] text-lg text-white disabled:cursor-not-allowed disabled:bg-[#E0E0E0]"
-              >→</button>
+              <button type="button" disabled={!step1ok} onClick={() => { setDone((d) => ({ ...d, 1: true })); setStep(2); }} className="flex h-11 w-11 items-center justify-center rounded-full bg-[#14A800] text-lg text-white disabled:cursor-not-allowed disabled:bg-[#E0E0E0]">→</button>
             </StepFoot>
           </div>
         )}
 
-        {/* STEP 2 */}
         {step === 2 && (
           <div className="p-8">
             <h3 className="mb-4 text-[15px] font-semibold">What are you requesting?</h3>
@@ -275,13 +255,8 @@ export default function NewOrderPage() {
               {DELIVERABLES.map(([id, ttl, sub]) => {
                 const on = deliverable === id;
                 return (
-                  <button
-                    key={id} type="button"
-                    onClick={() => { setDeliverable(id); if (id === "copy-only") setPlatform(""); }}
-                    className={["rounded-xl border p-4 text-left", on ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] hover:bg-[#F7F8F6]"].join(" ")}
-                  >
-                    <div className="text-sm font-semibold">{ttl}</div>
-                    <div className="mt-1 text-xs text-[#5b6660]">{sub}</div>
+                  <button key={id} type="button" onClick={() => { setDeliverable(id); if (id === "copy-only") { setPlatform(""); setBatches({}); } }} className={["rounded-xl border p-4 text-left", on ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] hover:bg-[#F7F8F6]"].join(" ")}>
+                    <div className="text-sm font-semibold">{ttl}</div><div className="mt-1 text-xs text-[#5b6660]">{sub}</div>
                   </button>
                 );
               })}
@@ -289,20 +264,13 @@ export default function NewOrderPage() {
 
             {needsImages && (
               <div className="mt-7">
-                <div className="mb-3 flex items-baseline justify-between">
-                  <h3 className="text-[15px] font-semibold">Platform</h3>
-                  <span className="text-xs text-[#9aa0a6]">One platform per request</span>
-                </div>
+                <div className="mb-3 flex items-baseline justify-between"><h3 className="text-[15px] font-semibold">Platform</h3><span className="text-xs text-[#9aa0a6]">One platform per request</span></div>
                 <div className="grid gap-3.5 sm:grid-cols-3">
-                  {["Meta"].map((p) => {
+                  {Object.entries(PLATFORMS).map(([p, pd]) => {
                     const on = platform === p;
                     return (
-                      <button
-                        key={p} type="button" onClick={() => setPlatform(p)}
-                        className={["rounded-xl border p-4 text-left", on ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] hover:bg-[#F7F8F6]"].join(" ")}
-                      >
-                        <div className="text-sm font-semibold">{p}</div>
-                        <div className="mt-1 text-xs text-[#5b6660]">Static · 3 sizes</div>
+                      <button key={p} type="button" onClick={() => pickPlatform(p)} className={["rounded-xl border p-4 text-left", on ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] hover:bg-[#F7F8F6]"].join(" ")}>
+                        <div className="text-sm font-semibold">{p}</div><div className="mt-1 text-xs text-[#5b6660]">{pd.desc}</div>
                       </button>
                     );
                   })}
@@ -311,106 +279,139 @@ export default function NewOrderPage() {
             )}
 
             {needsImages && platform && (
-              <>
-                <div className="mt-7">
-                  <h3 className="mb-3 text-[15px] font-semibold">Ad Formats <span className="text-xs font-normal text-[#9aa0a6]">Meta · Static Feed</span></h3>
-                  <div className="flex flex-wrap gap-3.5">
-                    {META_STATIC.map((r) => {
-                      const on = sizes.includes(r.size);
-                      return (
-                        <button
-                          key={r.size} type="button" onClick={() => toggle(setSizes, sizes, r.size)}
-                          className={["rounded-full border px-4 py-2 text-sm", on ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] hover:bg-[#F7F8F6]"].join(" ")}
-                        >{r.ratio} <span className="text-[#9aa0a6]">({r.size})</span></button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="mt-7">
-                  <div className="mb-3 flex items-baseline justify-between">
-                    <h3 className="text-[15px] font-semibold">Styles <span className="text-xs font-normal text-[#9aa0a6]">{styles.length} selected</span></h3>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-[#5b6660]">Qty / style</span>
-                      <input type="number" min={1} max={10} value={qty}
-                        onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
-                        className="w-14 rounded-lg border border-[#E0E0E0] px-2 py-1.5 text-center" />
-                    </div>
-                  </div>
-                  <div className="mb-3 flex items-center gap-2 rounded-lg border border-[#E0E0E0] px-3 py-2 text-sm">
-                    <span className="text-[#9aa0a6]">⌕</span>
-                    <input value={styleSearch} onChange={(e) => setStyleSearch(e.target.value)} placeholder="Search styles…" className="w-full outline-none" />
-                  </div>
-                  <div className="grid max-h-72 grid-cols-1 gap-x-6 gap-y-2 overflow-y-auto sm:grid-cols-2">
-                    {filteredStyles.map(([name, desc]) => {
-                      const on = styles.includes(name);
-                      return (
-                        <button
-                          key={name} type="button" onClick={() => toggle(setStyles, styles, name)}
-                          className={["flex items-start gap-3 rounded-lg border p-3 text-left", on ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#ECECEC] hover:bg-[#F7F8F6]"].join(" ")}
-                        >
-                          <span className={["mt-0.5 flex h-4 w-4 flex-none items-center justify-center rounded border text-[10px] text-white", on ? "border-[#14A800] bg-[#14A800]" : "border-[#E0E0E0]"].join(" ")}>{on ? "✓" : ""}</span>
-                          <span>
-                            <span className="block text-sm font-medium">{name}</span>
-                            <span className="block text-xs text-[#9aa0a6]">{desc}</span>
-                          </span>
+              <div className="mt-7">
+                <div className="mb-3 flex items-baseline justify-between"><h3 className="text-[15px] font-semibold">Ad Formats</h3><span className="text-xs text-[#9aa0a6]">{platform}</span></div>
+                <div className="space-y-3">
+                  {Object.entries(PLATFORMS[platform].formats).map(([fmt, fd]) => {
+                    const b = batches[fmt]; const on = !!b;
+                    return (
+                      <div key={fmt} className={["rounded-xl border", on ? "border-[#14A800]" : "border-[#E0E0E0]"].join(" ")}>
+                        <button type="button" onClick={() => toggleFormat(fmt)} className="flex w-full items-center gap-3 p-4 text-left">
+                          <span className={["flex h-5 w-5 flex-none items-center justify-center rounded border text-[11px] text-white", on ? "border-[#14A800] bg-[#14A800]" : "border-[#E0E0E0]"].join(" ")}>{on ? "✓" : ""}</span>
+                          <span><span className="block text-sm font-medium">{fmt}</span><span className="block text-xs text-[#9aa0a6]">{fd.resolutions.map((r) => `${r.ratio} · ${r.size}`).join("   ·   ")}</span></span>
                         </button>
-                      );
-                    })}
-                  </div>
+                        {on && (
+                          <div className="space-y-4 border-t border-[#ECECEC] bg-[#FafcFa] p-4">
+                            <div>
+                              <p className="mb-2 text-[13px] font-medium">Visual Style<span className="text-[#14A800]"> *</span></p>
+                              <div className="space-y-2">
+                                {b.styles.map((sr, i) => (
+                                  <div key={i} className="flex items-center gap-2">
+                                    <button type="button" onClick={() => setPicker({ fmt, row: i })} className={["flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm", sr.style ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] bg-white hover:bg-[#F7F8F6]"].join(" ")}>
+                                      <span className="text-[#9aa0a6]">▣</span>
+                                      <span className={sr.style ? "font-medium" : "text-[#9aa0a6]"}>{sr.style || "Choose a visual style"}</span>
+                                      <span className="ml-auto text-xs text-[#14A800]">Browse</span>
+                                    </button>
+                                    <input type="number" min={1} value={sr.qty} onChange={(e) => updateBatch(fmt, (bb) => { const s = [...bb.styles]; s[i] = { ...s[i], qty: Math.max(1, Number(e.target.value) || 1) }; return { ...bb, styles: s }; })} className="w-14 rounded-lg border border-[#E0E0E0] px-2 py-2 text-center text-sm" />
+                                    {b.styles.length > 1 && (<button type="button" onClick={() => updateBatch(fmt, (bb) => ({ ...bb, styles: bb.styles.filter((_, j) => j !== i) }))} className="px-1 text-[#9aa0a6] hover:text-[#1d1d1b]">✕</button>)}
+                                  </div>
+                                ))}
+                              </div>
+                              <button type="button" onClick={() => updateBatch(fmt, (bb) => ({ ...bb, styles: [...bb.styles, { style: "", qty: 1 }] }))} className="mt-2 text-sm text-[#14A800]">+ Add Style</button>
+                            </div>
+                            {fd.carousel && (
+                              <div className="flex items-center gap-3">
+                                <p className="text-[13px] font-medium">Images per carousel<span className="text-[#14A800]"> *</span></p>
+                                <input type="number" min={2} max={10} value={b.slides} onChange={(e) => updateBatch(fmt, (bb) => ({ ...bb, slides: Math.min(10, Math.max(2, Number(e.target.value) || 2)) }))} className="w-16 rounded-lg border border-[#E0E0E0] px-2 py-1.5 text-center text-sm" />
+                                <span className="text-xs text-[#9aa0a6]">2 – 10 images per carousel</span>
+                              </div>
+                            )}
+                            <div>
+                              <p className="mb-1 text-[13px] font-medium">Resolutions</p>
+                              <p className="mb-2 text-xs text-[#9aa0a6]">Uncheck any size to exclude it from this batch</p>
+                              <div className="flex flex-wrap gap-2">
+                                {fd.resolutions.map((r, i) => {
+                                  const checked = b.res[i];
+                                  return (
+                                    <button key={i} type="button" onClick={() => updateBatch(fmt, (bb) => { const res = [...bb.res]; res[i] = !res[i]; return { ...bb, res }; })} className={["flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm", checked ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] text-[#9aa0a6]"].join(" ")}>
+                                      <span className={["flex h-4 w-4 items-center justify-center rounded border text-[9px] text-white", checked ? "border-[#14A800] bg-[#14A800]" : "border-[#E0E0E0]"].join(" ")}>{checked ? "✓" : ""}</span>
+                                      {r.ratio} <span className="text-[#9aa0a6]">{r.size}</span>{r.label && <span className="text-[#9aa0a6]">· {r.label}</span>}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              </>
+              </div>
             )}
 
             <StepFoot>
-              <button type="button" onClick={() => go(1)} className="rounded-full border border-[#E0E0E0] px-4 py-2 text-sm hover:bg-[#F7F8F6]">← Back</button>
-              <button
-                type="button" disabled={!step2ok}
-                onClick={() => { setDone((d) => ({ ...d, 2: true })); go(3); }}
-                className="rounded-full bg-[#14A800] px-5 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-[#E0E0E0]"
-              >Review Request →</button>
+              <button type="button" onClick={() => setStep(1)} className="rounded-full border border-[#E0E0E0] px-4 py-2 text-sm hover:bg-[#F7F8F6]">← Back</button>
+              <button type="button" disabled={!step2ok} onClick={() => { setDone((d) => ({ ...d, 2: true })); setStep(3); }} className="rounded-full bg-[#14A800] px-5 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-[#E0E0E0]">Review Request →</button>
             </StepFoot>
           </div>
         )}
 
-        {/* STEP 3 */}
         {step === 3 && (
           <div className="p-8">
             <h3 className="text-[15px] font-semibold">Add your creative context</h3>
             <p className="mb-3 mt-1 text-xs text-[#9aa0a6]">The single biggest lever on output quality. The more direction you give, the sharper the work comes back.</p>
-            <textarea
-              value={brief} onChange={(e) => setBrief(e.target.value)} rows={5}
-              placeholder="Include copy guidance, context, CTAs, destination URLs, tone, must-haves, things to avoid, reference links — anything that helps the team nail it."
-              className="w-full rounded-lg border border-[#E0E0E0] p-3.5 text-sm outline-none focus:border-[#14A800]"
-            />
+            <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={5} placeholder="Include copy guidance, context, CTAs, destination URLs, tone, must-haves, things to avoid, reference links — anything that helps the team nail it." className="w-full rounded-lg border border-[#E0E0E0] p-3.5 text-sm outline-none focus:border-[#14A800]" />
 
             <h3 className="mb-3 mt-7 text-[15px] font-semibold">Your request</h3>
             <div className="rounded-xl border border-[#ECECEC] bg-[#F7F8F6] p-4 text-sm">
-              {[
-                ["Name", driver], ["Audience", targeting], ["Delivery", deliveryDate],
-                ["Deliverable", { "images-copy": "Images & Copy", "images-only": "Images Only", "copy-only": "Copy Only" }[deliverable] || deliverable],
-                ...(needsImages ? [["Platform", platform], ["Sizes", META_STATIC.filter((r) => sizes.includes(r.size)).map((r) => r.ratio).join(", ")], ["Styles", styles.join(", ")]] : []),
-              ].map(([k, v]) => (
-                <div key={k as string} className="flex justify-between gap-6 border-b border-[#ECECEC] py-1.5 last:border-0">
-                  <span className="text-[#9aa0a6]">{k}</span>
-                  <span className="text-right font-medium">{v || "—"}</span>
-                </div>
+              {[["Requested by", driver], ["Audience", targeting], ["Delivery date", deliveryDate], ["Deliverable", { "images-copy": "Images & Copy", "images-only": "Images Only", "copy-only": "Copy Only" }[deliverable] || deliverable], ...(platform ? [["Platform", platform] as [string, string]] : [])].map(([k, v]) => (
+                <div key={k} className="flex justify-between gap-6 border-b border-[#ECECEC] py-1.5 last:border-0"><span className="text-[#9aa0a6]">{k}</span><span className="text-right font-medium">{v || "—"}</span></div>
               ))}
+              {needsImages && Object.entries(batches).map(([fmt, b]) => {
+                const styles = b.styles.filter((s) => s.style);
+                const fd = PLATFORMS[platform].formats[fmt];
+                const sizes = fd.resolutions.filter((_, i) => b.res[i]).map((r) => r.size).join(", ");
+                return (
+                  <div key={fmt} className="mt-2 border-t border-[#ECECEC] pt-2">
+                    <b>{fmt}</b>{fd.carousel ? ` · ${b.slides} slides` : ""}
+                    <div className="text-[#9aa0a6]">Styles: <span className="text-[#1d1d1b]">{styles.map((s) => `${s.style} ×${s.qty}`).join(", ") || "—"}</span></div>
+                    <div className="text-[#9aa0a6]">Sizes: <span className="text-[#1d1d1b]">{sizes || "—"}</span></div>
+                  </div>
+                );
+              })}
+              {deliverable === "copy-only" && <div className="mt-2 border-t border-[#ECECEC] pt-2"><b>Copy only</b> — no image batches</div>}
             </div>
 
             <StepFoot>
-              <button type="button" onClick={() => go(2)} className="rounded-full border border-[#E0E0E0] px-4 py-2 text-sm hover:bg-[#F7F8F6]">← Back</button>
+              <button type="button" onClick={() => setStep(2)} className="rounded-full border border-[#E0E0E0] px-4 py-2 text-sm hover:bg-[#F7F8F6]">← Back</button>
               <div className="flex items-center gap-4">
                 {error && <span className="text-sm text-red-600">{error}</span>}
-                <button
-                  type="button" onClick={submit} disabled={busy}
-                  className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white disabled:bg-[#E0E0E0]"
-                >{busy ? "Submitting…" : "Submit Request"}</button>
+                <button type="button" onClick={submit} disabled={busy} className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white disabled:bg-[#E0E0E0]">{busy ? "Submitting…" : "Submit Request"}</button>
               </div>
             </StepFoot>
           </div>
         )}
       </div>
+
+      {picker && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-6" onClick={(e) => { if (e.target === e.currentTarget) setPicker(null); }}>
+          <div className="mt-16 w-full max-w-2xl rounded-2xl bg-white shadow-xl">
+            <div className="relative border-b border-[#ECECEC] p-5">
+              <div className="font-mono text-xs uppercase tracking-widest text-[#14A800]">Visual Style</div>
+              <h2 className="mt-1 text-xl font-semibold">Choose a style</h2>
+              <p className="mt-1 text-sm text-[#9aa0a6]">Pick the look for this batch — you can add more styles after.</p>
+              <button type="button" onClick={() => setPicker(null)} className="absolute right-4 top-4 text-[#9aa0a6] hover:text-[#1d1d1b]">✕</button>
+            </div>
+            <div className="p-5">
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-[#E0E0E0] px-3 py-2 text-sm">
+                <span className="text-[#9aa0a6]">⌕</span>
+                <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search styles…" className="w-full outline-none" />
+              </div>
+              <div className="grid max-h-[50vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
+                {filtered.map(([name, desc]) => (
+                  <button key={name} type="button" onClick={() => chooseStyle(name)} className="rounded-xl border border-[#ECECEC] p-3 text-left hover:border-[#14A800] hover:bg-[#F4FAF1]">
+                    <div className="mb-2 flex h-16 items-center justify-center rounded-lg bg-[#F7F8F6] text-lg font-semibold text-[#9aa0a6]">{name.replace(/[^A-Za-z]/, "").charAt(0)}</div>
+                    <div className="text-sm font-medium">{name}</div>
+                    <div className="mt-0.5 text-xs text-[#9aa0a6]">{desc}</div>
+                  </button>
+                ))}
+                {filtered.length === 0 && <p className="col-span-full py-6 text-center text-sm text-[#9aa0a6]">No styles match your search.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
