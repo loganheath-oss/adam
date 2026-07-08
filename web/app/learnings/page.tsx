@@ -1,5 +1,29 @@
-import { PageStub } from "@/components/page-stub";
+import { MarkdownView } from "@/components/markdown";
 
-export default function Page() {
-  return <PageStub title="Learnings" note="What each sprint taught us." />;
+export const dynamic = "force-dynamic";
+
+async function getLearnings(): Promise<string> {
+  const base = process.env.ADAM_API_URL;
+  const key = process.env.ADAM_API_KEY;
+  if (!base || !key) return "# Learnings\n\nBackend not configured.";
+  try {
+    const res = await fetch(`${base}/api/learnings`, {
+      headers: { "X-API-Key": key },
+      cache: "no-store",
+    });
+    if (!res.ok) return "# Learnings\n\nCouldn’t load learnings from the backend.";
+    const data = await res.json();
+    return data.content || "# Learnings\n\n(empty)";
+  } catch {
+    return "# Learnings\n\nCouldn’t reach the backend.";
+  }
+}
+
+export default async function LearningsPage() {
+  const md = await getLearnings();
+  return (
+    <div className="max-w-3xl">
+      <MarkdownView>{md}</MarkdownView>
+    </div>
+  );
 }

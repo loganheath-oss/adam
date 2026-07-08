@@ -1,5 +1,6 @@
-import { PageStub } from "@/components/page-stub";
+import { WikiLayout } from "@/components/wiki-layout";
+import { getWikiPage } from "@/lib/wiki";
 
-export default function Page() {
-  return <PageStub title="Wiki" note="Workflow docs and the pipeline schematic." />;
+export default function WikiHome() {
+  return <WikiLayout current="README" md={getWikiPage("README") ?? "# Wiki"} />;
 }

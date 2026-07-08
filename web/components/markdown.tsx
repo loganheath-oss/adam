@@ -1,0 +1,43 @@
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+// Shared markdown renderer for the Wiki and Learnings pages. Styles elements with
+// Tailwind and rewrites internal `*.md` links to `/wiki/*` so the wiki cross-links work.
+export function MarkdownView({ children }: { children: string }) {
+  return (
+    <Markdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: (p) => <h1 className="mt-8 mb-3 text-2xl font-bold tracking-tight first:mt-0" {...p} />,
+        h2: (p) => <h2 className="mt-8 mb-3 text-xl font-semibold tracking-tight" {...p} />,
+        h3: (p) => <h3 className="mt-6 mb-2 text-base font-semibold" {...p} />,
+        p: (p) => <p className="my-3 leading-relaxed text-foreground/90" {...p} />,
+        ul: (p) => <ul className="my-3 list-disc space-y-1 pl-6" {...p} />,
+        ol: (p) => <ol className="my-3 list-decimal space-y-1 pl-6" {...p} />,
+        li: (p) => <li className="leading-relaxed" {...p} />,
+        a: ({ href, ...p }) => {
+          let h = href || "#";
+          const m = h.match(/^([\w-]+)\.md$/);
+          if (m) h = `/wiki/${m[1]}`;
+          return <a href={h} className="text-primary underline underline-offset-2" {...p} />;
+        },
+        code: (p) => <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em]" {...p} />,
+        pre: (p) => <pre className="my-4 overflow-x-auto rounded-lg bg-muted p-4 font-mono text-sm" {...p} />,
+        blockquote: (p) => (
+          <blockquote className="my-4 border-l-2 border-border pl-4 text-muted-foreground" {...p} />
+        ),
+        table: (p) => (
+          <div className="my-4 overflow-x-auto">
+            <table className="w-full text-sm" {...p} />
+          </div>
+        ),
+        th: (p) => <th className="border-b px-3 py-2 text-left font-semibold" {...p} />,
+        td: (p) => <td className="border-b px-3 py-2" {...p} />,
+        hr: () => <hr className="my-6 border-border" />,
+        strong: (p) => <strong className="font-semibold" {...p} />,
+      }}
+    >
+      {children}
+    </Markdown>
+  );
+}
