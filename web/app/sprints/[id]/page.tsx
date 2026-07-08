@@ -101,7 +101,7 @@ export default async function SprintDetailPage({
               <div className="mt-1 text-base font-semibold">{s.gate.label}</div>
               <div className="text-sm text-muted-foreground">{s.gate.action}</div>
             </div>
-            <GateActions sprintId={s.sprint_id} gateNum={s.gate.num ?? 0} />
+            <GateActions key={s.gate.num} sprintId={s.sprint_id} gateNum={s.gate.num ?? 0} />
           </CardContent>
         </Card>
       )}
