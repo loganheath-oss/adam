@@ -392,7 +392,7 @@ export default function NewOrderPage() {
 
       {picker && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-6" onClick={(e) => { if (e.target === e.currentTarget) setPicker(null); }}>
-          <div className="mt-16 w-full max-w-2xl rounded-2xl bg-white shadow-xl">
+          <div className="mt-16 w-full max-w-3xl rounded-2xl bg-white shadow-xl">
             <div className="relative border-b border-[#ECECEC] p-5">
               <div className="font-mono text-xs uppercase tracking-widest text-[#14A800]">Visual Style</div>
               <h2 className="mt-1 text-xl font-semibold">Choose a style</h2>
@@ -404,15 +404,15 @@ export default function NewOrderPage() {
                 <span className="text-[#9aa0a6]">⌕</span>
                 <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search styles…" className="w-full outline-none" />
               </div>
-              <div className="grid max-h-[50vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
+              <div className="grid max-h-[55vh] grid-cols-2 gap-4 overflow-y-auto sm:grid-cols-4">
                 {filtered.map(([name, desc]) => (
                   <button key={name} type="button" onClick={() => chooseStyle(name)} className="rounded-xl border border-[#ECECEC] p-3 text-left hover:border-[#14A800] hover:bg-[#F4FAF1]">
-                    <div className="mb-2 flex h-24 items-center justify-center overflow-hidden rounded-lg bg-[#F7F8F6]">
+                    <div className="mb-2 flex aspect-square items-center justify-center overflow-hidden rounded-lg" style={{ background: "linear-gradient(135deg,#E9F899,#C4F4C0 55%,#9ED79B)" }}>
                       {STYLE_THUMBS[name] ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={STYLE_THUMBS[name]} alt={name} loading="lazy" className="h-full w-full object-cover" />
                       ) : (
-                        <span className="text-lg font-semibold text-[#9aa0a6]">{name.replace(/[^A-Za-z]/, "").charAt(0)}</span>
+                        <span className="text-2xl font-semibold text-[#0C7A00] opacity-60">{name.replace(/[^A-Za-z]/, "").charAt(0)}</span>
                       )}
                     </div>
                     <div className="text-sm font-medium">{name}</div>
