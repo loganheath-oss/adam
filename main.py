@@ -2850,6 +2850,13 @@ async def api_sprint(sprint_id: str):
     return JSONResponse({"ok": True, **_sprint_data(sprint_id)})
 
 
+@app.get("/api/sync-log", dependencies=[Depends(require_api_key_or_session)])
+async def api_sync_log(limit: int = 50):
+    """Read-only JSON sync log for the Next.js frontend — same data as the
+    /sync-log page (git-push history: who pushed, sha, ok/error, detail)."""
+    return {"entries": _read_sync_log(limit), "counts": _count_sync_log()}
+
+
 @app.get("/sync-log", response_class=HTMLResponse, dependencies=[Depends(require_api_key_or_session)])
 async def sync_log_page(request: Request):
     entries = _read_sync_log(50)
