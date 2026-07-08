@@ -8,16 +8,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status-badge";
-import { SPRINTS } from "@/lib/data";
+import { getSprints } from "@/lib/sprints";
 
-export default function SprintsPage() {
+// Server component: fetches live sprints from the FastAPI backend at request time.
+export const dynamic = "force-dynamic";
+
+export default async function SprintsPage() {
+  const { sprints, live } = await getSprints();
+
   return (
     <>
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Sprint Runs</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {SPRINTS.length} sprints · click any row to view details
+            {sprints.length} sprints · click any row to view details
+            {!live && <span className="ml-2 text-amber-600">· sample data</span>}
           </p>
         </div>
         <div className="flex gap-3">
@@ -39,7 +45,7 @@ export default function SprintsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {SPRINTS.map((s) => (
+            {sprints.map((s) => (
               <TableRow key={s.id} className="cursor-pointer">
                 <TableCell className="font-mono text-muted-foreground tabular-nums">{s.updated}</TableCell>
                 <TableCell className="font-mono font-semibold">{s.id}</TableCell>
@@ -56,6 +62,13 @@ export default function SprintsPage() {
                 </TableCell>
               </TableRow>
             ))}
+            {sprints.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                  No sprints yet.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
