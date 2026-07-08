@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { STYLE_THUMBS } from "@/lib/style-thumbs";
 
 // ── data (verbatim from the live order form) ─────────────────────────────────
 const STYLES: [string, string][] = [
@@ -298,7 +299,12 @@ export default function NewOrderPage() {
                                 {b.styles.map((sr, i) => (
                                   <div key={i} className="flex items-center gap-2">
                                     <button type="button" onClick={() => setPicker({ fmt, row: i })} className={["flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm", sr.style ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] bg-white hover:bg-[#F7F8F6]"].join(" ")}>
-                                      <span className="text-[#9aa0a6]">▣</span>
+                                      {sr.style && STYLE_THUMBS[sr.style] ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={STYLE_THUMBS[sr.style]} alt="" className="h-6 w-6 flex-none rounded object-cover" />
+                                      ) : (
+                                        <span className="text-[#9aa0a6]">▣</span>
+                                      )}
                                       <span className={sr.style ? "font-medium" : "text-[#9aa0a6]"}>{sr.style || "Choose a visual style"}</span>
                                       <span className="ml-auto text-xs text-[#14A800]">Browse</span>
                                     </button>
@@ -401,7 +407,14 @@ export default function NewOrderPage() {
               <div className="grid max-h-[50vh] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
                 {filtered.map(([name, desc]) => (
                   <button key={name} type="button" onClick={() => chooseStyle(name)} className="rounded-xl border border-[#ECECEC] p-3 text-left hover:border-[#14A800] hover:bg-[#F4FAF1]">
-                    <div className="mb-2 flex h-16 items-center justify-center rounded-lg bg-[#F7F8F6] text-lg font-semibold text-[#9aa0a6]">{name.replace(/[^A-Za-z]/, "").charAt(0)}</div>
+                    <div className="mb-2 flex h-24 items-center justify-center overflow-hidden rounded-lg bg-[#F7F8F6]">
+                      {STYLE_THUMBS[name] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={STYLE_THUMBS[name]} alt={name} loading="lazy" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-lg font-semibold text-[#9aa0a6]">{name.replace(/[^A-Za-z]/, "").charAt(0)}</span>
+                      )}
+                    </div>
                     <div className="text-sm font-medium">{name}</div>
                     <div className="mt-0.5 text-xs text-[#9aa0a6]">{desc}</div>
                   </button>
