@@ -661,11 +661,71 @@ async function applyLibraryImageToClone(clone, libraryNodeId) {
 
 // ── Text ────────────────────────────────────────────────────────────────────
 
+// Layers whose copy can legitimately run long and should WRAP to more lines
+// rather than shrink (headlines, subheads, bodies, quotes, bullets).
+var _WRAP_HINTS = /headline|subhead|body|testimonial|quote|bullet|descript|paragraph|primary_text|_text/i;
+var _FIT_MARGIN = 40;   // keep text this far from the ad's clipping edge (px)
+var _FIT_MIN_FS = 22;   // don't shrink a label below this
+
+// Find the ancestor that defines the ad's clip boundary — the nearest clipping
+// frame sized like a single ad (not the whole board container).
+function _adBoundary(node) {
+  var p = node.parent;
+  while (p && p.type !== "PAGE" && p.type !== "DOCUMENT") {
+    if ((p.type === "FRAME" || p.type === "COMPONENT" || p.type === "INSTANCE") &&
+        p.clipsContent && p.width && p.width <= 3000) return p;
+    p = p.parent;
+  }
+  p = node.parent;
+  while (p && p.type !== "PAGE" && p.type !== "DOCUMENT") {
+    if (p.type === "FRAME" || p.type === "COMPONENT" || p.type === "INSTANCE") return p;
+    p = p.parent;
+  }
+  return null;
+}
+
+// After setting copy, keep it inside the ad. Auto-width layers never wrap, so
+// long text overflows the frame edge and gets clipped — this fixes that:
+// headline/body layers flip to auto-height (wrap); one-line labels shrink to fit.
+// Best-effort and conservative — only touches text that actually overflows.
+function fitTextLayer(node) {
+  try {
+    if (!node || node.type !== "TEXT") return;
+    var frame = _adBoundary(node);
+    if (!frame) return;
+    var fb = frame.absoluteBoundingBox, nb = node.absoluteBoundingBox;
+    if (!fb || !nb) return;
+    var availRight = fb.x + fb.width - _FIT_MARGIN;
+    if ((nb.x + nb.width) - availRight <= 1) return; // fits — leave it alone
+
+    if (node.textAutoResize === "WIDTH_AND_HEIGHT" && _WRAP_HINTS.test(node.name || "")) {
+      // Convert auto-width headline/body to auto-height so it wraps in place.
+      var targetW = Math.max(120, availRight - nb.x);
+      node.textAutoResize = "HEIGHT";
+      node.resize(targetW, node.height);
+      log("    ↳ wrapped '" + node.name + "' to " + Math.round(targetW) + "px");
+    } else {
+      // One-line label (name/role/CTA/badge/stat) — shrink font until it fits.
+      var fs = node.fontSize;
+      if (typeof fs !== "number") return; // mixed fonts — skip
+      var guard = 0;
+      while (guard++ < 60) {
+        var b = node.absoluteBoundingBox;
+        if (!b || (b.x + b.width) <= availRight + 1 || fs <= _FIT_MIN_FS) break;
+        fs = Math.max(_FIT_MIN_FS, fs - 2);
+        node.fontSize = fs;
+      }
+      log("    ↳ shrank '" + node.name + "' to " + Math.round(fs) + "px to fit");
+    }
+  } catch (e) { /* fitting is best-effort — never block assembly */ }
+}
+
 async function setTextLayer(node, text) {
   if (!node || node.type !== "TEXT" || !text) return false;
   try {
     await figma.loadFontAsync(node.fontName);
     node.characters = text;
+    fitTextLayer(node);
     return true;
   } catch (e) {
     log("    ⚠ Could not update '" + node.name + "': " + e.message);

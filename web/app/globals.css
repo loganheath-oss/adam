@@ -129,11 +129,45 @@
   }
 }
 
+/* ─── Landing marquee (matches upwork-adam) ─────────────────────────────── */
+@keyframes adam-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.adam-marquee { animation: adam-marquee 220s linear infinite; }
+.adam-marquee.reverse { animation-direction: reverse; }
+/* Hovering a row pauses the scroll so a card can be inspected. */
+.adam-marquee:hover { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .adam-marquee { animation: none; }
+}
+
+/* ─── PP Neue Montreal (Upwork brand face, self-hosted) ─────────────────── */
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("/fonts/PPNeueMontreal-Light.woff2") format("woff2");
+  font-weight: 300; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("/fonts/PPNeueMontreal-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("/fonts/PPNeueMontreal-Medium.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "PP Neue Montreal";
+  src: url("/fonts/PPNeueMontreal-SemiBold.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+
 /* ─── ADAM brand tokens ────────────────────────────────────────────────────
    The single source of truth for the look. Overriding these few values
    retints the ENTIRE shadcn system — every Button, focus ring, card radius,
-   etc. follows. This is the design system: change here, the whole app updates.
-   (Production swaps --font-sans for the real PP Neue Montreal @font-face.) */
+   etc. follows. This is the design system: change here, the whole app updates. */
 :root {
   --primary: #14a800;            /* Upwork green */
   --primary-foreground: #ffffff;

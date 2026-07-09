@@ -83,6 +83,9 @@ export type SprintDetail = {
       visual_styles?: string[];
       resolutions?: Array<{ size: string; ratio: string }>;
       audience?: string;
+      quantity?: number;
+      format?: string;
+      style_quantities?: Record<string, number>;
     }>;
   } | null;
 };

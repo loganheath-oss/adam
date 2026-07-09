@@ -30,7 +30,7 @@ export default async function CopyPage({ params }: { params: Promise<{ id: strin
   return (
     <>
       <Link href={`/sprints/${id}`} className="text-sm text-muted-foreground hover:text-foreground">← Sprint</Link>
-      <h1 className="mb-1 mt-4 text-2xl font-bold tracking-tight">Copy review</h1>
+      <h1 className="mb-1 mt-4 text-3xl font-medium tracking-tight">Copy review</h1>
       <p className="mb-8 text-sm text-muted-foreground">
         {concepts.length} concepts · {concepts.filter((c) => c.selected).length} selected
       </p>

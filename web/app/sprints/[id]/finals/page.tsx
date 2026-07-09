@@ -26,7 +26,7 @@ export default async function FinalsPage({ params }: { params: Promise<{ id: str
       <Link href={`/sprints/${id}`} className="text-sm text-muted-foreground hover:text-foreground">← Sprint</Link>
       <div className="mb-8 mt-4 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Finals review</h1>
+          <h1 className="text-3xl font-medium tracking-tight">Finals review</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {finals.length} finals
             {s.approved != null && (

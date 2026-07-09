@@ -106,16 +106,17 @@ function Calendar({ value, onPick }: { value: string; onPick: (v: string) => voi
   return (
     <div className="rounded-xl border border-[#E0E0E0] p-4">
       <div className="relative mb-3 flex items-center justify-center">
-        <button type="button" aria-label="Previous month" onClick={() => setView(new Date(year, month - 1, 1))} className="absolute left-0 flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#E0E0E0] text-[#5b6660] hover:bg-[#F7F8F6]">‹</button>
+        <button type="button" aria-label="Previous month" onClick={() => setView(new Date(year, month - 1, 1))} className="absolute left-0 flex h-8 w-8 items-center justify-center text-lg text-[#5b6660] hover:text-[#1d1d1b]">‹</button>
         <span className="text-[15px]">{MONTHS[month]} {year}</span>
-        <button type="button" aria-label="Next month" onClick={() => setView(new Date(year, month + 1, 1))} className="absolute right-0 flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-[#E0E0E0] text-[#5b6660] hover:bg-[#F7F8F6]">›</button>
+        <button type="button" aria-label="Next month" onClick={() => setView(new Date(year, month + 1, 1))} className="absolute right-0 flex h-8 w-8 items-center justify-center text-lg text-[#5b6660] hover:text-[#1d1d1b]">›</button>
       </div>
       <div className="grid grid-cols-7 gap-0.5 text-center">
         {DOW.map((d) => <div key={d} className="py-1.5 text-[10px] tracking-wider text-[#9aa0a6]">{d}</div>)}
         {cells.map((day, i) => {
           if (day === null) return <div key={i} />;
           const date = new Date(year, month, day);
-          const disabled = date < minDate; const selected = value === iso(date);
+          const dow = date.getDay();
+          const disabled = date < minDate || dow === 0 || dow === 6; const selected = value === iso(date);
           return (
             <button key={i} type="button" disabled={disabled} onClick={() => onPick(iso(date))} className={["rounded-[9px] py-2.5 text-sm", disabled ? "cursor-not-allowed text-[#D4D4D4]" : "cursor-pointer text-[#1d1d1b] hover:bg-[#F7F8F6]", selected ? "!bg-[#14A800] font-medium !text-white" : ""].join(" ")}>{day}</button>
           );
@@ -127,9 +128,6 @@ function Calendar({ value, onPick }: { value: string; onPick: (v: string) => voi
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <p className="mb-2 text-[13px] font-medium text-[#1d1d1b]">{children}<span className="text-[#14A800]"> *</span></p>;
-}
-function StepFoot({ children }: { children: React.ReactNode }) {
-  return <div className="mt-8 flex items-center justify-between border-t border-[#ECECEC] pt-6">{children}</div>;
 }
 
 type StyleRow = { style: string; qty: number };
@@ -193,44 +191,63 @@ export default function NewOrderPage() {
       const res = await fetch("/api/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(order) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Submit failed");
-      router.push(`/sprints/${data.sprint_id}`);
+      router.push(`/sprints/${data.sprint_id}/handoff`);
     } catch (e) { setError(e instanceof Error ? e.message : "Submit failed"); setBusy(false); }
   }
 
-  const stepTabs: [number, string, string][] = [[1, "Step 01", "Details"], [2, "Step 02", "Creative"], [3, "Step 03", "Review"]];
+  const stepTabs: [number, string][] = [[1, "Details"], [2, "Creative"], [3, "Review"]];
   const filtered = STYLES.filter(([n, d]) => !search || (n + d).toLowerCase().includes(search.toLowerCase()));
 
+  const totalAssets = needsImages
+    ? Object.entries(batches).reduce((sum, [fmt, b]) => {
+        const sizeCount = PLATFORMS[platform].formats[fmt].resolutions.filter((_, i) => b.res[i]).length;
+        return sum + b.styles.filter((s) => s.style).reduce((n, s) => n + s.qty * sizeCount, 0);
+      }, 0)
+    : 0;
+  const creativeCount = Object.values(batches).reduce((n, b) => n + b.styles.filter((s) => s.style).length, 0);
+  const summaryRows: [string, string][] = [
+    ["Requested by", driver],
+    ["Audience", targeting],
+    ["Delivery date", deliveryDate],
+    ["Deliverable", { "images-copy": "Images & Copy", "images-only": "Images Only", "copy-only": "Copy Only" }[deliverable] || deliverable],
+    ...(platform ? [["Platform", platform] as [string, string]] : []),
+  ];
+
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="mt-2 mb-8 text-[52px] font-semibold leading-[0.98] tracking-tight">Ad Creative<span className="block text-[#9aa0a6]">Request</span></h1>
+    <div>
+      <div className="mb-8 mt-2 flex items-end justify-between">
+        <h1 className="text-4xl font-medium tracking-tight text-[#0a0a0a]">New Order</h1>
+        <span className="text-sm text-muted-foreground">Step {step} of 3</span>
+      </div>
 
       <div className="overflow-hidden rounded-[20px] border border-[#ECECEC] bg-white shadow-[0_2px_4px_rgba(0,0,0,.04),0_10px_28px_rgba(0,0,0,.07)]">
-        <div className="grid grid-cols-3 border-b border-[#ECECEC]">
-          {stepTabs.map(([n, num, label]) => {
+        <div className="grid grid-cols-3 divide-x divide-[#F0F0F0] border-b border-[#ECECEC]">
+          {stepTabs.map(([n, label]) => {
             const active = step === n; const isDone = done[n];
             const disabled = (n === 2 && !step1ok) || (n === 3 && !(step1ok && step2ok));
             return (
-              <button key={n} type="button" disabled={disabled} onClick={() => !disabled && setStep(n)} className={["flex items-center gap-3 border-b-2 px-6 py-5 text-left", active ? "border-[#14A800]" : "border-transparent", disabled ? "cursor-not-allowed" : "cursor-pointer"].join(" ")}>
-                <span className={["flex h-5 w-5 flex-none items-center justify-center rounded-full border-[1.5px] text-[11px] text-white", isDone ? "border-[#14A800] bg-[#14A800]" : active ? "border-[#14A800]" : "border-[#E0E0E0]"].join(" ")}>{isDone ? "✓" : ""}</span>
-                <span><span className={["block text-[10px] uppercase tracking-[0.14em]", active ? "text-[#14A800]" : "text-[#9aa0a6]"].join(" ")}>{num}</span><span className={["text-[15px]", active ? "font-medium text-[#1d1d1b]" : "text-[#5b6660]"].join(" ")}>{label}</span></span>
+              <button key={n} type="button" disabled={disabled} onClick={() => !disabled && setStep(n)} className={["flex items-center justify-center gap-2.5 border-b-2 px-6 py-5 text-center", active ? "border-[#14A800]" : "border-transparent", disabled ? "cursor-not-allowed" : "cursor-pointer"].join(" ")}>
+                <span className={["flex h-6 w-6 flex-none items-center justify-center rounded-full text-[12px] font-medium", isDone ? "bg-[#14A800] text-white" : active ? "border-2 border-[#14A800] text-[#14A800]" : "border border-[#E0E0E0] text-[#9aa0a6]"].join(" ")}>{isDone ? "✓" : n}</span>
+                <span className={["text-[15px]", active ? "font-medium text-[#1d1d1b]" : "text-[#5b6660]"].join(" ")}>{label}</span>
               </button>
             );
           })}
         </div>
 
+        <div key={step} className="animate-in fade-in-0 slide-in-from-bottom-1 duration-300">
         {step === 1 && (
           <div className="p-8">
             <div className="grid gap-8 md:grid-cols-2">
               <div>
-                <FieldLabel>Your Name</FieldLabel>
-                <input value={driver} onChange={(e) => setDriver(e.target.value)} placeholder="Full name" className="w-full rounded-lg border border-[#E0E0E0] px-3.5 py-2.5 text-sm outline-none focus:border-[#14A800]" />
+                <FieldLabel>Requested by</FieldLabel>
+                <input value={driver} onChange={(e) => setDriver(e.target.value)} placeholder="Your name" className="w-full rounded-lg border border-[#E0E0E0] px-3.5 py-2.5 text-sm outline-none focus:border-[#14A800]" />
                 <p className="mb-2 mt-6 text-[13px] font-medium text-[#1d1d1b]">Audience<span className="text-[#14A800]"> *</span></p>
                 <div className="flex flex-wrap gap-3.5">
                   {["Prospecting", "Retargeting"].map((a) => {
                     const on = aud.has(a);
                     return (
                       <button key={a} type="button" onClick={() => toggleAud(a)} className={["flex items-center gap-2.5 rounded-full border px-4 py-2.5 text-sm", on ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] bg-white hover:bg-[#F7F8F6]"].join(" ")}>
-                        <span className={["h-4 w-4 flex-none rounded-full border-[1.5px]", on ? "border-[#14A800] bg-[#14A800] shadow-[inset_0_0_0_3px_#fff]" : "border-[#E0E0E0]"].join(" ")} />{a}
+                        <span className={["flex h-4 w-4 flex-none items-center justify-center rounded-full text-[9px] text-white", on ? "bg-[#14A800]" : "border-[1.5px] border-[#E0E0E0]"].join(" ")}>{on ? "✓" : ""}</span>{a}
                       </button>
                     );
                   })}
@@ -238,14 +255,11 @@ export default function NewOrderPage() {
                 <p className="mt-2 text-xs text-[#9aa0a6]">Select one or both</p>
               </div>
               <div>
-                <div className="flex items-baseline justify-between"><FieldLabel>Delivery Date</FieldLabel><span className="text-xs text-[#9aa0a6]">5 business days minimum</span></div>
+                <FieldLabel>Delivery date</FieldLabel>
                 <Calendar value={deliveryDate} onPick={setDeliveryDate} />
+                <p className="mt-3 text-center text-xs text-[#9aa0a6]">Weekdays only, 5 business days out minimum.</p>
               </div>
             </div>
-            <StepFoot>
-              <span />
-              <button type="button" disabled={!step1ok} onClick={() => { setDone((d) => ({ ...d, 1: true })); setStep(2); }} className="flex h-11 w-11 items-center justify-center rounded-full bg-[#14A800] text-lg text-white disabled:cursor-not-allowed disabled:bg-[#E0E0E0]">→</button>
-            </StepFoot>
           </div>
         )}
 
@@ -346,53 +360,102 @@ export default function NewOrderPage() {
               </div>
             )}
 
-            <StepFoot>
-              <button type="button" onClick={() => setStep(1)} className="rounded-full border border-[#E0E0E0] px-4 py-2 text-sm hover:bg-[#F7F8F6]">← Back</button>
-              <button type="button" disabled={!step2ok} onClick={() => { setDone((d) => ({ ...d, 2: true })); setStep(3); }} className="rounded-full bg-[#14A800] px-5 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:bg-[#E0E0E0]">Review Request →</button>
-            </StepFoot>
           </div>
         )}
 
         {step === 3 && (
           <div className="p-8">
-            <h3 className="text-[15px] font-semibold">Add your creative context</h3>
-            <p className="mb-3 mt-1 text-xs text-[#9aa0a6]">The single biggest lever on output quality. The more direction you give, the sharper the work comes back.</p>
-            <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={5} placeholder="Include copy guidance, context, CTAs, destination URLs, tone, must-haves, things to avoid, reference links — anything that helps the team nail it." className="w-full rounded-lg border border-[#E0E0E0] p-3.5 text-sm outline-none focus:border-[#14A800]" />
+            <div className="mb-1 flex items-center gap-2">
+              <h3 className="text-[15px] font-semibold">Brief</h3>
+              <span className="rounded-full bg-[#F0F0F0] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#9aa0a6]">Optional</span>
+            </div>
+            <p className="mb-3 text-xs text-[#9aa0a6]">Add campaign context, a key message, or must-includes — or leave it blank and submit.</p>
+            <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={4} placeholder="Campaign context, key message, must-includes…" className="w-full rounded-lg border border-[#E0E0E0] p-3.5 text-sm outline-none focus:border-[#14A800]" />
 
-            <h3 className="mb-3 mt-7 text-[15px] font-semibold">Your request</h3>
-            <div className="rounded-xl border border-[#ECECEC] bg-[#F7F8F6] p-4 text-sm">
-              {[["Requested by", driver], ["Audience", targeting], ["Delivery date", deliveryDate], ["Deliverable", { "images-copy": "Images & Copy", "images-only": "Images Only", "copy-only": "Copy Only" }[deliverable] || deliverable], ...(platform ? [["Platform", platform] as [string, string]] : [])].map(([k, v]) => (
-                <div key={k} className="flex justify-between gap-6 border-b border-[#ECECEC] py-1.5 last:border-0"><span className="text-[#9aa0a6]">{k}</span><span className="text-right font-medium">{v || "—"}</span></div>
+            <h3 className="mb-2 mt-8 text-[15px] font-semibold">Order summary</h3>
+            <div className="grid gap-x-12 sm:grid-cols-2">
+              {summaryRows.map(([k, v]) => (
+                <div key={k} className="flex justify-between gap-6 border-b border-[#ECECEC] py-2.5 text-sm">
+                  <span className="text-[#9aa0a6]">{k}</span><span className="text-right font-medium">{v || "—"}</span>
+                </div>
               ))}
-              {needsImages && Object.entries(batches).map(([fmt, b]) => {
-                const styles = b.styles.filter((s) => s.style);
-                const fd = PLATFORMS[platform].formats[fmt];
-                const sizes = fd.resolutions.filter((_, i) => b.res[i]).map((r) => r.size).join(", ");
-                return (
-                  <div key={fmt} className="mt-2 border-t border-[#ECECEC] pt-2">
-                    <b>{fmt}</b>{fd.carousel ? ` · ${b.slides} slides` : ""}
-                    <div className="text-[#9aa0a6]">Styles: <span className="text-[#1d1d1b]">{styles.map((s) => `${s.style} ×${s.qty}`).join(", ") || "—"}</span></div>
-                    <div className="text-[#9aa0a6]">Sizes: <span className="text-[#1d1d1b]">{sizes || "—"}</span></div>
-                  </div>
-                );
-              })}
-              {deliverable === "copy-only" && <div className="mt-2 border-t border-[#ECECEC] pt-2"><b>Copy only</b> — no image batches</div>}
             </div>
 
-            <StepFoot>
-              <button type="button" onClick={() => setStep(2)} className="rounded-full border border-[#E0E0E0] px-4 py-2 text-sm hover:bg-[#F7F8F6]">← Back</button>
-              <div className="flex items-center gap-4">
-                {error && <span className="text-sm text-red-600">{error}</span>}
-                <button type="button" onClick={submit} disabled={busy} className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white disabled:bg-[#E0E0E0]">{busy ? "Submitting…" : "Submit Request"}</button>
-              </div>
-            </StepFoot>
+            {needsImages && (
+              <>
+                <div className="mb-3 mt-8 flex items-baseline justify-between">
+                  <h3 className="text-[15px] font-semibold">Your creatives</h3>
+                  <span className="text-xs text-[#9aa0a6]">{creativeCount} item{creativeCount !== 1 ? "s" : ""}</span>
+                </div>
+                <div className="space-y-3">
+                  {Object.entries(batches).flatMap(([fmt, b]) => {
+                    const fd = PLATFORMS[platform].formats[fmt];
+                    const sizes = fd.resolutions.filter((_, i) => b.res[i]);
+                    return b.styles.map((sr, i) => (sr.style ? (
+                      <div key={fmt + "-" + i} className="flex items-start gap-4 rounded-xl border border-[#ECECEC] p-3">
+                        {STYLE_THUMBS[sr.style] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={STYLE_THUMBS[sr.style]} alt="" className="h-20 w-20 flex-none rounded-lg object-cover" />
+                        ) : (
+                          <div className="h-20 w-20 flex-none rounded-lg bg-[#F4FAF1]" />
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium">{sr.style}</div>
+                          <div className="text-xs text-[#9aa0a6]">{platform} · {fmt}</div>
+                          <div className="mt-3 flex items-center gap-2">
+                            <span className="text-[11px] uppercase tracking-wide text-[#9aa0a6]">Qty</span>
+                            <div className="flex items-center rounded-full border border-[#E0E0E0]">
+                              <button type="button" onClick={() => updateBatch(fmt, (bb) => { const s = [...bb.styles]; s[i] = { ...s[i], qty: Math.max(1, s[i].qty - 1) }; return { ...bb, styles: s }; })} className="flex h-7 w-7 items-center justify-center text-[#5b6660] hover:text-[#1d1d1b]">−</button>
+                              <span className="w-8 text-center text-sm tabular-nums">{sr.qty}</span>
+                              <button type="button" onClick={() => updateBatch(fmt, (bb) => { const s = [...bb.styles]; s[i] = { ...s[i], qty: s[i].qty + 1 }; return { ...bb, styles: s }; })} className="flex h-7 w-7 items-center justify-center text-[#5b6660] hover:text-[#1d1d1b]">+</button>
+                            </div>
+                          </div>
+                          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                            <span className="mr-1 text-[11px] uppercase tracking-wide text-[#9aa0a6]">Sizes</span>
+                            {sizes.map((r) => (
+                              <span key={r.size} className="rounded-md bg-[#14A800] px-2 py-1 text-[11px] font-medium text-white">{r.size}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <button type="button" aria-label="Remove" onClick={() => updateBatch(fmt, (bb) => ({ ...bb, styles: bb.styles.filter((_, j) => j !== i) }))} className="text-[#c4c4c4] hover:text-red-500">🗑</button>
+                      </div>
+                    ) : null));
+                  })}
+                </div>
+                <div className="mt-3 flex items-center justify-between rounded-xl bg-[#F7F8F6] px-4 py-3">
+                  <span className="text-sm text-[#5b6660]">Total assets to produce</span>
+                  <span className="text-xl font-semibold tabular-nums">{totalAssets}</span>
+                </div>
+              </>
+            )}
+            {deliverable === "copy-only" && <div className="mt-4 rounded-xl bg-[#F7F8F6] px-4 py-3 text-sm text-[#5b6660]">Copy only — no image batches.</div>}
+          </div>
+        )}
+        </div>
+      </div>
+
+      {/* Footer floats below the card (matches the reference design). */}
+      <div className="mt-6 flex items-center justify-between">
+        {step > 1 ? (
+          <button type="button" onClick={() => setStep(step - 1)} className="rounded-full border border-[#E0E0E0] px-4 py-2 text-sm hover:bg-[#F7F8F6]">← Back</button>
+        ) : <span />}
+        {step === 1 && (
+          <button type="button" disabled={!step1ok} onClick={() => { setDone((d) => ({ ...d, 1: true })); setStep(2); }} className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:bg-[#E0E0E0]">Continue →</button>
+        )}
+        {step === 2 && (
+          <button type="button" disabled={!step2ok} onClick={() => { setDone((d) => ({ ...d, 2: true })); setStep(3); }} className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:bg-[#E0E0E0]">Review Request →</button>
+        )}
+        {step === 3 && (
+          <div className="flex items-center gap-4">
+            {error && <span className="text-sm text-red-600">{error}</span>}
+            <button type="button" onClick={submit} disabled={busy} className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white transition disabled:bg-[#E0E0E0]">{busy ? "Submitting…" : "Submit order →"}</button>
           </div>
         )}
       </div>
 
       {picker && (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-6" onClick={(e) => { if (e.target === e.currentTarget) setPicker(null); }}>
-          <div className="mt-16 w-full max-w-3xl rounded-2xl bg-white shadow-xl">
+          <div className="mt-12 w-full max-w-5xl rounded-2xl bg-white shadow-xl">
             <div className="relative border-b border-[#ECECEC] p-5">
               <div className="font-mono text-xs uppercase tracking-widest text-[#14A800]">Visual Style</div>
               <h2 className="mt-1 text-xl font-semibold">Choose a style</h2>
@@ -406,17 +469,19 @@ export default function NewOrderPage() {
               </div>
               <div className="grid max-h-[55vh] grid-cols-2 gap-4 overflow-y-auto sm:grid-cols-4">
                 {filtered.map(([name, desc]) => (
-                  <button key={name} type="button" onClick={() => chooseStyle(name)} className="rounded-xl border border-[#ECECEC] p-3 text-left hover:border-[#14A800] hover:bg-[#F4FAF1]">
-                    <div className="mb-2 flex aspect-square items-center justify-center overflow-hidden rounded-lg" style={{ background: "linear-gradient(135deg,#E9F899,#C4F4C0 55%,#9ED79B)" }}>
+                  <button key={name} type="button" onClick={() => chooseStyle(name)} className="group flex flex-col overflow-hidden rounded-xl border border-[#ECECEC] text-left transition hover:border-[#14A800] hover:shadow-[0_8px_24px_-12px_rgba(20,168,0,0.35)]">
+                    <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-[#F2F4F0] p-2.5">
                       {STYLE_THUMBS[name] ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={STYLE_THUMBS[name]} alt={name} loading="lazy" className="h-full w-full object-cover" />
+                        <img src={STYLE_THUMBS[name]} alt={name} loading="lazy" className="max-h-full max-w-full rounded object-contain shadow-[0_1px_4px_rgba(0,0,0,0.08)]" />
                       ) : (
-                        <span className="text-2xl font-semibold text-[#0C7A00] opacity-60">{name.replace(/[^A-Za-z]/, "").charAt(0)}</span>
+                        <div className="flex h-full w-full items-center justify-center rounded text-2xl font-semibold text-[#0C7A00] opacity-50" style={{ background: "linear-gradient(135deg,#E9F899,#C4F4C0 55%,#9ED79B)" }}>{name.replace(/[^A-Za-z]/, "").charAt(0)}</div>
                       )}
                     </div>
-                    <div className="text-sm font-medium">{name}</div>
-                    <div className="mt-0.5 text-xs text-[#9aa0a6]">{desc}</div>
+                    <div className="p-3">
+                      <div className="text-sm font-medium leading-snug">{name}</div>
+                      <div className="mt-0.5 text-xs text-[#9aa0a6]">{desc}</div>
+                    </div>
                   </button>
                 ))}
                 {filtered.length === 0 && <p className="col-span-full py-6 text-center text-sm text-[#9aa0a6]">No styles match your search.</p>}

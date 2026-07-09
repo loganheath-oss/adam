@@ -24,7 +24,7 @@ export default async function LogPage({ params }: { params: Promise<{ id: string
   return (
     <>
       <Link href={`/sprints/${id}`} className="text-sm text-muted-foreground hover:text-foreground">← Sprint</Link>
-      <h1 className="mb-1 mt-4 text-2xl font-bold tracking-tight">Generation log</h1>
+      <h1 className="mb-1 mt-4 text-3xl font-medium tracking-tight">Generation log</h1>
       <p className="mb-6 font-mono text-xs text-muted-foreground">{id}</p>
       <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-slate-900 p-5 font-mono text-xs leading-relaxed text-slate-200">
         {log}

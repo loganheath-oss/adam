@@ -98,7 +98,7 @@ export default function SprintChatPage() {
     <div className="mx-auto flex h-[calc(100vh-11rem)] max-w-3xl flex-col">
       <div>
         <Link href={`/sprints/${id}`} className="text-sm text-muted-foreground hover:text-foreground">← Sprint</Link>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight">Sprint chat</h1>
+        <h1 className="mt-3 text-3xl font-medium tracking-tight">Sprint chat</h1>
         <p className="mt-1 font-mono text-xs text-muted-foreground">{id}</p>
       </div>
 

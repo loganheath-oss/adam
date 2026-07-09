@@ -93,7 +93,7 @@ export default function AskAdamPage() {
   return (
     <div className="mx-auto flex h-[calc(100vh-11rem)] max-w-3xl flex-col">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Ask ADAM</h1>
+        <h1 className="text-4xl font-medium tracking-tight">Ask ADAM</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Read-only assistant — ask how ADAM is built or how to use it. It answers from the wiki.
         </p>
