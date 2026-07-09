@@ -1,0 +1,139 @@
+/* =============================================================================
+   ADAM Design System — single source of truth for the entire UI.
+   Every page pulls from THIS file. Change a color, the spacing scale, or a
+   component here once, and every screen updates. This replaces the CSS that is
+   currently copy-pasted across ~23 places in main.py.
+
+   Two layers live here:
+     1. TOKENS   (:root variables)  — the raw design decisions
+     2. COMPONENTS (.nav, .btn …)   — how those tokens compose into UI pieces
+   The Python components in components.py only ever emit these class names.
+   ============================================================================= */
+
+/* ---- 1. TOKENS ---------------------------------------------------------- */
+:root {
+  /* Brand + neutrals (Upwork green, ink biased slightly warm-green) */
+  --brand:        #14A800;
+  --brand-deep:   #0C7A00;
+  --brand-wash:   #EEF7EC;
+  --ink:          #1D1D1B;
+  --ink-mid:      #5B6660;
+  --ink-faint:    #949E98;
+  --bg:           #FFFFFF;
+  --surface:      #FFFFFF;
+  --surface-2:    #F7F9F7;
+  --line:         #E6EAE7;
+  --line-strong:  #D3DAD5;
+
+  /* Semantic state (separate from the brand accent) */
+  --state-good:      #0C7A00;  --state-good-wash: #EAF6E7;
+  --state-wait:      #A6720A;  --state-wait-wash: #FBF3E1;
+  --state-info:      #2563A8;  --state-info-wash: #EAF1FA;
+
+  /* Type — real app swaps this for PP Neue Montreal via one @font-face here */
+  --font-sans: "PP Neue Montreal", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fs-hero:   40px;  --fs-title: 28px;  --fs-h3: 18px;
+  --fs-body:   15px;  --fs-sm:    13px;  --fs-xs: 12px;
+
+  /* Spacing scale (one rhythm, used everywhere) */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 72px;
+
+  --radius:    12px;  --radius-sm: 8px;  --radius-pill: 999px;
+  --shadow:    0 1px 2px rgba(20,30,25,.04), 0 4px 16px rgba(20,30,25,.05);
+  --nav-h:     64px;
+  --page-max:  1120px;
+}
+
+/* ---- 2. BASE ------------------------------------------------------------ */
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+
+/* ---- 3. COMPONENTS ------------------------------------------------------ */
+
+/* Top navigation — defined ONCE (today it's duplicated ×23). */
+.nav {
+  height: var(--nav-h);
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center;
+  padding: 0 var(--sp-5);
+  background: var(--surface);
+  position: sticky; top: 0; z-index: 10;
+}
+.nav__in { max-width: var(--page-max); margin: 0 auto; width: 100%;
+  display: flex; align-items: center; }
+.brand { display: flex; align-items: center; gap: var(--sp-3); font-weight: 600; }
+.brand__up { color: var(--brand); font-size: 20px; letter-spacing: -.01em; }
+.brand__bar { width: 1px; height: 20px; background: var(--line-strong); }
+.brand__adam { letter-spacing: .18em; font-size: 14px; color: var(--ink); }
+.brand__adam::after { content: "."; color: var(--brand); }
+.nav__links { margin-left: auto; display: flex; gap: var(--sp-5); font-size: 14px; }
+.nav__links a { color: var(--ink-mid); padding-bottom: 3px; border-bottom: 2px solid transparent; }
+.nav__links a:hover { color: var(--ink); }
+.nav__links a[aria-current="page"] { color: var(--ink); font-weight: 600; border-bottom-color: var(--brand); }
+
+/* Page shell */
+.page { max-width: var(--page-max); margin: 0 auto; padding: var(--sp-7) var(--sp-5) var(--sp-8); }
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4);
+  margin-bottom: var(--sp-6); flex-wrap: wrap; }
+.page-header__title { font-size: var(--fs-title); font-weight: 700; letter-spacing: -.01em; margin: 0; }
+.page-header__sub { color: var(--ink-mid); font-size: var(--fs-sm); margin: var(--sp-2) 0 0; }
+.page-header__actions { display: flex; gap: var(--sp-3); }
+.hero { font-size: var(--fs-hero); font-weight: 800; letter-spacing: -.02em; line-height: 1.05;
+  margin: 0 0 var(--sp-3); text-wrap: balance; }
+.hero em { color: var(--ink-faint); font-style: normal; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: var(--sp-2);
+  font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;
+  padding: var(--sp-2) var(--sp-4); border-radius: var(--radius-pill);
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+.btn:hover { border-color: var(--ink-faint); }
+.btn--primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn--primary:hover { background: var(--brand-deep); border-color: var(--brand-deep); }
+
+/* Card */
+.card { background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow); }
+.card--pad { padding: var(--sp-5); }
+.grid { display: grid; gap: var(--sp-4); }
+.grid--2 { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 720px) { .grid--2 { grid-template-columns: 1fr; } }
+
+/* Feature / stat card (dashboard) */
+.feature { display: block; padding: var(--sp-5); }
+.feature__k { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: .1em;
+  text-transform: uppercase; color: var(--brand-deep); }
+.feature__title { font-size: var(--fs-h3); font-weight: 650; margin: var(--sp-3) 0 var(--sp-2); }
+.feature__desc { color: var(--ink-mid); font-size: var(--fs-sm); margin: 0; }
+
+/* Status pill — encodes state in color + shape, not just text */
+.pill { display: inline-flex; align-items: center; font-family: var(--font-mono);
+  font-size: var(--fs-xs); font-weight: 500; padding: 3px 10px; border-radius: var(--radius-pill); }
+.pill--good { background: var(--state-good-wash); color: var(--state-good); }
+.pill--wait { background: var(--state-wait-wash); color: var(--state-wait); }
+.pill--info { background: var(--state-info-wash); color: var(--state-info); }
+
+/* Table */
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); background: var(--surface); }
+.table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: var(--fs-sm); }
+.table th, .table td { text-align: left; padding: var(--sp-4) var(--sp-5); border-top: 1px solid var(--line); }
+.table thead th { border-top: 0; background: var(--surface-2);
+  font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-faint); font-weight: 500; }
+.table tbody tr:hover { background: var(--surface-2); }
+.table .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-mid); }
+.table .id { font-family: var(--font-mono); font-weight: 600; }
+.row-actions { display: flex; gap: var(--sp-2); justify-content: flex-end; }
