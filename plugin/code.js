@@ -1715,6 +1715,18 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
         var typeLabel = findLayerByName(adType, "Button Label");
         if (typeLabel && visualStyle) await setTextLayer(typeLabel, visualStyle);
       }
+      // Targeting pill (Prospecting / Retargeting). Forward-compatible: fills ONLY if
+      // the template has a "Targeting" pill layer (with a "Button Label" inside);
+      // no-ops otherwise, so it's safe before Elise adds the layer. ADAM writes the
+      // Targeting column, and for "Prospecting and Retargeting" orders it emits one
+      // board per targeting (concept_tag suffixed -pros / -reta), so each board gets
+      // the right label here.
+      var targeting = leadRow.Targeting || leadRow.targeting || "";
+      var targetingPill = findDirectChildByName(adInfo, "Targeting");
+      if (targetingPill && targeting) {
+        var targetLabel = findLayerByName(targetingPill, "Button Label");
+        if (targetLabel) await setTextLayer(targetLabel, targeting);
+      }
     }
   }
 
