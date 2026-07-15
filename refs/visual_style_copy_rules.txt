@@ -1,240 +1,382 @@
-UPWORK PAID ACQUISITION — PER-VISUAL-STYLE COPY RULES
-======================================================
+UPWORK AD TYPE STYLE GUIDE — Text_On_Visual Copy Rules by Ad Type
+==================================================================
+BINDING reference for the Upwork Meta Ad Copywriter project (Adrie Etherington,
+last updated July 2026). Before writing any on-creative (Text_On_Visual) copy,
+identify the ad type from Ad_Format + Visual_Style, locate the matching entry
+below, and apply its rules EXACTLY. These rules override all general
+Text_On_Visual defaults.
 
-These rules define how ad copy should differ based on the visual style ordered.
-The copy generator reads these rules and adapts headline length, body format,
-CTA placement, and tone based on which style is being produced.
+HOW TO USE THIS GUIDE
+- Match the brief's Visual_Style to an entry below.
+- Apply every rule in that entry — character limits, sentence count, punctuation,
+  layout density, and CTA guidance.
+- Note the matched entry in the brief summary line
+  (e.g., "Ad type resolved to: Chat Bubble — applying Style Guide entry #11").
+- If no match is found, apply the closest entry and flag the mismatch. Do not
+  silently default to a generic single-headline spec.
 
-General rules that apply to ALL styles:
-- Follow the Upwork brand voice: clear, concise, supportive, professional
-- 95/5 rule: 95% informative/helpful, 5% subtle personality
-- Use only approved claims and verified statistics
-- Never overpromise or use superlatives without sourced proof
-- CTA should always be actionable and specific
-
-
-1. GRAPHIC WITH TEXT
-   Copy role: Primary. Text carries the message alongside an illustrated graphic.
-   Headline: 5-8 words. Clear, direct statement.
-   Body: 1-2 sentences max. Supports the headline with one proof point.
-   CTA: Action verb + benefit. "Post your first job" not "Learn more"
-   Tone: Confident, modern.
-   Avoid: Long paragraphs. The graphic does half the communication work.
-
-2. SPLIT SCREEN
-   Copy role: Shared with visual. Two sides create a comparison or contrast.
-   Headline: Short phrase for each side. "Before Upwork / After Upwork" structure.
-   Body: Minimal or none. The contrast tells the story.
-   CTA: Single CTA below or between the two sides.
-   Tone: Punchy, contrast-driven.
-   Avoid: Explaining the comparison in words. The visual handles it.
-
-3. US VS THEM
-   Copy role: Comparative. Two opposing positions.
-   Headline: Frame the comparison clearly. "Old way vs Upwork way"
-   Body: 1 bullet or line per side. Keep it scannable.
-   CTA: Positions Upwork as the obvious choice.
-   Tone: Confident but not aggressive. Never name competitors directly.
-   Avoid: Being mean-spirited. Show why Upwork is better, don't tear others down.
-
-4. PHOTO WITH TEXT (UPWORK SHELL)
-   Copy role: Supporting. Photo is the hero, text reinforces.
-   Headline: 4-6 words. Complements the photograph.
-   Body: 1 sentence. Context for what the photo shows.
-   CTA: Standard Upwork CTA.
-   Tone: Warm, human, grounded.
-   Avoid: Text that competes with the photo for attention.
-
-5. LIFESTYLE PHOTO (FULL BLEED)
-   Copy role: Overlay. Text sits on top of a full-bleed photograph.
-   Headline: 3-5 words. Must be readable against any background.
-   Body: None or 1 short line. Minimal text — the image is the story.
-   CTA: Bold, visible, high contrast.
-   Tone: Aspirational but grounded. Show the outcome, not the process.
-   Avoid: Long text. Anything that blocks the photograph.
-
-6. TESTIMONIAL
-   Copy role: Primary. The user quote IS the ad.
-   Headline: The testimonial quote itself. Use real quotes only.
-   Body: Attribution — name, role, company (if approved).
-   CTA: Soft. "See more stories" or "Join [name] on Upwork"
-   Tone: Authentic, human. The user's voice, not Upwork's.
-   Avoid: Editing quotes to sound like marketing copy. Keep them real.
-
-7. SOCIAL MEDIA PROFILE
-   Copy role: Minimal. The mockup of a social profile does the work.
-   Headline: Profile name or tagline shown within the mockup.
-   Body: None outside the mockup. Everything lives in the UI.
-   CTA: "Find pros like [name]" or "Browse talent"
-   Tone: Aspirational — this is the kind of talent you can hire.
-   Avoid: Text outside the mockup that duplicates what's inside it.
-
-8. PIE CHART
-   Copy role: Data-driven. The chart visualizes a stat.
-   Headline: State the insight the chart reveals. "72% of contracts completed"
-   Body: 1 sentence contextualizing the data point.
-   CTA: Connects the stat to action. "See what gets done on Upwork"
-   Tone: Factual, authoritative. Let the numbers speak.
-   Avoid: Vague data. Every number must come from the approved claims doc.
-
-9. HYBRID
-   Copy role: Balanced. Both photography and UI elements share space.
-   Headline: 5-7 words. Bridges the real-world photo and the digital UI.
-   Body: 1-2 sentences. Explain how the platform enables the real-world outcome.
-   CTA: Standard action CTA.
-   Tone: Modern, capable, trustworthy.
-   Avoid: Cluttered messaging. The layout is already complex — keep copy clean.
-
-10. SEARCH RESULTS
-    Copy role: Contextual. The search bar UI shows results.
-    Headline: The search query itself becomes the headline. "web developer react"
-    Body: None or minimal. The search results tell the story.
-    CTA: "Start searching" or "Find your match"
-    Tone: Functional, direct. Like using the actual product.
-    Avoid: Marketing language that breaks the UI illusion.
-
-11. SEARCH BAR WITH TALENT BADGE
-    Copy role: Minimal. Search bar + branded badge elements.
-    Headline: The search query. Keep it realistic.
-    Body: Badge text — "Top Rated" "100% Job Success" "Expert-Vetted"
-    CTA: "Search Upwork" or "Find talent"
-    Tone: Product-focused. This is showing the tool.
-    Avoid: Copy that doesn't belong in a search UI.
-
-12. TEXT ONLY
-    Copy role: Everything. Text IS the ad.
-    Headline: 5-10 words. Must be compelling enough to stand alone.
-    Body: 2-3 sentences. This is where you make the full argument.
-    CTA: Bold, clear, actionable.
-    Tone: Direct, confident. Every word earns its place.
-    Avoid: Filler. With no visual support, weak copy is immediately obvious.
-
-13. CHAT BUBBLE
-    Copy role: Conversational. Appears as a text message or chat thread.
-    Headline: The message content. Written like a real person texting.
-    Body: 1-2 chat bubbles. Keep it natural.
-    CTA: "Start the conversation" or "Message a freelancer"
-    Tone: Casual, human, authentic. This should feel like real communication.
-    Avoid: Marketing speak inside a chat bubble. Nobody texts like that.
-
-14. NOTIFICATION
-    Copy role: Alert-style. Appears as a mobile app notification.
-    Headline: Notification title. Short, actionable. "New proposal received"
-    Body: Notification preview text. 1 line.
-    CTA: Implied by the notification. "Open Upwork" or "View proposals"
-    Tone: Functional, urgent but not alarming. Like a real notification.
-    Avoid: Long text. Notifications are short by nature.
-
-15. REMINDER
-    Copy role: Nudge. Mobile app reminder format.
-    Headline: Reminder title. "Your project is waiting"
-    Body: 1 line of context. "3 proposals ready to review"
-    CTA: Implied. "Open" or "Review now"
-    Tone: Helpful, timely. Not pushy.
-    Avoid: Aggressive urgency. Reminders should feel supportive.
-
-16. DEVICE UI (PHOTO)
-    Copy role: Minimal. The Upwork UI shown on a device (laptop/phone) is the hero.
-    Headline: 3-5 words about what the UI shows. "Your talent pipeline, organized"
-    Body: None or 1 sentence. The screenshot speaks for itself.
-    CTA: "Try it yourself" or "See it in action"
-    Tone: Product-forward. Show, don't tell.
-    Avoid: Describing what people can already see in the screenshot.
-
-17. PLATFORM UI
-    Copy role: Contextual. A highlighted moment from the Upwork interface.
-    Headline: Name the feature or moment. "Instant AI matching"
-    Body: 1 sentence explaining what the user is seeing.
-    CTA: Feature-specific. "Try Copilot" or "Post a job"
-    Tone: Modern, capable. Highlight the innovation.
-    Avoid: Generic headlines that don't connect to the specific UI shown.
-
-18. MEME
-    Copy role: The joke. Humor is the hook.
-    Headline: The meme text. Must be genuinely funny AND on-brand.
-    Body: None. Memes don't need body copy.
-    CTA: Light touch. "Been there? Upwork can help" or similar.
-    Tone: Relatable, self-aware. The 5% personality dialed up.
-    Avoid: Forced humor. Inside jokes. Anything that could alienate.
-
-19. STICKY NOTE
-    Copy role: Handwritten feel. Key message on a sticky note.
-    Headline: Written as if someone jotted it on a real sticky note.
-    Body: None outside the note.
-    CTA: Casual. "We can help with that"
-    Tone: Human, relatable, slightly informal.
-    Avoid: Perfect marketing copy. Sticky notes should feel spontaneous.
-
-20. POLL
-    Copy role: Interactive feel. Poll format shows multiple options.
-    Headline: The poll question. "How do you find freelancers?"
-    Body: Poll options. 3-4 choices with Upwork as the clear winner.
-    CTA: "Join the majority" or "Try the top choice"
-    Tone: Social, engaging. Feels like participating.
-    Avoid: Rigging the poll too obviously. Keep it clever.
-
-21. TWEET / POST MOCKUP
-    Copy role: Social proof. Looks like a real social media post.
-    Headline: The tweet/post content. Written in social media voice.
-    Body: Engagement metrics if relevant (likes, retweets).
-    CTA: "See why people are talking" or "Join the conversation"
-    Tone: Authentic social media voice. Not corporate.
-    Avoid: Making it look fake. Should feel like a real post someone would write.
-
-22. TEXT WITH BUTTON AND CURSOR
-    Copy role: Action-oriented. Headline + UI button + cursor pointer.
-    Headline: 4-6 words. Direct statement.
-    Body: The button text IS the CTA. "Get started" "Post a job" "Find talent"
-    CTA: The button itself. Make it the focal point.
-    Tone: Clean, direct, action-focused.
-    Avoid: Competing text. The button should be the obvious next step.
-
-23. TALENT PROFILE
-    Copy role: Showcase. Platform talent profile(s) with key messaging.
-    Headline: About the talent category. "AI Engineers, ready now"
-    Body: Profile details — skills, rating, job success rate.
-    CTA: "Browse talent" or "Hire [category]"
-    Tone: Impressive but authentic. Real profiles, real credentials.
-    Avoid: Generic profiles. Use specific, believable specializations.
-
-24. BESPOKE
-    Copy role: Varies. Newly concepted layout.
-    Headline: Adapt to the specific concept. No default rules.
-    Body: As needed by the concept.
-    CTA: Must still follow Upwork CTA guidelines.
-    Tone: On-brand regardless of format.
-    Note: Bespoke concepts should still follow all brand voice and compliance rules.
+GENERAL RULES (apply to ALL entries)
+- Follow the Upwork brand voice: clear, concise, supportive, professional.
+- 95/5 rule: 95% informative/helpful, 5% subtle personality.
+- Use only approved claims and verified statistics.
+- Sentence case. No trailing periods on headlines or Text_On_Visual by default.
+- Character limits below are editorial intent; where a Figma template slot has a
+  tighter HARD cap (see the TEMPLATE CHARACTER LIMITS block in the assignment),
+  that cap wins — always fit the slot.
 
 
-============================================================================
-STRUCTURAL COPY LIMITS — by visual style
-============================================================================
-These are the hard character ceilings enforced by Brandon's templates. The
-copy generator MUST clip or regenerate if a field exceeds its max. Source:
-template frame annotations in Figma (Adtype: <style> > Copy Rules), captured
-2026-05-11.
+Entry 1 — Split Screen
+Layout: A headline at the top above two side-by-side images. The headline is the
+only copy element — no body copy, no text on the images. The visual does the work.
+Density: Low — one line only.
+Rules:
+- Write one short, punchy headline. This is the only copy field for this ad type.
+- No subhead. No body copy. No text on images.
+- Sentence case. No trailing period.
+- Two versions: one with a CTA, remaining versions without.
+Character limits: Headline with CTA: max 49 · Headline without CTA: max 65 · CTA: max 14
+Punctuation: Minimal. Em dashes allowed. No exclamation points. Question marks only if the concept calls for one.
+Tone: The headline frames the two images — write as if completing the image's thought.
+CTA: Optional. One variant includes a CTA; the rest do not.
 
-TEXT ONLY
-  headline       max 104   (template layer: TextOnly_headline_text — "Quote")
-  subhead        max 52    (template layer: TextOnly_Subhead_Text   — "Name")
-  cta            max 14    (template layer: cta_text)
 
-SPLIT SCREEN
-  headline       max 36    (template layer: SplitScreen_Headline_Text)
-  cta            max 14    (template layer: cta_text)
-  (No subhead. Two image slots — left_image_placeholder, right_image_placeholder.)
+Entry 2 — Us vs Them
+Layout: Split vertically in an illustrated style. Left = "us" (Upwork/freelancers),
+right = "them" (the alternative). Each side: a short headline, 2–3 bullet proof
+points, and a short wrap-up line. Extends to ways of working, payment, hiring, etc.
+Density: Medium-High.
+Rules:
+- Headline for each side (left and right).
+- 2–3 bullets per side — short, factual, parallel in structure across both sides.
+- A one-liner wrap-up beneath the bullets on each side.
+- Sentence case. No trailing periods on headlines. Bullets may end without punctuation.
+- No CTA on visual unless the brief explicitly requests one.
+Character limits: Left headline: max 18 · Right headline: max 18 · Total bullet text per side: max 176 · Left wrap-up: max 31 · Right wrap-up: max 31
+Punctuation: Bullets fragment-style, no periods. Wrap-up lines may use an em dash. No exclamation points.
+Tone: "Us" = confident, outcome-focused. "Them" = factual, neutral — never mocking. Let the contrast speak.
 
-REMINDER
-  label          max 52    (static "Reminder" — usually not regenerated)
-  body           max 104   (template layer: Notification_Headline_Text — "Quote")
-  cta            max 32    (template layer: Notification_SubjectName_Text — soft limit, no Brandon spec)
 
-MEME
-  caption        max 104   (template layer: SplitScreen_Headline_Text — "Quote")
-  cta            (none — Cta Pill is hidden in Brandon's design; do not generate)
-  image          (none — meme image is BAKED INTO the template, one meme per template family)
-  note: Each meme template (this-is-fine, future Drake, Distracted Boyfriend,
-        etc.) is a separate template family. Pipeline picks the family by
-        order-time meme selection (once more memes exist); copy generator
-        writes a caption appropriate for THAT specific meme. The meme image
-        itself is never overwritten by the pipeline.
+Entry 3 — Photo with Text (Upwork shell)
+Layout: A branded photo of a professional in an Upwork border. A short headline in
+the lower left. The photo does the emotional work; the headline anchors the message.
+Density: Low — headline only, or headline + short subhead when no CTA.
+Rules:
+- Write a headline. Short, outcome-led, sentence case, no trailing period.
+- Two versions: one with a CTA, remaining versions without.
+- When no CTA is used, a subhead may expand the message.
+Character limits: Headline (all versions): max 24 · CTA: max 19 · Subhead (no-CTA only): max 43
+Punctuation: Minimal. Land cleanly without punctuation where possible.
+Tone: Warm and direct. The photo carries the human element — keep the headline crisp and confident.
+CTA: Optional. One variant includes a CTA; the rest do not.
+
+
+Entry 4 — Lifestyle Photo (Full Bleed)
+Layout: Full-bleed branded photography — the photo fills the frame, copy sits over it.
+Room for a longer headline than most photo formats, but keep density in check.
+Density: Low-Medium.
+Rules:
+- One copy block — a headline or short headline-plus-thought.
+- Two versions: one with a CTA, remaining versions without.
+- When no CTA is used, the character limit expands.
+- Sentence case. No trailing period.
+Character limits: Copy with CTA: max 80 · Copy without CTA: max 100 · CTA: max 19
+Punctuation: A period is allowed if the copy splits into two distinct sentences. Otherwise avoid trailing punctuation.
+Tone: Aspirational but grounded. Match the photo's emotional register.
+CTA: Optional. One variant includes a CTA; the rest do not.
+
+
+Entry 5 — Testimonial
+Layout: A real client testimonial with brand elements (stars/badges). Always
+includes attribution (name, job title, company).
+Density: Medium — quote plus attribution line.
+Rules:
+- Use a real quote from attached docs or the brief. NEVER fabricate a quote.
+- Quotes may be shortened but must not change the intended meaning.
+- Always include: first name, last-name initial, job title, and company.
+- If no real quote can be sourced and none was provided, use Lorem Ipsum and flag it.
+- Sentence case for attribution. No trailing period on attribution.
+Character limits: Testimonial copy: max 100 · Credit line (name, title, company): max 51
+Punctuation: Opening + closing quotation marks required on the testimonial. Attribution: comma between name/title and title/company.
+Tone: Let the quote speak. Do not editorialize or frame it with extra copy.
+CTA: Not applicable to visual copy.
+
+
+Entry 6 — Social Media Profile
+Layout: A mockup of a freelancer's social profile — headshot, name (first + last
+initial), job title. Left/right columns hold supporting content; a subhead below
+the columns is a punchy wrap-up.
+Density: Medium-High.
+Rules:
+- Write left and right column content (skills, outcomes, efficiency, quality, clever lines).
+- Write a subhead below the columns — a punchy closer.
+- Do NOT write the name or job title (design placeholders / provided).
+- Sentence case. No trailing periods.
+Character limits: Column left + right combined: max 65 · Subhead: max 28
+Punctuation: Fragments OK in columns. Subhead may use an em dash. No exclamation points.
+Tone: Clever and professional. Feel authentic, not ad-like — what a skilled freelancer would actually list.
+CTA: Not applicable to visual copy.
+
+
+Entry 7 — Pie Chart
+Layout: A circular chart in 4 quadrants — features, benefits, outcomes, or stats.
+A center callout ties the quadrants together or adds a branded anchor.
+Density: Medium — four quadrant labels + one center callout.
+Rules:
+- Write four quadrant copy blocks — each a short, distinct point (feature/benefit/stat/outcome).
+- Write one center callout (theme-aligned or a branded line, e.g. "Hire smarter").
+- All four quadrants parallel in structure (all fragments, or all short phrases — don't mix).
+- Sentence case. No trailing periods.
+Character limits: Each quadrant: max 30 · Center callout: max 28
+Punctuation: Fragments preferred. No periods. Em dashes allowed if warranted.
+Tone: Informative and confident. Stats only from approved claims — do not fabricate data.
+CTA: Not applicable to visual copy.
+
+
+Entry 8 — Hybrid
+Layout: Lifestyle photography + branded Upwork UI elements tied to the concept.
+Always includes a CTA.
+Density: Medium — headline, subhead, and CTA. All required.
+Rules:
+- Write a headline and a subhead. Headline leads; subhead extends/supports.
+- Always include a CTA. There are NO no-CTA versions.
+- Sentence case. No trailing period on headline or subhead.
+Character limits: Headline: max 36 · Subhead: max 60 · CTA: max 22
+Punctuation: A period between headline and subhead only if both are complete, distinct sentences. Otherwise avoid.
+Tone: The UI grounds the ad — copy should feel like the product in action: confident, specific, outcome-led.
+CTA: Required on every variant.
+
+
+Entry 9 — Search Results
+Layout: Three search bars with freelancer role tags inside, each with a hire button.
+A headline sits above.
+Density: Low-Medium — headline + three talent tags.
+Rules:
+- One headline. Short, outcome-led or cleverly framed. Sentence case, no trailing period.
+- Three talent tags — one per bar. Realistic search terms, written as a user would type them, not marketing language. Pull from Freelancer Work Categories unless the brief specifies.
+Character limits: Headline: max 38 · Each talent tag: max 32
+Punctuation: No punctuation on talent tags. Headline may use an em dash if warranted.
+Tone: The visual demonstrates — the headline frames the payoff cleanly. Tags feel authentic and specific.
+CTA: Not specified for visual copy — follow brief or default.
+
+
+Entry 10 — Text Only
+Layout: Text-driven design, maybe a branded background/container. No photo or
+illustration — copy carries the full weight.
+Density: Medium — three fields, all tightly capped.
+Rules:
+- Write a headline, subhead, and CTA. All three used.
+- Headline lands the core message; subhead extends/proves it; CTA closes.
+- Sentence case. No trailing periods on headline or subhead.
+- Copy must be especially sharp and self-contained (no visual support).
+Character limits: Headline: max 20 · Subhead: max 60 · CTA: max 22
+Punctuation: Fragments OK in headline. Subhead may be a complete sentence. Em dash allowed for rhythm.
+Tone: Confident and direct. Every word is load-bearing — cut anything that doesn't earn its place.
+CTA: Required on every variant.
+
+
+Entry 11 — Chat Bubble
+Layout: TWO chat bubbles simulating a text conversation between two people. One
+bubble opens, the second closes. The exchange should sound like a natural
+conversation — NOT ad copy, NOT a headline + subtext.
+Density: Low — two short copy blocks written as DIALOGUE, not headlines.
+Rules:
+- Write two chat bubbles: an opening message and a reply.
+- Write as a real conversation — casual, natural, direct. Not a headline. Not a tagline.
+- The exchange should prove a point, answer a question, or surface a compelling stat about using freelancers or Upwork.
+- Sentence case. Conversational punctuation is fine (periods mid-sentence, ellipses if natural). Avoid exclamation points unless genuinely warranted.
+Character limits: Chat bubble 1 (opener): max 18 · Chat bubble 2 (reply): max 91
+Punctuation: Write as texting — short, natural, human. Full stops OK. Fragments OK.
+Tone: Real. Grounded. Two people who sound like actual humans, not brand voices. The format creates trust — the copy just has to not break it.
+CTA: Not applicable to visual copy.
+
+
+Entry 12 — Notification
+Layout: An ad that looks like an app notification. Copy mimics a real notification.
+Always includes a CTA.
+Density: Low — headline + CTA only.
+Rules:
+- Write copy that reads like an ACTUAL app notification — hint at hiring a freelancer, finding talent, or a successful Upwork outcome, WITHOUT reading like an ad.
+- Always include a CTA. There are NO no-CTA versions.
+- Sentence case. No trailing period on the notification copy.
+Character limits: Headline (notification copy): max 52 · CTA: max 12
+Punctuation: Notification-style — clean and direct. A period is OK if it reads as a complete sentence. Avoid exclamation points.
+Tone: Functional and believable — like something that actually popped up on a phone. If it reads like an ad, rewrite it.
+CTA: Required on every variant.
+
+
+Entry 13 — Reminder
+Layout: A mobile app pop-up reminder. Short, direct, action-oriented. Always a CTA.
+Density: Low — one copy block + CTA.
+Rules:
+- Write copy that reads like a real reminder notification, tied to working with freelancers, hiring on Upwork, or a specific outcome.
+- Keep it short — the format demands brevity.
+- Always include a CTA. There are NO no-CTA versions.
+- Sentence case. Punctuation OK if it aids clarity.
+Character limits: Copy: max 52 · CTA: max 20
+Punctuation: A period is fine for a complete-sentence reminder. Keep it clean.
+Tone: Practical and believable — like something a user set for themselves. Upwork connection feels natural, not forced.
+CTA: Required on every variant.
+
+
+Entry 14 — Device UI (Photo)
+Layout: A device (phone/laptop) showing Upwork's platform/UI. A headline appears
+at the top above the device.
+Density: Low — headline only.
+Rules:
+- One headline, relating to the UI shown on the device.
+- Sentence case. No trailing period.
+- The headline frames what the viewer sees — it should make them want to look closer.
+Character limits: Headline: max 38
+Punctuation: Minimal. Em dash allowed if warranted.
+Tone: Confident and specific. The device + UI demonstrate — the headline anchors the payoff.
+CTA: Not specified for visual copy — follow brief or default.
+
+
+Entry 15 — Platform UI
+Layout: A featured moment from the Upwork platform (homepage, search page, Uma
+interface). The headline relates to the specific UI feature. CTA optional.
+Density: Low — headline + optional subhead, expanding when no CTA.
+Rules:
+- Write a headline and subhead, both relating to the UI feature shown.
+- Two versions: one with a CTA, remaining versions without.
+- When no CTA, combined room increases by 16 characters (distribute as needed).
+- Sentence case. No trailing periods.
+Character limits (with CTA): Headline: max 25 · Subhead: max 18 · CTA: max 16
+Character limits (without CTA): +16 characters distributed between headline and subhead as needed.
+Punctuation: Minimal — copy should feel like a clean label for what's shown.
+Tone: Platform-native — copy belongs in the product, not on top of it.
+CTA: Optional. One variant includes a CTA; the rest do not.
+
+
+Entry 16 — Meme
+Layout: A viral meme format carrying key messaging. Copy usually prompted or
+requested in the brief.
+Density: Low — headline only, but tone carries the weight.
+Rules:
+- Write copy that fits the meme format referenced in the brief.
+- If no specific meme format is provided, flag it — meme copy structure depends on the format.
+- Copy should feel native to the meme — if it reads like an ad, it fails.
+- Sentence case where natural; meme formats sometimes use intentional capitalization as part of the joke — follow the format convention.
+Character limits: Headline: max 43
+Punctuation: Follow the meme format's conventions — format-dependent.
+Tone: Witty and culturally aware. Don't force Upwork messaging into a meme awkwardly — find the angle that earns the format.
+CTA: Not typically used on the visual — follow brief if specified.
+
+
+Entry 17 — Sticky Note
+Layout: A sticky note with a title at top and listed items below — single column
+or two columns. Checklist, comparison, us-vs-them, or feature/benefit.
+Density: Medium — title + column content. Layout varies by version.
+Rules:
+- Write a title (headline) and column content.
+- Write at least one single-column and one double-column version per concept.
+- Column content is list-style — short items, parallel structure. Checkmarks, dashes, or plain text depending on the concept.
+- Sentence case. No trailing periods on list items.
+Character limits (double-column): Headline: max 12 · Column A + B combined: max 136
+Character limits (single-column): Headline: max 26 · Single column content: max 112
+Punctuation: List items are fragments — no periods. Title may use minimal punctuation if warranted.
+Tone: Practical and visual — like something someone actually wrote down, not a polished brand statement.
+CTA: Not applicable to visual copy.
+
+
+Entry 18 — Poll
+Layout: A background image with a poll bar overlaid — stats, mock results, or
+comparisons. Always includes a CTA.
+Density: Medium — headline, subhead/stat, and CTA.
+Rules:
+- Write a headline and a subhead or stat line. The poll bar carries the data; the headline frames it.
+- Content may be prompted by the brief or generated from approved Upwork stats.
+- Always include a CTA. There are NO no-CTA versions.
+- Sentence case. No trailing period on headline.
+Character limits: Headline: max 36 · Subhead/stat: max 75 · CTA: max 12
+Punctuation: Stats may use a colon or em dash to separate number from label. Headline stays clean.
+Tone: Data-led where possible. Stats from approved claims only. A mock poll must feel believable and relevant to the SMB audience.
+CTA: Required on every variant.
+
+
+Entry 19 — Tweet / Post Mockup
+Layout: A mockup of a tweet or social post — organic social content, a veiled ad
+that reads like a real post.
+Density: Medium — one copy block, moderate length.
+Rules:
+- Write copy that reads like a REAL social post, not an ad.
+- The Upwork connection should feel natural and earned — not brand-inserted.
+- Sentence case. Conversational punctuation is fine.
+- Do NOT include handles, hashtags, or platform UI elements in the copy — those are design elements.
+Character limits: Copy: max 115
+Punctuation: Write as a real post — periods, natural line breaks, light punctuation. No exclamation points unless the voice calls for one.
+Tone: Authentic and human. Lives or dies on whether it reads like something a real person would post. If it sounds like an ad, rewrite it.
+CTA: Not applicable to visual copy.
+
+
+Entry 20 — Text with Button and Cursor
+Layout: A UI-style ad with a button element and a cursor clicking it. The copy is
+INSIDE the button — the button copy is the entire message.
+Density: Minimal — one copy element only.
+Rules:
+- Write copy for the button/CTA only. This is the sole copy field.
+- Must be verb-led — it is both the message and the call to action.
+- Feel like a real UI button — action-oriented and specific.
+- Sentence case. No trailing period.
+Character limits: CTA / button copy: max 15
+Punctuation: None. Buttons don't have punctuation.
+Tone: Direct and action-forward. In 15 characters, imply a benefit and prompt a click.
+CTA: The button copy IS the CTA. No separate CTA field.
+
+
+Entry 21 — Talent Profile
+Layout: A freelancer profile card with a headline at the top. The profile is the
+visual element; the headline is the primary copy.
+Density: Low — headline only, plus optional CTA.
+Rules:
+- One headline, relating to the profile shown and framing the value of finding talent on Upwork.
+- Two versions with a CTA; remaining versions (out of 6) without.
+- Sentence case. No trailing period.
+Character limits: Headline: max 36 · CTA: max 21
+Punctuation: Minimal. Em dash allowed if warranted.
+Tone: Confident and specific. The profile is the visual proof — the headline makes the viewer want to hire.
+CTA: Optional. Two variants include a CTA; the rest do not.
+
+
+Entry 22 — Bespoke
+Layout: A custom layout built from scratch — no fixed structure.
+Density: Variable — determined by the brief's described layout.
+Rules:
+- Copy is variable. Read the brief for layout description, visual references, creative direction.
+- Identify the closest matching ad type and apply those structural rules as a starting point.
+- One variant includes a CTA; the rest without, unless the brief specifies otherwise.
+- Sentence case throughout. All other formatting guardrails apply.
+Character limits: Text: variable — use judgment based on the layout density described in the brief.
+Tone: Fully brief-dependent. Default to the core voice: clear, outcome-led, grounded.
+CTA: Optional. One variant includes a CTA; the rest do not — unless the brief specifies.
+
+
+Entry 23 — Illustration
+Layout: Illustrations tied to the ad theme. The illustration carries the visual
+concept; copy complements it.
+Density: Low — headline + optional CTA.
+Rules:
+- One headline, connecting to the illustration theme and landing the core message.
+- One variant includes a CTA; remaining versions without.
+- Sentence case. No trailing period.
+Character limits: Headline: max 38 · CTA: max 16
+Punctuation: Minimal. Let illustration and headline work together cleanly.
+Tone: Match the illustration — playful illustration, playful headline; bold/graphic illustration, tight/confident headline.
+CTA: Optional. One variant includes a CTA; the rest do not.
+
+
+Entry 24 — Carousel
+Layout: A multi-slide ad. Each slide has its own headline. The final slide always
+includes a CTA. Default 3–4 slides unless the brief specifies.
+Density: Low per slide — one headline each; the narrative builds across slides.
+Rules:
+- Write a headline for each slide — each unique, each connected to the overall theme.
+- Default output: two versions with 4 slides, one version with 3 slides (per concept).
+- Longer carousels are specified in the brief with extra guidance.
+- The FINAL slide must always include a CTA.
+- Headlines flow as a progression — don't repeat the same thought across slides.
+- Sentence case. No trailing periods.
+Character limits: Each slide headline: max 36 · Final slide CTA: max 22
+Punctuation: Minimal per slide. Em dashes allowed. Headlines are distinct beats, not fragments of one sentence.
+Tone: Narrative and progressive — each slide makes the viewer want the next. The final slide closes and converts.
+CTA: Required on the final slide only. All other slides: no CTA.

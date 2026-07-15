@@ -420,6 +420,183 @@ def _template_limit_block(style):
     )
 
 
+# ── AD TYPE STYLE GUIDE (structured: configs/ad_type_style_guide.json) ─────────
+# Single source of truth for per-ad-type copy rules. We resolve exactly ONE entry
+# per style and (a) render it into the copy prompt as prose, (b) enforce its
+# char_limits deterministically. Previously the guide was a prose blob injected
+# truncated (copy_style_rules[:5000]) — so entries ~#11+ (Chat Bubble, Tweet, ...)
+# were silently cut off and never enforced. Now nothing is truncated, and the caps
+# are checkable data, not just prompt prose. Edit the JSON, not this code.
+_STYLE_GUIDE = None
+
+
+def _load_style_guide():
+    """Load configs/ad_type_style_guide.json once. {} if absent/malformed."""
+    global _STYLE_GUIDE
+    if _STYLE_GUIDE is None:
+        try:
+            p = BASE_DIR / "configs" / "ad_type_style_guide.json"
+            _STYLE_GUIDE = json.loads(p.read_text())
+        except Exception as e:
+            print(f"[guide] load failed ({e}); style-guide enforcement disabled.")
+            _STYLE_GUIDE = {}
+    return _STYLE_GUIDE
+
+
+def _guide_entry_for_style(style):
+    """(key, entry_dict) for this style, or (None, None). Lookup order matches the
+    registry: exact norm → alias → bidirectional prefix."""
+    g = _load_style_guide()
+    entries = g.get("entries", {})
+    if not entries:
+        return None, None
+    norm = _norm_style(style)
+    if norm in entries:
+        return norm, entries[norm]
+    alias = (g.get("aliases") or {}).get(norm)
+    if alias and alias in entries:
+        return alias, entries[alias]
+    for k, v in entries.items():
+        if k.startswith(norm) or norm.startswith(k):
+            return k, v
+    return None, None
+
+
+def _render_guide_entry(entry):
+    """Render a structured entry into the prose block the copy prompt reads."""
+    lines = [f"Entry {entry.get('entry', '')} — {entry.get('name', '')}".strip()]
+    if entry.get("layout"):
+        lines.append(f"Layout: {entry['layout']}")
+    if entry.get("density"):
+        lines.append(f"Density: {entry['density']}")
+    if entry.get("rules"):
+        lines.append("Rules:")
+        lines += [f"- {r}" for r in entry["rules"]]
+    cl = entry.get("char_limits") or {}
+    if cl:
+        lines.append("Character limits (HARD — count spaces, rewrite shorter if over): "
+                     + " · ".join(f"{k} max {v}" for k, v in cl.items()))
+    if entry.get("punctuation"):
+        lines.append(f"Punctuation: {entry['punctuation']}")
+    if entry.get("tone"):
+        lines.append(f"Tone: {entry['tone']}")
+    if entry.get("cta"):
+        lines.append(f"CTA: {entry['cta']}")
+    return "\n".join(lines)
+
+
+def _style_guide_block(style, guide_text=None):
+    """(entry_prose, matched_name) for the prompt, or (None, None) if no match.
+    guide_text is ignored (kept for call-site compatibility) — JSON is the source."""
+    key, entry = _guide_entry_for_style(style)
+    if not entry:
+        return None, None
+    return _render_guide_entry(entry), key
+
+
+# ── CHAR-LIMIT ENFORCEMENT ────────────────────────────────────────────────────
+# Deterministic backstop for the guide's char_limits (the prompt asks; a model is
+# probabilistic, so we ALSO check every field). Mirrors the legal guardrail:
+#   HARD overflow (on-image field over its must-fit cap) → length_flags → de-selected
+#     in ranking, backfilled with a clean concept (never mangle copy by clipping).
+#   SOFT overflow (editorial on-image-core or Meta-feed field) → length_warnings →
+#     recorded + demoted, but still shippable so yield never craters.
+_REG_SLOT_TO_FIELD = {"headline": "creative_headline",
+                      "subhead": "creative_subhead", "cta": "cta"}
+
+
+def _style_caps(style):
+    """Resolve (hard, soft) per-field char caps for a style — {adam_field: max}."""
+    g = _load_style_guide()
+    multi = set((g.get("_meta", {}) or {}).get("multi_image_fields", []))
+    feed = dict(g.get("field_caps_meta_feed", {}) or {})
+    core_def = dict(g.get("onimage_core_defaults", {}) or {})
+    _, entry = _guide_entry_for_style(style)
+    cl = dict((entry or {}).get("char_limits", {}) or {})
+
+    hard, soft = {}, {}
+    # Figma template physical caps (registry limits: headline/subhead/cta) — hard.
+    for slot, cap in _limits_for_style(style).items():
+        f = _REG_SLOT_TO_FIELD.get(slot)
+        if f and isinstance(cap, int):
+            hard[f] = min(cap, hard.get(f, cap))
+    # Guide caps: multi-image fields → hard (no template equivalent); core → soft.
+    for f, cap in cl.items():
+        if not isinstance(cap, int):
+            continue
+        if f in multi:
+            hard[f] = min(cap, hard.get(f, cap))
+        else:
+            soft[f] = min(cap, soft.get(f, cap))
+    for f, cap in feed.items():            # Meta-feed fields (universal) — soft.
+        soft[f] = cap
+    for f, cap in core_def.items():        # on-image core fallback if nothing tighter.
+        if f not in hard:
+            soft.setdefault(f, cap)
+    return hard, soft
+
+
+def _field_overflows(concept, field, cap):
+    """Overflow markers ('field:len>cap') for a concept field vs cap. Handles str
+    and list (bullets/labels/tags) fields; [] if within cap or absent."""
+    v = concept.get(field)
+    if v is None or v == "":
+        return []
+    if isinstance(v, list):
+        return [f"{field}[{i}]:{len(str(x))}>{cap}"
+                for i, x in enumerate(v) if len(str(x)) > cap]
+    s = str(v)
+    return [f"{field}:{len(s)}>{cap}"] if len(s) > cap else []
+
+
+def _enforce_lengths(concept, style):
+    """Set concept['length_flags'] (HARD) + ['length_warnings'] (SOFT). Returns the
+    hard-flag list (empty = fits)."""
+    hard, soft = _style_caps(style)
+    hard_flags, soft_flags = [], []
+    for f, cap in hard.items():
+        hard_flags += _field_overflows(concept, f, cap)
+    for f, cap in soft.items():
+        soft_flags += _field_overflows(concept, f, cap)
+    if hard_flags:
+        concept["length_flags"] = hard_flags
+    if soft_flags:
+        concept["length_warnings"] = soft_flags
+    return hard_flags
+
+
+def _salvage_json_array(text):
+    """Recover as many COMPLETE objects as possible from a truncated JSON array
+    (e.g. the model's output hit the token cap mid-array). Scans for balanced
+    top-level {...} blocks and json.loads each. Returns a list (possibly empty)."""
+    objs, depth, start, in_str, esc = [], 0, None, False, False
+    for idx, ch in enumerate(text):
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == "{":
+            if depth == 0:
+                start = idx
+            depth += 1
+        elif ch == "}":
+            if depth > 0:
+                depth -= 1
+                if depth == 0 and start is not None:
+                    try:
+                        objs.append(json.loads(text[start:idx + 1]))
+                    except Exception:
+                        pass
+                    start = None
+    return objs
+
+
 # ── LEGAL BANNED-TERMS GUARDRAIL ──────────────────────────────────────────────
 # Deterministic backstop for legal compliance. The prompt now surfaces Upwork
 # Legal's full "Terms to Avoid" list (previously truncated off the prompt), but a
@@ -526,6 +703,17 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
 
     # Get order brief for priority override
     order_brief = context.get("order_brief", order.get("brief", ""))
+    # Bound the brief like every other context block. It was the ONE unbounded
+    # input — a very long brief (e.g. a full Key-Messaging block pasted into
+    # Additional_Info) bloated the prompt and pushed the model's JSON past the
+    # output-token cap → truncated JSON → 0 concepts → no manifest at gate 5.
+    _MAX_BRIEF = 6000
+    if len(order_brief) > _MAX_BRIEF:
+        _orig_len = len(order_brief)
+        order_brief = (order_brief[:_MAX_BRIEF]
+                       + f"\n\n[Brief truncated for copy generation: {_orig_len} → {_MAX_BRIEF} chars. "
+                       + "Lead with the most important direction at the top of the brief.]")
+        print(f"    ⚠ BRIEF: {style} brief {_orig_len} chars > {_MAX_BRIEF} cap — truncated for the prompt")
     priority_note = context.get("_priority_note", "")
 
     # Multi-field styles need extra structured copy beyond headline/body/cta.
@@ -601,9 +789,17 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     elif _sl == "chatbubble":
         multi_field_instructions = (
             "\n===== EXTRA FIELDS FOR \"Chat Bubble\" =====\n"
-            "A chat/message ad. ALSO provide:\n"
-            "- chat_label (max 24 chars — a short category label, e.g. 'Small Business Wins')\n"
-            "- chat_message (max 90 chars — the chat message body)\n"
+            "This ad is TWO chat bubbles simulating a real text CONVERSATION between two\n"
+            "people. Bubble 1 opens; bubble 2 replies. It must read as one natural\n"
+            "exchange — NOT a headline + subtext, NOT a category label + tagline. Write\n"
+            "the way people actually text: casual, human, direct. The exchange should\n"
+            "prove a point, answer a question, or surface a compelling stat about using\n"
+            "freelancers or Upwork. ALSO provide:\n"
+            "- chat_label (bubble 1 — the OPENER — max 18 chars — a short, natural first\n"
+            "  message, e.g. 'need a designer' or 'swamped again')\n"
+            "- chat_message (bubble 2 — the REPLY — max 90 chars — a natural response that\n"
+            "  lands the point, e.g. 'found one on Upwork this morning, proposals already\n"
+            "  coming in')\n"
         )
         multi_field_keys = ", chat_label, chat_message"
     elif _sl == "textwithbutton":
@@ -623,6 +819,26 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
         multi_field_keys = ", pie_labels, pie_center"
 
     copy_instructions = context.get("copy_instructions", "")
+
+    # Resolve the ONE matching Ad Type Style Guide entry (untruncated) instead of
+    # dumping the whole guide truncated — see _style_guide_block.
+    _entry, _entry_name = _style_guide_block(style, copy_style_rules)
+    if _entry:
+        style_rules_block = (
+            "===== AD TYPE STYLE GUIDE — MATCHED ENTRY (BINDING) =====\n"
+            f'Ad type resolved to "{style}" — apply this entry EXACTLY. These per-type\n'
+            "rules OVERRIDE the generic Text_On_Visual defaults: follow the exact\n"
+            "structure, character limits, punctuation, layout density, and CTA guidance.\n\n"
+            f"{_entry}"
+        )
+    else:
+        style_rules_block = (
+            "===== AD TYPE STYLE GUIDE (no exact entry matched) =====\n"
+            f'No Style Guide entry cleanly matched "{style}". Apply the closest-matching\n'
+            "ad type below and note the mismatch — do NOT default to a generic\n"
+            "single-headline spec.\n\n"
+            f"{copy_style_rules[:8000]}"
+        )
 
     prompt = f"""You are writing paid acquisition ad copy for Upwork. Follow every brand rule below exactly.
 
@@ -670,10 +886,7 @@ Black backgrounds dominate the top performers. Quote-driven messaging outperform
 other approaches. Specific freelancer categories outperform generic talent messaging.
 {context.get('performance_data', '')[:3000]}
 
-===== VISUAL STYLE COPY RULES =====
-Find the rules for "{style}" below and follow them exactly. Adapt headline length,
-body format, and CTA approach based on what this visual style requires.
-{copy_style_rules[:5000]}
+{style_rules_block}
 
 ===== YOUR ASSIGNMENT =====
 Generate {qty} ad copy concepts.
@@ -688,10 +901,13 @@ For each concept provide these exact fields. There are TWO separate buckets of
 copy and they must NOT reuse each other's text:
 
 ON-CREATIVE copy — the words BAKED INTO the ad image. Punchy and short so it
-fits the design. This is the ONLY copy that appears on the image itself:
-- creative_headline (max 30 characters — the main hook shown ON the ad image)
-- creative_subhead (max 55 characters — ONE short supporting line ON the image; must NOT repeat the primary text below)
-- cta (max 20 characters — the CTA button label on the image)
+fits the design. This is the ONLY copy that appears on the image itself. LENGTH
+IS GOVERNED BY THE MATCHED STYLE GUIDE ENTRY ABOVE (and any TEMPLATE CHARACTER
+LIMITS) — follow those caps; the numbers below are only fallbacks when the entry
+is silent on a field:
+- creative_headline (the main hook shown ON the ad image; fallback max 30 characters)
+- creative_subhead (ONE short supporting line ON the image, must NOT repeat the primary text below; fallback max 55 characters)
+- cta (the CTA button label on the image; fallback max 20 characters)
 
 AD-PLATFORM copy — the Meta feed fields shown AROUND the image (caption + headline).
 NEVER printed on the image itself; distinct wording from the on-creative copy:
@@ -730,8 +946,10 @@ Return as JSON array of objects with exactly these keys: creative_headline, crea
                     # 6 concepts × many fields (incl. 300-char body_long + per-style
                     # extras like testimonial_quote) can exceed a tight cap and get
                     # truncated mid-JSON ("Unterminated string" → 0 concepts). Give
-                    # ample headroom; billing is by tokens actually produced.
-                    "max_tokens": 4000,
+                    # ample headroom; billing is by tokens actually produced. Paired
+                    # with _salvage_json_array below so a truncated array still yields
+                    # its complete concepts instead of zero.
+                    "max_tokens": 8000,
                     "messages": [{"role": "user", "content": prompt}]
                 },
                 timeout=120
@@ -748,7 +966,15 @@ Return as JSON array of objects with exactly these keys: creative_headline, crea
                 elif "```" in text:
                     text = text.split("```")[1].split("```")[0]
 
-                parsed = json.loads(text.strip())
+                try:
+                    parsed = json.loads(text.strip())
+                except json.JSONDecodeError as je:
+                    # Truncated/partial JSON — salvage complete concepts instead of
+                    # returning zero (which previously stalled the sprint / manifest).
+                    parsed = _salvage_json_array(text)
+                    if not parsed:
+                        raise je
+                    print(f"    {style}: recovered {len(parsed)} concept(s) from truncated JSON")
                 if isinstance(parsed, list):
                     for j, concept in enumerate(parsed):
                         concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{j}"
@@ -762,6 +988,9 @@ Return as JSON array of objects with exactly these keys: creative_headline, crea
                         if _flags:
                             concept["legal_flags"] = _flags
                             print(f"    ⚠ LEGAL: {style} concept {j} uses banned term(s): {', '.join(_flags)}")
+                        _lf = _enforce_lengths(concept, style)
+                        if _lf:
+                            print(f"    ⚠ LENGTH: {style} concept {j} over hard cap: {', '.join(_lf)}")
                         concepts.append(concept)
                 print(f"    {style}: {len(parsed)} concepts generated")
                 return concepts
@@ -980,24 +1209,44 @@ Return ONLY the JSON array. No other text."""
                         concept["selected"] = ranking.get("selected", False)
                         concept["score"] = ranking.get("score", 0)
                         concept["review_notes"] = ranking.get("review_notes", "")
-                        # Legal backstop: a concept that tripped the banned-terms
-                        # scan is never shipped — de-select it and push it to the
-                        # bottom so a compliant concept takes its place.
-                        if concept.get("legal_flags"):
+                        # Backstop: a concept that tripped the banned-terms scan
+                        # (legal) or overflowed a HARD on-image char cap (length) is
+                        # never shipped as-is — de-select it and push it to the bottom
+                        # so a clean concept takes its place.
+                        if concept.get("legal_flags") or concept.get("length_flags"):
                             concept["selected"] = False
                             concept["rank"] = 99
-                            concept["review_notes"] = ("⚠ LEGAL — banned term(s): "
-                                + ", ".join(concept["legal_flags"]) + ". "
-                                + concept.get("review_notes", ""))
+                            _notes = []
+                            if concept.get("legal_flags"):
+                                _notes.append("⚠ LEGAL — banned term(s): "
+                                              + ", ".join(concept["legal_flags"]))
+                            if concept.get("length_flags"):
+                                _notes.append("⚠ LENGTH — over template cap: "
+                                              + ", ".join(concept["length_flags"]))
+                            concept["review_notes"] = (". ".join(_notes) + ". "
+                                                       + concept.get("review_notes", ""))
                         reviewed.append(concept)
 
-                # Backfill: if de-selecting flagged concepts left fewer than 3
-                # picks, promote the highest-ranked CLEAN concepts so the style
-                # still ships copy (never promote a flagged one).
-                _clean = [c for c in reviewed if not c.get("legal_flags")]
-                if sum(1 for c in reviewed if c.get("selected")) < 3 and _clean:
+                # Backfill so the style still ships ~3 picks. Stage 1: promote the
+                # highest-ranked fully-clean concepts. Stage 2 (only if still short):
+                # promote the least-overflowing NON-LEGAL concepts — a slightly-long
+                # concept can ship (flagged) rather than deliver fewer than 3; a
+                # legal-flagged concept is NEVER promoted.
+                def _sel_count():
+                    return sum(1 for x in reviewed if x.get("selected"))
+                _clean = [c for c in reviewed
+                          if not c.get("legal_flags") and not c.get("length_flags")]
+                if _sel_count() < 3 and _clean:
                     for c in sorted(_clean, key=lambda c: c.get("rank", 99)):
-                        if sum(1 for x in reviewed if x.get("selected")) >= 3:
+                        if _sel_count() >= 3:
+                            break
+                        c["selected"] = True
+                if _sel_count() < 3:
+                    _fallback = [c for c in reviewed
+                                 if not c.get("legal_flags") and not c.get("selected")]
+                    for c in sorted(_fallback, key=lambda c: (len(c.get("length_flags", [])),
+                                                              c.get("rank", 99))):
+                        if _sel_count() >= 3:
                             break
                         c["selected"] = True
 

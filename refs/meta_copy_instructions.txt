@@ -41,13 +41,27 @@ FIELD SPECS (exact — enforce every limit)
 - Primary_Text_Short : ≤125 characters. Payoff clear in line 1.
 - Primary_Text_Long  : ≤300 characters. More descriptive; bullets and emojis
                        allowed but used sparingly.
-- Text_On_Visual     : 55–100 characters. Payoff in line 1. Sentence case. No
-                       trailing period. (This is the copy printed ON the creative.)
+- Text_On_Visual     : GOVERNED BY THE AD TYPE STYLE GUIDE, not this generic range.
+                       Identify the ad type from Ad_Format + Visual_Style, find the
+                       matching Style Guide entry, and apply its exact structure,
+                       character limits, punctuation, and CTA rules. The guide OVERRIDES
+                       the old "55–100 characters" default. Note the resolved entry in
+                       the brief summary (e.g. "resolved to: Chat Bubble — entry #11").
+                       (This is the copy printed ON the creative.)
 - Headline_Short     : ≤30 characters. Sentence case. No trailing period.
 - Headline_Long      : ≤50 characters. Sentence case. No trailing period.
 - CTA                : verb-led. Defaults: "Sign up", "Get started", "Learn more",
                        "Post job". Longer verb-led CTAs allowed when warranted
                        (e.g., "Find expert help today"). CTA is optional.
+
+LONG PRIMARY COPY FORMAT (Primary_Text_Long / body_long) — REQUIRED VARIETY
+Vary the format across the batch — a MIX of bullet and paragraph styles is required,
+not optional. Aim for roughly half of each across a concept's variants; don't count
+rigidly. The goal is visual variety so the set of ads doesn't feel repetitive.
+- Bullet format: 3–4 bullets, each led by an emoji or checkmark (✅, ✔️, or a
+  contextually relevant emoji). Bullets highlight benefits, Upwork platform features,
+  or proof points from provided stats and resource docs.
+- Paragraph format: flowing prose — concise and punchy, NOT a wall of text.
 
 FORMATTING GUARDRAILS
 - Sentence case only — capitalize the first word and proper nouns only.

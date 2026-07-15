@@ -1,0 +1,265 @@
+{
+  "_meta": {
+    "title": "Upwork Ad Type Style Guide — Text_On_Visual Copy Rules by Ad Type",
+    "source": "Adrie Etherington, last updated July 2026",
+    "note": "SINGLE SOURCE OF TRUTH for per-ad-type copy rules. run_pipeline.py renders the matched entry into the copy prompt (prose) AND enforces char_limits deterministically. char_limits keys are ADAM's OWN output field names, so enforcement is direct. On-image core fields (creative_headline/creative_subhead/cta) are editorial (soft) caps; the Figma template registry provides the hard physical cap where it exists. Multi-image fields (chat_label, us_bullets, poll_question, ...) are hard caps (no template equivalent). Meta-feed fields use field_caps_meta_feed. Edit this file, not the code.",
+    "multi_image_fields": ["us_headline","them_headline","us_bullets","them_bullets","left_headline","right_headline","left_bullets","right_bullets","poll_question","poll_option_a","poll_option_b","testimonial_quote","testimonial_author","profile_name","profile_title","profile_left","profile_right","search_results","button_text","pie_labels","pie_center","chat_label","chat_message"]
+  },
+  "field_caps_meta_feed": {
+    "headline": 40,
+    "headline_short": 27,
+    "body_short": 125,
+    "body_long": 300,
+    "description": 25
+  },
+  "onimage_core_defaults": {
+    "creative_headline": 30,
+    "creative_subhead": 55,
+    "cta": 20
+  },
+  "aliases": {
+    "graphic-with-text": "illustration"
+  },
+  "entries": {
+    "split-screen": {
+      "entry": 1, "name": "Split Screen",
+      "layout": "A headline at the top above two side-by-side images. The headline is the only copy element — no body copy, no text on the images.",
+      "density": "Low — one line only.",
+      "rules": ["Write one short, punchy headline — the only copy field for this ad type.", "No subhead. No body copy. No text on images.", "Sentence case. No trailing period.", "Two versions: one with a CTA, remaining versions without (with-CTA headline runs shorter — max 49; without-CTA max 65)."],
+      "punctuation": "Minimal. Em dashes allowed. No exclamation points. Question marks only if the concept calls for one.",
+      "tone": "The headline frames the two images — write as if completing the image's thought.",
+      "cta": "Optional. One variant includes a CTA; the rest do not.",
+      "char_limits": {"creative_headline": 65, "cta": 14}
+    },
+    "us-vs-them": {
+      "entry": 2, "name": "Us vs Them",
+      "layout": "Split vertically, illustrated. Left = us (Upwork/freelancers), right = them. Each side: a short headline, 2-3 bullet proof points, and a short wrap-up line.",
+      "density": "Medium-High.",
+      "rules": ["Headline for each side (left and right).", "2-3 bullets per side — short, factual, parallel across both sides.", "A one-liner wrap-up beneath the bullets on each side.", "Sentence case. No trailing periods on headlines. Bullets may end without punctuation.", "No CTA on visual unless the brief explicitly requests one."],
+      "punctuation": "Bullets fragment-style, no periods. Wrap-up lines may use an em dash. No exclamation points.",
+      "tone": "Us = confident, outcome-focused. Them = factual, neutral — never mocking. Let the contrast speak.",
+      "cta": "None on visual unless the brief requests it.",
+      "char_limits": {"us_headline": 18, "them_headline": 18, "us_bullets": 28, "them_bullets": 28}
+    },
+    "photo-with-text-upwork-shell": {
+      "entry": 3, "name": "Photo with Text (Upwork shell)",
+      "layout": "A branded photo of a professional in an Upwork border. A short headline in the lower left.",
+      "density": "Low — headline only, or headline + short subhead when no CTA.",
+      "rules": ["Write a headline. Short, outcome-led, sentence case, no trailing period.", "Two versions: one with a CTA, remaining versions without.", "When no CTA is used, a subhead may expand the message."],
+      "punctuation": "Minimal. Land cleanly without punctuation where possible.",
+      "tone": "Warm and direct. The photo carries the human element — keep the headline crisp and confident.",
+      "cta": "Optional. One variant includes a CTA; the rest do not.",
+      "char_limits": {"creative_headline": 24, "creative_subhead": 43, "cta": 19}
+    },
+    "lifestyle-photo-full-bleed": {
+      "entry": 4, "name": "Lifestyle Photo (Full Bleed)",
+      "layout": "Full-bleed branded photography — the photo fills the frame, copy sits over it.",
+      "density": "Low-Medium.",
+      "rules": ["One copy block — a headline or short headline-plus-thought.", "Two versions: one with a CTA (max 80), remaining without (max 100).", "Sentence case. No trailing period."],
+      "punctuation": "A period is allowed if the copy splits into two distinct sentences. Otherwise avoid trailing punctuation.",
+      "tone": "Aspirational but grounded. Match the photo's emotional register.",
+      "cta": "Optional. One variant includes a CTA; the rest do not.",
+      "char_limits": {"creative_headline": 100, "cta": 19}
+    },
+    "testimonial": {
+      "entry": 5, "name": "Testimonial",
+      "layout": "A real client testimonial with brand elements (stars/badges). Always includes attribution (name, job title, company).",
+      "density": "Medium — quote plus attribution line.",
+      "rules": ["Use a real quote from attached docs or the brief. NEVER fabricate a quote.", "Quotes may be shortened but must not change the intended meaning.", "Always include first name, last-name initial, job title, and company.", "If no real quote can be sourced and none was provided, use Lorem Ipsum and flag it.", "Sentence case for attribution. No trailing period on attribution."],
+      "punctuation": "Opening + closing quotation marks required on the testimonial. Attribution: comma between name/title and title/company.",
+      "tone": "Let the quote speak. Do not editorialize or frame it with extra copy.",
+      "cta": "Not applicable to visual copy.",
+      "char_limits": {"testimonial_quote": 100, "testimonial_author": 51}
+    },
+    "social-media-profile": {
+      "entry": 6, "name": "Social Media Profile",
+      "layout": "A mockup of a freelancer's social profile — headshot, name (first + last initial), job title. Left/right columns hold supporting content; a subhead below is a punchy wrap-up.",
+      "density": "Medium-High.",
+      "rules": ["Write left and right column content (skills, outcomes, efficiency, quality, clever lines).", "Write a subhead below the columns — a punchy closer.", "Do NOT write the name or job title (design placeholders / provided).", "Sentence case. No trailing periods."],
+      "punctuation": "Fragments OK in columns. Subhead may use an em dash. No exclamation points.",
+      "tone": "Clever and professional. Feel authentic, not ad-like — what a skilled freelancer would actually list.",
+      "cta": "Not applicable to visual copy.",
+      "char_limits": {"profile_name": 18, "profile_title": 28, "profile_left": 60, "profile_right": 60, "creative_subhead": 28}
+    },
+    "pie-chart": {
+      "entry": 7, "name": "Pie Chart",
+      "layout": "A circular chart in 4 quadrants — features, benefits, outcomes, or stats. A center callout ties them together.",
+      "density": "Medium — four quadrant labels + one center callout.",
+      "rules": ["Write four quadrant copy blocks — each a short, distinct point.", "Write one center callout (theme-aligned or a branded line, e.g. 'Hire smarter').", "All four quadrants parallel in structure (all fragments, or all short phrases — don't mix).", "Sentence case. No trailing periods."],
+      "punctuation": "Fragments preferred. No periods. Em dashes allowed if warranted.",
+      "tone": "Informative and confident. Stats only from approved claims — do not fabricate data.",
+      "cta": "Not applicable to visual copy.",
+      "char_limits": {"pie_labels": 30, "pie_center": 28}
+    },
+    "hybrid": {
+      "entry": 8, "name": "Hybrid",
+      "layout": "Lifestyle photography + branded Upwork UI elements tied to the concept. Always includes a CTA.",
+      "density": "Medium — headline, subhead, and CTA. All required.",
+      "rules": ["Write a headline and a subhead. Headline leads; subhead extends/supports.", "Always include a CTA. There are NO no-CTA versions.", "Sentence case. No trailing period on headline or subhead."],
+      "punctuation": "A period between headline and subhead only if both are complete, distinct sentences. Otherwise avoid.",
+      "tone": "The UI grounds the ad — copy should feel like the product in action: confident, specific, outcome-led.",
+      "cta": "Required on every variant.",
+      "char_limits": {"creative_headline": 36, "creative_subhead": 60, "cta": 22}
+    },
+    "search-results": {
+      "entry": 9, "name": "Search Results",
+      "layout": "Three search bars with freelancer role tags inside, each with a hire button. A headline sits above.",
+      "density": "Low-Medium — headline + three talent tags.",
+      "rules": ["One headline. Short, outcome-led or cleverly framed. Sentence case, no trailing period.", "Three talent tags — realistic search terms, written as a user would type them, not marketing language."],
+      "punctuation": "No punctuation on talent tags. Headline may use an em dash if warranted.",
+      "tone": "The visual demonstrates — the headline frames the payoff cleanly. Tags feel authentic and specific.",
+      "cta": "Not specified for visual copy — follow brief or default.",
+      "char_limits": {"creative_headline": 38, "search_results": 32}
+    },
+    "text-only": {
+      "entry": 10, "name": "Text Only",
+      "layout": "Text-driven design, maybe a branded background/container. No photo or illustration.",
+      "density": "Medium — three fields, all tightly capped.",
+      "rules": ["Write a headline, subhead, and CTA. All three used.", "Headline lands the core message; subhead extends/proves it; CTA closes.", "Sentence case. No trailing periods on headline or subhead.", "Copy must be especially sharp and self-contained (no visual support)."],
+      "punctuation": "Fragments OK in headline. Subhead may be a complete sentence. Em dash allowed for rhythm.",
+      "tone": "Confident and direct. Every word is load-bearing.",
+      "cta": "Required on every variant.",
+      "char_limits": {"creative_headline": 20, "creative_subhead": 60, "cta": 22}
+    },
+    "chat-bubble": {
+      "entry": 11, "name": "Chat Bubble",
+      "layout": "TWO chat bubbles simulating a text conversation between two people. One bubble opens, the second closes. The exchange should sound like a natural conversation — NOT ad copy, NOT a headline + subtext.",
+      "density": "Low — two short copy blocks written as DIALOGUE, not headlines.",
+      "rules": ["Write two chat bubbles: an opening message and a reply.", "Write as a real conversation — casual, natural, direct. Not a headline. Not a tagline.", "The exchange should prove a point, answer a question, or surface a compelling stat about using freelancers or Upwork.", "Sentence case. Conversational punctuation is fine. Avoid exclamation points unless genuinely warranted."],
+      "punctuation": "Write as texting — short, natural, human. Full stops OK. Fragments OK.",
+      "tone": "Real. Grounded. Two people who sound like actual humans, not brand voices.",
+      "cta": "Not applicable to visual copy.",
+      "char_limits": {"chat_label": 18, "chat_message": 91}
+    },
+    "notification": {
+      "entry": 12, "name": "Notification",
+      "layout": "An ad that looks like an app notification. Copy mimics a real notification. Always includes a CTA.",
+      "density": "Low — headline + CTA only.",
+      "rules": ["Write copy that reads like an ACTUAL app notification — hint at hiring/finding talent/a successful outcome, WITHOUT reading like an ad.", "Always include a CTA. There are NO no-CTA versions.", "Sentence case. No trailing period on the notification copy."],
+      "punctuation": "Notification-style — clean and direct. A period is OK if it reads as a complete sentence. Avoid exclamation points.",
+      "tone": "Functional and believable — like something that actually popped up on a phone.",
+      "cta": "Required on every variant.",
+      "char_limits": {"creative_headline": 52, "cta": 12}
+    },
+    "reminder": {
+      "entry": 13, "name": "Reminder",
+      "layout": "A mobile app pop-up reminder. Short, direct, action-oriented. Always a CTA.",
+      "density": "Low — one copy block + CTA.",
+      "rules": ["Write copy that reads like a real reminder notification, tied to working with freelancers/hiring on Upwork/a specific outcome.", "Keep it short — the format demands brevity.", "Always include a CTA. There are NO no-CTA versions.", "Sentence case. Punctuation OK if it aids clarity."],
+      "punctuation": "A period is fine for a complete-sentence reminder. Keep it clean.",
+      "tone": "Practical and believable — like something a user set for themselves.",
+      "cta": "Required on every variant.",
+      "char_limits": {"creative_headline": 52, "cta": 20}
+    },
+    "device-ui-photo": {
+      "entry": 14, "name": "Device UI (Photo)",
+      "layout": "A device (phone/laptop) showing Upwork's platform/UI. A headline appears at the top.",
+      "density": "Low — headline only.",
+      "rules": ["One headline, relating to the UI shown on the device.", "Sentence case. No trailing period.", "The headline frames what the viewer sees — it should make them want to look closer."],
+      "punctuation": "Minimal. Em dash allowed if warranted.",
+      "tone": "Confident and specific. The device + UI demonstrate — the headline anchors the payoff.",
+      "cta": "Not specified for visual copy — follow brief or default.",
+      "char_limits": {"creative_headline": 38}
+    },
+    "platform-ui": {
+      "entry": 15, "name": "Platform UI",
+      "layout": "A featured moment from the Upwork platform (homepage, search page, Uma interface). The headline relates to the specific UI feature.",
+      "density": "Low — headline + optional subhead, expanding when no CTA.",
+      "rules": ["Write a headline and subhead, both relating to the UI feature shown.", "Two versions: one with a CTA, remaining without.", "When no CTA, combined room increases by 16 characters (distribute as needed).", "Sentence case. No trailing periods."],
+      "punctuation": "Minimal — copy should feel like a clean label for what's shown.",
+      "tone": "Platform-native — copy belongs in the product, not on top of it.",
+      "cta": "Optional. One variant includes a CTA; the rest do not.",
+      "char_limits": {"creative_headline": 25, "creative_subhead": 18, "cta": 16}
+    },
+    "meme": {
+      "entry": 16, "name": "Meme",
+      "layout": "A viral meme format carrying key messaging. Copy usually prompted or requested in the brief.",
+      "density": "Low — headline only, but tone carries the weight.",
+      "rules": ["Write copy that fits the meme format referenced in the brief.", "If no specific meme format is provided, flag it.", "Copy should feel native to the meme — if it reads like an ad, it fails.", "Sentence case where natural; follow the meme format's capitalization convention."],
+      "punctuation": "Follow the meme format's conventions — format-dependent.",
+      "tone": "Witty and culturally aware. Find the angle that earns the format.",
+      "cta": "Not typically used on the visual — follow brief if specified.",
+      "char_limits": {"creative_headline": 43}
+    },
+    "sticky-note": {
+      "entry": 17, "name": "Sticky Note",
+      "layout": "A sticky note with a title at top and listed items below — single or two columns. Checklist, comparison, us-vs-them, or feature/benefit.",
+      "density": "Medium — title + column content. Layout varies by version.",
+      "rules": ["Write a title (headline) and column content.", "Write at least one single-column and one double-column version per concept.", "Column content is list-style — short items, parallel structure.", "Sentence case. No trailing periods on list items."],
+      "punctuation": "List items are fragments — no periods. Title may use minimal punctuation if warranted.",
+      "tone": "Practical and visual — like something someone actually wrote down.",
+      "cta": "Not applicable to visual copy.",
+      "char_limits": {"left_headline": 12, "right_headline": 12, "left_bullets": 30, "right_bullets": 30}
+    },
+    "poll": {
+      "entry": 18, "name": "Poll",
+      "layout": "A background image with a poll bar overlaid — stats, mock results, or comparisons. Always includes a CTA.",
+      "density": "Medium — headline, subhead/stat, and CTA.",
+      "rules": ["Write a headline and a subhead or stat line. The poll bar carries the data; the headline frames it.", "Content may be prompted by the brief or generated from approved Upwork stats.", "Always include a CTA. There are NO no-CTA versions.", "Sentence case. No trailing period on headline."],
+      "punctuation": "Stats may use a colon or em dash to separate number from label. Headline stays clean.",
+      "tone": "Data-led where possible. Stats from approved claims only.",
+      "cta": "Required on every variant.",
+      "char_limits": {"poll_question": 75, "poll_option_a": 14, "poll_option_b": 14, "cta": 12}
+    },
+    "tweet-post-mockup": {
+      "entry": 19, "name": "Tweet / Post Mockup",
+      "layout": "A mockup of a tweet or social post — organic social content, a veiled ad that reads like a real post.",
+      "density": "Medium — one copy block, moderate length.",
+      "rules": ["Write copy that reads like a REAL social post, not an ad.", "The Upwork connection should feel natural and earned — not brand-inserted.", "Sentence case. Conversational punctuation is fine.", "Do NOT include handles, hashtags, or platform UI elements in the copy — those are design elements."],
+      "punctuation": "Write as a real post — periods, natural line breaks, light punctuation. No exclamation points unless the voice calls for one.",
+      "tone": "Authentic and human. If it sounds like an ad, rewrite it.",
+      "cta": "Not applicable to visual copy.",
+      "char_limits": {"creative_headline": 115}
+    },
+    "text-with-button-and-cursor": {
+      "entry": 20, "name": "Text with Button and Cursor",
+      "layout": "A UI-style ad with a button element and a cursor clicking it. The copy is INSIDE the button — the button copy is the entire message.",
+      "density": "Minimal — one copy element only.",
+      "rules": ["Write copy for the button/CTA only — the sole copy field.", "Must be verb-led — it is both the message and the call to action.", "Feel like a real UI button — action-oriented and specific.", "Sentence case. No trailing period."],
+      "punctuation": "None. Buttons don't have punctuation.",
+      "tone": "Direct and action-forward. In 15 characters, imply a benefit and prompt a click.",
+      "cta": "The button copy IS the CTA. No separate CTA field.",
+      "char_limits": {"button_text": 15}
+    },
+    "talent-profile": {
+      "entry": 21, "name": "Talent Profile",
+      "layout": "A freelancer profile card with a headline at the top. The profile is the visual element; the headline is the primary copy.",
+      "density": "Low — headline only, plus optional CTA.",
+      "rules": ["One headline, relating to the profile shown and framing the value of finding talent on Upwork.", "Two versions with a CTA; remaining versions (out of 6) without.", "Sentence case. No trailing period."],
+      "punctuation": "Minimal. Em dash allowed if warranted.",
+      "tone": "Confident and specific. The profile is the visual proof — the headline makes the viewer want to hire.",
+      "cta": "Optional. Two variants include a CTA; the rest do not.",
+      "char_limits": {"creative_headline": 36, "cta": 21}
+    },
+    "bespoke": {
+      "entry": 22, "name": "Bespoke",
+      "layout": "A custom layout built from scratch — no fixed structure.",
+      "density": "Variable — determined by the brief's described layout.",
+      "rules": ["Copy is variable. Read the brief for layout description, visual references, creative direction.", "Identify the closest matching ad type and apply those structural rules as a starting point.", "One variant includes a CTA; the rest without, unless the brief specifies otherwise.", "Sentence case throughout. All other formatting guardrails apply."],
+      "punctuation": "Per the closest matching ad type.",
+      "tone": "Fully brief-dependent. Default to the core voice: clear, outcome-led, grounded.",
+      "cta": "Optional. One variant includes a CTA; the rest do not — unless the brief specifies.",
+      "char_limits": {}
+    },
+    "illustration": {
+      "entry": 23, "name": "Illustration",
+      "layout": "Illustrations tied to the ad theme. The illustration carries the visual concept; copy complements it.",
+      "density": "Low — headline + optional CTA.",
+      "rules": ["One headline, connecting to the illustration theme and landing the core message.", "One variant includes a CTA; remaining versions without.", "Sentence case. No trailing period."],
+      "punctuation": "Minimal. Let illustration and headline work together cleanly.",
+      "tone": "Match the illustration — playful illustration, playful headline; bold/graphic, tight/confident headline.",
+      "cta": "Optional. One variant includes a CTA; the rest do not.",
+      "char_limits": {"creative_headline": 38, "cta": 16}
+    },
+    "carousel": {
+      "entry": 24, "name": "Carousel",
+      "layout": "A multi-slide ad. Each slide has its own headline. The final slide always includes a CTA. Default 3-4 slides.",
+      "density": "Low per slide — one headline each; the narrative builds across slides.",
+      "rules": ["Write a headline for each slide — each unique, each connected to the overall theme.", "Default output: two versions with 4 slides, one version with 3 slides (per concept).", "The FINAL slide must always include a CTA.", "Headlines flow as a progression — don't repeat the same thought across slides.", "Sentence case. No trailing periods."],
+      "punctuation": "Minimal per slide. Em dashes allowed. Headlines are distinct beats.",
+      "tone": "Narrative and progressive — each slide makes the viewer want the next.",
+      "cta": "Required on the final slide only. All other slides: no CTA.",
+      "char_limits": {"creative_headline": 36, "cta": 22}
+    }
+  }
+}
