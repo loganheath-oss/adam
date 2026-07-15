@@ -73,9 +73,13 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   112). Copy gen emits `single_headline`+`single_bullets` (hard-enforced), manifest carries
   `Single_Headline`/`Single_Bullets`. ⬜ Plugin assembly of the single-column frame untested —
   verify on the next sticky-note sprint.
-- ⬜ **With-CTA / without-CTA variant mix not implemented.** Many entries specify "one variant
-  with a CTA, the rest without" (Talent Profile: two). ADAM puts a CTA on every concept and the
-  plugin defaults to with-CTA. Needs a per-entry prompt rule + plugin variant pairing.
+- ✅ **With-CTA / without-CTA variant mix implemented.** Each guide entry now declares `cta_mix`
+  (all ×7 / none ×8 / one ×6 / two ×1 / default ×2). The model always writes its best CTA;
+  `_apply_cta_mix` runs AFTER ranking and deterministically keeps the CTA on the top-N ranked
+  selected variants, blanks the rest, and sets `no_cta` → new manifest column → the plugin's
+  existing `wantCTA` template-variant pick (which was never fed before). Entry 3's
+  subhead-only-without-CTA rule enforced too. Unit-verified all five modes + rank ordering.
+  ⬜ Verify on a live sprint that the no-CTA template variants assemble correctly in Figma.
 - ⬜ **Variant model deviation — surface to Adrie for sign-off.** Her spec: N concepts × 3
   labeled variants (A/B/C, original re-executions). ADAM: 6 independent concepts → top 3.
   Outputs land similarly; get her explicit OK rather than re-architect.

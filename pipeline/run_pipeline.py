@@ -574,6 +574,35 @@ def _enforce_lengths(concept, style):
     return hard_flags
 
 
+def _apply_cta_mix(reviewed, style):
+    """Deterministically apply the matched entry's CTA distribution to the SELECTED
+    concepts (Style Guide: e.g. 'one variant must include a CTA; remaining without').
+    Every concept is generated WITH its best CTA; here we blank it on the variants
+    that shouldn't display one and set no_cta=True so the manifest/plugin pick the
+    no-CTA template variant. Modes (entry.cta_mix): all/default = keep every CTA;
+    none = blank all; one/two = keep on the top-1/top-2 ranked selected concepts."""
+    _, entry = _guide_entry_for_style(style)
+    mix = (entry or {}).get("cta_mix", "default")
+    if mix in ("all", "default"):
+        return
+    keep = {"none": 0, "one": 1, "two": 2}.get(mix, 1)
+    subhead_rule = bool((entry or {}).get("subhead_only_without_cta"))
+    selected = sorted([c for c in reviewed if c.get("selected")],
+                      key=lambda c: c.get("rank", 99))
+    for pos, c in enumerate(selected):
+        if pos < keep:
+            # This variant carries the CTA. Entry-3-style rule: the subhead only
+            # appears on no-CTA versions, so drop it from the CTA-bearing one.
+            if subhead_rule and c.get("creative_subhead"):
+                c["creative_subhead"] = ""
+            continue
+        c["cta"] = ""
+        c["no_cta"] = True
+    if keep < len(selected):
+        print(f"    CTA mix '{mix}' applied to {style}: "
+              f"{min(keep, len(selected))} with CTA, {len(selected) - keep} without")
+
+
 def _salvage_json_array(text):
     """Recover as many COMPLETE objects as possible from a truncated JSON array
     (e.g. the model's output hit the token cap mid-array). Scans for balanced
@@ -985,6 +1014,9 @@ is silent on a field:
 - creative_headline (the main hook shown ON the ad image; fallback max 30 characters)
 - creative_subhead (ONE short supporting line ON the image, must NOT repeat the primary text below; fallback max 55 characters)
 - cta (the CTA button label on the image; fallback max 20 characters)
+- ALWAYS provide your best cta for EVERY concept, even if the matched Style Guide
+  entry says only some variants (or none) display one — the pipeline applies that
+  CTA distribution deterministically after selection, so never return an empty cta.
 
 {ad_platform_block}
 {multi_field_instructions}
@@ -1362,6 +1394,9 @@ Return ONLY the JSON array. No other text."""
                 c["score"] = 0
                 c["review_notes"] = f"Review error: {str(e)[:60]}"
                 reviewed.append(c)
+        # Style Guide CTA distribution (one-with/rest-without etc.) — applied to the
+        # final selection regardless of which path (ranked or fallback) produced it.
+        _apply_cta_mix(reviewed, style)
         return reviewed
 
     group_items = list(groups.items())
@@ -2343,6 +2378,9 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Headline_Short": concept.get("headline_short", ""),                 # SHORT Meta headline
             "Description": concept.get("description", ""),
             "CTA": concept.get("cta", ""),
+            # Style Guide CTA mix: "true" marks a variant that displays NO CTA — the
+            # plugin reads no_cta to pick the no-CTA template variant (wantCTA hint).
+            "no_cta": "true" if concept.get("no_cta") else "",
             # ON-CREATIVE copy — the ONLY copy baked onto the ad image. Distinct
             # wording from the platform copy above so nothing is duplicated onto
             # the creative. Falls back to the platform headline for older concepts
