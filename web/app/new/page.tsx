@@ -226,7 +226,7 @@ export default function NewOrderPage() {
             const active = step === n; const isDone = done[n];
             const disabled = (n === 2 && !step1ok) || (n === 3 && !(step1ok && step2ok));
             return (
-              <button key={n} type="button" disabled={disabled} onClick={() => !disabled && setStep(n)} className={["flex items-center justify-center gap-2.5 border-b-2 px-6 py-5 text-center", active ? "border-[#14A800]" : "border-transparent", disabled ? "cursor-not-allowed" : "cursor-pointer"].join(" ")}>
+              <button key={n} type="button" disabled={disabled} onClick={() => !disabled && setStep(n)} className={["flex items-center justify-center gap-2.5 border-b-2 px-6 py-5 text-center", active ? "border-b-[#14A800]" : "border-b-transparent", disabled ? "cursor-not-allowed" : "cursor-pointer"].join(" ")}>
                 <span className={["flex h-6 w-6 flex-none items-center justify-center rounded-full text-[12px] font-medium", isDone ? "bg-[#14A800] text-white" : active ? "border-2 border-[#14A800] text-[#14A800]" : "border border-[#E0E0E0] text-[#9aa0a6]"].join(" ")}>{isDone ? "✓" : n}</span>
                 <span className={["text-[15px]", active ? "font-medium text-[#1d1d1b]" : "text-[#5b6660]"].join(" ")}>{label}</span>
               </button>
@@ -440,15 +440,15 @@ export default function NewOrderPage() {
           <button type="button" onClick={() => setStep(step - 1)} className="rounded-full border border-[#E0E0E0] px-4 py-2 text-sm hover:bg-[#F7F8F6]">← Back</button>
         ) : <span />}
         {step === 1 && (
-          <button type="button" disabled={!step1ok} onClick={() => { setDone((d) => ({ ...d, 1: true })); setStep(2); }} className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:bg-[#E0E0E0]">Continue →</button>
+          <button type="button" disabled={!step1ok} onClick={() => { setDone((d) => ({ ...d, 1: true })); setStep(2); }} className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#108A00] disabled:cursor-not-allowed disabled:opacity-60">Continue →</button>
         )}
         {step === 2 && (
-          <button type="button" disabled={!step2ok} onClick={() => { setDone((d) => ({ ...d, 2: true })); setStep(3); }} className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:bg-[#E0E0E0]">Review Request →</button>
+          <button type="button" disabled={!step2ok} onClick={() => { setDone((d) => ({ ...d, 2: true })); setStep(3); }} className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#108A00] disabled:cursor-not-allowed disabled:opacity-60">Review Request →</button>
         )}
         {step === 3 && (
           <div className="flex items-center gap-4">
             {error && <span className="text-sm text-red-600">{error}</span>}
-            <button type="button" onClick={submit} disabled={busy} className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white transition disabled:bg-[#E0E0E0]">{busy ? "Submitting…" : "Submit order →"}</button>
+            <button type="button" onClick={submit} disabled={busy} className="rounded-full bg-[#14A800] px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#108A00] disabled:opacity-60">{busy ? "Submitting…" : "Submit order →"}</button>
           </div>
         )}
       </div>

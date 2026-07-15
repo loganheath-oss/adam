@@ -45,7 +45,7 @@ export function SiteNav() {
                       ? "border-primary font-medium text-white"
                       : "text-white/70 hover:text-white"
                     : active
-                      ? "border-primary font-semibold text-foreground"
+                      ? "border-primary text-foreground"
                       : "text-muted-foreground hover:text-foreground",
                 )}
               >

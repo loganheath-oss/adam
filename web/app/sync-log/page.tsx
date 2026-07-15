@@ -43,13 +43,24 @@ export default async function SyncLogPage() {
       <header className="mb-8">
         <h1 className="text-4xl font-medium tracking-tight">Sync Log</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {counts.total} syncs
-          <span className="mx-2 text-border">·</span>
-          <span className="text-green-700">{counts.ok} ok</span>
-          <span className="mx-2 text-border">·</span>
-          <span className="text-red-600">{counts.errors} errors</span>
+          GitHub-to-deploy sync history, newest first, with status for each event.
         </p>
       </header>
+
+      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border p-5">
+          <div className="text-3xl font-medium tabular-nums">{counts.total}</div>
+          <div className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">Total events</div>
+        </div>
+        <div className="rounded-xl border p-5">
+          <div className="text-3xl font-medium tabular-nums text-green-700">{counts.ok}</div>
+          <div className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">Succeeded</div>
+        </div>
+        <div className="rounded-xl border p-5">
+          <div className={`text-3xl font-medium tabular-nums ${counts.errors > 0 ? "text-red-600" : ""}`}>{counts.errors}</div>
+          <div className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">Errors</div>
+        </div>
+      </div>
 
       <div className="overflow-hidden rounded-xl border shadow-sm">
         <Table>

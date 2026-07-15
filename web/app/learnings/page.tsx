@@ -1,4 +1,4 @@
-import { MarkdownView } from "@/components/markdown";
+import { LearningsEditor } from "@/components/learnings-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -21,9 +21,5 @@ async function getLearnings(): Promise<string> {
 
 export default async function LearningsPage() {
   const md = await getLearnings();
-  return (
-    <div className="max-w-3xl">
-      <MarkdownView>{md}</MarkdownView>
-    </div>
-  );
+  return <LearningsEditor initial={md} />;
 }

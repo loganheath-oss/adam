@@ -51,7 +51,7 @@ function EntryCard({
           : "linear-gradient(250.58deg, rgba(255,255,255,0.06) 0.7%, rgba(255,255,255,0.03) 98.41%)",
       }}
     >
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/15 text-primary">{icon}</div>
+      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.14] bg-white/[0.06] text-primary">{icon}</div>
       <h3 className="mt-6 text-xl font-medium text-white">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-white/60">{desc}</p>
       <span className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary">

@@ -23,7 +23,7 @@ export default async function SprintsPage() {
         <div>
           <h1 className="text-4xl font-medium tracking-tight">Sprint Runs</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {sprints.length} sprints · click any row to view details
+            Every sprint, its status, and where it is in the pipeline.
             {!live && <span className="ml-2 text-amber-600">· sample data</span>}
           </p>
         </div>
