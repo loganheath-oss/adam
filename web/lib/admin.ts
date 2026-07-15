@@ -38,3 +38,28 @@ export async function getReliability(days = 30): Promise<Reliability | null> {
 export async function getUsage(days = 30): Promise<Usage | null> {
   return apiGet<Usage>(`/admin/usage?days=${days}`);
 }
+
+export type Issue = {
+  id: number;
+  ts: string | null;
+  user: string | null;
+  sprint_id: string | null;
+  category: string | null;
+  description: string;
+  status: string;
+  resolution_note: string | null;
+};
+
+export type Issues = {
+  enabled: boolean;
+  error?: string;
+  counts?: Record<string, number>;
+  open?: number;
+  total?: number;
+  issues?: Issue[];
+};
+
+export async function getIssues(status?: string): Promise<Issues | null> {
+  const q = status ? `?status=${encodeURIComponent(status)}` : "";
+  return apiGet<Issues>(`/admin/issues${q}`);
+}

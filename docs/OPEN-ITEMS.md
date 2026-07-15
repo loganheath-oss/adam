@@ -94,7 +94,13 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   `copy.generated` (at run outcome, from `token_usage.json`, with `cost_usd` at Sonnet-4.6
   pricing). `usage_summary` sums `meta.cost_usd` → **total spend** shown in the `/admin` Usage
   header. Cost aggregation verified against real Postgres.
-- ⬜ **Phase 2:** issue_reports + `POST /issues` + triage + "distill into a learning" loop.
+- ✅ **Phase 2 — issue-report → learning loop, LIVE.** Backend: `POST /issues` (public capture),
+  `GET /admin/issues` (queue + counts), `PATCH /admin/issues/{id}` (triage + "distill into a
+  learning" → append to learnings.md + mark learned); `db.list_issues`/`update_issue`. Frontend:
+  `/admin/issues` triage page (Reliability|Issues tabs), a "Report an issue" form, per-issue
+  triage actions + a distill-to-learning box; API-route proxies (`/api/issues`,
+  `/api/admin/issues/[id]`). Backend loop verified live (report → list → triage → cleanup).
+  Scoreboard = the queue/counts shrink over time.
 - ⬜ **Phase 3:** RBAC (admin/member) — absorbs B's "submitters can't see sprints"; Roles tab; SSO.
 
 ## Roadmap anchors (Adrie's doc)

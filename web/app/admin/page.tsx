@@ -1,6 +1,7 @@
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { AdminTabs } from "@/components/admin-tabs";
 import { getReliability, getUsage } from "@/lib/admin";
 
 // Server component: fetches the reliability + usage spine from the FastAPI backend
@@ -204,14 +205,17 @@ export default async function AdminPage() {
 
 function Header() {
   return (
-    <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        <h1 className="text-4xl font-medium tracking-tight">Reliability</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Are runs completing clean? Clean-run rate, incidents, and usage — from the pipeline&apos;s own event log.
-        </p>
-      </div>
-      <span className="rounded-full border px-3 py-1 text-xs text-muted-foreground">Last 30 days</span>
-    </header>
+    <>
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-medium tracking-tight">Reliability</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Are runs completing clean? Clean-run rate, incidents, and usage — from the pipeline&apos;s own event log.
+          </p>
+        </div>
+        <span className="rounded-full border px-3 py-1 text-xs text-muted-foreground">Last 30 days</span>
+      </header>
+      <AdminTabs current="reliability" />
+    </>
   );
 }
