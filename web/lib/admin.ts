@@ -27,6 +27,7 @@ export type Usage = {
   since_days?: number;
   total_events?: number;
   active_users?: number;
+  total_cost_usd?: number;
   by_action?: Record<string, number>;
 };
 

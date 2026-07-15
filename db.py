@@ -13,7 +13,8 @@ See docs/admin-usage-design.md for the full design.
 import os
 import datetime
 from sqlalchemy import (
-    create_engine, Column, BigInteger, Text, DateTime, Index, func, select, insert
+    create_engine, Column, BigInteger, Text, DateTime, Index, func, select, insert,
+    cast, Float,
 )
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -220,11 +221,17 @@ def usage_summary(since_days: int = 30) -> dict:
                 .where(UsageEvent.ts >= since)
                 .group_by(UsageEvent.action).order_by(func.count().desc())
             ).all()
+            # Total spend: sum meta.cost_usd across events that carry it.
+            cost = s.execute(
+                select(func.coalesce(func.sum(cast(UsageEvent.meta["cost_usd"].astext, Float)), 0.0))
+                .where(UsageEvent.ts >= since, UsageEvent.meta["cost_usd"].isnot(None))
+            ).scalar() or 0.0
         return {
             "enabled": True,
             "since_days": since_days,
             "total_events": total,
             "active_users": active_users,
+            "total_cost_usd": round(float(cost), 2),
             "by_action": {a: n for a, n in by_action},
         }
     except Exception as e:

@@ -532,6 +532,19 @@ def _log_pipeline_outcome(sprint_id: str) -> None:
             db.log_event("sprint.failed", user_email=user, sprint_id=sprint_id,
                          meta={"state": state, "stage": st.get("failed_gate"),
                                "error": (st.get("error") or "")[:500]})
+        # Cost/usage: fold the sprint's token tally into a copy.generated event so
+        # the admin Usage view can show cost per user / per run. Sonnet 4.6 pricing:
+        # $3 / 1M input, $15 / 1M output.
+        try:
+            tu = _load_json(RUNS_DIR / sprint_id / "token_usage.json")
+            if tu:
+                it, ot = int(tu.get("input_tokens", 0)), int(tu.get("output_tokens", 0))
+                cost = round(it / 1_000_000 * 3 + ot / 1_000_000 * 15, 4)
+                db.log_event("copy.generated", user_email=user, sprint_id=sprint_id,
+                             meta={"input_tokens": it, "output_tokens": ot,
+                                   "calls": tu.get("calls", 0), "cost_usd": cost})
+        except Exception:
+            pass
     except Exception as e:
         print(f"[db] outcome log skipped: {e}")
 
@@ -1996,6 +2009,13 @@ async def approve_gate(sprint_id: str, gate_num: int, request: Request):
             "note": note,
             "source": "http",
         })
+        try:
+            _o = _load_json(sprint_dir / "order.json")
+            db.log_event("gate.approved", user_email=(_o.get("email") or _o.get("driver")),
+                         sprint_id=sprint_id,
+                         meta={"gate": gate_num, "gate_name": GATE_NAMES_LOCAL.get(gate_num, "")})
+        except Exception:
+            pass
         state_path.write_text(json.dumps({
             "sprint_id": sprint_id,
             "state": f"resuming_gate_{gate_num}",
@@ -2388,6 +2408,10 @@ async def sprint_chat_stream(sprint_id: str, request: Request):
                 "role": "user",
                 "text": text,
             })
+            try:
+                db.log_event("chat.asked", sprint_id=sprint_id, meta={"question_len": len(text)})
+            except Exception:
+                pass
 
     async def _stream():
         assistant_text_parts: list[str] = []
@@ -3111,6 +3135,10 @@ async def learnings_save(request: Request):
         if not isinstance(content, str):
             return JSONResponse({"ok": False, "error": "content must be a string"}, status_code=400)
         LEARNINGS_PATH.write_text(content)
+        try:
+            db.log_event("learnings.edited", meta={"chars": len(content)})
+        except Exception:
+            pass
         return JSONResponse({"ok": True, "bytes": len(content)})
     except Exception as exc:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)

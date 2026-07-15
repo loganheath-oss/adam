@@ -166,7 +166,11 @@ export default async function AdminPage() {
       {usage?.enabled && (
         <div>
           <h2 className="mb-3 text-lg font-medium">
-            Usage <span className="text-sm font-normal text-muted-foreground">· {usage.total_events ?? 0} events</span>
+            Usage{" "}
+            <span className="text-sm font-normal text-muted-foreground">
+              · {usage.total_events ?? 0} events
+              {usage.total_cost_usd != null && usage.total_cost_usd > 0 && ` · $${usage.total_cost_usd.toFixed(2)} spend`}
+            </span>
           </h2>
           <div className={CARD}>
             {Object.keys(usage.by_action ?? {}).length === 0 ? (

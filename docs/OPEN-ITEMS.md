@@ -89,8 +89,11 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   Reads `/admin/reliability` + `/admin/usage` server-side (key stays server-side); handles
   DB-off / backend-unreachable gracefully. Off the public nav (direct URL; gated with RBAC
   later). `lib/admin.ts` + `app/admin/page.tsx`. Verified live (empty-DB state renders).
-- ⬜ **Phase 1 remainder:** fan `log_event` out to more touchpoints (gate.approved/rejected,
-  copy.generated cost from token_usage, chat.asked) so the Usage view fills in.
+- ✅ **More usage touchpoints + cost.** `log_event` now fires on `gate.approved` (approve
+  handler), `chat.asked` (sprint chat), `learnings.edited` (learnings save), and
+  `copy.generated` (at run outcome, from `token_usage.json`, with `cost_usd` at Sonnet-4.6
+  pricing). `usage_summary` sums `meta.cost_usd` → **total spend** shown in the `/admin` Usage
+  header. Cost aggregation verified against real Postgres.
 - ⬜ **Phase 2:** issue_reports + `POST /issues` + triage + "distill into a learning" loop.
 - ⬜ **Phase 3:** RBAC (admin/member) — absorbs B's "submitters can't see sprints"; Roles tab; SSO.
 
