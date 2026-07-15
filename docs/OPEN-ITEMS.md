@@ -80,9 +80,14 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   test order logged `order.submitted` + `sprint.failed` and the incident surfaced with the
   real error; test data cleaned up. NOTE: the deploy runs `uv sync --locked`, so any
   pyproject dep change MUST be followed by `uv lock` + commit `uv.lock` or the deploy fails.
-- ⬜ **Phase 1 remainder:** the **Reliability dashboard tab** in adam-web (UI view of the
-  data); fan `log_event` out to more touchpoints (gate.approved/rejected, copy.generated cost
-  from token_usage, chat.asked).
+- ✅ **Reliability dashboard — LIVE at `/admin`** (adam-web). Clean-run rate (color-coded) +
+  clean/failed bar, stat cards (runs started / completed / failed / active users), an
+  incidents table (when · sprint · user · gate · error), and a usage-by-action breakdown.
+  Reads `/admin/reliability` + `/admin/usage` server-side (key stays server-side); handles
+  DB-off / backend-unreachable gracefully. Off the public nav (direct URL; gated with RBAC
+  later). `lib/admin.ts` + `app/admin/page.tsx`. Verified live (empty-DB state renders).
+- ⬜ **Phase 1 remainder:** fan `log_event` out to more touchpoints (gate.approved/rejected,
+  copy.generated cost from token_usage, chat.asked) so the Usage view fills in.
 - ⬜ **Phase 2:** issue_reports + `POST /issues` + triage + "distill into a learning" loop.
 - ⬜ **Phase 3:** RBAC (admin/member) — absorbs B's "submitters can't see sprints"; Roles tab; SSO.
 
