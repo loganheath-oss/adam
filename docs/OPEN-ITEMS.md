@@ -36,9 +36,12 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
 - ⬜ **Naming: "Creative Headline" vs `Text_On_Visual`** — align so the PDF/labels don't confuse.
 
 ## B. Order form
-- ⬜ **End at Submit — submitters can't reach `/sprints`.** Paid Acq copies the request link
-  into Slack. Ties into the admin RBAC work (member role). Gating `/sprints` is a quick win
-  even before full roles.
+- ✅ **End at Submit — submitters kept out of the sprint surface.** Confirmation page ends the
+  flow (dropped the "Open the sprint" button) with a copy-link + Adrie's Slack workflow copy
+  ("drop it in #paid-acquisition"). Removed "Sprints" from the top nav + home hero/cards.
+  `/sprints` still works by direct URL for reviewers (verified live 200); returns as an
+  admin-gated nav item with RBAC. Deployed to adam-web + verified on the live site.
+  NOTE: this is UX-level (no hard auth yet) — true enforcement is Phase 3 RBAC.
 - ⬜ **Add Key Messaging themes into the Additional Info area** (Sprint 9: AI + Specialization
   block — top L1/L3 categories, hypothesis, sample copy). Prefill/help text in the form.
 - ⛔ **Blank Notification tile** in the order-form style menu (missing Figma template image) — asset fix (Elise).

@@ -105,7 +105,8 @@ def init_db() -> bool:
         print("[db] DATABASE_URL not set — usage tracking disabled (app runs normally).")
         return False
     try:
-        _engine = create_engine(_URL, pool_pre_ping=True, pool_size=5, max_overflow=5)
+        _engine = create_engine(_URL, pool_pre_ping=True, pool_size=5, max_overflow=5,
+                                pool_recycle=1800, connect_args={"connect_timeout": 5})
         _Session = sessionmaker(bind=_engine, expire_on_commit=False)
         Base.metadata.create_all(_engine)
         print("[db] connected; schema ensured (users, usage_events).")
@@ -141,3 +142,90 @@ def log_event(action: str, user_email: str | None = None,
 def session():
     """Yield a session for admin read queries. Returns None if DB disabled."""
     return _Session() if _Session is not None else None
+
+
+def _since(days: int):
+    return datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days)
+
+
+def reliability_summary(since_days: int = 30) -> dict:
+    """The headline view: are runs completing clean? Counts runs started
+    (order.submitted) vs the LATEST terminal outcome per sprint (completed/failed),
+    plus a recent incident list. Best-effort; {'enabled': False} if DB is off."""
+    if _Session is None:
+        return {"enabled": False}
+    since = _since(since_days)
+    try:
+        with _Session() as s:
+            runs = s.execute(
+                select(func.count()).select_from(UsageEvent)
+                .where(UsageEvent.action == "order.submitted", UsageEvent.ts >= since)
+            ).scalar() or 0
+
+            # Latest terminal outcome per sprint (ts desc → first seen per sprint wins).
+            rows = s.execute(
+                select(UsageEvent.sprint_id, UsageEvent.action, UsageEvent.ts)
+                .where(UsageEvent.action.in_(["sprint.completed", "sprint.failed"]),
+                       UsageEvent.ts >= since, UsageEvent.sprint_id.isnot(None))
+                .order_by(UsageEvent.sprint_id, UsageEvent.ts.desc())
+            ).all()
+            latest = {}
+            for sid, action, _ts in rows:
+                latest.setdefault(sid, action)
+            completed = sum(1 for a in latest.values() if a == "sprint.completed")
+            failed = sum(1 for a in latest.values() if a == "sprint.failed")
+            resolved = completed + failed
+
+            incidents = s.execute(
+                select(UsageEvent.sprint_id, UsageEvent.ts, UsageEvent.user_email, UsageEvent.meta)
+                .where(UsageEvent.action == "sprint.failed", UsageEvent.ts >= since)
+                .order_by(UsageEvent.ts.desc()).limit(25)
+            ).all()
+
+        return {
+            "enabled": True,
+            "since_days": since_days,
+            "runs_started": runs,
+            "completed": completed,
+            "failed": failed,
+            "clean_rate": round(completed / resolved, 4) if resolved else None,
+            "incidents": [
+                {"sprint_id": sid, "ts": ts.isoformat() if ts else None,
+                 "user": ue, "stage": (m or {}).get("stage"),
+                 "state": (m or {}).get("state"), "error": (m or {}).get("error")}
+                for sid, ts, ue, m in incidents
+            ],
+        }
+    except Exception as e:
+        return {"enabled": True, "error": f"query failed: {e}"}
+
+
+def usage_summary(since_days: int = 30) -> dict:
+    """Companion view: total events, active users, and a per-action breakdown.
+    Best-effort; {'enabled': False} if DB is off."""
+    if _Session is None:
+        return {"enabled": False}
+    since = _since(since_days)
+    try:
+        with _Session() as s:
+            total = s.execute(
+                select(func.count()).select_from(UsageEvent).where(UsageEvent.ts >= since)
+            ).scalar() or 0
+            active_users = s.execute(
+                select(func.count(func.distinct(UsageEvent.user_email)))
+                .where(UsageEvent.ts >= since, UsageEvent.user_email.isnot(None))
+            ).scalar() or 0
+            by_action = s.execute(
+                select(UsageEvent.action, func.count())
+                .where(UsageEvent.ts >= since)
+                .group_by(UsageEvent.action).order_by(func.count().desc())
+            ).all()
+        return {
+            "enabled": True,
+            "since_days": since_days,
+            "total_events": total,
+            "active_users": active_users,
+            "by_action": {a: n for a, n in by_action},
+        }
+    except Exception as e:
+        return {"enabled": True, "error": f"query failed: {e}"}

@@ -42,6 +42,7 @@ WIKI_DIR = BASE_DIR / "docs" / "wiki"
 
 sys.path.insert(0, str(BASE_DIR / "pipeline"))
 from run_pipeline import run_full_pipeline, run_pipeline_auto, resume_gate_2, resume_gate_3, resume_gate_4, resume_gate_5, resume_gate_6
+import db  # usage/reliability data spine — best-effort, no-ops without DATABASE_URL
 
 GATE_HANDLERS = {2: resume_gate_2, 3: resume_gate_3, 4: resume_gate_4, 5: resume_gate_5, 6: resume_gate_6}
 
@@ -287,7 +288,12 @@ async def require_api_key_or_session(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """On startup, mark any in-flight sprints as interrupted."""
+    """On startup, connect the usage DB (best-effort) and mark any in-flight
+    sprints as interrupted."""
+    try:
+        db.init_db()
+    except Exception as _e:
+        print(f"[db] init_db skipped: {_e}")
     if RUNS_DIR.exists():
         for d in RUNS_DIR.iterdir():
             if not d.is_dir():
@@ -485,6 +491,51 @@ def _sprint_data(sprint_id: str) -> dict:
     }
 
 
+def _log_order_submitted(sprint_id: str, payload: dict) -> None:
+    """Reliability/usage event: an order was submitted (the run denominator)."""
+    try:
+        batches = payload.get("batches", []) or []
+        styles = sorted({s for b in batches
+                         for s in (b.get("visual_styles") or list((b.get("style_quantities") or {}).keys()))})
+        formats = sorted({b.get("format") for b in batches if b.get("format")})
+        total_assets = sum((b.get("quantity") or sum((b.get("style_quantities") or {}).values()) or 0)
+                           for b in batches)
+        db.log_event("order.submitted",
+                     user_email=payload.get("email") or payload.get("driver"),
+                     sprint_id=sprint_id,
+                     meta={"platform": payload.get("platform"), "formats": formats,
+                           "styles": styles, "total_assets": total_assets,
+                           "deliverable": payload.get("deliverable"),
+                           "brief_len": len(payload.get("brief") or "")})
+    except Exception as e:
+        print(f"[db] order.submitted log skipped: {e}")
+
+
+def _log_pipeline_outcome(sprint_id: str) -> None:
+    """After a pipeline/gate task settles, emit ONE reliability event for a TERMINAL
+    state — sprint.completed ('complete') or sprint.failed ('error'/'interrupted').
+    Intermediate awaiting_gate_* / stage_* states are skipped. Best-effort."""
+    try:
+        sp = RUNS_DIR / sprint_id / "pipeline_state.json"
+        if not sp.exists():
+            return
+        st = json.loads(sp.read_text())
+        state = st.get("state", "")
+        if state not in ("complete", "error", "interrupted"):
+            return
+        order = _load_json(RUNS_DIR / sprint_id / "order.json") or {}
+        user = order.get("email") or order.get("driver")
+        if state == "complete":
+            db.log_event("sprint.completed", user_email=user, sprint_id=sprint_id,
+                         meta={"state": state})
+        else:
+            db.log_event("sprint.failed", user_email=user, sprint_id=sprint_id,
+                         meta={"state": state, "stage": st.get("failed_gate"),
+                               "error": (st.get("error") or "")[:500]})
+    except Exception as e:
+        print(f"[db] outcome log skipped: {e}")
+
+
 async def _run_pipeline_task(payload: dict):
     loop = asyncio.get_event_loop()
     sprint_id = payload.get("sprint_id", "unknown")
@@ -520,6 +571,12 @@ async def _run_pipeline_task(payload: dict):
         # Push a proactive notification into the chat so the user sees the
         # new gate / completion / error without having to ask.
         _record_state_notification(sprint_id)
+        # Reliability event for terminal outcomes (offloaded so a slow DB never
+        # blocks the loop; best-effort, no-ops without DATABASE_URL).
+        try:
+            await loop.run_in_executor(_PIPELINE_EXECUTOR, _log_pipeline_outcome, sprint_id)
+        except Exception:
+            pass
 
 
 async def _run_gate_task(sprint_id: str, gate_num: int):
@@ -537,6 +594,10 @@ async def _run_gate_task(sprint_id: str, gate_num: int):
         }, indent=2))
     finally:
         _record_state_notification(sprint_id)
+        try:
+            await loop.run_in_executor(_PIPELINE_EXECUTOR, _log_pipeline_outcome, sprint_id)
+        except Exception:
+            pass
 
 
 # ── ROUTES ───────────────────────────────────────────────────────────────────
@@ -720,6 +781,7 @@ async def submit_order(request: Request):
         "sprint_id": sprint_id, "state": "queued",
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }, indent=2))
+    _log_order_submitted(sprint_id, payload)
     asyncio.create_task(_run_pipeline_task(payload))
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "status_url": f"/sprints/{sprint_id}"})
 
@@ -2116,6 +2178,22 @@ async def storage_report():
                          "total_mb": round(grand / 1_000_000, 1),
                          "sprint_count": len(sprints),
                          "sprints": sprints})
+
+
+@app.get("/admin/reliability", dependencies=[Depends(require_api_key)])
+async def admin_reliability(days: int = 30):
+    """Headline reliability view: runs started vs the latest terminal outcome per
+    sprint (clean-completion rate) + recent incidents. Sourced from the usage_events
+    spine (db.py). Returns {'enabled': False} until DATABASE_URL is configured."""
+    loop = asyncio.get_event_loop()
+    return JSONResponse(await loop.run_in_executor(None, db.reliability_summary, days))
+
+
+@app.get("/admin/usage", dependencies=[Depends(require_api_key)])
+async def admin_usage(days: int = 30):
+    """Companion usage view: total events, active users, per-action breakdown."""
+    loop = asyncio.get_event_loop()
+    return JSONResponse(await loop.run_in_executor(None, db.usage_summary, days))
 
 
 @app.get("/sprints.json", dependencies=[Depends(require_api_key)])
