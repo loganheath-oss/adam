@@ -742,7 +742,7 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "order is BOTH audiences, so provide the feed copy TWICE under a \"targeting_copy\"\n"
             "object — the shared image + on-creative copy above stay the same; only these differ:\n"
             "- targeting_copy: an object with EXACTLY two keys, \"Prospecting\" and \"Retargeting\".\n"
-            "  Each maps to an object with: headline (max 40), headline_short (max 27),\n"
+            "  Each maps to an object with: headline (max 50), headline_short (max 30),\n"
             "  body_short (max 125), body_long (max 300 — Primary Text; keep the ~half-bulleted\n"
             "  rule), description (max 25). Apply the Prospecting vs Retargeting rules above.\n"
             "- concept_tag (short slug like \"talent-speed-v1\")"
@@ -752,8 +752,8 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
         ad_platform_block = (
             "AD-PLATFORM copy — the Meta feed fields shown AROUND the image (caption + headline).\n"
             "NEVER printed on the image itself; distinct wording from the on-creative copy:\n"
-            "- headline (max 40 characters — the LONG Meta headline field)\n"
-            "- headline_short (max 27 characters — the SHORT Meta headline, same message condensed)\n"
+            "- headline (max 50 characters — the LONG Meta headline field)\n"
+            "- headline_short (max 30 characters — the SHORT Meta headline, same message condensed)\n"
             "- body_short (max 125 characters — Primary Text SHORT variant)\n"
             "- body_long (max 300 characters — Primary Text LONG variant with more detail)\n"
             "- description (max 25 characters — Meta description field)\n"
@@ -794,13 +794,21 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     elif _sl == "stickynote":
         multi_field_instructions = (
             "\n===== EXTRA FIELDS FOR \"Sticky Note\" =====\n"
-            "This is a two-column sticky-note ad. ALSO provide:\n"
+            "Sticky Note ships BOTH layouts per concept (per the Style Guide): a two-column\n"
+            "version AND a single-column version. Provide BOTH sets of fields — the\n"
+            "single-column version is NOT a merge of the two columns; it re-expresses the\n"
+            "concept as one focused list:\n"
+            "Two-column version:\n"
             "- left_headline (max 12 chars — left column title)\n"
             "- right_headline (max 12 chars — right column title)\n"
             "- left_bullets (array of EXACTLY 2 strings, max 30 chars each)\n"
             "- right_bullets (array of EXACTLY 2 strings, max 30 chars each)\n"
+            "Single-column version:\n"
+            "- single_headline (max 26 chars — the note's title)\n"
+            "- single_bullets (array of EXACTLY 3 strings, max 34 chars each — one focused list, parallel structure)\n"
         )
-        multi_field_keys = ", left_headline, right_headline, left_bullets, right_bullets"
+        multi_field_keys = (", left_headline, right_headline, left_bullets, right_bullets"
+                            ", single_headline, single_bullets")
     elif _sl == "poll":
         multi_field_instructions = (
             "\n===== EXTRA FIELDS FOR \"Poll\" =====\n"
@@ -821,13 +829,18 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "\n===== EXTRA FIELDS FOR \"Testimonial\" =====\n"
             "A customer-quote card with a headshot. The on-image quote fills the "
             "Copy_Testimonial slot and MUST fit its cap — do NOT reuse body_long here. "
+            "QUOTE SOURCING: if the ORDER BRIEF above contains a real customer quote, use "
+            "it (you may shorten it, but never change its meaning). Otherwise — there is "
+            "no real-quote library yet — write a clearly FICTIONAL but believable quote: "
+            "an invented person and invented company only; NEVER attribute to a real "
+            "person or real company. Fictional testimonials are auto-flagged for review. "
             "ALSO provide:\n"
             "- testimonial_quote (max 100 chars — the customer's own first-person quote as "
             "PLAIN text with NO surrounding quotation marks and NO double-quote (\") "
             "characters anywhere (the template adds the quotation marks); a specific, "
             "believable SMB result, e.g. We hired an AI analyst and cut reporting time in half.)\n"
-            "- testimonial_author (max 51 chars — 'Firstname Lastname, Title, Company' of a "
-            "plausible SMB Upwork client; realistic but not a real named person)\n"
+            "- testimonial_author (max 51 chars — 'Firstname Lastname, Title, Company'; "
+            "invented person + company unless the brief supplied the real attribution)\n"
         )
         multi_field_keys = ", testimonial_quote, testimonial_author"
     elif _sl == "searchresults":
@@ -1037,6 +1050,11 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{j}"
                         concept["batch_index"] = i
                         concept["visual_style"] = style
+                        # Interim policy (Logan 2026-07-15): no real-quote library exists,
+                        # so testimonial quotes are fictional unless the brief supplied one.
+                        # Tag every testimonial concept so reviewers always see it.
+                        if _sl == "testimonial":
+                            concept["testimonial_fictional"] = True
                         # "Both" concepts carry feed copy under targeting_copy; mirror
                         # the Prospecting set into the flat fields so the rest of the
                         # pipeline (review, image prompts) still reads them. The manifest
@@ -1292,6 +1310,13 @@ Return ONLY the JSON array. No other text."""
                                               + ", ".join(concept["length_flags"]))
                             concept["review_notes"] = (". ".join(_notes) + ". "
                                                        + concept.get("review_notes", ""))
+                        # Fictional-testimonial notice (interim policy — see copy gen):
+                        # informational, does NOT de-select; reviewers verify/swap at gate 3.
+                        if concept.get("testimonial_fictional"):
+                            concept["review_notes"] = (
+                                "ℹ FICTIONAL testimonial — no real-quote library yet; "
+                                "swap in a real quote if the brief provided one. "
+                                + concept.get("review_notes", ""))
                         reviewed.append(concept)
 
                 # Backfill so the style still ships ~3 picks. Stage 1: promote the
@@ -2338,6 +2363,10 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Right_Headline": concept.get("right_headline", ""),
             "Left_Bullets": _join_bullets(concept.get("left_bullets")),
             "Right_Bullets": _join_bullets(concept.get("right_bullets")),
+            # Sticky Note single-column layout (Style Guide entry 17 requires BOTH
+            # layouts per concept; caps from the Figma 'Rules' layer: 26 / 112).
+            "Single_Headline": concept.get("single_headline", ""),
+            "Single_Bullets": _join_bullets(concept.get("single_bullets")),
             # Poll fields — question + two bar percentages (drive % text + bar width).
             "Poll_Question": concept.get("poll_question", ""),
             "Poll_Option_A": concept.get("poll_option_a", ""),

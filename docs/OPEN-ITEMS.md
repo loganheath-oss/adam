@@ -58,6 +58,31 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   `_salvage_json_array` so a truncated array still yields its complete concepts instead of
   zero. Verified live: a ~5k-char brief that returned 0 now generates all 6 concepts ($0.08).
 
+## A2. Review-pass findings vs Adrie's docs (2026-07-15 audit)
+- ✅ **Testimonials — interim fabrication policy (Logan's call).** No real-quote library exists,
+  so Lorem Ipsum is out and fictional quotes are sanctioned: prompt now prefers a brief-provided
+  real quote, else generates a clearly-fictional person+company; every testimonial concept is
+  auto-flagged "ℹ FICTIONAL testimonial" in review notes. Style-guide Entry 5 rewritten to the
+  interim policy (the old NEVER-fabricate text contradicted the generation instructions in the
+  same prompt). **Real fix = a quote library** (→ Adrie's July "Quotes or instructions on
+  quotes" roadmap item): a refs doc of approved real quotes ADAM samples from.
+- ✅ **Feed-headline caps aligned to Adrie's spec:** Headline_Long ≤50, Headline_Short ≤30
+  (was 40/27) — prompt (both targeting branches) + field_caps_meta_feed.
+- ✅ **Sticky Note single-column version now generated** (Entry 17 requires BOTH layouts).
+  Template already exists in Elise's Figma (registry caps: Single Headline 26 / Single Column
+  112). Copy gen emits `single_headline`+`single_bullets` (hard-enforced), manifest carries
+  `Single_Headline`/`Single_Bullets`. ⬜ Plugin assembly of the single-column frame untested —
+  verify on the next sticky-note sprint.
+- ⬜ **With-CTA / without-CTA variant mix not implemented.** Many entries specify "one variant
+  with a CTA, the rest without" (Talent Profile: two). ADAM puts a CTA on every concept and the
+  plugin defaults to with-CTA. Needs a per-entry prompt rule + plugin variant pairing.
+- ⬜ **Variant model deviation — surface to Adrie for sign-off.** Her spec: N concepts × 3
+  labeled variants (A/B/C, original re-executions). ADAM: 6 independent concepts → top 3.
+  Outputs land similarly; get her explicit OK rather than re-architect.
+- ⬜ **Missing refs from Adrie:** Freelancer Work Categories.pdf (Entry 9 talent tags), updated
+  ad examples doc, updated SMB copy bank (all on her July list). Drop into refs/ + build_refs
+  when received.
+
 ## D. Product decisions (Logan + Ravi + Adrie)
 - ✅ **Prospecting vs Retargeting differentiation.** DECIDED (Logan, Option A): one shared
   creative per ad, both text versions. Implemented in copy_gen: explicit per-targeting RULES

@@ -3,11 +3,11 @@
     "title": "Upwork Ad Type Style Guide — Text_On_Visual Copy Rules by Ad Type",
     "source": "Adrie Etherington, last updated July 2026",
     "note": "SINGLE SOURCE OF TRUTH for per-ad-type copy rules. run_pipeline.py renders the matched entry into the copy prompt (prose) AND enforces char_limits deterministically. char_limits keys are ADAM's OWN output field names, so enforcement is direct. On-image core fields (creative_headline/creative_subhead/cta) are editorial (soft) caps; the Figma template registry provides the hard physical cap where it exists. Multi-image fields (chat_label, us_bullets, poll_question, ...) are hard caps (no template equivalent). Meta-feed fields use field_caps_meta_feed. Edit this file, not the code.",
-    "multi_image_fields": ["us_headline","them_headline","us_bullets","them_bullets","left_headline","right_headline","left_bullets","right_bullets","poll_question","poll_option_a","poll_option_b","testimonial_quote","testimonial_author","profile_name","profile_title","profile_left","profile_right","search_results","button_text","pie_labels","pie_center","chat_label","chat_message"]
+    "multi_image_fields": ["us_headline","them_headline","us_bullets","them_bullets","left_headline","right_headline","left_bullets","right_bullets","single_headline","single_bullets","poll_question","poll_option_a","poll_option_b","testimonial_quote","testimonial_author","profile_name","profile_title","profile_left","profile_right","search_results","button_text","pie_labels","pie_center","chat_label","chat_message"]
   },
   "field_caps_meta_feed": {
-    "headline": 40,
-    "headline_short": 27,
+    "headline": 50,
+    "headline_short": 30,
     "body_short": 125,
     "body_long": 300,
     "description": 25
@@ -65,7 +65,7 @@
       "entry": 5, "name": "Testimonial",
       "layout": "A real client testimonial with brand elements (stars/badges). Always includes attribution (name, job title, company).",
       "density": "Medium — quote plus attribution line.",
-      "rules": ["Use a real quote from attached docs or the brief. NEVER fabricate a quote.", "Quotes may be shortened but must not change the intended meaning.", "Always include first name, last-name initial, job title, and company.", "If no real quote can be sourced and none was provided, use Lorem Ipsum and flag it.", "Sentence case for attribution. No trailing period on attribution."],
+      "rules": ["If the order brief provides a real quote, use it — it may be shortened but must not change the intended meaning.", "INTERIM POLICY (Logan, 2026-07-15 — no real-quote library exists yet): when no quote is provided, write a clearly FICTIONAL but believable quote — an invented person, invented company, and a plausible specific SMB result. Never attribute to a real person or real company. Lorem Ipsum is not acceptable.", "Fictional testimonials are flagged for reviewers automatically; they are placeholders until the real-quote library lands.", "Always include first name, last-name initial, job title, and company.", "Sentence case for attribution. No trailing period on attribution."],
       "punctuation": "Opening + closing quotation marks required on the testimonial. Attribution: comma between name/title and title/company.",
       "tone": "Let the quote speak. Do not editorialize or frame it with extra copy.",
       "cta": "Not applicable to visual copy.",
@@ -189,7 +189,7 @@
       "punctuation": "List items are fragments — no periods. Title may use minimal punctuation if warranted.",
       "tone": "Practical and visual — like something someone actually wrote down.",
       "cta": "Not applicable to visual copy.",
-      "char_limits": {"left_headline": 12, "right_headline": 12, "left_bullets": 30, "right_bullets": 30}
+      "char_limits": {"left_headline": 12, "right_headline": 12, "left_bullets": 30, "right_bullets": 30, "single_headline": 26, "single_bullets": 34}
     },
     "poll": {
       "entry": 18, "name": "Poll",
