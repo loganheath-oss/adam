@@ -3370,7 +3370,10 @@ def _md_inline(text: str) -> str:
         return f'<a href="{html.escape(url)}"{tgt}>{label}</a>'
 
     text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", _link, text)
-    text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
+    text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
+    # Single-asterisk emphasis (e.g. "it *looks* like") — previously unsupported,
+    # so the raw asterisks leaked into the page.
+    text = re.sub(r"(?<![\w*])\*([^*\s](?:[^*]*[^*\s])?)\*(?![\w*])", r"<em>\1</em>", text)
     text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
     return text
 
@@ -3460,6 +3463,21 @@ def _render_markdown(md: str) -> str:
                 out.append("<ul>")
                 list_open = True
             content = m.group(3)
+            # Lazy continuation: an INDENTED follow-on line is the same bullet,
+            # hard-wrapped in the source. Without this, a bold/code span that
+            # wraps across source lines split mid-marker and leaked raw ** / `
+            # into the page (the "odd styling" on Troubleshooting).
+            j = i + 1
+            while j < n:
+                nxt = lines[j]
+                if (nxt.strip() == "" or li_re.match(nxt)
+                        or nxt.lstrip().startswith(("#", "```", ">", "|"))
+                        or re.match(r"^---+\s*$", nxt)
+                        or not nxt.startswith((" ", "\t"))):
+                    break
+                content += " " + nxt.strip()
+                j += 1
+            i = j - 1
             cb = re.match(r"\[([ xX])\]\s+(.*)", content)
             if cb:
                 checked = "checked" if cb.group(1).lower() == "x" else ""
