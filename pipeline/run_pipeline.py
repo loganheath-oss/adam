@@ -1342,6 +1342,18 @@ Return ONLY the JSON array. No other text."""
                                               + ", ".join(concept["length_flags"]))
                             concept["review_notes"] = (". ".join(_notes) + ". "
                                                        + concept.get("review_notes", ""))
+                        # SOFT demotion: feed-field overflow (length_warnings = over
+                        # Adrie's Meta caps, e.g. body_long>300) prefers a clean
+                        # alternative but stays shippable. Keep rank (it orders the
+                        # backfill); found live 2026-07-15: two Testimonial concepts
+                        # shipped 30% over body_long because warnings were recorded
+                        # but never consulted at selection time.
+                        elif concept.get("length_warnings") and concept.get("selected"):
+                            concept["selected"] = False
+                            concept["review_notes"] = (
+                                "⚠ FEED LENGTH — over Meta field cap(s): "
+                                + ", ".join(concept["length_warnings"]) + ". "
+                                + concept.get("review_notes", ""))
                         # Fictional-testimonial notice (interim policy — see copy gen):
                         # informational, does NOT de-select; reviewers verify/swap at gate 3.
                         if concept.get("testimonial_fictional"):
@@ -1351,15 +1363,17 @@ Return ONLY the JSON array. No other text."""
                                 + concept.get("review_notes", ""))
                         reviewed.append(concept)
 
-                # Backfill so the style still ships ~3 picks. Stage 1: promote the
-                # highest-ranked fully-clean concepts. Stage 2 (only if still short):
-                # promote the least-overflowing NON-LEGAL concepts — a slightly-long
-                # concept can ship (flagged) rather than deliver fewer than 3; a
-                # legal-flagged concept is NEVER promoted.
+                # Backfill so the style still ships ~3 picks, cleanest first:
+                #   Stage 1 — fully-clean concepts (no flags, no warnings) by rank.
+                #   Stage 2 — NON-LEGAL leftovers by (hard-flag count, warning count,
+                #   rank): soft-warned concepts return before hard-flagged ones, so a
+                #   slightly-long concept ships (flagged) rather than delivering fewer
+                #   than 3. A legal-flagged concept is NEVER promoted.
                 def _sel_count():
                     return sum(1 for x in reviewed if x.get("selected"))
                 _clean = [c for c in reviewed
-                          if not c.get("legal_flags") and not c.get("length_flags")]
+                          if not c.get("legal_flags") and not c.get("length_flags")
+                          and not c.get("length_warnings")]
                 if _sel_count() < 3 and _clean:
                     for c in sorted(_clean, key=lambda c: c.get("rank", 99)):
                         if _sel_count() >= 3:
@@ -1369,6 +1383,7 @@ Return ONLY the JSON array. No other text."""
                     _fallback = [c for c in reviewed
                                  if not c.get("legal_flags") and not c.get("selected")]
                     for c in sorted(_fallback, key=lambda c: (len(c.get("length_flags", [])),
+                                                              len(c.get("length_warnings", [])),
                                                               c.get("rank", 99))):
                         if _sel_count() >= 3:
                             break

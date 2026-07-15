@@ -87,6 +87,21 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   ad examples doc, updated SMB copy bank (all on her July list). Drop into refs/ + build_refs
   when received.
 
+## E2E validation run (2026-07-15, sprint 2026-07-meta-c3bade5da2a7 — kept as evidence)
+- ✅ **Full live sprint through the deployed app: COMPLETE in 6.4 min, zero errors.** 6 touched
+  styles, Targeting = both, long brief w/ embedded quote. 18/19 checks passed on first run:
+  chat=conversation, tweet=organic, brief quote used in a testimonial + FICTIONAL flag,
+  sticky single-column populated + capped, CTA mix (1-with/2-without on Split Screen +
+  Photo w/ Text incl. the subhead rule), manifest doubled 18 Prospecting + 18 Retargeting
+  rows sharing creatives, no_cta column correct, reliability dashboard logged the run
+  (100% clean, $0.42 tracked spend).
+- ✅ **The 1 failure was a REAL gap, fixed same-night:** two Testimonial concepts shipped with
+  feed copy over Adrie's caps (body_long 391>300 etc.) because `length_warnings` were
+  recorded but never consulted at selection. Now soft-warned concepts are demoted in favor
+  of clean ones (tiered backfill: clean → least-warned → never legal). Unit-verified both
+  the failure scenario and yield protection. NOTE: the test sprint's manifest still contains
+  the two warned concepts (pre-fix); flagged in its review notes.
+
 ## D. Product decisions (Logan + Ravi + Adrie)
 - ✅ **Prospecting vs Retargeting differentiation.** DECIDED (Logan, Option A): one shared
   creative per ad, both text versions. Implemented in copy_gen: explicit per-targeting RULES
