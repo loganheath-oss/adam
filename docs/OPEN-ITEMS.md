@@ -42,8 +42,11 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   `/sprints` still works by direct URL for reviewers (verified live 200); returns as an
   admin-gated nav item with RBAC. Deployed to adam-web + verified on the live site.
   NOTE: this is UX-level (no hard auth yet) — true enforcement is Phase 3 RBAC.
-- ⬜ **Add Key Messaging themes into the Additional Info area** (Sprint 9: AI + Specialization
-  block — top L1/L3 categories, hypothesis, sample copy). Prefill/help text in the form.
+- ✅ **Key Messaging themes in the Brief (→ Additional_Info).** Added an insertable
+  "Key messaging themes" helper below the Brief field: data-driven chips (starts with
+  Sprint 9 — AI + Specialization) that drop the theme's angle/why/top-categories/considerations
+  into the Brief so it guides copy generation. Chip shows ✓ when inserted. Add the next
+  sprint's theme to `KEY_MESSAGING_THEMES` in `app/new/page.tsx`. Deployed.
 - ⛔ **Blank Notification tile** in the order-form style menu (missing Figma template image) — asset fix (Elise).
 
 ## C. Bug

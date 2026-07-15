@@ -32,6 +32,28 @@ const STYLES: [string, string][] = [
   ["Bespoke", "A newly concepted design layout that must be created from scratch."],
 ];
 
+// Key messaging themes Paid Acq can drop into the Brief (→ Additional_Info) so the
+// current sprint's angle guides copy generation. Data-driven — add the next sprint's
+// theme here and it appears as an insert chip. Keep entries concise: angle + why +
+// categories + considerations, not full sample ads (those bias generation).
+type MessagingTheme = { id: string; title: string; subtitle: string; content: string };
+
+const KEY_MESSAGING_THEMES: MessagingTheme[] = [
+  {
+    id: "sprint-9-ai-specialization",
+    title: "Sprint 9 — AI + Specialization",
+    subtitle: "Specialized job titles & skills, infused with Upwork's AI emphasis",
+    content: `Sprint 9 — AI + Specialization
+Angle: Specialized job titles & skills, infused with Upwork's AI emphasis. Lean into top-performing L1 categories where AI crosses over.
+Why: Upwork is growing AI contracts; creative is our best targeting lever.
+Top categories to feature:
+- Design & Creative — Graphic Design, Video Editing (AI tools angle)
+- Development & IT — Web Design, Full Stack, AI/ML engineers
+- Sales & Marketing — Social Media, SEO, Lead Gen (AI copywriting/analytics)
+Consider skill-stacking (mention multiple categories in one ad). Layer in cost-of-waiting / cost-of-a-bad-hire and trust signals (ratings, reviews). Lean into "faster than competitors" language.`,
+  },
+];
+
 type Resolution = { size: string; ratio: string; label?: string };
 type Format = { carousel: boolean; resolutions: Resolution[] };
 type PlatformDef = { desc: string; formats: Record<string, Format> };
@@ -371,6 +393,38 @@ export default function NewOrderPage() {
             </div>
             <p className="mb-3 text-xs text-[#9aa0a6]">Add campaign context, a key message, or must-includes — or leave it blank and submit.</p>
             <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={4} placeholder="Campaign context, key message, must-includes…" className="w-full rounded-lg border border-[#E0E0E0] p-3.5 text-sm outline-none focus:border-[#14A800]" />
+
+            {KEY_MESSAGING_THEMES.length > 0 && (
+              <div className="mt-3 rounded-lg border border-[#ECECEC] bg-[#FAFBFA] p-3.5">
+                <p className="mb-2 text-xs font-medium text-[#5f6368]">
+                  Key messaging themes{" "}
+                  <span className="font-normal text-[#9aa0a6]">— insert a current sprint theme to guide the copy</span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {KEY_MESSAGING_THEMES.map((t) => {
+                    const used = brief.includes(t.content);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        title={t.subtitle}
+                        onClick={() =>
+                          setBrief((b) => (used ? b : b.trim() ? `${b.trim()}\n\n${t.content}` : t.content))
+                        }
+                        className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                          used
+                            ? "border-[#14A800] bg-[#14A800]/10 text-[#108A00]"
+                            : "border-[#E0E0E0] bg-white hover:border-[#14A800] hover:text-[#108A00]"
+                        }`}
+                      >
+                        {used ? "✓ " : "+ "}
+                        {t.title}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <h3 className="mb-2 mt-8 text-[15px] font-semibold">Order summary</h3>
             <div className="grid gap-x-12 sm:grid-cols-2">
