@@ -56,17 +56,35 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   zero. Verified live: a ~5k-char brief that returned 0 now generates all 6 concepts ($0.08).
 
 ## D. Product decisions (Logan + Ravi + Adrie)
-- ⬜ **Prospecting vs Retargeting.** The July instructions say generate **separate labeled
-  concept sets** when Targeting = "Prospecting and Retargeting". ADAM currently only feeds
-  one example set as context (picks Prospecting when both are present) — it does NOT honor
-  the split. Decision: implement the labeled split, or accept "one request → a prospecting +
-  a retargeting version in the same style"?
+- ✅ **Prospecting vs Retargeting differentiation.** DECIDED (Logan, Option A): one shared
+  creative per ad, both text versions. Implemented in copy_gen: explicit per-targeting RULES
+  in the prompt (Prospecting = cold/awareness/introduce; Retargeting = warm/familiar/convert);
+  single targeting applies its own rules; **"Prospecting and Retargeting" generates a
+  `targeting_copy` object** with distinct Prospecting + Retargeting headline+description, and
+  the manifest expands each concept into a Prospecting row + a Retargeting row (same image,
+  only feed copy + Targeting differ). Enforcement extended to the per-audience feed copy.
+  Verified live: genuinely different angles ("Hire AI freelancers fast" vs "Still looking for
+  AI expertise? You already know Upwork…"), emoji bullets present, manifest → 2 rows.
+- ✅ **Emoji-bullet descriptions (~50%).** Already in the copy instructions (bullet/paragraph
+  ~half-each, ✅/✔️/emoji-led). Examples: ADAM already loads Adrie's separate Prospecting +
+  Retargeting example docs; live output produces the format.
 - ℹ️ Adrie noted the legal self-flag on competitor-comparison copy is a human-in-the-loop
   solve — nothing to fix.
 
-## E. Admin / usage / reliability (separate build, design in docs/admin-usage-design.md)
-- 🔨 Phase 1: Postgres + usage_events + reliability view. `db.py` written; not yet wired into
-  the pipeline touchpoints. RBAC (member/admin) phase absorbs B's "submitters can't see sprints".
+## E. Admin / usage / reliability (design in docs/admin-usage-design.md)
+- ✅ **Phase 1 backend — reliability data spine, LIVE.** Railway Postgres provisioned +
+  `DATABASE_URL` referenced into adam. `db.py` (best-effort, no-ops without DB) wired into
+  `main.py`: `init_db()` on startup, logs `order.submitted` / `sprint.completed` /
+  `sprint.failed` (terminal state, offloaded off the loop), `GET /admin/reliability` +
+  `GET /admin/usage` (api-key gated). Deployed + verified end-to-end on the live backend: a
+  test order logged `order.submitted` + `sprint.failed` and the incident surfaced with the
+  real error; test data cleaned up. NOTE: the deploy runs `uv sync --locked`, so any
+  pyproject dep change MUST be followed by `uv lock` + commit `uv.lock` or the deploy fails.
+- ⬜ **Phase 1 remainder:** the **Reliability dashboard tab** in adam-web (UI view of the
+  data); fan `log_event` out to more touchpoints (gate.approved/rejected, copy.generated cost
+  from token_usage, chat.asked).
+- ⬜ **Phase 2:** issue_reports + `POST /issues` + triage + "distill into a learning" loop.
+- ⬜ **Phase 3:** RBAC (admin/member) — absorbs B's "submitters can't see sprints"; Roles tab; SSO.
 
 ## Roadmap anchors (Adrie's doc)
 - **July:** Logan UI + troubleshooting, final tests/fixes, updated ad examples, SMB copy bank,

@@ -558,6 +558,15 @@ def _enforce_lengths(concept, style):
         hard_flags += _field_overflows(concept, f, cap)
     for f, cap in soft.items():
         soft_flags += _field_overflows(concept, f, cap)
+    # "Both" concepts: also check each audience's feed copy under targeting_copy
+    # against the Meta-feed caps (soft — feed overflow is recorded, not de-selected).
+    tc = concept.get("targeting_copy")
+    if isinstance(tc, dict):
+        feed = (_load_style_guide().get("field_caps_meta_feed", {}) or {})
+        for aud, obj in tc.items():
+            if isinstance(obj, dict):
+                for f, cap in feed.items():
+                    soft_flags += [f"{aud}.{m}" for m in _field_overflows(obj, f, cap)]
     if hard_flags:
         concept["length_flags"] = hard_flags
     if soft_flags:
@@ -691,15 +700,67 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     copy_bank = context.get("smb_copy_bank", "")
     copy_style_rules = context.get("copy_style_rules", "")
 
-    # Pick examples based on targeting
+    # Pick examples + rules based on targeting. "Prospecting and Retargeting" is
+    # BOTH: load both example sets and (below) ask for both feed-copy versions per ad.
     targeting_type = order.get("targeting", "Prospecting")
-    examples = ""
-    if "Prospecting" in targeting_type:
-        examples = context.get("prospecting_examples", "")
-    elif "Retargeting" in targeting_type:
-        examples = context.get("retargeting_examples", "")
-    if not examples and context.get("prospecting_examples"):
-        examples = context.get("prospecting_examples", "")
+    _tl = targeting_type.lower()
+    _is_both = ("prospecting" in _tl and "retargeting" in _tl)
+    _prosp_ex = context.get("prospecting_examples", "")
+    _retarget_ex = context.get("retargeting_examples", "")
+    if _is_both:
+        examples = (f"--- PROSPECTING EXAMPLES ---\n{_prosp_ex[:1900]}\n\n"
+                    f"--- RETARGETING EXAMPLES ---\n{_retarget_ex[:1900]}")
+        targeting_rules = (
+            "This order is BOTH Prospecting AND Retargeting. Provide the feed copy TWICE per\n"
+            "concept — one version per audience (see targeting_copy below). The two must be\n"
+            "genuinely different in angle, not reworded:\n"
+            "- PROSPECTING = a COLD audience seeing Upwork for the first time. Build awareness,\n"
+            "  introduce the value, lead with the problem/outcome. No assumed familiarity.\n"
+            "- RETARGETING = a WARM audience that already knows Upwork. Acknowledge familiarity\n"
+            "  (e.g. \"still hiring for that role?\", \"ready to post that job?\") and drive the conversion."
+        )
+    elif "retargeting" in _tl:
+        examples = _retarget_ex or _prosp_ex
+        targeting_rules = (
+            "This is a RETARGETING order — a WARM audience that already knows Upwork.\n"
+            "Acknowledge familiarity (\"still hiring for that role?\", \"ready to post that job?\")\n"
+            "and drive the conversion. Do NOT re-introduce Upwork from scratch."
+        )
+    else:
+        examples = _prosp_ex or _retarget_ex
+        targeting_rules = (
+            "This is a PROSPECTING order — a COLD audience seeing Upwork for the first time.\n"
+            "Build awareness, introduce the value, and lead with the problem/outcome.\n"
+            "Do NOT assume any prior familiarity with Upwork."
+        )
+
+    # Feed-copy field spec + JSON key list branch on single-vs-both targeting.
+    if _is_both:
+        ad_platform_block = (
+            "AD-PLATFORM copy — the Meta feed fields (headline + primary text) shown AROUND the\n"
+            "image. NEVER printed on the image; distinct wording from the on-creative copy. This\n"
+            "order is BOTH audiences, so provide the feed copy TWICE under a \"targeting_copy\"\n"
+            "object — the shared image + on-creative copy above stay the same; only these differ:\n"
+            "- targeting_copy: an object with EXACTLY two keys, \"Prospecting\" and \"Retargeting\".\n"
+            "  Each maps to an object with: headline (max 40), headline_short (max 27),\n"
+            "  body_short (max 125), body_long (max 300 — Primary Text; keep the ~half-bulleted\n"
+            "  rule), description (max 25). Apply the Prospecting vs Retargeting rules above.\n"
+            "- concept_tag (short slug like \"talent-speed-v1\")"
+        )
+        json_keys_full = "creative_headline, creative_subhead, cta, targeting_copy, concept_tag"
+    else:
+        ad_platform_block = (
+            "AD-PLATFORM copy — the Meta feed fields shown AROUND the image (caption + headline).\n"
+            "NEVER printed on the image itself; distinct wording from the on-creative copy:\n"
+            "- headline (max 40 characters — the LONG Meta headline field)\n"
+            "- headline_short (max 27 characters — the SHORT Meta headline, same message condensed)\n"
+            "- body_short (max 125 characters — Primary Text SHORT variant)\n"
+            "- body_long (max 300 characters — Primary Text LONG variant with more detail)\n"
+            "- description (max 25 characters — Meta description field)\n"
+            "- concept_tag (short slug like \"talent-speed-v1\")"
+        )
+        json_keys_full = ("creative_headline, creative_subhead, headline, headline_short, "
+                          "body_short, body_long, description, cta, concept_tag")
 
     # Get order brief for priority override
     order_brief = context.get("order_brief", order.get("brief", ""))
@@ -875,6 +936,9 @@ Use only these verified claims. Do not invent statistics.
 Reference these for tone and structure. Match this quality.
 {copy_bank[:3000]}
 
+===== TARGETING RULES ({targeting_type}) =====
+{targeting_rules}
+
 ===== REAL AD EXAMPLES ({targeting_type}) =====
 Study these examples closely. Your output should match this quality and style.
 {examples[:4000]}
@@ -909,14 +973,7 @@ is silent on a field:
 - creative_subhead (ONE short supporting line ON the image, must NOT repeat the primary text below; fallback max 55 characters)
 - cta (the CTA button label on the image; fallback max 20 characters)
 
-AD-PLATFORM copy — the Meta feed fields shown AROUND the image (caption + headline).
-NEVER printed on the image itself; distinct wording from the on-creative copy:
-- headline (max 40 characters — the LONG Meta headline field)
-- headline_short (max 27 characters — the SHORT Meta headline, same message condensed)
-- body_short (max 125 characters — Primary Text SHORT variant)
-- body_long (max 300 characters — Primary Text LONG variant with more detail)
-- description (max 25 characters — Meta description field)
-- concept_tag (short slug like "talent-speed-v1")
+{ad_platform_block}
 {multi_field_instructions}
 RULES:
 - Match the brand voice exactly — clear, concise, supportive, professional
@@ -926,7 +983,7 @@ RULES:
 - No generic marketing speak — be specific about what Upwork offers
 - Headlines should follow the 95/5 rule: 95% informative, 5% personality
 
-Return as JSON array of objects with exactly these keys: creative_headline, creative_subhead, headline, headline_short, body_short, body_long, description, cta, concept_tag{multi_field_keys}. No other text."""
+Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_field_keys}. No other text."""
 
     # Retry transient failures with backoff. Previously a single 429/5xx/timeout
     # silently returned zero concepts for the style, and stage 03 then shipped a
@@ -980,6 +1037,16 @@ Return as JSON array of objects with exactly these keys: creative_headline, crea
                         concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{j}"
                         concept["batch_index"] = i
                         concept["visual_style"] = style
+                        # "Both" concepts carry feed copy under targeting_copy; mirror
+                        # the Prospecting set into the flat fields so the rest of the
+                        # pipeline (review, image prompts) still reads them. The manifest
+                        # expands targeting_copy into a Prospecting + a Retargeting row.
+                        _tc = concept.get("targeting_copy")
+                        if isinstance(_tc, dict) and _tc:
+                            _p = _tc.get("Prospecting") or _tc.get("prospecting") or {}
+                            for _ff in ("headline", "headline_short", "body_short", "body_long", "description"):
+                                if not concept.get(_ff) and isinstance(_p, dict):
+                                    concept[_ff] = _p.get(_ff, "")
                         # Enforce Adrie's sentence-case rule on headlines/CTAs.
                         for _cf in _SENTENCE_CASE_FIELDS:
                             if concept.get(_cf):
@@ -2230,7 +2297,7 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
                 {}
             )
 
-        manifest_rows.append({
+        base_row = {
             # Order form fields
             "Delivery_Date": order.get("delivery_date", ""),
             "Driver": order.get("driver", ""),
@@ -2319,7 +2386,27 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "image_file": str(img_path) if img_path else "",
             "export_file": str(export_path) if has_export else "",
             "status": "delivered" if has_export else "pending_assembly"
-        })
+        }
+        # "Prospecting and Retargeting": one shared creative, two feed-copy sets →
+        # emit a Prospecting row AND a Retargeting row (same image/creative; only
+        # headline + primary text + Targeting differ). Otherwise, a single row.
+        _tc = concept.get("targeting_copy")
+        if isinstance(_tc, dict) and _tc:
+            for _tgt in ("Prospecting", "Retargeting"):
+                _v = _tc.get(_tgt) if isinstance(_tc.get(_tgt), dict) else {}
+                _r = dict(base_row)
+                _r["Targeting"] = _tgt
+                _r["Primary_Text_Short"] = _v.get("body_short", _r["Primary_Text_Short"])
+                _r["Primary_Text_Long"] = _v.get("body_long", _r["Primary_Text_Long"])
+                _r["Headline"] = _v.get("headline", _r["Headline"])
+                _r["Headline_Short"] = _v.get("headline_short", _r["Headline_Short"])
+                _r["Description"] = _v.get("description", _r["Description"])
+                _sfx = _tgt[:4].lower()
+                _r["asset_id"] = f"{base_row['asset_id']}_{_sfx}"
+                _r["concept_tag"] = f"{base_row.get('concept_tag', '')}-{_sfx}"
+                manifest_rows.append(_r)
+        else:
+            manifest_rows.append(base_row)
 
     # Write manifest CSV (selected assets only — the deliverables grid)
     manifest_path = run_dir / "asset_manifest.csv"
