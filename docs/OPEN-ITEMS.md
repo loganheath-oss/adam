@@ -101,7 +101,14 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   triage actions + a distill-to-learning box; API-route proxies (`/api/issues`,
   `/api/admin/issues/[id]`). Backend loop verified live (report → list → triage → cleanup).
   Scoreboard = the queue/counts shrink over time.
-- ⬜ **Phase 3:** RBAC (admin/member) — absorbs B's "submitters can't see sprints"; Roles tab; SSO.
+- 🔨 **Phase 3 — role scaffolding, LIVE (enforcement gated on SSO).** Role model (users.role
+  admin|member) + management: `db.list_users`/`set_role`/`is_admin`/`ensure_admins` (seeds
+  admins from `ADMIN_EMAILS` env on startup); `GET /admin/roles` + `PATCH /admin/roles/{email}`;
+  a **Roles tab** at `/admin/roles` (list users, counts, make-admin/make-member toggle). Verified
+  live (seed → list → flip → is_admin). **Still needs SSO** for per-route enforcement — today
+  `/admin/*` is gated by the shared API key; `is_admin()` is the hook to wire in once a
+  per-user identity exists. ACTION: set `ADMIN_EMAILS` on the adam service with Ravi + Logan's
+  emails (or flip them in the Roles tab).
 
 ## Roadmap anchors (Adrie's doc)
 - **July:** Logan UI + troubleshooting, final tests/fixes, updated ad examples, SMB copy bank,

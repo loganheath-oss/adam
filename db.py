@@ -146,6 +146,67 @@ def update_issue(issue_id: int, status: str | None = None,
         return False
 
 
+def list_users(limit: int = 500) -> dict:
+    """All known users + their roles (admin | member) for the Roles tab. Users are
+    created automatically the first time they're seen in an event. Best-effort."""
+    if _Session is None:
+        return {"enabled": False}
+    try:
+        with _Session() as s:
+            rows = s.execute(
+                select(User).order_by(User.role, User.last_seen_at.desc())
+            ).scalars().all()
+            counts = dict(s.execute(select(User.role, func.count()).group_by(User.role)).all())
+            users = [{
+                "email": u.email, "name": u.name, "role": u.role,
+                "tags": u.tags or [],
+                "last_seen_at": u.last_seen_at.isoformat() if u.last_seen_at else None,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+            } for u in rows[:limit]]
+        return {"enabled": True, "counts": counts, "users": users}
+    except Exception as e:
+        return {"enabled": True, "error": f"query failed: {e}"}
+
+
+def set_role(email: str, role: str) -> bool:
+    """Set a user's role (admin | member); creates the user if unseen. Best-effort."""
+    if _Session is None or role not in ("admin", "member") or not email:
+        return False
+    try:
+        with _Session() as s:
+            u = s.execute(select(User).where(User.email == email)).scalar_one_or_none()
+            if u is None:
+                s.add(User(email=email, role=role))
+            else:
+                u.role = role
+            s.commit()
+        return True
+    except Exception as e:
+        print(f"[db] set_role failed: {e}")
+        return False
+
+
+def ensure_admins(emails) -> None:
+    """Seed admin role for the known admins (Ravi + Logan) from ADMIN_EMAILS on
+    startup, so they're admin even before they've been seen. Best-effort."""
+    for e in emails:
+        if (e or "").strip():
+            set_role(e.strip(), "admin")
+
+
+def is_admin(email: str | None) -> bool:
+    """Role check for future per-route enforcement (activates once SSO gives a
+    per-user identity). Best-effort; False if unknown."""
+    if _Session is None or not email:
+        return False
+    try:
+        with _Session() as s:
+            u = s.execute(select(User).where(User.email == email)).scalar_one_or_none()
+            return bool(u and u.role == "admin")
+    except Exception:
+        return False
+
+
 def db_enabled() -> bool:
     return bool(_URL)
 
@@ -162,6 +223,11 @@ def init_db() -> bool:
         _Session = sessionmaker(bind=_engine, expire_on_commit=False)
         Base.metadata.create_all(_engine)
         print("[db] connected; schema ensured (users, usage_events).")
+        # Seed the known admins (Ravi + Logan) from ADMIN_EMAILS so they're admin
+        # before they've been seen. RBAC enforcement per-route activates with SSO.
+        admins = os.environ.get("ADMIN_EMAILS", "")
+        if admins:
+            ensure_admins(admins.split(","))
         return True
     except Exception as e:
         print(f"[db] init failed ({e}); usage tracking disabled.")

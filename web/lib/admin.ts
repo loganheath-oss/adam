@@ -63,3 +63,23 @@ export async function getIssues(status?: string): Promise<Issues | null> {
   const q = status ? `?status=${encodeURIComponent(status)}` : "";
   return apiGet<Issues>(`/admin/issues${q}`);
 }
+
+export type User = {
+  email: string;
+  name: string | null;
+  role: string;
+  tags: string[];
+  last_seen_at: string | null;
+  created_at: string | null;
+};
+
+export type Roles = {
+  enabled: boolean;
+  error?: string;
+  counts?: Record<string, number>;
+  users?: User[];
+};
+
+export async function getRoles(): Promise<Roles | null> {
+  return apiGet<Roles>("/admin/roles");
+}

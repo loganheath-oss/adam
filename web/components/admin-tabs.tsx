@@ -3,6 +3,7 @@ import Link from "next/link";
 const TABS = [
   { href: "/admin", label: "Reliability", key: "reliability" },
   { href: "/admin/issues", label: "Issues", key: "issues" },
+  { href: "/admin/roles", label: "Roles", key: "roles" },
 ];
 
 export function AdminTabs({ current }: { current: string }) {

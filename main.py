@@ -2279,6 +2279,34 @@ async def admin_update_issue(issue_id: int, request: Request):
     return JSONResponse({"ok": True, "learned": bool(learning)})
 
 
+@app.get("/admin/roles", dependencies=[Depends(require_api_key)])
+async def admin_roles():
+    """List users + their roles (admin | member) for the Roles tab."""
+    loop = asyncio.get_event_loop()
+    return JSONResponse(await loop.run_in_executor(None, db.list_users))
+
+
+@app.patch("/admin/roles/{email}", dependencies=[Depends(require_api_key)])
+async def admin_set_role(email: str, request: Request):
+    """Flip a user between admin and member. NOTE: per-route RBAC enforcement (gating
+    the operational surface by role) activates once SSO provides a per-user identity;
+    today /admin/* is gated by the shared api key, and this manages the role data."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    role = body.get("role")
+    if role not in ("admin", "member"):
+        return JSONResponse({"ok": False, "error": "role must be 'admin' or 'member'"},
+                            status_code=400)
+    loop = asyncio.get_event_loop()
+    ok = await loop.run_in_executor(None, db.set_role, email, role)
+    if not ok:
+        return JSONResponse({"ok": False, "error": "Couldn't set role (DB unavailable?)"},
+                            status_code=500)
+    return JSONResponse({"ok": True, "email": email, "role": role})
+
+
 @app.get("/sprints.json", dependencies=[Depends(require_api_key)])
 async def sprints_json():
     """Machine-readable sprint list — the JSON sibling of /sprints, so tooling
