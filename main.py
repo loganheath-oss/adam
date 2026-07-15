@@ -2216,6 +2216,69 @@ async def admin_usage(days: int = 30):
     return JSONResponse(await loop.run_in_executor(None, db.usage_summary, days))
 
 
+@app.post("/issues")
+async def report_issue_endpoint(request: Request):
+    """Public: capture a user-reported issue — the feedback→learning loop. Admins
+    triage these and distill the real ones into learnings.md (which ADAM reads on
+    every run/chat). Success metric: this shrinks over time."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    desc = str(body.get("description", "") or "").strip()
+    if not desc:
+        return JSONResponse({"ok": False, "error": "A description is required."}, status_code=400)
+    ctx = body.get("context") if isinstance(body.get("context"), dict) else None
+    ok = db.report_issue(
+        description=desc[:4000],
+        user_email=(body.get("user_email") or body.get("user") or None),
+        sprint_id=(body.get("sprint_id") or None),
+        category=(body.get("category") or None),
+        context=ctx,
+    )
+    if not ok:
+        return JSONResponse({"ok": False, "error": "Issue tracking isn't configured (no database)."},
+                            status_code=503)
+    return JSONResponse({"ok": True})
+
+
+@app.get("/admin/issues", dependencies=[Depends(require_api_key)])
+async def admin_issues(status: str | None = None):
+    """Triage queue + counts by status (admin)."""
+    loop = asyncio.get_event_loop()
+    return JSONResponse(await loop.run_in_executor(None, db.list_issues, status))
+
+
+@app.patch("/admin/issues/{issue_id}", dependencies=[Depends(require_api_key)])
+async def admin_update_issue(issue_id: int, request: Request):
+    """Triage an issue: set status / resolution note, and optionally distill it into a
+    learning (append to learnings.md, which ADAM reads on every run/chat)."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    status = body.get("status")
+    note = body.get("resolution_note")
+    learning = str(body.get("learning", "") or "").strip()
+    if learning:
+        try:
+            existing = LEARNINGS_PATH.read_text() if LEARNINGS_PATH.exists() else ""
+            stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            LEARNINGS_PATH.write_text(
+                f"{existing.rstrip()}\n\n- ({stamp}, from issue #{issue_id}) {learning}\n")
+            db.log_event("learnings.edited", meta={"source": f"issue#{issue_id}", "chars": len(learning)})
+            status = status or "learned"
+        except Exception as e:
+            return JSONResponse({"ok": False, "error": f"Couldn't append the learning: {e}"},
+                                status_code=500)
+    loop = asyncio.get_event_loop()
+    ok = await loop.run_in_executor(None, db.update_issue, issue_id, status, note)
+    if not ok:
+        return JSONResponse({"ok": False, "error": "Issue not found (or DB unavailable)."},
+                            status_code=404)
+    return JSONResponse({"ok": True, "learned": bool(learning)})
+
+
 @app.get("/sprints.json", dependencies=[Depends(require_api_key)])
 async def sprints_json():
     """Machine-readable sprint list — the JSON sibling of /sprints, so tooling

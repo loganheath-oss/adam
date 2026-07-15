@@ -95,6 +95,57 @@ def report_issue(description: str, user_email: str | None = None,
         return False
 
 
+def list_issues(status: str | None = None, limit: int = 200) -> dict:
+    """The triage queue + counts by status. The scoreboard is 'this shrinks over
+    time' — fewer reports = ADAM improving. Best-effort."""
+    if _Session is None:
+        return {"enabled": False}
+    try:
+        with _Session() as s:
+            q = select(IssueReport).order_by(IssueReport.ts.desc()).limit(limit)
+            if status:
+                q = q.where(IssueReport.status == status)
+            rows = s.execute(q).scalars().all()
+            counts = dict(s.execute(
+                select(IssueReport.status, func.count()).group_by(IssueReport.status)
+            ).all())
+            items = [{
+                "id": r.id,
+                "ts": r.ts.isoformat() if r.ts else None,
+                "user": r.user_email,
+                "sprint_id": r.sprint_id,
+                "category": r.category,
+                "description": r.description,
+                "status": r.status,
+                "resolution_note": r.resolution_note,
+            } for r in rows]
+        return {"enabled": True, "counts": counts, "open": counts.get("open", 0),
+                "total": sum(counts.values()), "issues": items}
+    except Exception as e:
+        return {"enabled": True, "error": f"query failed: {e}"}
+
+
+def update_issue(issue_id: int, status: str | None = None,
+                 resolution_note: str | None = None) -> bool:
+    """Triage: set status and/or a resolution note. Best-effort; False if not found."""
+    if _Session is None:
+        return False
+    try:
+        with _Session() as s:
+            r = s.get(IssueReport, issue_id)
+            if r is None:
+                return False
+            if status:
+                r.status = status
+            if resolution_note is not None:
+                r.resolution_note = resolution_note
+            s.commit()
+        return True
+    except Exception as e:
+        print(f"[db] update_issue failed: {e}")
+        return False
+
+
 def db_enabled() -> bool:
     return bool(_URL)
 
