@@ -1721,7 +1721,15 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
       // Targeting column, and for "Prospecting and Retargeting" orders it emits one
       // board per targeting (concept_tag suffixed -pros / -reta), so each board gets
       // the right label here.
-      var targeting = leadRow.Targeting || leadRow.targeting || "";
+      // A merged both-targeting group shows both audiences on the pill.
+      var targetingSet = {};
+      for (var ti = 0; ti < conceptRows.length; ti++) {
+        var tv = conceptRows[ti].Targeting || conceptRows[ti].targeting || "";
+        if (tv) targetingSet[tv] = true;
+      }
+      var targetingNames = Object.keys(targetingSet);
+      var targeting = targetingNames.length > 1 ? "Prospecting + Retargeting"
+                                                : (targetingNames[0] || "");
       var targetingPill = findDirectChildByName(adInfo, "Targeting");
       if (targetingPill && targeting) {
         var targetLabel = findLayerByName(targetingPill, "Button Label");
@@ -1902,6 +1910,12 @@ function groupRowsByConcept(rows) {
   var order = [];
   for (var i = 0; i < rows.length; i++) {
     var key = rows[i].concept_tag || rows[i].asset_id || ("concept_" + i);
+    // "Prospecting and Retargeting" orders emit TWO manifest rows per concept
+    // (suffixed -pros / -reta) that share ONE creative — only the feed copy
+    // differs. Strip the suffix so the pair lands on a SINGLE board (found
+    // 2026-07-15: suffixed tags doubled the boards → 36 groups / ~239 clones).
+    // The per-audience feed copy is delivered via the CSV, not extra boards.
+    key = key.replace(/-(pros|reta)$/, "");
     if (!groups[key]) { groups[key] = []; order.push(key); }
     groups[key].push(rows[i]);
   }

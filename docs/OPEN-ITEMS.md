@@ -87,6 +87,33 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   ad examples doc, updated SMB copy bank (all on her July list). Drop into refs/ + build_refs
   when received.
 
+## Meeting outcomes (2026-07-15 ADAM Working Session — Adrie, Bree, Logan)
+- 📅 **TIMELINE: everything polished by Wed Jul 29** (copy + backend done by Wed Jul 22;
+  29th–31st = Upwork migration/grace). August = Logan out (Bree keeps a change log; review
+  end of Aug). September = align, apply fixes, platform expansion.
+- ✅ **Retargeting tone SIMPLIFIED (Adrie):** subtle — "a super hint of coming back /
+  revisiting / getting started", never "we know you've been here" creeping language (the
+  platform decides who sees it). Prompt rules softened in both targeting branches.
+- ✅ **Figma "239 concepts" explained + fixed:** the e2e assembly ran during the meeting;
+  my -pros/-reta concept_tag suffixes doubled the board groups (18→36 → ~239 styled clones).
+  Plugin now strips the suffix so a both-targeting pair lands on ONE board (feed copy ships
+  via CSV); the Targeting pill reads "Prospecting + Retargeting" for merged groups. Both
+  plugin copies updated (repo + ~/Documents live). ⬜ Re-run assembly to confirm 18 boards;
+  also clean up the 36-board test output in Figma.
+- ⬜ **Adrie sends updated reference PDFs this week** → swap into refs/ + `build_refs.py`.
+- ⬜ **Adrie creating a standard Paid-Acq brief template** → wire into the order form's Brief
+  helper when it lands.
+- ⬜ **Wiki: team-facing "how to fix/change things" directions** (Bree) — verify coverage in
+  the wiki + build an FAQ-style "most likely fixes" from the change log. (+ Logan reports odd
+  wiki styling — audit in progress.)
+- ⬜ **Admin access tiers** (dashboard vs engine): likely Lee = dashboard view; decision
+  pending Lee (Bree adding to plan doc). Roles scaffolding already supports it.
+- ℹ️ **Technical home = Haresh** (reviewing wiki/build now; multiple teams share the need;
+  ~2 days heads-down to migrate). InfoSec call only after Haresh finishes discovery.
+- ℹ️ **Motion:** Elise tests Figma Motion in August; designer conversation (After Effects vs
+  in-ADAM vs Figma) = September. On-visual copy robustness = the Style Guide work (DONE —
+  tell Adrie).
+
 ## E2E validation run (2026-07-15, sprint 2026-07-meta-c3bade5da2a7 — kept as evidence)
 - ✅ **Full live sprint through the deployed app: COMPLETE in 6.4 min, zero errors.** 6 touched
   styles, Targeting = both, long brief w/ embedded quote. 18/19 checks passed on first run:

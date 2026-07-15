@@ -745,15 +745,21 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "genuinely different in angle, not reworded:\n"
             "- PROSPECTING = a COLD audience seeing Upwork for the first time. Build awareness,\n"
             "  introduce the value, lead with the problem/outcome. No assumed familiarity.\n"
-            "- RETARGETING = a WARM audience that already knows Upwork. Acknowledge familiarity\n"
+            "- RETARGETING = a WARM audience that already knows Upwork. Keep it SUBTLE (Adrie,\n"
+            "  2026-07-15): just a light hint of coming back, revisiting, or getting started —\n"
+            "  NEVER 'we know you've been here' / 'we saw you looking' creeping language.\n"
+            "  A gentle nudge toward the next step is the whole move. Acknowledge familiarity\n"
             "  (e.g. \"still hiring for that role?\", \"ready to post that job?\") and drive the conversion."
         )
     elif "retargeting" in _tl:
         examples = _retarget_ex or _prosp_ex
         targeting_rules = (
             "This is a RETARGETING order — a WARM audience that already knows Upwork.\n"
-            "Acknowledge familiarity (\"still hiring for that role?\", \"ready to post that job?\")\n"
-            "and drive the conversion. Do NOT re-introduce Upwork from scratch."
+            "Keep it SUBTLE (Adrie, 2026-07-15): a light hint of coming back, revisiting, or\n"
+            "getting started (\"ready to post that job?\", \"pick up where you left off\") — the\n"
+            "platform handles who sees it, so NEVER use 'we know you've been here' /\n"
+            "'we saw you looking' creeping language. Gentle nudge toward the next step;\n"
+            "do NOT re-introduce Upwork from scratch."
         )
     else:
         examples = _prosp_ex or _retarget_ex
