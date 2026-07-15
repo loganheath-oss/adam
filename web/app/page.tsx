@@ -63,7 +63,6 @@ function EntryCard({
 
 const ICON = "h-5 w-5";
 const PlusIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className={ICON}><path d="M12 5v14M5 12h14" /></svg>);
-const GridIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className={ICON}><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>);
 const ChatIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>);
 const BookIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>);
 
@@ -93,12 +92,6 @@ export default function Home() {
             >
               Start an order <span aria-hidden>→</span>
             </Link>
-            <Link
-              href="/sprints"
-              className="inline-flex items-center rounded-full border border-white/25 px-6 py-3 text-sm font-medium text-white/90 transition hover:bg-white/5"
-            >
-              Current sprints
-            </Link>
           </div>
         </div>
 
@@ -119,8 +112,6 @@ export default function Home() {
         <div className="mx-auto mt-14 grid max-w-[1080px] gap-6 px-6 sm:grid-cols-2">
           <EntryCard featured href="/new" icon={<PlusIcon />} title="New order" cta="Open form"
             desc="Open the order form. The creative team is notified and assets arrive by your delivery date." />
-          <EntryCard href="/sprints" icon={<GridIcon />} title="Sprint runs" cta="View sprints"
-            desc="Browse every sprint, resume an in-progress chat, or review what was delivered." />
           <EntryCard href="/agent" icon={<ChatIcon />} title="Ask ADAM" cta="Start a chat"
             desc="Ask how ADAM is built or how to use it — a read-only assistant grounded in the wiki." />
           <EntryCard href="/wiki" icon={<BookIcon />} title="How it works" cta="Open the wiki"

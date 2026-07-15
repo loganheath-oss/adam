@@ -6,10 +6,13 @@ import { cn } from "@/lib/utils";
 import { UpworkLogo } from "@/components/upwork-logo";
 
 // The nav is defined ONCE (contrast: duplicated ~23 times in the current main.py).
+// "Sprints" (browse-all) is intentionally NOT here: submitters end at the order
+// confirmation and share the specific sprint link via Slack; the creative team opens
+// that link. /sprints still works by direct URL. It returns as an admin/reviewer-
+// gated nav item once RBAC lands (see docs/admin-usage-design.md).
 const NAV_ITEMS = [
   { label: "Home", href: "/" },
   { label: "New Order", href: "/new" },
-  { label: "Sprints", href: "/sprints" },
   { label: "Wiki", href: "/wiki" },
   { label: "Ask ADAM", href: "/agent" },
   { label: "Sync Log", href: "/sync-log" },

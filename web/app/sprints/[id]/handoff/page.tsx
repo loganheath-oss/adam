@@ -52,14 +52,13 @@ export default async function HandoffPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50/60 px-5 py-4 text-sm text-blue-900">
-          <strong className="mb-1 block font-semibold">Handoff to creative team</strong>
-          The creative team picks up this sprint from the link below and walks it through Gates 2 → 6. Share it with them:
+          <strong className="mb-1 block font-semibold">Next step — hand off to the creative team</strong>
+          Copy this request link and drop it in the <strong>#paid-acquisition</strong> Slack channel. The creative team opens it from there and walks the sprint through Gates 2 → 6.
           <CopyLink path={sprintPath} />
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2.5">
-          <Link href={sprintPath} className={buttonVariants({})}>Open the sprint →</Link>
-          <Link href="/new" className={buttonVariants({ variant: "outline" })}>Submit another order</Link>
+          <Link href="/new" className={buttonVariants({})}>Submit another order</Link>
         </div>
       </div>
     </div>
