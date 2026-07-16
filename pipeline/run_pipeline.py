@@ -1227,6 +1227,15 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         # Tag every testimonial concept so reviewers always see it.
                         if _sl == "testimonial":
                             concept["testimonial_fictional"] = True
+                            # Pin marker: the brief-provided (approved) quote is
+                            # privileged — selection must not drop it (found
+                            # 2026-07-16: reviewer ranked it 6th and it fell out).
+                            _tq = " ".join(str(concept.get("testimonial_quote", "")).split()).lower().rstrip(".")
+                            for _bq in _brief_quotes:
+                                _bqn = " ".join(_bq.split()).lower().rstrip(".")
+                                if _tq and (_tq in _bqn or _bqn in _tq):
+                                    concept["brief_quote_used"] = True
+                                    break
                         # Brief-quote leakage: the brief's testimonial quote showing up in a
                         # NON-Testimonial concept's copy (found 2026-07-16 on Photo with Text
                         # — ADAM's own reviewer called it a compliance risk).
@@ -1554,6 +1563,10 @@ Return ONLY the JSON array. No other text."""
                                 "⚠ BRIEF-QUOTE LEAK — this non-Testimonial concept quotes the "
                                 "brief's testimonial in its feed copy; confirm before running. "
                                 + concept.get("review_notes", ""))
+                        if concept.get("brief_quote_used"):
+                            concept["review_notes"] = (
+                                "📌 Uses the brief-approved quote — pinned into the selection. "
+                                + concept.get("review_notes", ""))
                         # Fictional-testimonial notice (interim policy — see copy gen):
                         # informational, does NOT de-select; reviewers verify/swap at gate 3.
                         if concept.get("testimonial_fictional"):
@@ -1569,7 +1582,8 @@ Return ONLY the JSON array. No other text."""
                 # only if still short. A legal-flagged concept NEVER ships. The AI's
                 # own top-3 flags are advisory — its RANK is the quality signal here.
                 eligible = [c for c in reviewed if not c.get("legal_flags")]
-                eligible.sort(key=lambda c: (bool(c.get("length_flags")),
+                eligible.sort(key=lambda c: (not c.get("brief_quote_used"),
+                                             bool(c.get("length_flags")),
                                              bool(c.get("length_warnings")),
                                              len(c.get("length_flags", [])),
                                              len(c.get("length_warnings", [])),
