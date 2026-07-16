@@ -41,7 +41,7 @@ SYNC_LOG_PATH = BASE_DIR / "sync_log.jsonl"
 WIKI_DIR = BASE_DIR / "docs" / "wiki"
 
 sys.path.insert(0, str(BASE_DIR / "pipeline"))
-from run_pipeline import run_full_pipeline, run_pipeline_auto, resume_gate_2, resume_gate_3, resume_gate_4, resume_gate_5, resume_gate_6
+from run_pipeline import run_full_pipeline, run_pipeline_auto, resume_gate_2, resume_gate_3, resume_gate_4, resume_gate_5, resume_gate_6, _apply_cta_mix
 import db  # usage/reliability data spine — best-effort, no-ops without DATABASE_URL
 
 GATE_HANDLERS = {2: resume_gate_2, 3: resume_gate_3, 4: resume_gate_4, 5: resume_gate_5, 6: resume_gate_6}
@@ -3005,6 +3005,17 @@ async def update_copy_selection(sprint_id: str, request: Request):
     if not any(c.get("selected") for c in concepts):
         return JSONResponse({"ok": False, "error": "At least one concept must stay selected."},
                             status_code=400)
+    # Re-apply the Style Guide CTA distribution to the NEW selection — e.g. hand-
+    # picking extra concepts on a "one-with-CTA" style must not ship extra CTA
+    # variants, and a "none" style's newly picked concepts must drop their CTAs.
+    _by_style = {}
+    for c in concepts:
+        _by_style.setdefault(c.get("visual_style", ""), []).append(c)
+    for _sty, _grp in _by_style.items():
+        try:
+            _apply_cta_mix(_grp, _sty)
+        except Exception as e:
+            print(f"[copy-select] cta-mix reapply skipped for {_sty}: {e}")
     copy_path.write_text(json.dumps(data, indent=2))
     # Keep copy_review.csv (if a prior cycle wrote one) consistent, so the gate-3
     # override pass can't silently undo this edit on resume.

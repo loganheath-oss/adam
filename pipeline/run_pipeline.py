@@ -1229,10 +1229,23 @@ def _review_and_rank_copy(copy_outputs, order, context, api_key, sprint_id=None)
     claims = context.get("approved_claims", "")
     copy_style_rules = context.get("copy_style_rules", "")
 
+    # Per-style ship targets from the ORDER (style_quantities) — "one style needs
+    # 5, one needs 3, one needs 1" (Logan, 2026-07-16). Previously captured but
+    # only displayed; selection was hardcoded top-3. Default stays 3; capped at
+    # the overgenerate count (6). The gate-3 picker can still override by hand.
+    _targets = {}
+    for _b in (order or {}).get("batches", []):
+        for _s, _q in (_b.get("style_quantities") or {}).items():
+            try:
+                _targets[_norm_style(_s)] = max(1, min(int(_q), 6))
+            except (TypeError, ValueError):
+                pass
+
     def _review_one_group(group_key, group_concepts):
         """Review + rank one style's concepts (one Claude call)."""
         reviewed = []
         style = group_concepts[0].get("visual_style", "unknown")
+        target = _targets.get(_norm_style(style), 3)
 
         # Build the concepts as a numbered list for review
         concepts_text = ""
@@ -1369,34 +1382,23 @@ Return ONLY the JSON array. No other text."""
                                 + concept.get("review_notes", ""))
                         reviewed.append(concept)
 
-                # Backfill so the style still ships ~3 picks, cleanest first:
-                #   Stage 1 — fully-clean concepts (no flags, no warnings) by rank.
-                #   Stage 2 — NON-LEGAL leftovers by (hard-flag count, warning count,
-                #   rank): soft-warned concepts return before hard-flagged ones, so a
-                #   slightly-long concept ships (flagged) rather than delivering fewer
-                #   than 3. A legal-flagged concept is NEVER promoted.
-                def _sel_count():
-                    return sum(1 for x in reviewed if x.get("selected"))
-                _clean = [c for c in reviewed
-                          if not c.get("legal_flags") and not c.get("length_flags")
-                          and not c.get("length_warnings")]
-                if _sel_count() < 3 and _clean:
-                    for c in sorted(_clean, key=lambda c: c.get("rank", 99)):
-                        if _sel_count() >= 3:
-                            break
-                        c["selected"] = True
-                if _sel_count() < 3:
-                    _fallback = [c for c in reviewed
-                                 if not c.get("legal_flags") and not c.get("selected")]
-                    for c in sorted(_fallback, key=lambda c: (len(c.get("length_flags", [])),
-                                                              len(c.get("length_warnings", [])),
-                                                              c.get("rank", 99))):
-                        if _sel_count() >= 3:
-                            break
-                        c["selected"] = True
-
-                selected_count = sum(1 for r in rankings if r.get("selected"))
-                print(f"    Reviewed {style}: top {selected_count} selected")
+                # Select EXACTLY `target` concepts (the style's ordered quantity;
+                # default 3), cleanest-first: fully-clean by rank, then soft-warned
+                # by (warning count, rank), then hard-flagged by (flag count, rank)
+                # only if still short. A legal-flagged concept NEVER ships. The AI's
+                # own top-3 flags are advisory — its RANK is the quality signal here.
+                eligible = [c for c in reviewed if not c.get("legal_flags")]
+                eligible.sort(key=lambda c: (bool(c.get("length_flags")),
+                                             bool(c.get("length_warnings")),
+                                             len(c.get("length_flags", [])),
+                                             len(c.get("length_warnings", [])),
+                                             c.get("rank", 99)))
+                for pos, c in enumerate(eligible):
+                    c["selected"] = pos < target
+                got = sum(1 for c in reviewed if c.get("selected"))
+                if got < target:
+                    print(f"    ⚠ {style}: only {got} shippable concept(s) for a target of {target}")
+                print(f"    Reviewed {style}: {got} of {len(reviewed)} selected (target {target})")
 
             else:
                 print(f"API error {response.status_code}, keeping all unranked")
