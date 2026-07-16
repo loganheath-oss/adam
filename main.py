@@ -2970,6 +2970,70 @@ async def sprint_copy(sprint_id: str):
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "copy_outputs": data})
 
 
+@app.post("/sprints/{sprint_id}/copy-select", dependencies=[Depends(require_api_key_or_session)])
+async def update_copy_selection(sprint_id: str, request: Request):
+    """Pick the winners at Gate 3. Product rule (Logan, 2026-07-16): the top options
+    are chosen while working with ADAM — images, manifest rows, and Figma boards are
+    produced ONLY for selected concepts, so this is where the human trims the AI's
+    top-3 down to what actually ships. Only allowed while awaiting gate 3 (after
+    that, downstream artifacts already exist for the old selection)."""
+    sprint_dir = _safe_sprint_dir(sprint_id)
+    if not sprint_dir.exists():
+        return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
+    state = _load_json(sprint_dir / "pipeline_state.json").get("state", "")
+    if state != "awaiting_gate_3":
+        return JSONResponse(
+            {"ok": False, "error": f"Selection can only be changed during copy review "
+             f"(awaiting_gate_3); this sprint is '{state}'."}, status_code=409)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    sels = body.get("selections")
+    if not isinstance(sels, dict) or not sels:
+        return JSONResponse({"ok": False, "error": "selections must be a {concept_id: bool} object"},
+                            status_code=400)
+    copy_path = sprint_dir / "copy_outputs.json"
+    data = _load_json(copy_path)
+    concepts = data.get("concepts", [])
+    changed = 0
+    for c in concepts:
+        cid = c.get("concept_id")
+        if cid in sels and bool(c.get("selected", False)) != bool(sels[cid]):
+            c["selected"] = bool(sels[cid])
+            changed += 1
+    if not any(c.get("selected") for c in concepts):
+        return JSONResponse({"ok": False, "error": "At least one concept must stay selected."},
+                            status_code=400)
+    copy_path.write_text(json.dumps(data, indent=2))
+    # Keep copy_review.csv (if a prior cycle wrote one) consistent, so the gate-3
+    # override pass can't silently undo this edit on resume.
+    review = sprint_dir / "copy_review.csv"
+    if review.exists():
+        try:
+            with review.open() as f:
+                rows = list(csv.DictReader(f))
+            by_tag = {c.get("concept_tag"): bool(c.get("selected")) for c in concepts}
+            for r in rows:
+                if r.get("concept_tag", "") in by_tag:
+                    r["selected"] = "YES" if by_tag[r["concept_tag"]] else "NO"
+            if rows:
+                with review.open("w", newline="") as f:
+                    w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+                    w.writeheader()
+                    w.writerows(rows)
+        except Exception as e:
+            print(f"[copy-select] review csv sync skipped: {e}")
+    selected = sum(1 for c in concepts if c.get("selected"))
+    try:
+        db.log_event("copy.selected", sprint_id=sprint_id,
+                     meta={"changed": changed, "selected": selected, "total": len(concepts)})
+    except Exception:
+        pass
+    return JSONResponse({"ok": True, "changed": changed, "selected": selected,
+                         "total": len(concepts)})
+
+
 @app.get("/sprints/{sprint_id}/manifest", dependencies=[Depends(require_api_key)])
 async def sprint_manifest(sprint_id: str):
     sprint_dir = RUNS_DIR / sprint_id

@@ -15,7 +15,7 @@ flowchart LR
 1. **Submit an order** in the order form: platform, format, quantity, **visual styles**, **resolutions**,
    and a **brief** (the brief is the highest-priority instruction — it overrides standing refs).
 2. **Gate 2 — confirm order + refs.** Last checkpoint before any API spend.
-3. **Gate 3 — review copy.** Claude generated 6 concepts/style and picked top 3; edit or approve.
+3. **Gate 3 — review copy — PICK YOUR WINNERS.** Claude generated 6 concepts/style and pre-picked its top 3, but the human chooses what ships: open the sprint's **Copy review** page, toggle concepts on/off, **Save picks**, then approve the gate. **Only selected concepts get images, manifest rows, and Figma boards** — nothing reaches Figma that wasn't chosen here.
 4. **Gate 4 — scan image prompts** (skipped/thin for library-fed and skip-image styles).
 5. **Gate 5 — review images + manifest.**
 6. **Gate 6 — final QA**, then deliver.
