@@ -1,5 +1,6 @@
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { Mermaid } from "@/components/mermaid";
 
 // Shared markdown renderer for the Wiki and Learnings pages. Styles elements with
 // Tailwind and rewrites internal `*.md` links to `/wiki/*` so the wiki cross-links work.
@@ -27,7 +28,17 @@ export function MarkdownView({ children }: { children: string }) {
           ) : (
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em]" {...p} />
           ),
-        pre: (p) => <pre className="my-5 overflow-x-auto rounded-xl bg-[#181818] p-5 font-mono text-[13px] leading-relaxed text-[#e6e6e6]" {...p} />,
+        pre: (p) => {
+          // ```mermaid fences render as diagrams, not raw code (they were an
+          // unreadable wall of flowchart source before).
+          const child = p.children as React.ReactElement<{ className?: string; children?: React.ReactNode }> | undefined;
+          const cls = child && typeof child === "object" && "props" in child ? child.props.className || "" : "";
+          if (/language-mermaid/.test(cls)) {
+            const raw = child && typeof child === "object" && "props" in child ? String(child.props.children ?? "") : "";
+            return <Mermaid chart={raw.trim()} />;
+          }
+          return <pre className="my-5 overflow-x-auto rounded-xl bg-[#181818] p-5 font-mono text-[13px] leading-relaxed text-[#e6e6e6]" {...p} />;
+        },
         blockquote: (p) => (
           <blockquote className="my-5 rounded-r-lg border-l-[3px] border-primary bg-[#F4FAF1] px-5 py-4 [&_p]:my-1 [&_p]:text-foreground/80" {...p} />
         ),

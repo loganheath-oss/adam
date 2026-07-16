@@ -3336,6 +3336,7 @@ WIKI_PAGES = [
     ("13-glossary", "Glossary"),
     ("14-handoff", "Handoff"),
     ("15-decisions-log", "Decisions log"),
+    ("16-fixing-errors", "Fixing errors"),
 ]
 
 
@@ -3518,17 +3519,23 @@ _MERMAID_TAG = r"""
   .wiki-main .mermaid{margin:20px 0;text-align:center;background:#fbfdfb;border:1px solid #eef0ee;
     border-radius:12px;padding:18px 14px;overflow-x:auto}
   .wiki-main .mermaid:not([data-processed]){color:#9aa0a6;font-size:12px;font-family:'SF Mono',Consolas,monospace;text-align:left}
-  .wiki-main .mermaid svg{max-width:100%;height:auto}
+  /* Natural size + horizontal scroll. max-width:100% squeezed wide diagrams
+     (e.g. the pipeline's stages→gates chain) into microscopic, unreadable text. */
+  .wiki-main .mermaid svg{height:auto}
 </style>
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
   mermaid.initialize({
     startOnLoad: true,
     theme: 'base',
+    // Render at natural size — with useMaxWidth, wide flowcharts were scaled
+    // down to container width and became unreadable; the container scrolls.
+    flowchart: { useMaxWidth: false },
+    sequence: { useMaxWidth: false },
     themeVariables: {
       primaryColor: '#eef7ea', primaryBorderColor: '#14a800', primaryTextColor: '#111827',
       lineColor: '#9aa0a6', secondaryColor: '#f3f4f6', tertiaryColor: '#ffffff',
-      fontFamily: '-apple-system,Segoe UI,sans-serif', fontSize: '13px'
+      fontFamily: '-apple-system,Segoe UI,sans-serif', fontSize: '14px'
     }
   });
 </script>

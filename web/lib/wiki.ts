@@ -20,6 +20,7 @@ export const WIKI_PAGES: Array<[string, string]> = [
   ["13-glossary", "Glossary"],
   ["14-handoff", "Handoff"],
   ["15-decisions-log", "Decisions log"],
+  ["16-fixing-errors", "Fixing errors"],
 ];
 
 export function getWikiPage(slug: string): string | null {

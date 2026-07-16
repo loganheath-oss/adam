@@ -30,8 +30,11 @@ flowchart LR
 | Local pipeline (`run_pipeline.py`) | ✅ Runs end-to-end through all 6 gates |
 | Web app (`main.py`: order form + dashboard + chat) | ✅ Deployed on **Railway** (auto-deploy from GitHub) |
 | In-app AI chat (`agent/`) | ✅ Live — Claude tool-use loop over sprints + learnings |
-| Figma assembly plugin | ✅ Recognizes **all 21** templates; auto-discovers templates across the file |
+| Figma assembly plugin | ✅ Recognizes **all 24** ad types; auto-discovers templates; assembles grouped boards |
 | Copy generation (Claude) | ✅ **Verified** — generated 30 real concepts on the Railway key (model fixed); local `.env` key is $0 for *local* dev only |
+| Admin backend (`/admin`) | ✅ Reliability dashboard (clean-run % + incidents), Issues→Learnings loop, Roles — live July 2026 |
+| Per-ad-type copy rules | ✅ Adrie's 24-entry Ad Type Style Guide enforced in code (`configs/ad_type_style_guide.json`) |
+| Prospecting / Retargeting | ✅ Differentiated copy per audience; "both" = two feed-copy sets sharing one creative |
 | MCP server (`mcp_server/`) | 🟡 Exists (Fly config in repo); superseded by the web app for day-to-day use |
 | Production hardening (LLM Gateway, OAuth, audit) | ⏳ Pending — owned by Upwork eng |
 
