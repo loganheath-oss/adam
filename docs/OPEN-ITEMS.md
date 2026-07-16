@@ -87,6 +87,22 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   ad examples doc, updated SMB copy bank (all on her July list). Drop into refs/ + build_refs
   when received.
 
+## Figma assembly verified with the fixed plugin (2026-07-16, driven hands-off)
+- ✅ **"Assembly complete: 2 of 2 boards assembled"** on the gate-3 sprint's manifest (4 rows,
+  2 concepts × 2 targeting) — **1 board per chosen concept**; the -pros/-reta doubling is dead.
+  Correct template placement (Photo-With-Text Dark variants) + copy panels filled.
+- ✅ **CSV parser bug found & fixed in the process:** the plugin split rows on newlines BEFORE
+  quote handling, so any quoted field with a line break (✅-bulleted Primary_Text_Long, review
+  notes) tore the row and shifted every later column — silently corrupting copy on earlier
+  assemblies too. Replaced with a character-walk RFC-4180 parser; verified against the real
+  manifest (4 clean records).
+- ✅ **Paste-the-CSV path added to the plugin UI** (textarea next to the file button) — same
+  effect as choosing the file; enables keyboard/automation-driven assembly and is handy for
+  humans too.
+- ⬜ **Figma cleanup (Logan):** delete the two junk generations in "Generated Tests" — the
+  36-board meeting run (old plugin) and one garbled 2-board run (pre-parser-fix, boards show
+  CSV fragments as copy). The GOOD run is the most recent "2 of 2" generation.
+
 ## Gate-3 picker verified live (2026-07-16, sprint 2026-07-meta-74664fd049f9 — kept)
 - ✅ **"Choose in ADAM before Figma" works end-to-end in production.** 2-style both-targeting
   run: 12 concepts generated → picker trimmed 6 pre-selected to **2 winners at gate 3**

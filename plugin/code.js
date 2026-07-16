@@ -341,17 +341,43 @@ function nodeWH(n) {
 // ── CSV ──────────────────────────────────────────────────────────────────────
 
 function parseCSV(text) {
-  var lines = text.split(/\r?\n/).filter(function (l) { return l.trim().length > 0; });
-  if (lines.length < 2) throw new Error("CSV has no data rows");
-  var headers = parseCSVLine(lines[0]);
-  var rows = [];
-  for (var i = 1; i < lines.length; i++) {
-    var cells = parseCSVLine(lines[i]);
-    var row = {};
-    for (var j = 0; j < headers.length; j++) {
-      row[headers[j].trim()] = (cells[j] || "").trim();
+  // Character-walk RFC-4180 parser. The old line-split version tore quoted
+  // fields containing newlines (bulleted Primary_Text_Long, review notes) into
+  // extra rows, shifting every later column (found 2026-07-16 — garbled boards).
+  var records = [];
+  var row = [];
+  var cur = "";
+  var inQuotes = false;
+  var sawAny = false;
+  for (var i = 0; i < text.length; i++) {
+    var c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i + 1] === '"') { cur += '"'; i++; }
+      else if (c === '"') { inQuotes = false; }
+      else { cur += c; }
+    } else if (c === '"') {
+      inQuotes = true; sawAny = true;
+    } else if (c === ",") {
+      row.push(cur); cur = ""; sawAny = true;
+    } else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      if (sawAny || cur.length > 0) { row.push(cur); records.push(row); }
+      row = []; cur = ""; sawAny = false;
+    } else {
+      cur += c; sawAny = true;
     }
-    rows.push(row);
+  }
+  if (sawAny || cur.length > 0) { row.push(cur); records.push(row); }
+  if (records.length < 2) throw new Error("CSV has no data rows");
+  var headers = records[0];
+  var rows = [];
+  for (var r = 1; r < records.length; r++) {
+    var cells = records[r];
+    var obj = {};
+    for (var j = 0; j < headers.length; j++) {
+      obj[String(headers[j]).trim()] = String(cells[j] === undefined ? "" : cells[j]).trim();
+    }
+    rows.push(obj);
   }
   return rows;
 }
