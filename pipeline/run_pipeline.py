@@ -635,6 +635,127 @@ def _salvage_json_array(text):
     return objs
 
 
+
+def _smart_trim(text, cap):
+    """Last-resort shortening to <= cap chars: cut at a sentence/line boundary if one
+    exists past the halfway point, else at a word boundary. Never mid-word."""
+    text = str(text or "")
+    if len(text) <= cap:
+        return text
+    cut = text[:cap]
+    best = -1
+    for sep in (". ", "! ", "? ", "\n"):
+        idx = cut.rfind(sep)
+        if idx > best:
+            best = idx + (0 if sep == "\n" else 1)
+    if best >= int(cap * 0.5):
+        return cut[:best].rstrip()
+    idx = cut.rfind(" ")
+    return (cut[:idx] if idx > 0 else cut).rstrip()
+
+
+def _fit_feed_fields(concepts, style, api_key, sprint_id=None):
+    """Meta feed fields (headline/body/description + per-audience targeting_copy)
+    must FIT their caps — Meta hard-truncates overflow mid-sentence. The model
+    chronically overshoots body_long (found 2026-07-16: 334-501 chars vs 300), so:
+    one compact rewrite call shortens every overlong field properly (drop whole
+    bullets/sentences, keep tone + format); anything still over falls back to a
+    sentence-boundary trim. Deterministic result: feed fields <= caps."""
+    import httpx
+
+    caps = _load_style_guide().get("field_caps_meta_feed", {}) or {}
+    if not caps:
+        return
+
+    jobs = []  # {"id", "ci", "path", "cap", "text"}
+    def _check(ci, obj, path_prefix):
+        for f, cap in caps.items():
+            v = obj.get(f)
+            if isinstance(v, str) and len(v) > cap:
+                jobs.append({"id": len(jobs), "ci": ci, "path": path_prefix + (f,),
+                             "cap": cap, "text": v})
+    for ci, c in enumerate(concepts):
+        _check(ci, c, ())
+        tc = c.get("targeting_copy")
+        if isinstance(tc, dict):
+            for aud, obj in tc.items():
+                if isinstance(obj, dict):
+                    _check(ci, obj, ("targeting_copy", aud))
+    if not jobs:
+        return
+
+    def _apply(ci, path, value):
+        tgt = concepts[ci]
+        for p in path[:-1]:
+            tgt = tgt.get(p, {})
+        if isinstance(tgt, dict):
+            tgt[path[-1]] = value
+
+    rewritten = {}
+    payload = [{"id": j["id"], "max_chars": j["cap"], "text": j["text"]} for j in jobs]
+    prompt = (
+        "You wrote Meta ad copy for Upwork; some fields exceed their platform caps and "
+        "must be SHORTENED to fit. For each item, rewrite the text to AT MOST max_chars "
+        "characters (count spaces). Preserve the meaning, Upwork's clear/supportive tone, "
+        "and the formatting convention (if it uses emoji/checkmark bullets, keep bullets — "
+        "drop whole bullets rather than squeezing; if prose, drop whole sentences). Never "
+        "end mid-sentence, never add new claims or banned terms (guarantee, vet, staffing, "
+        "employee).\n\nITEMS:\n" + json.dumps(payload, ensure_ascii=False)
+        + "\n\nReturn ONLY a JSON array: [{\"id\": <int>, \"text\": \"<shortened>\"}]."
+    )
+    try:
+        resp = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
+                     "content-type": "application/json"},
+            json={"model": "claude-sonnet-4-6", "max_tokens": 4000,
+                  "messages": [{"role": "user", "content": prompt}]},
+            timeout=90,
+        )
+        if resp.status_code == 200:
+            _rj = resp.json()
+            _add_token_usage(sprint_id, "claude-sonnet-4-6",
+                             _rj.get("usage", {}).get("input_tokens"),
+                             _rj.get("usage", {}).get("output_tokens"))
+            text = _rj["content"][0]["text"].strip()
+            if "```" in text:
+                text = text.split("```json")[-1].split("```")[0] if "```json" in text                     else text.split("```")[1]
+            try:
+                out = json.loads(text.strip())
+            except json.JSONDecodeError:
+                out = _salvage_json_array(text)
+            for item in out if isinstance(out, list) else []:
+                if isinstance(item, dict) and isinstance(item.get("text"), str):
+                    rewritten[item.get("id")] = item["text"]
+    except Exception as e:
+        print(f"    feed-fit rewrite call failed ({str(e)[:60]}); trimming instead")
+
+    n_rewrite = n_trim = 0
+    for j in jobs:
+        new = rewritten.get(j["id"], j["text"])
+        if len(new) > j["cap"]:
+            new = _smart_trim(new, j["cap"])
+            n_trim += 1
+        elif j["id"] in rewritten:
+            n_rewrite += 1
+        _apply(j["ci"], j["path"], new)
+
+    # Recompute guardrails on the fitted copy.
+    touched = {j["ci"] for j in jobs}
+    for ci in touched:
+        c = concepts[ci]
+        c.pop("length_flags", None)
+        c.pop("length_warnings", None)
+        _enforce_lengths(c, style)
+        flags = _scan_banned_terms(c)
+        if flags:
+            c["legal_flags"] = flags
+        else:
+            c.pop("legal_flags", None)
+    print(f"    feed-fit {style}: {len(jobs)} overlong field(s) -> "
+          f"{n_rewrite} rewritten, {n_trim} trimmed")
+
+
 # ── LEGAL BANNED-TERMS GUARDRAIL ──────────────────────────────────────────────
 # Deterministic backstop for legal compliance. The prompt now surfaces Upwork
 # Legal's full "Terms to Avoid" list (previously truncated off the prompt), but a
@@ -1132,6 +1253,12 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         if _lf:
                             print(f"    ⚠ LENGTH: {style} concept {j} over hard cap: {', '.join(_lf)}")
                         concepts.append(concept)
+                # Fit Meta feed fields to their caps (rewrite-or-trim) BEFORE
+                # review, so selection compares cap-clean copy.
+                try:
+                    _fit_feed_fields(concepts, style, api_key, sprint_id)
+                except Exception as _fe:
+                    print(f"    feed-fit skipped: {str(_fe)[:60]}")
                 print(f"    {style}: {len(parsed)} concepts generated")
                 return concepts
 

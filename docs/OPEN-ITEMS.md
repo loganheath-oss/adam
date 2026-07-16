@@ -87,6 +87,20 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   ad examples doc, updated SMB copy bank (all on her July list). Drop into refs/ + build_refs
   when received.
 
+## Copy-quality closeout (2026-07-16 evening)
+- ✅ **Distinct testimonial per concept** — brief quote used exactly once; other concepts
+  invent distinct fictional people (verified 6/6 unique); DUPLICATE QUOTE + BRIEF-QUOTE LEAK
+  review flags added. (Root cause of the "five faces, one name" board set.)
+- ✅ **Feed-length fix** — `_fit_feed_fields`: overlong Meta feed fields (headline/body/
+  description + per-audience copy) get one rewrite call (drop whole bullets/sentences, keep
+  format) with a sentence-boundary trim fallback → feed fields deterministically <= caps
+  BEFORE review, so selection compares cap-clean copy (dissolves the clean-vs-rank tension).
+  Verified live: 0 violations across a 6-concept both-targeting run; bullets preserved.
+- ⬜ **Elise (from the 9-board review):** Chat Bubble 1080×1920 template has old layer
+  structure (placeholder "Small Business Wins" pill renders; opener lands in wrong bubble);
+  Photo-with-Text light variant headline lozenge doesn't hug text ("Automate with a pro"
+  overflow). + previous: Notification tile, Targeting pill layer.
+
 ## Figma assembly verified with the fixed plugin (2026-07-16, driven hands-off)
 - ✅ **"Assembly complete: 2 of 2 boards assembled"** on the gate-3 sprint's manifest (4 rows,
   2 concepts × 2 targeting) — **1 board per chosen concept**; the -pros/-reta doubling is dead.
