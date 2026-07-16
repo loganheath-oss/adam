@@ -420,6 +420,12 @@ def _template_limit_block(style):
     )
 
 
+# Adrie's bullet spec: emoji/checkmark-led bullets, never plain glyphs. The model
+# complies intermittently, so plain bullet glyphs get converted deterministically.
+# Dashes are deliberately excluded — "— Name, Title" attribution lines are legitimate.
+_PLAIN_BULLET_RE = re.compile(r"(?m)^([ \t]*)[•▪‣·]\s+")
+
+
 # ── AD TYPE STYLE GUIDE (structured: configs/ad_type_style_guide.json) ─────────
 # Single source of truth for per-ad-type copy rules. We resolve exactly ONE entry
 # per style and (a) render it into the copy prompt as prose, (b) enforce its
@@ -1241,6 +1247,18 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                             for _ff in ("headline", "headline_short", "body_short", "body_long", "description"):
                                 if not concept.get(_ff) and isinstance(_p, dict):
                                     concept[_ff] = _p.get(_ff, "")
+                        # Emoji-bullet backstop (Adrie: bullets are ✅/✔️/emoji-led,
+                        # never plain "•" — seen leaking through 2026-07-16).
+                        for _bf in ("body_long", "body_short"):
+                            if concept.get(_bf):
+                                concept[_bf] = _PLAIN_BULLET_RE.sub(r"\1✅ ", concept[_bf])
+                        _tcb = concept.get("targeting_copy")
+                        if isinstance(_tcb, dict):
+                            for _aud in _tcb.values():
+                                if isinstance(_aud, dict):
+                                    for _bf in ("body_long", "body_short"):
+                                        if _aud.get(_bf):
+                                            _aud[_bf] = _PLAIN_BULLET_RE.sub(r"\1✅ ", _aud[_bf])
                         # Enforce Adrie's sentence-case rule on headlines/CTAs.
                         for _cf in _SENTENCE_CASE_FIELDS:
                             if concept.get(_cf):

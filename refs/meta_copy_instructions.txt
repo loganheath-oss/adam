@@ -59,8 +59,9 @@ Vary the format across the batch — a MIX of bullet and paragraph styles is req
 not optional. Aim for roughly half of each across a concept's variants; don't count
 rigidly. The goal is visual variety so the set of ads doesn't feel repetitive.
 - Bullet format: 3–4 bullets, each led by an emoji or checkmark (✅, ✔️, or a
-  contextually relevant emoji). Bullets highlight benefits, Upwork platform features,
-  or proof points from provided stats and resource docs.
+  contextually relevant emoji). NEVER a plain "•", "-", or "▪" bullet — if a line is
+  a bullet, it MUST start with an emoji or checkmark. Bullets highlight benefits,
+  Upwork platform features, or proof points from provided stats and resource docs.
 - Paragraph format: flowing prose — concise and punchy, NOT a wall of text.
 
 FORMATTING GUARDRAILS
