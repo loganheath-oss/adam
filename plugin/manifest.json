@@ -8,6 +8,7 @@
   "editorType": ["figma"],
   "ui": "ui.html",
   "networkAccess": {
-    "allowedDomains": ["none"]
+    "allowedDomains": ["https://adam-production-9618.up.railway.app"],
+    "reasoning": "Reports assembly completions to the ADAM reliability dashboard."
   }
 }

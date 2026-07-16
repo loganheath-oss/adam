@@ -17,6 +17,8 @@ const ACTION_LABELS: Record<string, string> = {
   "chat.asked": "Chat questions",
   "learnings.edited": "Learnings edited",
   "issue.reported": "Issues reported",
+  "assembly.completed": "Figma assemblies",
+  "copy.selected": "Gate-3 picks",
 };
 
 function pct(n: number | null | undefined): string {

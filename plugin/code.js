@@ -878,9 +878,24 @@ async function overlayTalentProfile(styledClone, conceptIndex) {
 // Testimonial_Author). Overlays a curated headshot on the customer-photo ellipse.
 async function overlayTestimonialHeadshot(styledClone, conceptIndex) {
   var r = await overlayCuratedHeadshot(styledClone, conceptIndex, ["image_placeholder", "Image_Placeholder"]);
-  if (!r) { log("  ⚠ Testimonial: no Example Profiles found — kept template headshot"); return; }
+  if (!r) { log("  ⚠ Testimonial: no Example Profiles found — kept template headshot"); return null; }
   if (r.placed) log("  ✓ Testimonial: headshot varied (" + r.profile.name + ")");
   else log("  ⚠ Testimonial: customer-photo slot not found — headshot not varied");
+  return r;
+}
+
+// Attribution follows the face: the copy invents a name, the headshot comes from a
+// curated profile with its OWN name — shown together they mismatched (a woman's
+// photo captioned "Marcus T.", found 2026-07-16). The images carry no gender
+// metadata and don't need any: rewrite the attribution's NAME segment to the chosen
+// profile ("First L."), keeping the copy's title + company.
+function matchAuthorToProfile(author, profileName) {
+  var parts = String(author || "").split(",");
+  var np = String(profileName || "").trim().split(/\s+/);
+  if (!np[0]) return author;
+  var short = np[0] + (np.length > 1 ? " " + np[np.length - 1].charAt(0).toUpperCase() + "." : "");
+  if (parts.length > 1) return [short].concat(parts.slice(1)).join(",");
+  return short;
 }
 
 // Fill the first TEXT descendant inside a named container (component/frame).
@@ -1837,8 +1852,18 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
         var quote = leadRow.Testimonial_Quote || leadRow.Primary_Text_Long || leadRow.body_long || leadPrimary;
         if (quote) await setFirstTextByCandidates(styledClone, ["Copy_Testimonial"], quote);
         if (leadRow.Testimonial_Author) await setFirstTextByCandidates(styledClone, ["Copy_Author"], leadRow.Testimonial_Author);
-        // Vary the testimonial headshot per concept (was stuck on one baked-in face).
-        if (key === "testimonial") await overlayTestimonialHeadshot(styledClone, conceptIndex);
+        // Vary the testimonial headshot per concept (was stuck on one baked-in face),
+        // then match the attribution NAME to the chosen face.
+        if (key === "testimonial") {
+          var tprof = await overlayTestimonialHeadshot(styledClone, conceptIndex);
+          if (tprof && tprof.profile && leadRow.Testimonial_Author) {
+            var tmatched = matchAuthorToProfile(leadRow.Testimonial_Author, tprof.profile.name);
+            if (tmatched !== leadRow.Testimonial_Author) {
+              await setFirstTextByCandidates(styledClone, ["Copy_Author"], tmatched);
+              log("  ✓ Testimonial: attribution matched to headshot (" + tmatched.split(",")[0] + ")");
+            }
+          }
+        }
         // Search Results — up to three role rows
         var srRows = splitPipe(leadRow.Search_Results);
         for (var si = 0; si < srRows.length && si < 3; si++) await setFirstTextByCandidates(styledClone, ["Copy_Title" + (si + 1)], srRows[si]);
@@ -2283,6 +2308,11 @@ async function assemble(payload) {
     log("\n✓ Legacy assembly complete: " + assembled + "/" + manifest.length);
   }
 
+  var reportSprintId = "";
+  try {
+    var m0 = String((manifest[0] || {}).asset_id || "").match(/^([0-9]{4}-[0-9]{2}-[a-z0-9]+-[0-9a-f]{6,})_/);
+    if (m0) reportSprintId = m0[1];
+  } catch (e) {}
   figma.ui.postMessage({
     type: "assembly-complete",
     assembled: assembled,
@@ -2290,6 +2320,7 @@ async function assemble(payload) {
     total: outputTotal,
     unit: outputUnit,
     frameIds: assembledIds,
+    sprintId: reportSprintId,
   });
 
   if (assembledIds.length > 0) {

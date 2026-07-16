@@ -151,7 +151,9 @@
     <button id="assemble" class="primary-action">Assemble</button>
   </div>
 
-  <h2 style="font-size: 11px; color: #b0b0b0; margin: 14px 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">Log</h2>
+  <h2 style="font-size: 11px; color: #b0b0b0; margin: 14px 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">Log
+    <button id="copy-log" style="float:right;font-size:10px;padding:2px 10px;border-radius:10px;border:1px solid #555;background:#2c2c2c;color:#ccc;cursor:pointer">Copy log</button>
+  </h2>
   <div id="log"></div>
 
   <script>
@@ -169,6 +171,18 @@
       logEl.appendChild(span);
       logEl.scrollTop = logEl.scrollHeight;
     }
+
+    document.getElementById("copy-log").addEventListener("click", function () {
+      var btn = this;
+      var ta = document.createElement("textarea");
+      ta.value = logEl.innerText || "";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); btn.textContent = "Copied ✓"; }
+      catch (e) { btn.textContent = "Copy failed"; }
+      document.body.removeChild(ta);
+      setTimeout(function () { btn.textContent = "Copy log"; }, 2000);
+    });
 
     fileInput.addEventListener("change", function (e) {
       var file = e.target.files && e.target.files[0];
@@ -217,6 +231,19 @@
         appendLog("ERROR: " + msg.text, "error");
       } else if (msg.type === "assembly-complete") {
         appendLog("Assembly complete: " + msg.assembled + " of " + msg.total + " " + (msg.unit || "assets") + " assembled.", "success");
+        // Report the run to the ADAM dashboard (usage view). Best-effort — the
+        // endpoint only accepts real sprint ids; offline just logs a note.
+        if (msg.sprintId) {
+          fetch("https://adam-production-9618.up.railway.app/assembly-report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sprint_id: msg.sprintId, boards: msg.assembled, total: msg.total })
+          }).then(function (r) {
+            appendLog(r.ok ? "Run reported to the ADAM dashboard." : "Dashboard report failed (HTTP " + r.status + ").");
+          }).catch(function () {
+            appendLog("Dashboard report skipped (network blocked/offline).");
+          });
+        }
       }
     };
   </script>

@@ -2242,6 +2242,35 @@ async def report_issue_endpoint(request: Request):
     return JSONResponse({"ok": True})
 
 
+@app.post("/assembly-report")
+async def assembly_report(request: Request):
+    """The Figma plugin pings this when an assembly finishes, so the dashboard's
+    usage view counts assemblies (the plugin is otherwise network-isolated; its
+    manifest allows only this backend's domain). Public by necessity — no key can
+    live in shared plugin code — but only accepts ids of sprints that exist."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    sid = str(body.get("sprint_id", ""))
+    try:
+        sprint_dir = _safe_sprint_dir(sid)
+    except HTTPException:
+        return JSONResponse({"ok": False, "error": "bad sprint id"}, status_code=400)
+    if not sprint_dir.exists():
+        return JSONResponse({"ok": False, "error": "unknown sprint"}, status_code=404)
+    order = _load_json(sprint_dir / "order.json") or {}
+    try:
+        db.log_event("assembly.completed",
+                     user_email=(order.get("email") or order.get("driver")),
+                     sprint_id=sid,
+                     meta={"boards": int(body.get("boards") or 0),
+                           "total": int(body.get("total") or 0)})
+    except Exception:
+        pass
+    return JSONResponse({"ok": True})
+
+
 @app.get("/admin/issues", dependencies=[Depends(require_api_key)])
 async def admin_issues(status: str | None = None):
     """Triage queue + counts by status (admin)."""
