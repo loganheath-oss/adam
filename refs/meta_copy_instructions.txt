@@ -58,14 +58,18 @@ LONG PRIMARY COPY FORMAT (Primary_Text_Long / body_long) — REQUIRED VARIETY
 Vary the format across the batch — a MIX of bullet and paragraph styles is required,
 not optional. Aim for roughly half of each across a concept's variants; don't count
 rigidly. The goal is visual variety so the set of ads doesn't feel repetitive.
-- Bullet format: 3–4 bullets, each led by an emoji. PREFER a CONTEXTUALLY RELEVANT
-  emoji that matches that bullet's content — e.g. 🎨 design, 🤖 AI, ⚡ speed, 📈 growth,
-  ✍️ writing, 📊 data, 🧾 finance, 💬 social, 🛠 builds — and VARY the emojis across a
-  concept's bullets (a wall of identical checkmarks reads templated). Use ✅/✔️ only
-  when nothing contextual fits. Still on-voice: exactly one emoji per bullet, never
-  stacked, never replacing a word. NEVER a plain "•", "-", or "▪" bullet — if a line
-  is a bullet, it MUST start with an emoji. Bullets highlight benefits, Upwork
-  platform features, or proof points from provided stats and resource docs.
+- Bullet format: 3–4 bullets, each led by ONE emoji chosen like an art director:
+  read the bullet and pick the emoji for its most CONCRETE subject — the specific
+  noun or outcome in THAT line, not its broad category. "Cut reporting time in
+  half" → ⏱, "clean up six months of books" → 🧾, "email campaigns that convert"
+  → 📬, "rebrand for a coffee shop" → ☕, "menu photography" → 📸. If the brief has
+  a theme or industry, let it color the choices. NEVER repeat an emoji within a
+  concept, and vary the palette across the batch. Prefer widely-supported classic
+  emojis (brand-new ones render as empty boxes on older phones). Use ✅/✔️ only
+  when nothing specific fits. Exactly one emoji per bullet, never stacked, never
+  replacing a word. NEVER a plain "•", "-", or "▪" bullet — if a line is a bullet,
+  it MUST start with an emoji. Bullets highlight benefits, Upwork platform
+  features, or proof points from provided stats and resource docs.
 - Paragraph format: flowing prose — concise and punchy, NOT a wall of text.
 
 FORMATTING GUARDRAILS
