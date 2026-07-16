@@ -87,6 +87,27 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   ad examples doc, updated SMB copy bank (all on her July list). Drop into refs/ + build_refs
   when received.
 
+## Meeting outcomes (2026-07-16 working session — Adrie, Bree, Logan, Ravi)
+- 📅 **Deadlines locked:** Adrie — ad examples doc Jul 17, approved-quotes doc Jul 18 (WIP),
+  key messaging brief Mon Jul 21; copy bank already DONE. Delivery meeting **Aug 4**.
+  Platform updates = first two weeks of Aug (team); Elise+Zach explore Figma nice-to-haves
+  mid-Aug; Bree's change log late Aug → Logan reviews before first week of Sept.
+- ✅ **DECIDED: approved-quotes document** — static reference doc of approved quotes for ADAM.
+  Adrie worried a PDF goes stale → candidate build: a LIVE editable Quotes page (mirror of
+  /learnings) that testimonial gen reads + distributes distinct quotes from. The pinning +
+  distinctness machinery already lands quotes correctly once a pool exists.
+- ⚠️ **Adrie ruling on testimonial imagery:** the 26 curated profiles are fine for Talent
+  Profile cards but CANNOT represent clients on quote/testimonial ads long-term. Real client
+  photography = Sarah (Adrie consulting). Interim fictional-quote + curated-photo behavior is
+  placeholder-only; the quote-library integration must pair quote ↔ approved client photo.
+- ℹ️ **Linear** = task management + engineering escalation. Haresh's migration help requires a
+  formal Linear request (Adrie + Lee submitting, with business impact + stakeholders).
+- ℹ️ **August knowledge transfer:** record as many meetings as possible (transcripts mined for
+  bug/feature patterns), Bree's fixes/unresolved spreadsheet → Logan last week of Aug.
+- ✅ **Emoji library action item — CLOSED (2026-07-16 evening):** no library/integration
+  needed. Emojis are Unicode the model writes natively; the "art-director" rule (derive from
+  each line's concrete subject + brief theme, no repeats, classics only) is live + verified.
+
 ## Copy-quality closeout (2026-07-16 evening)
 - ✅ **Distinct testimonial per concept** — brief quote used exactly once; other concepts
   invent distinct fictional people (verified 6/6 unique); DUPLICATE QUOTE + BRIEF-QUOTE LEAK
