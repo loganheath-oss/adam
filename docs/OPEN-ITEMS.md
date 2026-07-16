@@ -87,6 +87,15 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   ad examples doc, updated SMB copy bank (all on her July list). Drop into refs/ + build_refs
   when received.
 
+## Gate-3 picker verified live (2026-07-16, sprint 2026-07-meta-74664fd049f9 — kept)
+- ✅ **"Choose in ADAM before Figma" works end-to-end in production.** 2-style both-targeting
+  run: 12 concepts generated → picker trimmed 6 pre-selected to **2 winners at gate 3**
+  (`copy-select` HTTP 200, changed 4) → completed in 2m17s → manifest = **4 rows exactly**
+  (2 picks × 2 targeting) instead of 12. Retargeting tone verified subtle ("Still searching
+  for the right designer?" — nudge, no creeping). no_cta correct per mix (Testimonial none;
+  Photo w/ Text's single shipped concept keeps its CTA). Guard also verified: 409 outside
+  gate 3. Reliability dashboard: 2/2 clean runs.
+
 ## Meeting outcomes (2026-07-15 ADAM Working Session — Adrie, Bree, Logan)
 - 📅 **TIMELINE: everything polished by Wed Jul 29** (copy + backend done by Wed Jul 22;
   29th–31st = Upwork migration/grace). August = Logan out (Bree keeps a change log; review
