@@ -865,10 +865,13 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "A customer-quote card with a headshot. The on-image quote fills the "
             "Copy_Testimonial slot and MUST fit its cap — do NOT reuse body_long here. "
             "QUOTE SOURCING: if the ORDER BRIEF above contains a real customer quote, use "
-            "it (you may shorten it, but never change its meaning). Otherwise — there is "
-            "no real-quote library yet — write a clearly FICTIONAL but believable quote: "
-            "an invented person and invented company only; NEVER attribute to a real "
-            "person or real company. Fictional testimonials are auto-flagged for review. "
+            "it in EXACTLY ONE concept — your strongest — shortened only without changing "
+            "its meaning. EVERY OTHER concept must invent its own clearly FICTIONAL quote "
+            "with a DISTINCT invented person, company, and specific result — no two "
+            "concepts may share a quote, name, or company (each board shows a different "
+            "customer; identical quotes under different faces is a brand error). NEVER "
+            "attribute an invented quote to a real person or real company. Fictional "
+            "testimonials are auto-flagged for review. "
             "ALSO provide:\n"
             "- testimonial_quote (max 100 chars — the customer's own first-person quote as "
             "PLAIN text with NO surrounding quotation marks and NO double-quote (\") "
@@ -928,6 +931,10 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
         multi_field_keys = ", pie_labels, pie_center"
 
     copy_instructions = context.get("copy_instructions", "")
+
+    # Quoted spans in the brief (e.g. an approved testimonial quote) — used below to
+    # flag leakage into non-Testimonial concepts' feed copy.
+    _brief_quotes = [q.strip() for q in re.findall(r'"([^"]{25,300})"', order_brief or "")]
 
     # Resolve the ONE matching Ad Type Style Guide entry (untruncated) instead of
     # dumping the whole guide truncated — see _style_guide_block.
@@ -1093,6 +1100,16 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         # Tag every testimonial concept so reviewers always see it.
                         if _sl == "testimonial":
                             concept["testimonial_fictional"] = True
+                        # Brief-quote leakage: the brief's testimonial quote showing up in a
+                        # NON-Testimonial concept's copy (found 2026-07-16 on Photo with Text
+                        # — ADAM's own reviewer called it a compliance risk).
+                        elif _brief_quotes:
+                            _blob = " ".join(str(concept.get(_f, "")) for _f in
+                                             ("body_short", "body_long", "creative_headline",
+                                              "creative_subhead", "headline"))
+                            _blob += " " + json.dumps(concept.get("targeting_copy") or {})
+                            if any(_bq in _blob for _bq in _brief_quotes):
+                                concept["brief_quote_leak"] = True
                         # "Both" concepts carry feed copy under targeting_copy; mirror
                         # the Prospecting set into the flat fields so the rest of the
                         # pipeline (review, image prompts) still reads them. The manifest
@@ -1372,6 +1389,25 @@ Return ONLY the JSON array. No other text."""
                             concept["review_notes"] = (
                                 "⚠ FEED LENGTH — over Meta field cap(s): "
                                 + ", ".join(concept["length_warnings"]) + ". "
+                                + concept.get("review_notes", ""))
+                        # Duplicate-quote backstop: multiple concepts sharing one
+                        # testimonial quote render as different headshots with the SAME
+                        # attribution on the boards (five faces, one name — found
+                        # 2026-07-16). Flag every repeat after the first.
+                        _q = " ".join(str(concept.get("testimonial_quote", "")).split()).lower()
+                        if _q:
+                            _seen_qs = [" ".join(str(x.get("testimonial_quote", "")).split()).lower()
+                                        for x in reviewed]
+                            if _q in _seen_qs:
+                                concept["review_notes"] = (
+                                    "⚠ DUPLICATE QUOTE — same testimonial as another concept; "
+                                    "swap in a distinct quote before running (boards show "
+                                    "different headshots with identical attribution). "
+                                    + concept.get("review_notes", ""))
+                        if concept.get("brief_quote_leak"):
+                            concept["review_notes"] = (
+                                "⚠ BRIEF-QUOTE LEAK — this non-Testimonial concept quotes the "
+                                "brief's testimonial in its feed copy; confirm before running. "
                                 + concept.get("review_notes", ""))
                         # Fictional-testimonial notice (interim policy — see copy gen):
                         # informational, does NOT de-select; reviewers verify/swap at gate 3.
