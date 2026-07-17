@@ -140,3 +140,15 @@ export type Spend = {
 export async function getSpend(days = 30): Promise<Spend | null> {
   return apiGet<Spend>(`/admin/spend?days=${days}`);
 }
+
+export type Health = {
+  overall?: "ok" | "warn" | "critical";
+  volume?: { used_mb?: number; total_mb?: number; free_mb?: number; pct?: number; status?: string; error?: string };
+  anthropic?: { key_present?: boolean; reachable?: boolean; missing_models?: string[]; status?: string; http?: number; error?: string };
+  recent_errors_24h?: number | null;
+  db?: { connected?: boolean };
+};
+
+export async function getHealth(): Promise<Health | null> {
+  return apiGet<Health>("/admin/health");
+}

@@ -2222,6 +2222,82 @@ async def storage_report():
                          "sprints": sprints})
 
 
+# The model IDs ADAM actually sends to the API — checked against the live models
+# list so a retired ID (the runbook's silent 404 killer) surfaces as a warning
+# BEFORE a run hits it, not after.
+_MODELS_IN_USE = ["claude-opus-4-8", "claude-sonnet-4-6", "claude-haiku-4-5"]
+
+
+def _compute_health() -> dict:
+    """Proactive health snapshot — turns the runbook's three predictable failure modes
+    (volume fills / credit runs out / model ID goes stale) into yellow warnings instead
+    of mid-run surprises. Sync (runs in an executor). Best-effort per-check."""
+    health: dict = {}
+
+    # Volume — the ENOSPC incident we actually hit in production.
+    try:
+        du = shutil.disk_usage(str(RUNS_DIR if RUNS_DIR.exists() else BASE_DIR))
+        pct = round(du.used / du.total * 100, 1) if du.total else 0.0
+        health["volume"] = {
+            "used_mb": round(du.used / 1_000_000, 1),
+            "total_mb": round(du.total / 1_000_000, 1),
+            "free_mb": round(du.free / 1_000_000, 1),
+            "pct": pct,
+            "status": "critical" if pct >= 90 else "warn" if pct >= 75 else "ok",
+        }
+    except Exception as e:
+        health["volume"] = {"status": "unknown", "error": str(e)[:120]}
+
+    # Anthropic key present + configured model IDs still resolve.
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    mh: dict = {"key_present": bool(key)}
+    if not key:
+        mh["status"] = "critical"
+    else:
+        try:
+            import httpx
+            r = httpx.get("https://api.anthropic.com/v1/models",
+                          headers={"x-api-key": key, "anthropic-version": "2023-06-01"},
+                          timeout=10)
+            if r.status_code == 200:
+                available = {m.get("id") for m in r.json().get("data", [])}
+                missing = [m for m in _MODELS_IN_USE if m not in available]
+                mh["reachable"] = True
+                mh["missing_models"] = missing
+                mh["status"] = "critical" if missing else "ok"
+            else:
+                mh["reachable"] = False
+                mh["http"] = r.status_code
+                # 401 = bad/absent key; 400 here usually = billing.
+                mh["status"] = "critical" if r.status_code in (401, 403) else "warn"
+        except Exception as e:
+            mh["reachable"] = False
+            mh["status"] = "warn"
+            mh["error"] = str(e)[:120]
+    health["anthropic"] = mh
+
+    # Errors in the last 24h (from the P0 error.* events).
+    try:
+        errs = db.activity_feed(1, action="error.*")
+        health["recent_errors_24h"] = errs.get("total") if errs.get("enabled") else None
+    except Exception:
+        health["recent_errors_24h"] = None
+
+    health["db"] = {"connected": db.db_enabled()}
+    statuses = [health["volume"].get("status"), mh.get("status")]
+    health["overall"] = ("critical" if "critical" in statuses
+                         else "warn" if "warn" in statuses else "ok")
+    return health
+
+
+@app.get("/admin/health", dependencies=[Depends(require_api_key)])
+async def admin_health():
+    """Proactive health: volume %, Anthropic key + model-availability, and 24h error
+    count. Drives the warning banner on the Reliability dashboard."""
+    loop = asyncio.get_event_loop()
+    return JSONResponse(await loop.run_in_executor(None, _compute_health))
+
+
 @app.get("/admin/reliability", dependencies=[Depends(require_api_key)])
 async def admin_reliability(days: int = 30):
     """Headline reliability view: runs started vs the latest terminal outcome per
@@ -2330,11 +2406,20 @@ async def assembly_report(request: Request):
         return JSONResponse({"ok": False, "error": "unknown sprint"}, status_code=404)
     order = _load_json(sprint_dir / "order.json") or {}
     try:
+        _asm_warn = int(body.get("warnings") or 0)
+        _asm_miss = int(body.get("misses") or 0)
+        _asm_short = int(body.get("slot_shortfall") or 0)
         db.log_event("assembly.completed",
                      user_email=(order.get("email") or order.get("driver")),
                      sprint_id=sid,
                      meta={"boards": int(body.get("boards") or 0),
-                           "total": int(body.get("total") or 0)})
+                           "total": int(body.get("total") or 0),
+                           "warnings": _asm_warn, "misses": _asm_miss,
+                           "slot_shortfall": _asm_short,
+                           # Degraded = the plugin couldn't place something (a template
+                           # miss / renamed layer / unfilled slot) — the top August risk
+                           # as Elise & Zach edit templates. Surfaced in the timeline.
+                           "degraded": bool(_asm_miss or _asm_short)})
     except Exception:
         pass
     return JSONResponse({"ok": True})

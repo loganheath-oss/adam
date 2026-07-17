@@ -2,7 +2,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { AdminTabs } from "@/components/admin-tabs";
-import { getReliability, getUsage } from "@/lib/admin";
+import { HealthBanner } from "@/components/health-banner";
+import { getReliability, getUsage, getHealth } from "@/lib/admin";
 
 // Server component: fetches the reliability + usage spine from the FastAPI backend
 // at request time. The API key stays server-side (see lib/backend.ts).
@@ -50,7 +51,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
 }
 
 export default async function AdminPage() {
-  const [rel, usage] = await Promise.all([getReliability(30), getUsage(30)]);
+  const [rel, usage, health] = await Promise.all([getReliability(30), getUsage(30), getHealth()]);
 
   // Backend unreachable (no ADAM_API_URL/KEY, or a fetch error).
   if (!rel) {
@@ -88,6 +89,8 @@ export default async function AdminPage() {
   return (
     <div>
       <Header />
+
+      <HealthBanner health={health} />
 
       {/* Headline: clean-run rate */}
       <div className={`${CARD} mb-4`}>

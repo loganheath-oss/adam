@@ -239,7 +239,18 @@ var STYLES_THAT_SKIP_CTA = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+// Assembly-health counters — log() tallies warning (⚠) and miss (✗) markers as
+// they stream, so the completion report can flag a DEGRADED assembly (e.g. template
+// drift after a layer rename) instead of only reporting the board count. One
+// assembly runs at a time, so module-level is safe. Reset at each assembly start.
+var _asmWarn = 0, _asmMiss = 0, _asmShortfall = 0;
 function log(text) {
+  try {
+    if (typeof text === "string") {
+      if (text.indexOf("\u26a0") !== -1) _asmWarn++;
+      if (text.indexOf("\u2717") !== -1) _asmMiss++;
+    }
+  } catch (e) {}
   figma.ui.postMessage({ type: "log", text: text });
 }
 function err(text) {
@@ -2157,6 +2168,7 @@ async function assemble(payload) {
   catch (e) { err("CSV parse error: " + e.message); return; }
 
   var mode = forcedMode || detectTemplateMode(template);
+  _asmWarn = 0; _asmMiss = 0; _asmShortfall = 0;
   log("\n=== Assembly start: mode=" + mode + ", " + manifest.length + " rows ===");
 
   var destination = null;
@@ -2285,6 +2297,7 @@ async function assemble(payload) {
       else { clone.x = baseX; clone.y = baseY + (g * (template.height + 240)); }
       var r = await fillConceptBoard(clone, group.rows, g, styledSearchRoot);
       log("  Slots filled: " + r.imagesApplied + "/" + (r.boardSlots != null ? r.boardSlots : r.totalRows));
+      if (r.boardSlots != null && r.imagesApplied < r.boardSlots) _asmShortfall += (r.boardSlots - r.imagesApplied);
       if (r.imagesApplied > 0) { assembled++; assembledIds.push(clone.id); }
       await new Promise(function (r) { setTimeout(r, 50); });
     }
@@ -2321,6 +2334,9 @@ async function assemble(payload) {
     unit: outputUnit,
     frameIds: assembledIds,
     sprintId: reportSprintId,
+    warnings: _asmWarn,
+    misses: _asmMiss,
+    slotShortfall: _asmShortfall,
   });
 
   if (assembledIds.length > 0) {

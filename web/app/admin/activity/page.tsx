@@ -60,8 +60,12 @@ function metaSummary(e: ActivityEvent): string {
       return [s("method"), s("path"), `${s("type")}: ${s("error")}`].filter(Boolean).join(" ");
     case "error.client":
       return [s("path"), s("error")].filter(Boolean).join(" — ");
-    case "assembly.completed":
-      return s("boards") && `${s("boards")}/${s("total")} boards`;
+    case "assembly.completed": {
+      const base = s("boards") && `${s("boards")}/${s("total")} boards`;
+      const w = Number(m.warnings ?? 0), miss = Number(m.misses ?? 0), sh = Number(m.slot_shortfall ?? 0);
+      const flags = [miss && `${miss} miss`, sh && `${sh} unfilled`, w && `${w} warn`].filter(Boolean).join(", ");
+      return flags ? `${base} — ⚠ ${flags}` : base;
+    }
     case "copy.generated": {
       const c = s("cost_usd");
       return c ? `$${Number(c).toFixed(2)}` : "";
@@ -205,10 +209,14 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
             {events.map((e) => {
               const { d, t } = fmtTs(e.ts);
               const summary = metaSummary(e);
+              const bad = isBad(e.action);
+              const degraded = e.action === "assembly.completed" && Boolean((e.meta ?? {}).degraded);
               return (
                 <li
                   key={e.id}
-                  className={`flex items-start gap-3 px-4 py-2.5 text-sm ${isBad(e.action) ? "bg-red-50/60" : ""}`}
+                  className={`flex items-start gap-3 px-4 py-2.5 text-sm ${
+                    bad ? "bg-red-50/60" : degraded ? "bg-amber-50/60" : ""
+                  }`}
                 >
                   <span className="w-12 flex-none whitespace-nowrap pt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
                     {d}

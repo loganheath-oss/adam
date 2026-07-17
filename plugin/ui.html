@@ -237,7 +237,7 @@
           fetch("https://adam-production-9618.up.railway.app/assembly-report", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sprint_id: msg.sprintId, boards: msg.assembled, total: msg.total })
+            body: JSON.stringify({ sprint_id: msg.sprintId, boards: msg.assembled, total: msg.total, warnings: msg.warnings || 0, misses: msg.misses || 0, slot_shortfall: msg.slotShortfall || 0 })
           }).then(function (r) {
             appendLog(r.ok ? "Run reported to the ADAM dashboard." : "Dashboard report failed (HTTP " + r.status + ").");
           }).catch(function () {
