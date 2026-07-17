@@ -23,6 +23,7 @@ function digestText(d: Digest, days: number): string {
   L.push("");
   L.push(`Runs: ${d.orders ?? 0} submitted · ${d.completed ?? 0} completed · ${d.failed ?? 0} failed (${pct(d.clean_rate)} clean)`);
   L.push(`Assemblies: ${d.assemblies ?? 0}${d.assemblies_degraded ? ` (${d.assemblies_degraded} degraded — check templates)` : ""}`);
+  L.push(`Workflow: ${d.gate_approvals ?? 0} gate approvals · Gate-3 picker used ${d.picker_uses ?? 0}×`);
   L.push(`Issues: ${d.issues_new ?? 0} new · ${d.issues_open ?? 0} still open`);
   if ((d.errors ?? 0) > 0) L.push(`Errors logged: ${d.errors}`);
   L.push(`Spend: ${usd(d.spend_usd)} this period · ${usd(d.month_to_date_usd)} month-to-date · projected ${usd(d.projected_month_usd)}${d.monthly_budget_usd ? ` of ${usd(d.monthly_budget_usd)} budget` : ""}`);
@@ -122,6 +123,15 @@ export default async function DigestPage({ searchParams }: { searchParams: Promi
         />
         <Stat label="Open issues" value={String(d.issues_open ?? 0)} />
         <Stat label="Spend" value={usd(d.spend_usd)} />
+      </div>
+
+      {/* Workflow read */}
+      <div className="mb-6 text-sm text-muted-foreground">
+        <span className="font-medium text-foreground">{d.gate_approvals ?? 0}</span> gate approvals ·
+        Gate-3 picker used <span className="font-medium text-foreground">{d.picker_uses ?? 0}×</span>
+        {(d.completed ?? 0) > 0 && (d.picker_uses ?? 0) === 0 && (
+          <span className="text-amber-600"> — team is approving copy without the picker</span>
+        )}
       </div>
 
       {/* Callouts */}

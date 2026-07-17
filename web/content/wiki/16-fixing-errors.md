@@ -8,9 +8,14 @@
 
 ## Where problems show up (check in this order)
 
-1. **The Reliability dashboard — `/admin`** — the headline view. Shows the % of runs completing clean and an **incident list with the actual error message** for every failed run (which sprint, which stage, what went wrong). Start here when someone says "ADAM's broken."
-2. **The sprint's own page — `/sprints/<id>`** — shows the exact state (`awaiting_gate_3`, `error`, `interrupted`…), the error text, and a **Resume** button.
-3. **The Issues queue — `/admin/issues`** — where anyone can file "something looked wrong." Triage these weekly; distill the real ones into Learnings (see below).
+1. **The Reliability dashboard — `/admin`** — the headline view. Shows the % of runs completing clean and an **incident list with the actual error message** for every failed run (which sprint, which stage, what went wrong). At the top is a **health strip** — three pills (Volume %, API + models, errors in the last 24h). If any pill is amber or red, that's your first clue; a red banner tells you a run will likely fail until it's fixed. Start here when someone says "ADAM's broken."
+2. **The Activity timeline — `/admin/activity`** — *everything* that happened, newest first: orders, gate approvals, assemblies, edits, and **errors** in one feed. Filter by event type (there's an "⚠ Errors only" option), user, or sprint. This is the "what actually happened, in order" view — use it to see the sequence around a problem, or to catch up on a stretch you missed.
+3. **The sprint's own page — `/sprints/<id>`** — shows the exact state (`awaiting_gate_3`, `error`, `interrupted`…), the error text, and a **Resume** button.
+4. **The Issues queue — `/admin/issues`** — where anyone can file "something looked wrong." Triage these weekly; distill the real ones into Learnings (see below). Open issues older than a week get flagged so nothing rots.
+
+**Two more admin tabs, for the bigger picture:**
+- **Spend — `/admin/spend`** — approximate tokens and cost, by day / user / model, with month-to-date vs. budget and an end-of-month projection. This is the screen to screenshot when someone asks "how much is ADAM costing." (Set `ADAM_MONTHLY_BUDGET_USD` in Railway to show a budget bar.)
+- **Digest — `/admin/digest`** — the whole period on one screen (runs, assemblies, issues, errors, spend, deploys) with a **plaintext block you can copy straight into Slack or the change log**. This is the automated version of the manual August summary — pull it weekly.
 
 ---
 
@@ -68,7 +73,8 @@ Two rules cover every deploy failure we ever hit:
 |---|---|
 | API keys (Anthropic, Gemini, Figma) | Railway → `adam` service → Variables |
 | Sprint data | Railway volume (`/data/runs`) — survives redeploys |
-| Usage/reliability data | Railway Postgres (`/admin` reads it) |
+| Usage/reliability/spend data | Railway Postgres (`/admin`, `/admin/activity`, `/admin/spend`, `/admin/digest` read it) |
+| Monthly budget (optional) | `ADAM_MONTHLY_BUDGET_USD` env var on the `adam` service |
 | Copy guidance ADAM follows | `/learnings` (editable in the app) |
 | Approved testimonial quotes | `/quotes` (editable in the app; testimonial ads draw from it) |
 | Per-ad-type copy rules | `configs/ad_type_style_guide.json` |

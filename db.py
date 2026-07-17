@@ -478,6 +478,8 @@ def digest(since_days: int = 7, monthly_budget: float = 0.0) -> dict:
             "incidents": (rel.get("incidents") or [])[:10],
             "assemblies": counts.get("assembly.completed", 0),
             "assemblies_degraded": degraded,
+            "gate_approvals": counts.get("gate.approved", 0),
+            "picker_uses": counts.get("copy.selected", 0),
             "issues_new": counts.get("issue.reported", 0),
             "issues_open": issues.get("open") if issues.get("enabled") else None,
             "errors": errors,

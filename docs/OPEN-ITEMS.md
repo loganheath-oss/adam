@@ -118,6 +118,29 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   needed. Emojis are Unicode the model writes natively; the "art-director" rule (derive from
   each line's concrete subject + brief theme, no repeats, classics only) is live + verified.
 
+## Observability build — SHIPPED (2026-07-17)
+Goal: know exactly what's happening when the Upwork team runs ADAM in August (team
+self-diagnosis in the moment + Logan's September reconstruction). All live + verified.
+- ✅ **P0 Activity timeline** (`/admin/activity`) — every event newest-first, filter by
+  type/user/sprint; **global error capture**: unhandled server 500s → error.unhandled,
+  UI crashes → error.client (Next global-error boundary), both first-class rows.
+- ✅ **Spend analytics** (`/admin/spend`) — RAVI'S ASK (Slack 2026-07-16, w/ Lee+Adrie,
+  wanted before EOM): approximate tokens + cost by day/user/model, MTD vs
+  `ADAM_MONTHLY_BUDGET_USD` + projection. "Definitive data to share" for usage-approval
+  asks. Set the budget env var to light up the budget bar.
+- ✅ **P1 Health banner** (`/admin/health`) — volume % (warn@75/crit@90), Anthropic key +
+  live model-ID check (prefix-matched), 24h error count. Turns the runbook's 3
+  predictable failures into pre-emptive pills. NOTE: volume at ~72% — prune soon.
+- ✅ **P1 Assembly degradation** — plugin reports ⚠/✗ + slot shortfalls;
+  assembly.completed carries degraded=bool; timeline shows amber. Catches Aug template
+  drift (Elise/Zach) behind the green board count.
+- ✅ **P2 Deploy log** — each Railway deploy → deploy.detected (sha+message), so behavior
+  changes trace to code. **Digest** (`/admin/digest`) — period summary + Slack-pasteable
+  text; automates Bree's manual change log.
+- ✅ **P3 Issue aging** (stale >7d flagged) + workflow read (gate approvals + Gate-3
+  picker usage, flags approve-without-picker).
+- Wiki August runbook + where-things-live updated to document all new surfaces.
+
 ## Copy-quality closeout (2026-07-16 evening)
 - ✅ **Distinct testimonial per concept** — brief quote used exactly once; other concepts
   invent distinct fictional people (verified 6/6 unique); DUPLICATE QUOTE + BRIEF-QUOTE LEAK

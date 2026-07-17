@@ -164,6 +164,8 @@ export type Digest = {
   incidents?: Incident[];
   assemblies?: number;
   assemblies_degraded?: number;
+  gate_approvals?: number;
+  picker_uses?: number;
   issues_new?: number;
   issues_open?: number | null;
   errors?: number;
