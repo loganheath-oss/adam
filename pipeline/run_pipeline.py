@@ -642,6 +642,27 @@ def _salvage_json_array(text):
 
 
 
+def _load_approved_quotes():
+    """Adrie's live quote library (approved_quotes.md — volume-backed, edited in the
+    app's Quotes page). Lines shaped:  - "Quote text." — First L., Title, Company
+    Returns [(quote, attribution)]. Empty list if the file is absent/template-only."""
+    path = Path(os.environ.get("QUOTES_PATH", str(RUNS_DIR.parent / "approved_quotes.md")))
+    try:
+        text = path.read_text()
+    except Exception:
+        return []
+    out = []
+    for line in text.splitlines():
+        m = re.match(r'\s*[-*]\s*["\u201c](.+?)["\u201d]\s*[\u2014\u2013-]{1,2}\s*(.+?)\s*$', line)
+        if not m:
+            continue
+        q, a = m.group(1).strip(), m.group(2).strip()
+        if len(q) < 15 or q.lower().startswith("quote text exactly"):
+            continue  # too short or the template's example line
+        out.append((q, a))
+    return out
+
+
 def _smart_trim(text, cap):
     """Last-resort shortening to <= cap chars: cut at a sentence/line boundary if one
     exists past the halfway point, else at a word boundary. Never mid-word."""
@@ -941,6 +962,7 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
 
     # Multi-field styles need extra structured copy beyond headline/body/cta.
     _sl = style.strip().lower().replace(" ", "")
+    _approved_quotes_lib = _load_approved_quotes() if _sl == "testimonial" else []
     multi_field_instructions = ""
     multi_field_keys = ""
     if _sl == "usvsthem":
@@ -1007,6 +1029,17 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "- testimonial_author (max 51 chars — 'Firstname Lastname, Title, Company'; "
             "invented person + company unless the brief supplied the real attribution)\n"
         )
+        if _approved_quotes_lib:
+            _lib_lines = "\n".join(
+                '{}. "{}" — {}'.format(i + 1, q, a)
+                for i, (q, a) in enumerate(_approved_quotes_lib))
+            multi_field_instructions += (
+                "APPROVED QUOTE LIBRARY — real, approved quotes. ALWAYS prefer these over "
+                "inventing: assign a DIFFERENT library quote (with its attribution EXACTLY "
+                "as given) to each concept, best fit first. Shorten only without changing "
+                "meaning. Invent a fictional quote ONLY for concepts beyond the library "
+                "size.\n" + _lib_lines + "\n"
+            )
         multi_field_keys = ", testimonial_quote, testimonial_author"
     elif _sl == "searchresults":
         multi_field_instructions = (
@@ -1227,14 +1260,16 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         # Tag every testimonial concept so reviewers always see it.
                         if _sl == "testimonial":
                             concept["testimonial_fictional"] = True
-                            # Pin marker: the brief-provided (approved) quote is
-                            # privileged — selection must not drop it (found
-                            # 2026-07-16: reviewer ranked it 6th and it fell out).
+                            # Pin marker: an APPROVED quote (from the brief or the
+                            # live quote library) is privileged — selection must not
+                            # drop it, and it is NOT fictional.
                             _tq = " ".join(str(concept.get("testimonial_quote", "")).split()).lower().rstrip(".")
-                            for _bq in _brief_quotes:
+                            _approved_texts = list(_brief_quotes) + [q for q, _a in _approved_quotes_lib]
+                            for _bq in _approved_texts:
                                 _bqn = " ".join(_bq.split()).lower().rstrip(".")
                                 if _tq and (_tq in _bqn or _bqn in _tq):
                                     concept["brief_quote_used"] = True
+                                    concept.pop("testimonial_fictional", None)
                                     break
                         # Brief-quote leakage: the brief's testimonial quote showing up in a
                         # NON-Testimonial concept's copy (found 2026-07-16 on Photo with Text
@@ -1565,14 +1600,14 @@ Return ONLY the JSON array. No other text."""
                                 + concept.get("review_notes", ""))
                         if concept.get("brief_quote_used"):
                             concept["review_notes"] = (
-                                "📌 Uses the brief-approved quote — pinned into the selection. "
+                                "📌 Uses an APPROVED quote (brief/library) — pinned into the selection. "
                                 + concept.get("review_notes", ""))
                         # Fictional-testimonial notice (interim policy — see copy gen):
                         # informational, does NOT de-select; reviewers verify/swap at gate 3.
                         if concept.get("testimonial_fictional"):
                             concept["review_notes"] = (
-                                "ℹ FICTIONAL testimonial — no real-quote library yet; "
-                                "swap in a real quote if the brief provided one. "
+                                "ℹ FICTIONAL testimonial — no approved quote assigned; "
+                                "add quotes to the Quotes page to replace invented ones. "
                                 + concept.get("review_notes", ""))
                         reviewed.append(concept)
 

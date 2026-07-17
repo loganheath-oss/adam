@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { label: "Ask ADAM", href: "/agent" },
   { label: "Sync Log", href: "/sync-log" },
   { label: "Learnings", href: "/learnings" },
+  { label: "Quotes", href: "/quotes" },
 ] as const;
 
 export function SiteNav() {

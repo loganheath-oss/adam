@@ -3241,6 +3241,22 @@ async def sync_log_page(request: Request):
 
 
 LEARNINGS_PATH = BASE_DIR / "learnings.md"
+
+# Approved customer quotes — Adrie's live quote library (decided 2026-07-16: a
+# static PDF goes stale; this is editable in-app and read by testimonial copy-gen
+# on every run). VOLUME-backed so edits survive redeploys.
+QUOTES_PATH = Path(os.environ.get("QUOTES_PATH", str(RUNS_DIR.parent / "approved_quotes.md")))
+QUOTES_TEMPLATE = """# Approved customer quotes
+
+One quote per line, in this exact shape (the dash before the name matters):
+
+- "Quote text exactly as approved." — First L., Title, Company
+
+ADAM's testimonial ads draw from this pool — each concept gets a DIFFERENT quote,
+approved quotes are always preferred over invented placeholders, and a quote is
+never altered beyond shortening. Delete this instructions block once real quotes
+are added; keep one bullet per quote.
+"""
 LEARNINGS_HEADER = (
     "# ADAM Learnings\n\n"
     "Institutional memory shared across every sprint. Edit this file directly "
@@ -3344,6 +3360,38 @@ async def learnings_raw():
     if not LEARNINGS_PATH.exists():
         return JSONResponse({"content": "", "path": str(LEARNINGS_PATH)})
     return JSONResponse({"content": LEARNINGS_PATH.read_text(), "path": str(LEARNINGS_PATH)})
+
+
+@app.get("/quotes", response_class=HTMLResponse, dependencies=[Depends(require_api_key_or_session)])
+async def quotes_editor_redirect():
+    # The editable UI lives in the Next app; this backend route just 302s there
+    # when someone hits it directly.
+    return RedirectResponse("/learnings", status_code=302)
+
+
+@app.post("/quotes", dependencies=[Depends(require_api_key_or_session)])
+async def quotes_save(request: Request):
+    try:
+        body = await request.json()
+        content = body.get("content", "")
+        if not isinstance(content, str):
+            return JSONResponse({"ok": False, "error": "content must be a string"}, status_code=400)
+        QUOTES_PATH.parent.mkdir(parents=True, exist_ok=True)
+        QUOTES_PATH.write_text(content)
+        try:
+            db.log_event("quotes.edited", meta={"chars": len(content)})
+        except Exception:
+            pass
+        return JSONResponse({"ok": True, "bytes": len(content)})
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+
+
+@app.get("/api/quotes")
+async def quotes_raw():
+    if not QUOTES_PATH.exists():
+        return JSONResponse({"content": QUOTES_TEMPLATE, "path": str(QUOTES_PATH), "seeded": True})
+    return JSONResponse({"content": QUOTES_PATH.read_text(), "path": str(QUOTES_PATH)})
 
 
 @app.get("/health")

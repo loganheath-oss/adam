@@ -70,6 +70,7 @@ Two rules cover every deploy failure we ever hit:
 | Sprint data | Railway volume (`/data/runs`) — survives redeploys |
 | Usage/reliability data | Railway Postgres (`/admin` reads it) |
 | Copy guidance ADAM follows | `/learnings` (editable in the app) |
+| Approved testimonial quotes | `/quotes` (editable in the app; testimonial ads draw from it) |
 | Per-ad-type copy rules | `configs/ad_type_style_guide.json` |
 | Reference docs (brand/legal/examples) | `refs/` → compiled by `pipeline/build_refs.py` |
 | Templates | Figma "Paid Acquisition 2026" (Elise) |
