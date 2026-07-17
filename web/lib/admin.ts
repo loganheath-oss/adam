@@ -118,3 +118,25 @@ export async function getActivity(params: {
   if (params.sprint) q.set("sprint", params.sprint);
   return apiGet<Activity>(`/admin/activity?${q.toString()}`);
 }
+
+export type SpendRow = { cost: number; in: number; out: number; runs?: number };
+export type Spend = {
+  enabled: boolean;
+  error?: string;
+  since_days?: number;
+  total_cost_usd?: number;
+  total_input_tokens?: number;
+  total_output_tokens?: number;
+  runs?: number;
+  by_day?: Array<SpendRow & { day: string }>;
+  by_user?: Array<SpendRow & { user: string }>;
+  by_model?: Array<SpendRow & { model: string }>;
+  month_to_date_usd?: number;
+  monthly_budget_usd?: number;
+  budget_pct?: number | null;
+  projected_month_usd?: number;
+};
+
+export async function getSpend(days = 30): Promise<Spend | null> {
+  return apiGet<Spend>(`/admin/spend?days=${days}`);
+}

@@ -318,6 +318,100 @@ def reliability_summary(since_days: int = 30) -> dict:
         return {"enabled": True, "error": f"query failed: {e}"}
 
 
+# Approximate per-model pricing ($ per 1M tokens) for the spend breakdown. "Approximate"
+# is the explicit ask (Ravi, 2026-07-16) — figures are directional, for budgeting and
+# usage-approval conversations, not billing. Unknown models fall back to Sonnet rates.
+_PRICING = {
+    "claude-opus-4-8": (5.0, 25.0),
+    "claude-opus-4-7": (5.0, 25.0),
+    "claude-opus-4-6": (5.0, 25.0),
+    "claude-sonnet-5": (3.0, 15.0),
+    "claude-sonnet-4-6": (3.0, 15.0),
+    "claude-haiku-4-5": (1.0, 5.0),
+    "claude-fable-5": (10.0, 50.0),
+}
+_PRICING_DEFAULT = (3.0, 15.0)
+
+
+def _model_cost(model: str, it: int, ot: int) -> float:
+    pin, pout = _PRICING.get(model, _PRICING_DEFAULT)
+    return it / 1_000_000 * pin + ot / 1_000_000 * pout
+
+
+def spend_summary(since_days: int = 30, monthly_budget: float = 0.0) -> dict:
+    """Token + cost analytics (Ravi's ask, 2026-07-16: definitive spend data to share,
+    set an API-key budget, justify usage approvals). Aggregates every event carrying
+    meta.cost_usd into window totals + by-day / by-user / by-model breakdowns, plus a
+    month-to-date figure against an optional budget with an end-of-month projection.
+    Best-effort; {'enabled': False} if DB is off."""
+    if _Session is None:
+        return {"enabled": False}
+    now = datetime.datetime.now(datetime.timezone.utc)
+    since = _since(since_days)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    try:
+        with _Session() as s:
+            rows = s.execute(
+                select(UsageEvent.ts, UsageEvent.user_email, UsageEvent.meta)
+                .where(UsageEvent.ts >= min(since, month_start),
+                       UsageEvent.meta["cost_usd"].isnot(None))
+                .order_by(UsageEvent.ts.asc())
+            ).all()
+
+        total = {"cost": 0.0, "in": 0, "out": 0, "runs": 0}
+        by_day, by_user, by_model = {}, {}, {}
+        mtd_cost = 0.0
+        for ts, user, m in rows:
+            m = m or {}
+            cost = float(m.get("cost_usd") or 0.0)
+            it, ot = int(m.get("input_tokens") or 0), int(m.get("output_tokens") or 0)
+            if ts and ts >= month_start:
+                mtd_cost += cost
+            if not (ts and ts >= since):
+                continue  # older than the window — counted only toward MTD above
+            total["cost"] += cost; total["in"] += it; total["out"] += ot; total["runs"] += 1
+            day = ts.date().isoformat()
+            d = by_day.setdefault(day, {"day": day, "cost": 0.0, "in": 0, "out": 0, "runs": 0})
+            d["cost"] += cost; d["in"] += it; d["out"] += ot; d["runs"] += 1
+            uk = user or "unknown"
+            u = by_user.setdefault(uk, {"user": uk, "cost": 0.0, "in": 0, "out": 0, "runs": 0})
+            u["cost"] += cost; u["in"] += it; u["out"] += ot; u["runs"] += 1
+            for model, bm in (m.get("by_model") or {}).items():
+                mit, mot = int(bm.get("input_tokens") or 0), int(bm.get("output_tokens") or 0)
+                g = by_model.setdefault(model, {"model": model, "cost": 0.0, "in": 0, "out": 0})
+                g["in"] += mit; g["out"] += mot; g["cost"] += _model_cost(model, mit, mot)
+
+        def _round(rows_, keys=("cost",)):
+            for r in rows_:
+                for k in keys:
+                    r[k] = round(r[k], 4)
+            return rows_
+
+        days_in_month = 31
+        nxt = month_start.replace(day=28) + datetime.timedelta(days=4)
+        days_in_month = (nxt.replace(day=1) - datetime.timedelta(days=1)).day
+        day_of_month = now.day
+        projected = round(mtd_cost / day_of_month * days_in_month, 2) if day_of_month else mtd_cost
+
+        return {
+            "enabled": True,
+            "since_days": since_days,
+            "total_cost_usd": round(total["cost"], 2),
+            "total_input_tokens": total["in"],
+            "total_output_tokens": total["out"],
+            "runs": total["runs"],
+            "by_day": _round(sorted(by_day.values(), key=lambda r: r["day"])),
+            "by_user": _round(sorted(by_user.values(), key=lambda r: -r["cost"])),
+            "by_model": _round(sorted(by_model.values(), key=lambda r: -r["cost"])),
+            "month_to_date_usd": round(mtd_cost, 2),
+            "monthly_budget_usd": round(float(monthly_budget or 0), 2),
+            "budget_pct": round(mtd_cost / monthly_budget * 100, 1) if monthly_budget else None,
+            "projected_month_usd": projected,
+        }
+    except Exception as e:
+        return {"enabled": True, "error": f"query failed: {e}"}
+
+
 def activity_feed(since_days: int = 30, limit: int = 100, offset: int = 0,
                   action: str | None = None, user_email: str | None = None,
                   sprint_id: str | None = None) -> dict:

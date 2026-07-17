@@ -563,7 +563,8 @@ def _log_pipeline_outcome(sprint_id: str) -> None:
                 cost = round(it / 1_000_000 * 3 + ot / 1_000_000 * 15, 4)
                 db.log_event("copy.generated", user_email=user, sprint_id=sprint_id,
                              meta={"input_tokens": it, "output_tokens": ot,
-                                   "calls": tu.get("calls", 0), "cost_usd": cost})
+                                   "calls": tu.get("calls", 0), "cost_usd": cost,
+                                   "by_model": tu.get("by_model") or {}})
         except Exception:
             pass
     except Exception as e:
@@ -2247,6 +2248,20 @@ async def admin_activity(days: int = 30, limit: int = 100, offset: int = 0,
     return JSONResponse(await loop.run_in_executor(
         None, db.activity_feed, days, limit, offset,
         action or None, user or None, sprint or None))
+
+
+@app.get("/admin/spend", dependencies=[Depends(require_api_key)])
+async def admin_spend(days: int = 30):
+    """Token + cost analytics (Ravi's ask: definitive spend data + budget context).
+    Window totals, by-day / by-user / by-model breakdowns, and month-to-date against
+    ADAM_MONTHLY_BUDGET_USD (optional env var) with an end-of-month projection."""
+    budget = 0.0
+    try:
+        budget = float(os.environ.get("ADAM_MONTHLY_BUDGET_USD", "0") or 0)
+    except ValueError:
+        budget = 0.0
+    loop = asyncio.get_event_loop()
+    return JSONResponse(await loop.run_in_executor(None, db.spend_summary, days, budget))
 
 
 @app.post("/client-error")
