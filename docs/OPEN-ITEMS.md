@@ -87,6 +87,16 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   ad examples doc, updated SMB copy bank (all on her July list). Drop into refs/ + build_refs
   when received.
 
+## Quotes library — BUILT & LIVE (2026-07-17)
+- ✅ **Live approved-quotes page at `/quotes`** (nav item, Learnings-style editor) — answers
+  Adrie's "static PDF goes stale" concern. Volume-backed (`/data/approved_quotes.md`, survives
+  redeploys); edits apply on the very next run; `quotes.edited` dashboard event; runbook updated.
+- ✅ **Testimonial gen consumes it, verified live:** each concept gets a DIFFERENT library quote
+  (exact attribution), library concepts are pinned into selection + not marked fictional;
+  fictional placeholders only fill beyond the pool. Format: `- "Quote." — First L., Title, Co`.
+- 📋 **Friday:** Adrie pastes her quotes doc into `/quotes` → done, no integration step.
+- 🔮 When Sarah's client photography lands, quote↔photo pairing hangs off these entries.
+
 ## Meeting outcomes (2026-07-16 working session — Adrie, Bree, Logan, Ravi)
 - 📅 **Deadlines locked:** Adrie — ad examples doc Jul 17, approved-quotes doc Jul 18 (WIP),
   key messaging brief Mon Jul 21; copy bank already DONE. Delivery meeting **Aug 4**.
