@@ -24,6 +24,7 @@ const ACTION_LABELS: Record<string, string> = {
   "issue.reported": "Issue reported",
   "error.unhandled": "Server error",
   "error.client": "UI crash",
+  "deploy.detected": "Deploy",
 };
 
 function label(action: string): string {

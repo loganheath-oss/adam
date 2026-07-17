@@ -152,3 +152,29 @@ export type Health = {
 export async function getHealth(): Promise<Health | null> {
   return apiGet<Health>("/admin/health");
 }
+
+export type Digest = {
+  enabled: boolean;
+  error?: string;
+  since_days?: number;
+  orders?: number;
+  completed?: number;
+  failed?: number;
+  clean_rate?: number | null;
+  incidents?: Incident[];
+  assemblies?: number;
+  assemblies_degraded?: number;
+  issues_new?: number;
+  issues_open?: number | null;
+  errors?: number;
+  spend_usd?: number;
+  spend_by_user?: Array<{ user: string; cost: number; runs?: number }>;
+  month_to_date_usd?: number;
+  projected_month_usd?: number;
+  monthly_budget_usd?: number;
+  deploys?: Array<{ ts: string | null; sha?: string; message?: string; service?: string }>;
+};
+
+export async function getDigest(days = 7): Promise<Digest | null> {
+  return apiGet<Digest>(`/admin/digest?days=${days}`);
+}

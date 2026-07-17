@@ -5,6 +5,7 @@ Serves the order form, runs the pipeline, and provides a sprint dashboard.
 
 import asyncio
 import csv
+import shutil
 import traceback
 import hashlib
 import io
@@ -293,6 +294,19 @@ async def lifespan(app: FastAPI):
     sprints as interrupted."""
     try:
         db.init_db()
+        # Record this deploy (once per Railway deployment) so behavior changes can be
+        # traced to the code that shipped them — the deploy log Bree's change log
+        # otherwise tracks by hand. Railway injects these RAILWAY_GIT_* vars.
+        dep_id = os.environ.get("RAILWAY_DEPLOYMENT_ID", "")
+        if dep_id:
+            sha = os.environ.get("RAILWAY_GIT_COMMIT_SHA", "")
+            db.log_deploy_once(dep_id, {
+                "sha": sha[:12],
+                "message": (os.environ.get("RAILWAY_GIT_COMMIT_MESSAGE", "") or "").split("\n")[0][:200],
+                "branch": os.environ.get("RAILWAY_GIT_BRANCH", ""),
+                "author": os.environ.get("RAILWAY_GIT_AUTHOR", ""),
+                "service": os.environ.get("RAILWAY_SERVICE_NAME", ""),
+            })
     except Exception as _e:
         print(f"[db] init_db skipped: {_e}")
     if RUNS_DIR.exists():
@@ -2261,7 +2275,12 @@ def _compute_health() -> dict:
                           timeout=10)
             if r.status_code == 200:
                 available = {m.get("id") for m in r.json().get("data", [])}
-                missing = [m for m in _MODELS_IN_USE if m not in available]
+                # The models list returns dated IDs (claude-haiku-4-5-20251001) while
+                # we reference undated aliases — match by exact OR prefix so a live,
+                # dated model isn't mis-flagged as retired.
+                def _resolves(mid):
+                    return any(a == mid or (a or "").startswith(mid) for a in available)
+                missing = [m for m in _MODELS_IN_USE if not _resolves(m)]
                 mh["reachable"] = True
                 mh["missing_models"] = missing
                 mh["status"] = "critical" if missing else "ok"
@@ -2288,6 +2307,19 @@ def _compute_health() -> dict:
     health["overall"] = ("critical" if "critical" in statuses
                          else "warn" if "warn" in statuses else "ok")
     return health
+
+
+@app.get("/admin/digest", dependencies=[Depends(require_api_key)])
+async def admin_digest(days: int = 7):
+    """Period summary for async catch-up (Bree's change log / Logan's Sept review),
+    composed from the event spine + spend, with an optional monthly budget."""
+    budget = 0.0
+    try:
+        budget = float(os.environ.get("ADAM_MONTHLY_BUDGET_USD", "0") or 0)
+    except ValueError:
+        budget = 0.0
+    loop = asyncio.get_event_loop()
+    return JSONResponse(await loop.run_in_executor(None, db.digest, days, budget))
 
 
 @app.get("/admin/health", dependencies=[Depends(require_api_key)])

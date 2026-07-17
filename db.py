@@ -235,6 +235,31 @@ def init_db() -> bool:
         return False
 
 
+def log_deploy_once(deployment_id: str, meta: dict) -> bool:
+    """Record a deploy.detected event, but only ONCE per Railway deployment — so a
+    behavior change in August can be correlated with the code that shipped it, while
+    plain container restarts (same deployment_id) don't spam the timeline. Returns
+    True if a new deploy was recorded. Best-effort."""
+    if _Session is None or not deployment_id:
+        return False
+    try:
+        with _Session() as s:
+            existing = s.execute(
+                select(func.count()).select_from(UsageEvent)
+                .where(UsageEvent.action == "deploy.detected",
+                       UsageEvent.meta["deployment_id"].astext == deployment_id)
+            ).scalar() or 0
+            if existing:
+                return False
+            s.add(UsageEvent(action="deploy.detected",
+                             meta={**meta, "deployment_id": deployment_id}))
+            s.commit()
+        return True
+    except Exception as e:
+        print(f"[db] log_deploy_once failed: {e}")
+        return False
+
+
 def log_event(action: str, user_email: str | None = None,
               sprint_id: str | None = None, meta: dict | None = None) -> None:
     """Append one usage event + bump the user's last_seen. Best-effort — never raises."""
@@ -407,6 +432,66 @@ def spend_summary(since_days: int = 30, monthly_budget: float = 0.0) -> dict:
             "monthly_budget_usd": round(float(monthly_budget or 0), 2),
             "budget_pct": round(mtd_cost / monthly_budget * 100, 1) if monthly_budget else None,
             "projected_month_usd": projected,
+        }
+    except Exception as e:
+        return {"enabled": True, "error": f"query failed: {e}"}
+
+
+def digest(since_days: int = 7, monthly_budget: float = 0.0) -> dict:
+    """A period summary for async catch-up — the automated version of Bree's manual
+    August change log / Logan's September review. Composes reliability + spend with
+    period-specific counts (new issues, degraded assemblies, deploys, errors) so one
+    screen answers 'what happened this week'. Best-effort."""
+    if _Session is None:
+        return {"enabled": False}
+    since = _since(since_days)
+    try:
+        rel = reliability_summary(since_days)
+        spend = spend_summary(since_days, monthly_budget)
+        issues = list_issues()
+        with _Session() as s:
+            counts = dict(s.execute(
+                select(UsageEvent.action, func.count())
+                .where(UsageEvent.ts >= since).group_by(UsageEvent.action)
+            ).all())
+            degraded = s.execute(
+                select(func.count()).select_from(UsageEvent)
+                .where(UsageEvent.action == "assembly.completed", UsageEvent.ts >= since,
+                       UsageEvent.meta["degraded"].astext == "true")
+            ).scalar() or 0
+            errors = s.execute(
+                select(func.count()).select_from(UsageEvent)
+                .where(UsageEvent.action.like("error.%"), UsageEvent.ts >= since)
+            ).scalar() or 0
+            deploys = s.execute(
+                select(UsageEvent.ts, UsageEvent.meta)
+                .where(UsageEvent.action == "deploy.detected", UsageEvent.ts >= since)
+                .order_by(UsageEvent.ts.desc()).limit(30)
+            ).all()
+        return {
+            "enabled": True,
+            "since_days": since_days,
+            "orders": counts.get("order.submitted", 0),
+            "completed": rel.get("completed", 0),
+            "failed": rel.get("failed", 0),
+            "clean_rate": rel.get("clean_rate"),
+            "incidents": (rel.get("incidents") or [])[:10],
+            "assemblies": counts.get("assembly.completed", 0),
+            "assemblies_degraded": degraded,
+            "issues_new": counts.get("issue.reported", 0),
+            "issues_open": issues.get("open") if issues.get("enabled") else None,
+            "errors": errors,
+            "spend_usd": spend.get("total_cost_usd", 0.0),
+            "spend_by_user": (spend.get("by_user") or [])[:8],
+            "month_to_date_usd": spend.get("month_to_date_usd"),
+            "projected_month_usd": spend.get("projected_month_usd"),
+            "monthly_budget_usd": spend.get("monthly_budget_usd"),
+            "deploys": [
+                {"ts": t.isoformat() if t else None,
+                 "sha": (m or {}).get("sha"), "message": (m or {}).get("message"),
+                 "service": (m or {}).get("service")}
+                for t, m in deploys
+            ],
         }
     except Exception as e:
         return {"enabled": True, "error": f"query failed: {e}"}
