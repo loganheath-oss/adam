@@ -83,3 +83,38 @@ export type Roles = {
 export async function getRoles(): Promise<Roles | null> {
   return apiGet<Roles>("/admin/roles");
 }
+
+export type ActivityEvent = {
+  id: number;
+  ts: string | null;
+  action: string;
+  user: string | null;
+  sprint_id: string | null;
+  meta: Record<string, unknown>;
+};
+
+export type Activity = {
+  enabled: boolean;
+  error?: string;
+  since_days?: number;
+  total?: number;
+  limit?: number;
+  offset?: number;
+  returned?: number;
+  events?: ActivityEvent[];
+  actions?: string[];
+};
+
+export async function getActivity(params: {
+  days?: number; limit?: number; offset?: number;
+  action?: string; user?: string; sprint?: string;
+} = {}): Promise<Activity | null> {
+  const q = new URLSearchParams();
+  q.set("days", String(params.days ?? 30));
+  q.set("limit", String(params.limit ?? 100));
+  q.set("offset", String(params.offset ?? 0));
+  if (params.action) q.set("action", params.action);
+  if (params.user) q.set("user", params.user);
+  if (params.sprint) q.set("sprint", params.sprint);
+  return apiGet<Activity>(`/admin/activity?${q.toString()}`);
+}

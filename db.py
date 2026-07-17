@@ -318,6 +318,54 @@ def reliability_summary(since_days: int = 30) -> dict:
         return {"enabled": True, "error": f"query failed: {e}"}
 
 
+def activity_feed(since_days: int = 30, limit: int = 100, offset: int = 0,
+                  action: str | None = None, user_email: str | None = None,
+                  sprint_id: str | None = None) -> dict:
+    """Chronological event feed (newest first) — every logged event, filterable.
+    This is the 'what happened, in order' view that aggregate counts can't give:
+    built for August (team self-diagnosis in the moment + Logan's September
+    reconstruction). `action` supports a trailing '*' prefix match (e.g. 'error.*').
+    Best-effort; {'enabled': False} if DB is off."""
+    if _Session is None:
+        return {"enabled": False}
+    since = _since(since_days)
+    limit = max(1, min(limit, 500))
+    offset = max(0, offset)
+    try:
+        with _Session() as s:
+            q = select(UsageEvent).where(UsageEvent.ts >= since)
+            if action:
+                q = (q.where(UsageEvent.action.like(action[:-1] + "%"))
+                     if action.endswith("*") else q.where(UsageEvent.action == action))
+            if user_email:
+                q = q.where(UsageEvent.user_email == user_email)
+            if sprint_id:
+                q = q.where(UsageEvent.sprint_id == sprint_id)
+            total = s.execute(select(func.count()).select_from(q.subquery())).scalar() or 0
+            rows = s.execute(
+                q.order_by(UsageEvent.ts.desc(), UsageEvent.id.desc())
+                 .limit(limit).offset(offset)
+            ).scalars().all()
+            events = [{
+                "id": r.id,
+                "ts": r.ts.isoformat() if r.ts else None,
+                "action": r.action,
+                "user": r.user_email,
+                "sprint_id": r.sprint_id,
+                "meta": r.meta or {},
+            } for r in rows]
+            # Distinct actions in-window, for the filter dropdown.
+            actions = [a for (a,) in s.execute(
+                select(UsageEvent.action).where(UsageEvent.ts >= since)
+                .group_by(UsageEvent.action).order_by(UsageEvent.action)
+            ).all()]
+        return {"enabled": True, "since_days": since_days, "total": total,
+                "limit": limit, "offset": offset,
+                "returned": len(events), "events": events, "actions": actions}
+    except Exception as e:
+        return {"enabled": True, "error": f"query failed: {e}"}
+
+
 def usage_summary(since_days: int = 30) -> dict:
     """Companion view: total events, active users, and a per-action breakdown.
     Best-effort; {'enabled': False} if DB is off."""

@@ -5,6 +5,7 @@ Serves the order form, runs the pipeline, and provides a sprint dashboard.
 
 import asyncio
 import csv
+import traceback
 import hashlib
 import io
 import tempfile
@@ -328,6 +329,26 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="ADAM Pipeline", lifespan=lifespan)
+
+
+@app.exception_handler(Exception)
+async def _log_unhandled_exception(request: Request, exc: Exception):
+    """Global capture: a truly unhandled server error becomes a first-class
+    error.unhandled event, so a silent 500 in August lands in the Activity timeline
+    instead of vanishing. HTTPException / validation errors have their own handlers
+    and don't reach here. The traceback still prints to the Railway logs."""
+    traceback.print_exception(type(exc), exc, exc.__traceback__)
+    try:
+        db.log_event("error.unhandled",
+                     meta={"path": str(request.url.path),
+                           "method": request.method,
+                           "type": type(exc).__name__,
+                           "error": str(exc)[:500]})
+    except Exception:
+        pass
+    return JSONResponse({"detail": "Internal server error"}, status_code=500)
+
+
 # Ask ADAM is a public, read-only wiki helper (no orders/sprints/gates tools),
 # so it doesn't need the API key gate that protects the operational surface.
 app.include_router(agent_router)
@@ -2214,6 +2235,39 @@ async def admin_usage(days: int = 30):
     """Companion usage view: total events, active users, per-action breakdown."""
     loop = asyncio.get_event_loop()
     return JSONResponse(await loop.run_in_executor(None, db.usage_summary, days))
+
+
+@app.get("/admin/activity", dependencies=[Depends(require_api_key)])
+async def admin_activity(days: int = 30, limit: int = 100, offset: int = 0,
+                         action: str = "", user: str = "", sprint: str = ""):
+    """The Activity timeline: every logged event newest-first, filterable by action
+    (trailing '*' = prefix), user, or sprint. The 'what happened, in order' view —
+    errors (error.*) are first-class rows here alongside the normal workflow events."""
+    loop = asyncio.get_event_loop()
+    return JSONResponse(await loop.run_in_executor(
+        None, db.activity_feed, days, limit, offset,
+        action or None, user or None, sprint or None))
+
+
+@app.post("/client-error")
+async def client_error(request: Request):
+    """Sink for frontend crashes (Next error boundary → /api/client-error proxy →
+    here). Logs an error.client event so a UI crash in August lands in the Activity
+    timeline instead of vanishing. Public by necessity; best-effort."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    try:
+        db.log_event("error.client",
+                     user_email=(body.get("user") or None),
+                     sprint_id=(body.get("sprint_id") or None),
+                     meta={"path": str(body.get("path", ""))[:300],
+                           "error": str(body.get("error", ""))[:500],
+                           "digest": str(body.get("digest", ""))[:120]})
+    except Exception:
+        pass
+    return JSONResponse({"ok": True})
 
 
 @app.post("/issues")
