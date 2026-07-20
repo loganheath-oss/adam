@@ -10,6 +10,7 @@
 
 1. **The Reliability dashboard — `/admin`** — the headline view. Shows the % of runs completing clean and an **incident list with the actual error message** for every failed run (which sprint, which stage, what went wrong). At the top is a **health strip** — three pills (Volume %, API + models, errors in the last 24h). If any pill is amber or red, that's your first clue; a red banner tells you a run will likely fail until it's fixed. Start here when someone says "ADAM's broken."
 2. **The Activity timeline — `/admin/activity`** — *everything* that happened, newest first: orders, gate approvals, assemblies, edits, and **errors** in one feed. Filter by event type (there's an "⚠ Errors only" option), user, or sprint. This is the "what actually happened, in order" view — use it to see the sequence around a problem, or to catch up on a stretch you missed.
+   - **🔍 Diagnose** — on any error row, click **Diagnose** and ADAM analyzes it *against this runbook* and hands back the likely cause + step-by-step fix + whether it needs an engineer. It's the fastest way to triage: let ADAM point you at the right section below before you read further.
 3. **The sprint's own page — `/sprints/<id>`** — shows the exact state (`awaiting_gate_3`, `error`, `interrupted`…), the error text, and a **Resume** button.
 4. **The Issues queue — `/admin/issues`** — where anyone can file "something looked wrong." Triage these weekly; distill the real ones into Learnings (see below). Open issues older than a week get flagged so nothing rots.
 
