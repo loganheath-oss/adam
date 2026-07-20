@@ -2322,6 +2322,109 @@ async def admin_digest(days: int = 7):
     return JSONResponse(await loop.run_in_executor(None, db.digest, days, budget))
 
 
+# ── AUTOMATED ERROR DIAGNOSIS ─────────────────────────────────────────────────
+# The Jul-17 ask: ADAM should analyze an error — likely cause + troubleshooting
+# steps — not just report that one happened. It diagnoses AGAINST its own August
+# runbook (the same doc the on-call team reads), so the answer is grounded, not
+# hallucinated. On-demand + cached, on Haiku (~half a cent per diagnosis).
+DIAGNOSE_MODEL = "claude-haiku-4-5"
+
+
+def _diagnose_error_sync(event: dict) -> dict:
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not key:
+        return {"error": "ANTHROPIC_API_KEY not configured"}
+    try:
+        runbook = (BASE_DIR / "docs" / "wiki" / "16-fixing-errors.md").read_text()[:9000]
+    except Exception:
+        runbook = ""
+    meta = event.get("meta") or {}
+    action = event.get("action", "")
+    err_desc = json.dumps(
+        {k: meta.get(k) for k in ("path", "method", "type", "error", "state",
+                                  "stage", "digest", "boards", "misses", "slot_shortfall")
+         if meta.get(k) is not None},
+        indent=2)
+    sprint_ctx = ""
+    sid = event.get("sprint_id")
+    if sid:
+        st = _load_json(RUNS_DIR / sid / "pipeline_state.json")
+        if st:
+            sprint_ctx = (f"\n\nSPRINT {sid} STATE: {st.get('state')} — "
+                          f"error: {(st.get('error') or '')[:400]}")
+    prompt = (
+        "You are ADAM's operations diagnostician. An error was logged in the tool. Using the "
+        "TROUBLESHOOTING RUNBOOK below as your PRIMARY knowledge base, diagnose it for the on-call "
+        "Upwork team (non-engineers running ADAM while the developer is out). Match the error to a "
+        "known runbook case when you can, and give concrete, mostly no-code steps.\n\n"
+        f"ERROR EVENT ({action}):\n{err_desc}{sprint_ctx}\n\n"
+        f"=== TROUBLESHOOTING RUNBOOK ===\n{runbook}\n\n"
+        "Respond with ONLY a JSON object, no prose:\n"
+        '{"likely_cause": "one or two sentences", '
+        '"fix_steps": ["concrete step", "..."], '
+        '"confidence": "high|medium|low", '
+        '"runbook_case": "the matching runbook section title, or \'none\'", '
+        '"needs_engineer": true|false}'
+    )
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=key)
+        resp = client.messages.create(model=DIAGNOSE_MODEL, max_tokens=1024,
+                                      messages=[{"role": "user", "content": prompt}])
+        text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text").strip()
+        if "```" in text:
+            text = (text.split("```json")[-1].split("```")[0] if "```json" in text
+                    else text.split("```")[1])
+        try:
+            diag = json.loads(text.strip())
+        except json.JSONDecodeError:
+            diag = {"likely_cause": text[:600], "fix_steps": [], "confidence": "low",
+                    "runbook_case": "none", "needs_engineer": False}
+        u = resp.usage
+        it, ot = getattr(u, "input_tokens", 0) or 0, getattr(u, "output_tokens", 0) or 0
+        diag["_cost_usd"] = round(it / 1_000_000 * 1 + ot / 1_000_000 * 5, 5)
+        diag["_tokens"] = {"input": it, "output": ot}
+        return diag
+    except Exception as e:
+        return {"error": f"diagnosis call failed: {str(e)[:200]}"}
+
+
+@app.post("/admin/diagnose", dependencies=[Depends(require_api_key)])
+async def admin_diagnose(request: Request):
+    """Diagnose one error event: likely cause + fix steps, grounded in the runbook.
+    Cached onto the event so re-views don't re-bill; logs error.diagnosed (with cost,
+    so it shows in Spend). Pass {"event_id": N, "force": true} to re-run."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    event_id = body.get("event_id")
+    if event_id is None:
+        return JSONResponse({"error": "event_id required"}, status_code=400)
+    ev = db.get_event(int(event_id))
+    if not ev:
+        return JSONResponse({"error": "event not found"}, status_code=404)
+    cached = (ev.get("meta") or {}).get("diagnosis")
+    if cached and not body.get("force"):
+        return JSONResponse({"diagnosis": cached, "cached": True})
+    loop = asyncio.get_event_loop()
+    diag = await loop.run_in_executor(None, _diagnose_error_sync, ev)
+    if diag.get("error"):
+        return JSONResponse(diag, status_code=503)
+    cost = diag.pop("_cost_usd", 0.0)
+    toks = diag.pop("_tokens", {})
+    db.attach_diagnosis(int(event_id), diag)
+    db.log_event("error.diagnosed", sprint_id=ev.get("sprint_id"),
+                 meta={"source_event_id": int(event_id),
+                       "confidence": diag.get("confidence"),
+                       "cost_usd": cost,
+                       "input_tokens": toks.get("input", 0),
+                       "output_tokens": toks.get("output", 0),
+                       "by_model": {DIAGNOSE_MODEL: {"input_tokens": toks.get("input", 0),
+                                                     "output_tokens": toks.get("output", 0)}}})
+    return JSONResponse({"diagnosis": diag, "cached": False, "cost_usd": cost})
+
+
 @app.get("/admin/health", dependencies=[Depends(require_api_key)])
 async def admin_health():
     """Proactive health: volume %, Anthropic key + model-availability, and 24h error

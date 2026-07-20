@@ -235,6 +235,42 @@ def init_db() -> bool:
         return False
 
 
+def get_event(event_id: int) -> dict | None:
+    """Load one usage event by id (for the error-diagnosis feature). Best-effort."""
+    if _Session is None:
+        return None
+    try:
+        with _Session() as s:
+            r = s.get(UsageEvent, event_id)
+            if r is None:
+                return None
+            return {"id": r.id, "ts": r.ts.isoformat() if r.ts else None,
+                    "action": r.action, "user": r.user_email,
+                    "sprint_id": r.sprint_id, "meta": r.meta or {}}
+    except Exception as e:
+        print(f"[db] get_event failed: {e}")
+        return None
+
+
+def attach_diagnosis(event_id: int, diagnosis: dict) -> bool:
+    """Cache an AI diagnosis onto an error event's meta so it isn't re-generated (and
+    re-billed) on every view. Reassigning meta to a new dict flags it dirty for JSONB.
+    Best-effort."""
+    if _Session is None:
+        return False
+    try:
+        with _Session() as s:
+            r = s.get(UsageEvent, event_id)
+            if r is None:
+                return False
+            r.meta = {**(r.meta or {}), "diagnosis": diagnosis}
+            s.commit()
+        return True
+    except Exception as e:
+        print(f"[db] attach_diagnosis failed: {e}")
+        return False
+
+
 def log_deploy_once(deployment_id: str, meta: dict) -> bool:
     """Record a deploy.detected event, but only ONCE per Railway deployment — so a
     behavior change in August can be correlated with the code that shipped it, while

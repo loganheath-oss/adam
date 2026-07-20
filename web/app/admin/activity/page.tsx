@@ -1,5 +1,6 @@
 import { AdminTabs } from "@/components/admin-tabs";
 import { getActivity, type ActivityEvent } from "@/lib/admin";
+import { ErrorDiagnose } from "@/components/error-diagnose";
 
 // Server component: the chronological event feed. Built for August — the team sees
 // exactly what happened and Logan reconstructs the month in September. Errors
@@ -25,6 +26,7 @@ const ACTION_LABELS: Record<string, string> = {
   "error.unhandled": "Server error",
   "error.client": "UI crash",
   "deploy.detected": "Deploy",
+  "error.diagnosed": "Error diagnosed",
 };
 
 function label(action: string): string {
@@ -215,34 +217,44 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
               return (
                 <li
                   key={e.id}
-                  className={`flex items-start gap-3 px-4 py-2.5 text-sm ${
+                  className={`px-4 py-2.5 text-sm ${
                     bad ? "bg-red-50/60" : degraded ? "bg-amber-50/60" : ""
                   }`}
                 >
-                  <span className="w-12 flex-none whitespace-nowrap pt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
-                    {d}
-                  </span>
-                  <span className="w-10 flex-none whitespace-nowrap pt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
-                    {t}
-                  </span>
-                  <span className={`mt-1.5 h-2 w-2 flex-none rounded-full ${dotColor(e.action)}`} />
-                  <span className="flex-none">
-                    <span className={`font-medium ${isBad(e.action) ? "text-red-700" : "text-foreground"}`}>
-                      {label(e.action)}
+                  <div className="flex items-start gap-3">
+                    <span className="w-12 flex-none whitespace-nowrap pt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
+                      {d}
                     </span>
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-muted-foreground" title={summary}>
-                    {summary}
-                  </span>
-                  {e.user && <span className="flex-none truncate text-xs text-muted-foreground">{e.user}</span>}
-                  {e.sprint_id && (
-                    <a
-                      href={`/sprints/${e.sprint_id}`}
-                      className="flex-none font-mono text-xs text-[#14A800] hover:underline"
-                      title={e.sprint_id}
-                    >
-                      {e.sprint_id.slice(-6)}
-                    </a>
+                    <span className="w-10 flex-none whitespace-nowrap pt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
+                      {t}
+                    </span>
+                    <span className={`mt-1.5 h-2 w-2 flex-none rounded-full ${dotColor(e.action)}`} />
+                    <span className="flex-none">
+                      <span className={`font-medium ${isBad(e.action) ? "text-red-700" : "text-foreground"}`}>
+                        {label(e.action)}
+                      </span>
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-muted-foreground" title={summary}>
+                      {summary}
+                    </span>
+                    {e.user && <span className="flex-none truncate text-xs text-muted-foreground">{e.user}</span>}
+                    {e.sprint_id && (
+                      <a
+                        href={`/sprints/${e.sprint_id}`}
+                        className="flex-none font-mono text-xs text-[#14A800] hover:underline"
+                        title={e.sprint_id}
+                      >
+                        {e.sprint_id.slice(-6)}
+                      </a>
+                    )}
+                  </div>
+                  {bad && (
+                    <div className="pl-[5.5rem]">
+                      <ErrorDiagnose
+                        eventId={e.id}
+                        cached={(e.meta ?? {}).diagnosis as Parameters<typeof ErrorDiagnose>[0]["cached"]}
+                      />
+                    </div>
                   )}
                 </li>
               );
