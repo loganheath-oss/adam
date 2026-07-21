@@ -39,13 +39,16 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* Standard Tailwind radius scale — matches upwork-adam exactly (rounded-xl = 12px,
+     rounded-3xl = 24px). The previous proportional scale (radius × 1.4/2.2/…) made
+     every corner in the app rounder than the reference. See docs/DESIGN.md. */
+  --radius-sm: 0.25rem;   /* 4px  */
+  --radius-md: 0.375rem;  /* 6px  */
+  --radius-lg: 0.5rem;    /* 8px  */
+  --radius-xl: 0.75rem;   /* 12px */
+  --radius-2xl: 1rem;     /* 16px */
+  --radius-3xl: 1.5rem;   /* 24px */
+  --radius-4xl: 2rem;     /* 32px */
 }
 
 :root {

@@ -45,8 +45,8 @@ function EntryCard({
       href={href}
       className={`group block rounded-3xl border p-8 backdrop-blur-md transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 ${
         featured
-          ? "border-primary/40 shadow-[0_0_0_1px_rgba(20,168,0,0.16),0_30px_80px_-30px_rgba(20,168,0,0.42)] hover:border-primary/60"
-          : "border-white/10 hover:border-primary/50 hover:shadow-[0_0_0_1px_rgba(20,168,0,0.12),0_30px_80px_-30px_rgba(20,168,0,0.30)]"
+          ? "border-[rgba(20,168,0,0.4)] shadow-[0_0_0_1px_rgba(20,168,0,0.16),0_30px_80px_-30px_rgba(20,168,0,0.42)] hover:border-[rgba(20,168,0,0.6)]"
+          : "border-[rgba(255,255,255,0.1)] hover:border-[rgba(20,168,0,0.5)] hover:shadow-[0_0_0_1px_rgba(20,168,0,0.12),0_30px_80px_-30px_rgba(20,168,0,0.30)]"
       }`}
       style={{
         background: featured
@@ -55,7 +55,7 @@ function EntryCard({
       }}
     >
       <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.14] bg-white/[0.06] text-primary">{icon}</div>
-      <h3 className="mt-6 text-xl font-medium text-white">{title}</h3>
+      <h3 className="mt-5 text-[19px] font-medium tracking-tight text-white">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-white/60">{desc}</p>
       <span className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
         {cta} <span className="transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden>→</span>
@@ -98,7 +98,7 @@ export default function Home() {
             </Link>
             <Link
               href="/sprints"
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-normal text-white/80 transition hover:border-white/40 hover:text-white"
+              className="inline-flex items-center gap-2 rounded-full border border-[#e5e7eb] px-6 py-3 text-sm font-normal text-[rgba(255,255,255,0.8)] transition hover:border-white hover:text-white"
             >
               Current sprints
             </Link>

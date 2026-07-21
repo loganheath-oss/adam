@@ -10,11 +10,18 @@ const TONE: Record<string, string> = {
   unknown: "border-muted bg-muted/40 text-muted-foreground",
 };
 
-function Pill({ tone, label }: { tone: string; label: string }) {
+// A pill is a plain status badge unless it has an `href` — then it renders as a
+// link with an affordance (pointer, hover, a nudging arrow) so it's obvious which
+// pills are clickable and which are just status. (Ravi: don't make non-clickable
+// things look identical to clickable ones.)
+function Pill({ tone, label, href }: { tone: string; label: string; href?: string }) {
+  const base = `inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${TONE[tone] ?? TONE.unknown}`;
+  if (!href) return <span className={base}>{label}</span>;
   return (
-    <span className={`rounded-full border px-3 py-1 text-xs font-medium ${TONE[tone] ?? TONE.unknown}`}>
+    <a href={href} title="View details" className={`${base} group cursor-pointer transition hover:brightness-95`}>
       {label}
-    </span>
+      <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
+    </a>
   );
 }
 
@@ -51,9 +58,11 @@ export function HealthBanner({ health }: { health: Health | null }) {
           }`}
         />
         <Pill tone={api.status ?? "unknown"} label={apiLabel} />
-        <a href="/admin/activity?action=error.*&days=1">
-          <Pill tone={errTone} label={`${errs} error${errs === 1 ? "" : "s"} · 24h`} />
-        </a>
+        <Pill
+          tone={errTone}
+          label={`${errs} error${errs === 1 ? "" : "s"} · 24h`}
+          href="/admin/activity?action=error.*&days=1"
+        />
       </div>
       {banner && (
         <div
