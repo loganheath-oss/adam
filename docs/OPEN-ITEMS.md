@@ -326,3 +326,26 @@ intentional. Full rationale + tokens now in `docs/DESIGN.md`.
   `design-redesign` (cm-wonder) Logan views is SSO-walled + a different Vercel scope. Confirm what
   feeds it (repo/branch) so fixes land there too.
 - **Max** GitHub access = Logan's action (can't add collaborators from here).
+
+## 2026-07-21 — Adrie/Ravi/Bree working session (decisions + copy fix)
+- ✅ **Copy-segmentation bug FIXED & shipped** (commit 3b2c72d). Root cause: copy-gen
+  read the order-level `targeting` and only tripped the both-audience path when the
+  string held both words; the batch form's per-concept `audience` defaults to "Both",
+  which matched neither → every batch concept fell to single-audience → one copy set.
+  Fix (`_generate_copy_for_style`): per-concept `batch["audience"]` wins for P&R orders,
+  "Both" is normalized to the both-audience path, and a **backstop** flags any
+  P+R concept that returns without a populated Prospecting+Retargeting `targeting_copy`
+  (`targeting_incomplete` + ⚠ SEGMENTATION log). NEXT: confirm against Adrie's sprint
+  links when they arrive; a P&R batch test run would verify end-to-end (token cost — flag first).
+- **Access model DECIDED**: any company (Upwork) email can VIEW; admin rights (manage
+  quotes/testimonials/config) restricted. Admins for redundancy: **Lee, Ruby, + engineering**.
+  → matches the Phase-3 role model; still needs the SSO/identity hook to enforce per-user.
+- **Issues** confirmed = manual catalog (not auto-repair) ✓. **Dashboard metrics** they
+  want (clean-run rate, spend, runs, incidents, sprint activity, MTD, digest) ✓ all present.
+- **Billing PRE-APPROVED by Lee** — Logan can bill all project expenses, no recurrent
+  approval. (Separate from the standing "flag API-token spend with a number" working pref.)
+- **Max** = `maxkarasso@cloud.upwork.com`, the Upwork engineer taking over migration.
+  Logan to add via GitHub web UI (Settings → Access → add by email). Avoid making the
+  private repo public (the meeting's fallback idea) — exposes all history.
+- Adrie to email 4 docs (testimonials, updated ad examples, copy-update processing,
+  retargeting examples) + the copy-bug sprint links → ingest into `refs/` when they land.
