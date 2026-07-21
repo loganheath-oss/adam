@@ -126,7 +126,18 @@
   }
   html {
     @apply font-sans;
+    /* Reserve the scrollbar track always, so the logo/nav don't shift when a page
+       (wiki, home) introduces a scrollbar. Matches upwork-adam. */
+    scrollbar-gutter: stable;
   }
+}
+
+/* The landing page is a full-bleed dark canvas. Paint html + body #181818 while it is
+   mounted so the very first paint is dark — no white "flashbang" before the section
+   renders. Scoped via :has() so every other (light-themed) page is left untouched. */
+html:has(.adam-home),
+body:has(.adam-home) {
+  background-color: #181818;
 }
 
 /* ─── Landing marquee (matches upwork-adam) ─────────────────────────────── */

@@ -15,10 +15,13 @@ const GLOW =
   "radial-gradient(900px 680px at 60% 118%, rgba(103,220,18,0.06), rgba(0,0,0,0) 62%)";
 
 // One marquee row — the previews duplicated ×2 so translateX(-50%) loops seamlessly.
+// The reverse row runs PREVIEWS backwards so the two rows never show the same
+// thumbnail stacked vertically on first paint (matches upwork-adam).
 function MarqueeRow({ reverse }: { reverse?: boolean }) {
+  const items = reverse ? [...PREVIEWS].reverse() : PREVIEWS;
   return (
     <div className={`adam-marquee flex w-max gap-4 px-2${reverse ? " reverse" : ""}`}>
-      {[...PREVIEWS, ...PREVIEWS].map((p, i) => (
+      {[...items, ...items].map((p, i) => (
         <div key={i} className="group h-40 w-40 flex-none overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -65,13 +68,14 @@ const ICON = "h-5 w-5";
 const PlusIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className={ICON}><path d="M12 5v14M5 12h14" /></svg>);
 const ChatIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>);
 const BookIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>);
+const RunsIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><path d="M12 2 2 7l10 5 10-5-10-5Z" /><path d="m2 17 10 5 10-5" /><path d="m2 12 10 5 10-5" /></svg>);
 
 // Full-bleed dark landing — matches upwork-adam.vercel.app: PP Neue Montreal,
 // green-glow backdrop, big tight heading, pill CTAs, a full-width auto-scrolling
 // creative marquee (top scrolls left, bottom right), and the four entry cards.
 export default function Home() {
   return (
-    <section className="relative left-1/2 -mt-12 -mb-12 w-screen -translate-x-1/2 overflow-hidden bg-[#181818] text-white">
+    <section className="adam-home relative left-1/2 -mt-12 -mb-12 w-screen -translate-x-1/2 overflow-hidden bg-[#181818] text-white">
       <div className="pointer-events-none absolute inset-0 z-0" style={{ backgroundImage: GLOW }} />
       <div className="relative z-10 pb-24 pt-24">
         {/* Hero (contained) */}
@@ -91,6 +95,12 @@ export default function Home() {
               className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition hover:brightness-95"
             >
               Start an order <span aria-hidden>→</span>
+            </Link>
+            <Link
+              href="/sprints"
+              className="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-3 text-sm font-normal text-white/80 transition hover:border-white/40 hover:text-white"
+            >
+              Current sprints
             </Link>
           </div>
         </div>
@@ -112,6 +122,8 @@ export default function Home() {
         <div className="mx-auto mt-14 grid max-w-[1080px] gap-6 px-6 sm:grid-cols-2">
           <EntryCard featured href="/new" icon={<PlusIcon />} title="New order" cta="Open form"
             desc="Open the order form. The creative team is notified and assets arrive by your delivery date." />
+          <EntryCard href="/sprints" icon={<RunsIcon />} title="Sprint runs" cta="View sprints"
+            desc="Browse every sprint, resume an in-progress chat, or review what was delivered." />
           <EntryCard href="/agent" icon={<ChatIcon />} title="Ask ADAM" cta="Start a chat"
             desc="Ask how ADAM is built or how to use it — a read-only assistant grounded in the wiki." />
           <EntryCard href="/wiki" icon={<BookIcon />} title="How it works" cta="Open the wiki"

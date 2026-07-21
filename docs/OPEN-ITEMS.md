@@ -280,3 +280,49 @@ self-diagnosis in the moment + Logan's September reconstruction). All live + ver
 - **August:** updated copy instructions, template-size reuse audit, Paid Acq platform Qs,
   creative-team delivery grid, color + illustration additions.
 - **September:** review August, apply fixes, extend ADAM to all platforms.
+
+## 2026-07-21 — Ravi design/handoff review (punch list)
+Reference = `upwork-adam.vercel.app` (Ravi's version). Handoff ~1.5 weeks out; Max (Upwork, via
+Adrie's Slack) to get GitHub access + integrate. Design bar: pixel-perfect, "airy," everything
+intentional. Full rationale + tokens now in `docs/DESIGN.md`.
+
+**A. Homepage / global (DONE this session — deploying + verifying):**
+- ✅ 4th entry card **Sprint runs → /sprints** (was 3, his has 4; 2×2 grid).
+- ✅ 2nd hero CTA **Current sprints → /sprints** (outline pill).
+- ✅ Marquee un-stack — row 2 runs PREVIEWS reversed (his technique) so no duplicates stacked on load.
+- ✅ White **flashbang** → landing paints `#181818` first (scoped `:has(.adam-home)`).
+- ✅ **Logo/nav jump** between pages → `html { scrollbar-gutter: stable }`.
+- ✅ **`docs/DESIGN.md`** design-base spec (the "style markdown" Ravi + Logan asked for).
+- ⏳ Remaining polish: nav padding/airiness, thin white outline on card icons, missing hover states,
+  clickability affordances (e.g. clickable error rows must signal it), golden-ratio spacing pass.
+
+**B. Nav & access (structural — role model already partly built, see Phase 3 above):**
+- Two layers: **admin** vs **non-admin** (authorization middleware once SSO/identity lands).
+- Non-admin nav = **New Order, Ask ADAM, Wiki** (Ask ADAM *before* Wiki). Everything else
+  (Sprints, Sync Log, Learnings, Admin dashboard) behind a **profile icon** (top-right dropdown).
+- Rename **Learnings → "Teach ADAM"**, make it tabbed; move **Quotes to a tab under it** (drop Quotes
+  as its own nav item). "Everything we teach ADAM lives there."
+
+**C. Issues → "Get help" (move out of admin):**
+- Remove Issues from the admin dashboard. Add a **"Get help"** button (under profile icon, everyone
+  can reach it) that opens issue submission. Route submissions somewhere real (Linear?) — **get
+  destination from Adrie.**
+
+**D. Admin dashboard upgrades:**
+- Human-readable labels for gate approvals / activity action codes.
+- Activity: **column headers** (the right-side code = the sprint).
+- Spend: **per-model breakdown** (currently none), input tokens; keep month-to-date + projection.
+- Landing = **overview dashboard** (top 4–5 things) then deep-dive w/ filters — **ask Adrie/Lee what
+  they want first** (maybe spend). **PDF export** of the dashboard.
+- Consistency: tabs/pills must not shift rows up/down; make Reliability clearer; icons on tabs.
+
+**E. Wiki cleanup:**
+- ✅ Repo-map "funky text" fixed (block-code pill bug).
+- ✅ Glossary TODO + 7 other leaked `TODO:` notes removed; deploy page filled with real commands.
+- ⏳ Sweep for **personal names** (Ravi wants them out — but ownership refs may be intentional; judgment pass).
+
+**Open questions / Logan actions:**
+- **Deploy target:** fixes are on our repo → Railway (`adam-web-production`). The Vercel
+  `design-redesign` (cm-wonder) Logan views is SSO-walled + a different Vercel scope. Confirm what
+  feeds it (repo/branch) so fixes land there too.
+- **Max** GitHub access = Logan's action (can't add collaborators from here).
