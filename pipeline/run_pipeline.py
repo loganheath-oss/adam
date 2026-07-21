@@ -879,9 +879,22 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
 
     # Pick examples + rules based on targeting. "Prospecting and Retargeting" is
     # BOTH: load both example sets and (below) ask for both feed-copy versions per ad.
-    targeting_type = order.get("targeting", "Prospecting")
+    # Per-concept audience (from the batch form) wins over the order-level dropdown.
+    # The per-concept row is only shown when the order is Prospecting AND Retargeting,
+    # and it defaults to "Both" — so honor it only for P&R orders (otherwise the stale
+    # "Both" default would wrongly force both-audience on a single-audience order).
+    # Fix 2026-07-21 (Adrie's segmentation bug): batch orders sent audience="Both",
+    # which the old check ("prospecting" AND "retargeting" in the string) never matched,
+    # so every batch concept silently fell to the single-audience path → one copy set.
+    _order_t = order.get("targeting", "Prospecting") or "Prospecting"
+    _order_both = ("prospecting" in _order_t.lower() and "retargeting" in _order_t.lower())
+    _batch_aud = (batch.get("audience") or "").strip()
+    if _order_both and _batch_aud:
+        targeting_type = "Prospecting and Retargeting" if _batch_aud.lower() == "both" else _batch_aud
+    else:
+        targeting_type = _order_t
     _tl = targeting_type.lower()
-    _is_both = ("prospecting" in _tl and "retargeting" in _tl)
+    _is_both = (_tl == "both") or ("prospecting" in _tl and "retargeting" in _tl)
     _prosp_ex = context.get("prospecting_examples", "")
     _retarget_ex = context.get("retargeting_examples", "")
     if _is_both:
@@ -1314,6 +1327,19 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         _lf = _enforce_lengths(concept, style)
                         if _lf:
                             print(f"    ⚠ LENGTH: {style} concept {j} over hard cap: {', '.join(_lf)}")
+                        # Segmentation backstop (2026-07-21): a Prospecting+Retargeting concept
+                        # MUST carry targeting_copy with a populated Prospecting AND Retargeting
+                        # set. If the model returned one flat set instead (Adrie's bug), flag it
+                        # loudly + on the concept so it never ships one-set-only silently.
+                        if _is_both:
+                            _tcc = concept.get("targeting_copy")
+                            _have_both = (isinstance(_tcc, dict)
+                                          and (_tcc.get("Prospecting") or _tcc.get("prospecting"))
+                                          and (_tcc.get("Retargeting") or _tcc.get("retargeting")))
+                            if not _have_both:
+                                concept["targeting_incomplete"] = True
+                                print(f"    ⚠ SEGMENTATION: {style} concept {j} is Prospecting+Retargeting "
+                                      f"but returned only one copy set (missing targeting_copy).")
                         concepts.append(concept)
                 # Fit Meta feed fields to their caps (rewrite-or-trim) BEFORE
                 # review, so selection compares cap-clean copy.
