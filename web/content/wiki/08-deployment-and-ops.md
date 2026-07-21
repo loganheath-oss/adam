@@ -22,11 +22,14 @@ flowchart LR
 > Push to `main` → Railway redeploys.
 
 ## Deploying
-- **Code:** push to `main` on `loganheath-oss/adam`; Railway picks it up automatically.
+- **Backend (`adam` service):** push to `main` on `loganheath-oss/adam` — Railway auto-deploys from `main.py`.
+- **Frontend (`adam-web` service):** does **not** auto-deploy from GitHub. Deploy it from an *isolated copy* of `web/` — never `railway up` from the repo root (that would upload the whole repo as the build context):
+  ```bash
+  rsync -a --delete --exclude node_modules --exclude .next web/ /tmp/adam-web-deploy/
+  cd /tmp/adam-web-deploy && railway up --service adam-web --detach
+  ```
 - **Plugin:** not deployed — distributed as the `plugin/` folder, imported in Figma desktop. Reload after edits.
-
-> TODO: confirm Railway project/service names + add the deploy dashboard link and a "how to roll back" note.
-> (Provisioned this session; Railway GraphQL API at `https://backboard.railway.com/graphql/v2`.)
+- **Roll back:** Railway dashboard → the service → **Deployments** → pick a known-good build → **Redeploy**. A failed build never takes the site down; the previous deploy keeps serving.
 
 ## Secrets / environment variables
 The app needs these (set in **Railway env vars**, mirrored locally in `.env`):
@@ -43,8 +46,9 @@ The app needs these (set in **Railway env vars**, mirrored locally in `.env`):
 > (Railway API token, the Figma token) should be **rotated**. Keys are read from `.env`/env, never argv.
 
 ## Gotchas (ops)
-- **`runs/` may be baked into a deploy image** (it was on Fly) — sprints created in one place may not appear
-  in another without a redeploy / shared storage. Verify the Railway volume/persistence setup. *(TODO.)*
+- **`runs/` lives on a persistent Railway volume** mounted at `/data/runs` (500 MB) — it survives redeploys, so
+  sprints created on the deployed app persist. (On the old Fly host it was baked into the image and didn't.)
+  When it fills, image stages fail with ENOSPC → use `/admin/storage` + `/admin/prune`.
 - **`httpx` is required** for copy-gen; ensure it's in the deployed deps (it's used directly, not via SDK).
 - **Anthropic "credit balance too low" returns HTTP 400**, not 401 — looks like a bad request but it's billing.
 - **`import re` must stay imported** in `run_pipeline.py` — the multi-field/chart-pct logic needs it; a

@@ -30,9 +30,6 @@ To change what the copy-gen "knows":
 2. Run `python3 pipeline/build_refs.py`.
 3. The recompiled `refs_context.json` is picked up on the next run.
 
-> TODO: list each `refs/*.txt` file and the `context` key it populates (brand_voice, writing_style,
-> compliance, approved_claims, smb_copy_bank, prospecting_examples, …) so editors know which file drives what.
-
 ## Drive folders (from `upwork_config.json`)
 - **Brand:** `1Jn42lIOVAir9QU-PAMGnDmO8gMsz6BGA`
 - **Sprints (review queue):** `1YpFoiUadL3pguWDJ_Uu4dasek1dj-mLY`

@@ -86,5 +86,3 @@ image+assembly review → final QA. Details in [The pipeline](04-the-pipeline.md
 - **Figma plugin** runs locally in Figma desktop against the "Paid Acquisition 2026" file
   (`DoDwumxELkuAuKKSP5p00e`).
 - **Historical:** Fly (old MCP host), Replit (`replit-poc/`, retired), AWS/Terraform (dormant).
-
-> TODO: confirm exact Railway project/service names and add a screenshot of the Railway dashboard.

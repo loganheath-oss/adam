@@ -45,5 +45,3 @@ A: Add it to `learnings.md` (or the `/learnings` page). The chat reads it every 
 **Q: What's blocking "make it live with unique output" right now?**
 A: Essentially nothing new — the dead-model-ID bug is fixed and the Railway key clears billing. It just needs
 **one end-to-end verification sprint** on the live tool to confirm. (For local dev, bring your own funded key.)
-
-> TODO: grow this from real questions the team asks during handoff sessions.

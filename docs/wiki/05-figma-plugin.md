@@ -69,10 +69,6 @@ All 21 ad-type templates on the ⚙️ Template Library page are recognized and 
 - **Sticky Note** → fills two structured columns (left/right headline + 2 bullets each).
 - **Reminder / Tweet-Post Mockup** → share a base; primary notification layer fills.
 
-> TODO: paste the full style → container → template table here once the registry is reconciled with the
-> current Template Library frame IDs (`template_registry.json` is stale; the plugin is name-driven so this
-> is lower priority).
-
 ## Known field-coverage gaps (cosmetic, tracked)
 - **Pie Chart** quadrant labels share one layer name → need distinct names + 4 copy fields.
 - **Photo with Text** subhead doesn't fill in the Light-Mode variant (variant lacks the layer).

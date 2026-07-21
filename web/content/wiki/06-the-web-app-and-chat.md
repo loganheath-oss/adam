@@ -10,9 +10,6 @@ the order form, a sprint dashboard, the pipeline runner, and the **in-app AI cha
 - Mounts the **chat** at `/chat` (`agent/routes.py`), behind an API-key dependency (`require_api_key`).
 - Exposes a **`/learnings`** page to edit `learnings.md` in the browser.
 
-> TODO: enumerate the exact routes/paths in `main.py` (order submit, sprint list, sprint detail, finals,
-> healthcheck) and add them here as a table.
-
 ## How the chat answers (with sources)
 
 ```mermaid

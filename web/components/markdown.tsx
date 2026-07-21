@@ -22,12 +22,24 @@ export function MarkdownView({ children }: { children: string }) {
           if (m) h = `/wiki/${m[1]}`;
           return <a href={h} className="text-primary underline underline-offset-2" {...p} />;
         },
-        code: ({ className, ...p }) =>
-          /language-/.test(className || "") ? (
-            <code className={className} {...p} />
+        code: ({ className, children, ...p }) => {
+          // Block code (a fenced ``` block) must render plain — the parent <pre>
+          // owns its styling. Only *inline* code gets the grey pill. A fence with a
+          // language has `language-*`; a language-less fence (e.g. the repo-map tree)
+          // has no class, so also treat any multi-line content as a block. Without
+          // this, language-less fences got the inline pill on every line — grey
+          // boxes stacked inside the dark code block.
+          const isBlock = /language-/.test(className || "") || String(children).includes("\n");
+          return isBlock ? (
+            <code className={className} {...p}>
+              {children}
+            </code>
           ) : (
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em]" {...p} />
-          ),
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em]" {...p}>
+              {children}
+            </code>
+          );
+        },
         pre: (p) => {
           // ```mermaid fences render as diagrams, not raw code (they were an
           // unreadable wall of flowchart source before).

@@ -20,5 +20,3 @@
 | **Gate orchestration** | The chat driving a sprint through gates via the `approve_gate` tool |
 | **MCP server** | `mcp_server/server.py` — exposes sprint data as MCP tools (historical; web app superseded it) |
 | **The plugin** | `plugin/` "Upwork Pipeline Assembly" — runs in Figma desktop |
-
-> TODO: fold in Logan's plain-language engineering glossary entries where they overlap.
