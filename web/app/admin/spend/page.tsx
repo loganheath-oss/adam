@@ -179,7 +179,10 @@ export default async function SpendPage({ searchParams }: { searchParams: Promis
           <h2 className="mb-3 text-lg font-medium">By model</h2>
           <div className={`${CARD} overflow-x-auto`}>
             {byModel.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No per-model data yet.</div>
+              <div className="text-sm text-muted-foreground">
+                No per-model data in this window yet — the breakdown fills in as new runs record
+                which model spent the tokens. (Runs before token-tracking show totals only.)
+              </div>
             ) : (
               <table className="w-full text-sm">
                 <thead>

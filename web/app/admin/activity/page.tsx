@@ -208,7 +208,16 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
         {events.length === 0 ? (
           <div className="py-12 text-center text-sm text-muted-foreground">Nothing in this window. 🎉</div>
         ) : (
-          <ul className="divide-y">
+          <>
+            {/* Column headers — so the row layout (and the sprint code on the right) is legible. */}
+            <div className="flex items-center gap-3 border-b bg-muted/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="w-12 flex-none">Date</span>
+              <span className="w-10 flex-none">Time</span>
+              <span className="h-2 w-2 flex-none" />
+              <span className="min-w-0 flex-1">Event &amp; detail</span>
+              <span className="flex-none">User · Sprint</span>
+            </div>
+            <ul className="divide-y">
             {events.map((e) => {
               const { d, t } = fmtTs(e.ts);
               const summary = metaSummary(e);
@@ -259,7 +268,8 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
                 </li>
               );
             })}
-          </ul>
+            </ul>
+          </>
         )}
       </div>
 
