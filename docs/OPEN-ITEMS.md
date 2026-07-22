@@ -409,3 +409,17 @@ with your"). Rewrote `_smart_trim` to (1) end on a complete sentence/bullet/line
 >=50% of cap — clean, no ellipsis; (2) else word-cut + ellipsis so the break reads as
 intentional; (3) convert a dangling "...who:" intro to an ellipsis. Always <= cap;
 re-runs length + legal guardrails. Verified vs the stub case + 7 edges. Commit 8442437.
+
+## 2026-07-22 — Key-messaging brief template BUILT + browser-verified ✅ (commit 361189c)
+Adrie's briefs now have a structure that maps 1:1 to the Additional-Info breakdown schema.
+- **New Order → Review step**: "+ Insert brief template" button drops a 4-section skeleton
+  (THEME / COPY MUST-DOs / DESIGN DIRECTION / RESOURCES) into the Brief field; headers align
+  to `_breakdown_brief`'s theme / copy_directives / design_directives / resources so the
+  breakdown is near-deterministic. Button toggles to "✓ Template inserted"; textarea grows.
+- **docs/brief-template.md**: canonical reference — form-vs-brief boundary table (quantity /
+  audience / sizes stay in the form; brief only steers content), what each section becomes
+  downstream, and a filled example.
+- Verified live on adam-web (Railway): drove New Order → Details → Creative(Copy Only) →
+  Review, clicked Insert, confirmed all 4 sections render in the textarea + button toggled.
+  (Did NOT submit — no junk sprint created.) Frontend deploy confirmed live via the browser
+  after curl/bundle checks were inconclusive (the /new page is client-rendered).
