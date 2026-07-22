@@ -43,10 +43,10 @@ function EntryCard({
   return (
     <Link
       href={href}
-      className={`group block rounded-3xl border p-8 backdrop-blur-md transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 ${
+      className={`group block rounded-3xl border p-8 backdrop-blur-md transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         featured
           ? "border-[rgba(20,168,0,0.4)] shadow-[0_0_0_1px_rgba(20,168,0,0.16),0_30px_80px_-30px_rgba(20,168,0,0.42)] hover:border-[rgba(20,168,0,0.6)]"
-          : "border-[rgba(255,255,255,0.1)] hover:border-[rgba(20,168,0,0.5)] hover:shadow-[0_0_0_1px_rgba(20,168,0,0.12),0_30px_80px_-30px_rgba(20,168,0,0.30)]"
+          : "border-[rgba(255,255,255,0.1)] hover:border-[rgba(20,168,0,0.5)] hover:-translate-y-1"
       }`}
       style={{
         background: featured
@@ -64,11 +64,13 @@ function EntryCard({
   );
 }
 
+// Exact Lucide icons harvested from Ravi's reference (upwork-adam), verbatim path data:
+// plus · layout-grid · message-square-text · book-open. All 24-box, stroke-2, round caps.
 const ICON = "h-5 w-5";
-const PlusIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className={ICON}><path d="M12 5v14M5 12h14" /></svg>);
-const ChatIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>);
-const BookIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>);
-const RunsIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><path d="M12 2 2 7l10 5 10-5-10-5Z" /><path d="m2 17 10 5 10-5" /><path d="m2 12 10 5 10-5" /></svg>);
+const PlusIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><path d="M5 12h14" /><path d="M12 5v14" /></svg>);
+const RunsIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /></svg>);
+const ChatIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /><path d="M7 11h10" /><path d="M7 15h6" /><path d="M7 7h8" /></svg>);
+const BookIcon = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON}><path d="M12 7v14" /><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" /></svg>);
 
 // Full-bleed dark landing — matches upwork-adam.vercel.app: PP Neue Montreal,
 // green-glow backdrop, big tight heading, pill CTAs, a full-width auto-scrolling
