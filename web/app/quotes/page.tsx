@@ -1,4 +1,5 @@
 import { QuotesEditor } from "@/components/quotes-editor";
+import { TeachAdamTabs } from "@/components/teach-adam-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -23,5 +24,10 @@ async function getQuotes(): Promise<string> {
 
 export default async function QuotesPage() {
   const md = await getQuotes();
-  return <QuotesEditor initial={md} />;
+  return (
+    <>
+      <TeachAdamTabs current="quotes" />
+      <QuotesEditor initial={md} />
+    </>
+  );
 }

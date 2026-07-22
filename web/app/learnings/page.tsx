@@ -1,4 +1,5 @@
 import { LearningsEditor } from "@/components/learnings-editor";
+import { TeachAdamTabs } from "@/components/teach-adam-tabs";
 
 export const dynamic = "force-dynamic";
 
@@ -21,5 +22,10 @@ async function getLearnings(): Promise<string> {
 
 export default async function LearningsPage() {
   const md = await getLearnings();
-  return <LearningsEditor initial={md} />;
+  return (
+    <>
+      <TeachAdamTabs current="learnings" />
+      <LearningsEditor initial={md} />
+    </>
+  );
 }
