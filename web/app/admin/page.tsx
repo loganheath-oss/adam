@@ -3,7 +3,7 @@ import {
 } from "@/components/ui/table";
 import { AdminHeader } from "@/components/admin-header";
 import { HealthBanner } from "@/components/health-banner";
-import { getReliability, getUsage, getHealth } from "@/lib/admin";
+import { getReliability, getUsage, getHealth, getSpend } from "@/lib/admin";
 
 // Server component: fetches the reliability + usage spine from the FastAPI backend
 // at request time. The API key stays server-side (see lib/backend.ts).
@@ -24,6 +24,10 @@ const ACTION_LABELS: Record<string, string> = {
 
 function pct(n: number | null | undefined): string {
   return n === null || n === undefined ? "—" : `${Math.round(n * 1000) / 10}%`;
+}
+
+function usd(n: number | null | undefined): string {
+  return n == null ? "—" : `$${n.toFixed(2)}`;
 }
 
 function rateColor(n: number | null | undefined): string {
@@ -51,7 +55,12 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
 }
 
 export default async function AdminPage() {
-  const [rel, usage, health] = await Promise.all([getReliability(30), getUsage(30), getHealth()]);
+  const [rel, usage, health, spend] = await Promise.all([
+    getReliability(30),
+    getUsage(30),
+    getHealth(),
+    getSpend(30),
+  ]);
 
   // Backend unreachable (no ADAM_API_URL/KEY, or a fetch error).
   if (!rel) {
@@ -92,7 +101,48 @@ export default async function AdminPage() {
 
       <HealthBanner health={health} />
 
-      {/* Plain-language verdict — the at-a-glance "what's going on" (Ravi). */}
+      {/* Headline: month-to-date spend — the datapoint the team watches most (Ravi/Logan). */}
+      <div className={`${CARD} mb-4`}>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Spend · month to date
+            </div>
+            <div className="mt-1 text-6xl font-semibold tabular-nums">{usd(spend?.month_to_date_usd)}</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              Projected month-end {usd(spend?.projected_month_usd)}
+              {spend?.monthly_budget_usd ? ` of ${usd(spend.monthly_budget_usd)} budget` : " · no budget set"}
+              {" · "}
+              {usd(spend?.total_cost_usd)} in the last 30 days
+            </div>
+          </div>
+          <a href="/admin/spend" className="text-sm font-medium text-[#14A800] hover:underline">
+            Spend detail →
+          </a>
+        </div>
+        {/* Budget bar — only when ADAM_MONTHLY_BUDGET_USD is set. */}
+        {spend?.monthly_budget_usd ? (
+          <div className="mt-5">
+            <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className={
+                  (spend.budget_pct ?? 0) > 1
+                    ? "bg-red-500"
+                    : (spend.budget_pct ?? 0) > 0.8
+                      ? "bg-amber-500"
+                      : "bg-[#14A800]"
+                }
+                style={{ width: `${Math.min(100, (spend.budget_pct ?? 0) * 100)}%` }}
+              />
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {Math.round((spend.budget_pct ?? 0) * 100)}% of {usd(spend.monthly_budget_usd)} monthly budget
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Plain-language reliability verdict — at-a-glance (Ravi). */}
       <div
         className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
           failed > 0
@@ -107,34 +157,9 @@ export default async function AdminPage() {
           : "No runs have finished in this window yet — submit an order to see reliability data here."}
       </div>
 
-      {/* Headline: clean-run rate */}
-      <div className={`${CARD} mb-4`}>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Clean-run rate
-            </div>
-            <div className={`mt-1 text-6xl font-semibold tabular-nums ${rateColor(rel.clean_rate)}`}>
-              {pct(rel.clean_rate)}
-            </div>
-            <div className="mt-1 text-sm text-muted-foreground">
-              {resolved > 0
-                ? `${completed} of ${resolved} finished runs completed without an incident`
-                : "No runs have finished yet in this window"}
-            </div>
-          </div>
-        </div>
-        {/* clean vs failed bar */}
-        {resolved > 0 && (
-          <div className="mt-5 flex h-2.5 overflow-hidden rounded-full bg-muted">
-            <div className="bg-[#14A800]" style={{ width: `${(completed / resolved) * 100}%` }} />
-            <div className="bg-red-500" style={{ width: `${(failed / resolved) * 100}%` }} />
-          </div>
-        )}
-      </div>
-
-      {/* Stat row */}
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {/* Stat row — clean-run rate now lives here (spend is the headline). */}
+      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-5">
+        <Stat label="Clean-run rate" value={pct(rel.clean_rate)} accent={rateColor(rel.clean_rate)} />
         <Stat label="Runs started" value={String(runs)} />
         <Stat label="Completed" value={String(completed)} accent="text-[#14A800]" />
         <Stat label="Failed" value={String(failed)} accent={failed > 0 ? "text-red-600" : undefined} />
@@ -227,8 +252,8 @@ function Header() {
   return (
     <AdminHeader
       current="reliability"
-      title="Reliability"
-      description="Are runs completing clean? Clean-run rate, incidents, and usage — from the pipeline's own event log."
+      title="Overview"
+      description="Spend, reliability, and activity at a glance — the health of the tool in one screen."
       right={<span className="rounded-full border px-3 py-1 text-xs text-muted-foreground">Last 30 days</span>}
     />
   );
