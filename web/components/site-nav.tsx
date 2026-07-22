@@ -28,16 +28,21 @@ export function SiteNav() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
 
+  // Matches Ravi's reference (upwork-adam) exactly: each item is a padded rounded pill;
+  // hover fills that pill with a subtle background AND brings the text to full strength;
+  // the active item's underline is an inset green bar (::after), not a full-width border.
+  const activeUnderline =
+    "after:absolute after:-bottom-px after:left-3 after:right-3 after:h-0.5 after:rounded after:bg-[#14A800] after:content-['']";
   const linkClass = (active: boolean) =>
     cn(
-      "border-b-2 border-transparent pb-[3px] text-sm transition-colors",
+      "relative rounded-md px-3 py-1.5 text-[13.5px] transition-colors",
       dark
         ? active
-          ? "border-primary font-medium text-white"
-          : "text-white/70 hover:text-white"
+          ? `text-white hover:bg-white/10 ${activeUnderline}`
+          : "text-white/70 hover:bg-white/10 hover:text-white"
         : active
-          ? "border-primary text-foreground"
-          : "text-muted-foreground hover:text-foreground",
+          ? `text-foreground hover:bg-[#f7f8f6] ${activeUnderline}`
+          : "text-muted-foreground hover:bg-[#f7f8f6] hover:text-foreground",
     );
 
   return (
@@ -51,8 +56,8 @@ export function SiteNav() {
           </span>
         </Link>
 
-        {/* Desktop: flat nav, every item visible */}
-        <div className="ml-auto hidden items-center gap-6 md:flex">
+        {/* Desktop: flat nav, every item visible (gap-1 — the pills carry their own px-3) */}
+        <div className="ml-auto hidden items-center gap-1 md:flex">
           {NAV_ITEMS.map(({ label, href }) => (
             <Link key={href} href={href} aria-current={isActive(href) ? "page" : undefined} className={linkClass(isActive(href))}>
               {label}
