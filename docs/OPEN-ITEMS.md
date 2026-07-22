@@ -423,3 +423,18 @@ Adrie's briefs now have a structure that maps 1:1 to the Additional-Info breakdo
   Review, clicked Insert, confirmed all 4 sections render in the textarea + button toggled.
   (Did NOT submit — no junk sprint created.) Frontend deploy confirmed live via the browser
   after curl/bundle checks were inconclusive (the /new page is client-rendered).
+
+## 2026-07-22 — Nav hover + homepage cards: exact parity with Ravi (harvested from live DOM)
+Reverse-engineered Ravi's reference (upwork-adam) via computed styles + extracted SVGs, then matched:
+- **Nav hover** (commit 22387ef): items were text-color-only on hover. Ravi's are padded rounded
+  pills that fill with a subtle bg on hover (`bg-white/10` dark / `#f7f8f6` light) + text to full,
+  and the active underline is an inset green `::after` bar (2px, inset 12px, rounded) — NOT a
+  full-width border-b. Rewrote linkClass to his exact spec (px-3 py-1.5, text-[13.5px], gap-1).
+  Verified live: hovering "Wiki" shows the pill fill; "Home" keeps the green inset underline.
+- **Homepage cards** (commit a0adbb4): container styling already matched (gradient/border/shadow/
+  icon-wrap). Real diffs were the ICONS (mine were hand-drawn approximations) → swapped to Ravi's
+  exact Lucide markup: layout-grid (was layers), message-square-text (was plain bubble), book-open,
+  plus. Also matched hover: featured card no longer lifts (border-brighten only), non-featured cards
+  lift + no phantom hover-shadow. Verified live: all 4 icons + featured green wash match #237.
+- METHOD NOTE: everything harvestable from Ravi's live site (SVG paths, computed gradients/shadows,
+  hover classes). The one accelerator for future parity work = read access to his upwork-adam repo.
