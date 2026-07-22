@@ -399,3 +399,13 @@ collapse to one copy set. Copy generated 2026-07-21T18:48 (post-fix). Result:
   senior hire? Try fractional."), matching the "hint of coming back" tone Adrie asked for.
 - ↪ Closes the 07-21 "confirm against Adrie's sprint links" NEXT item. No test run / API
   spend needed — her live gate-3 sprints already prove it end-to-end.
+
+## 2026-07-22 — Truncation fix: feed-fit fallback never leaves a mid-sentence stub ✅
+Adrie flagged body copy being cut mid-sentence. Root cause was NOT the LLM feed-fit
+rewrite (it already drops whole sentences) but its deterministic fallback `_smart_trim`
+(hit when the rewrite call errors or a field is still over cap): it word-cut whenever the
+last complete sentence ended before the halfway mark → dangling stub ("...who integrate
+with your"). Rewrote `_smart_trim` to (1) end on a complete sentence/bullet/line keeping
+>=50% of cap — clean, no ellipsis; (2) else word-cut + ellipsis so the break reads as
+intentional; (3) convert a dangling "...who:" intro to an ellipsis. Always <= cap;
+re-runs length + legal guardrails. Verified vs the stub case + 7 edges. Commit 8442437.
