@@ -21,6 +21,7 @@ const MENU = [
   { label: "Sprint runs", href: "/sprints" },
   { label: "Sync Log", href: "/sync-log" },
   { label: "Teach ADAM", href: "/learnings" },
+  { label: "Get Help", href: "/help" },
 ] as const;
 
 function ProfileIcon({ className }: { className?: string }) {
