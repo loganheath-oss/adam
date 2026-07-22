@@ -663,22 +663,49 @@ def _load_approved_quotes():
     return out
 
 
+# A clean-sentence cut is used when it retains at least this share of the cap; below
+# that we'd be throwing away too much of the field, so we word-cut and mark it with an
+# ellipsis instead (see _smart_trim).
+_TRIM_KEEP_MIN = 0.5
+
+
 def _smart_trim(text, cap):
-    """Last-resort shortening to <= cap chars: cut at a sentence/line boundary if one
-    exists past the halfway point, else at a word boundary. Never mid-word."""
-    text = str(text or "")
+    """Last-resort shortening to <= cap chars that NEVER leaves a dangling half-sentence
+    (Adrie's rule: a feed body must not end on a raw mid-sentence fragment). Order of
+    preference:
+      1. End on a COMPLETE sentence or bullet/line that keeps >= _TRIM_KEEP_MIN of the
+         cap — a clean, terminal stop (no ellipsis; it's a whole thought).
+      2. Otherwise cut at a word boundary and append an ellipsis (…), so the break reads
+         as an intentional "more follows", not an accidental truncation mid-word/-clause.
+    The earlier version fell straight to a bare word cut whenever the last sentence ended
+    before the halfway mark — which is exactly the mid-sentence stub Adrie flagged."""
+    text = str(text or "").rstrip()
     if len(text) <= cap:
         return text
     cut = text[:cap]
+
+    # Latest sentence terminator (. ! ?), incl. one closing quote/paren, or a bullet /
+    # line break within the allowed span.
     best = -1
-    for sep in (". ", "! ", "? ", "\n"):
-        idx = cut.rfind(sep)
-        if idx > best:
-            best = idx + (0 if sep == "\n" else 1)
-    if best >= int(cap * 0.5):
-        return cut[:best].rstrip()
-    idx = cut.rfind(" ")
-    return (cut[:idx] if idx > 0 else cut).rstrip()
+    for m in re.finditer(r'[.!?]["”’)]*(?=\s|$)|\n', cut):
+        best = max(best, m.end())
+    if best >= max(1, int(cap * _TRIM_KEEP_MIN)):
+        trimmed = cut[:best].rstrip()
+        if trimmed.endswith(":"):
+            # A "…who:" intro whose list got trimmed off — mark it as continued
+            # rather than leaving a bare colon dangling.
+            trimmed = trimmed[:-1].rstrip() + "…"
+        if trimmed:
+            return trimmed
+
+    # No usable sentence boundary → word-boundary cut, marked as truncated so it never
+    # looks like a broken sentence. Reserve one char for the ellipsis and don't end on a
+    # dangling connector/punctuation.
+    room = cut[: max(1, cap - 1)]
+    idx = room.rfind(" ")
+    base = (room[:idx] if idx > 0 else room).rstrip()
+    base = base.rstrip(",;:—–-").rstrip()
+    return (base + "…") if base else cut[:cap]
 
 
 def _fit_feed_fields(concepts, style, api_key, sprint_id=None):
