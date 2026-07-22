@@ -162,6 +162,9 @@ def tool_get_copy_concepts(sprint_id: str) -> dict:
                 "score": str(c.get("score", "")),
                 "Headline_On_Creative": c.get("headline", ""),
                 "Primary_Text_Short": c.get("body_short", c.get("body", "")),
+                # Per-audience feed copy for Prospecting+Retargeting concepts, so the
+                # operator can review BOTH versions (not just the prospecting mirror).
+                "targeting_copy": c.get("targeting_copy") or {},
                 "concept_tag": c.get("concept_tag", ""),
                 "review_notes": c.get("review_notes", ""),
             }
@@ -771,7 +774,7 @@ When a sprint is in `awaiting_gate_N`, you must:
 | Gate | Name | Tool to call FIRST | What to show |
 |------|------|--------------------|--------------|
 | 2 | Order + Refs | `get_sprint` + `get_references` | The order summary (driver, platform, format, quantity, styles, audience, due date) AND the reference context (how many refs were loaded, brand voice, targeting examples). Frame it: "Before we spend any AI credits, let's make sure I got the order right and loaded the right references." **If the user asks to change the brief, quantity, delivery date, driver, or targeting at this gate, call `edit_order` to apply the change, then re-show the updated summary. Do NOT tell them you can't change it — you can.** |
-| 3 | Copy Review | `get_copy_concepts` | Every concept as a numbered list with **Headline** and **Body** in bold. Mark which ones the auto-reviewer selected/scored highest. Frame it: "Here are the ad copy concepts. Tell me which you want to ship, or approve all and we'll move to images." |
+| 3 | Copy Review | `get_copy_concepts` | Every concept as a numbered list with **Headline** and **Body** in bold. Mark which ones the auto-reviewer selected/scored highest. **If a concept has `targeting_copy` (a Prospecting+Retargeting order), show BOTH audience versions of the feed copy — a **Prospecting** block and a **Retargeting** block (headline + short/long body each) — clearly labeled, since they genuinely differ; the on-creative headline is shared.** Frame it: "Here are the ad copy concepts. Tell me which you want to ship, or approve all and we'll move to images." |
 | 4 | Image Prompts | `get_image_prompts` | Each ad slot with its visual prompt as a numbered list. Frame it: "Here's what we'll send to the image model for each ad. Last chance to tweak the visual direction." |
 | 5 | Assembly | `get_manifest` | The asset manifest rows showing which copy + image combos will be assembled. Frame it: "This is the final pairing of copy and visuals before we render the layouts." |
 | 6 | Final QA | `get_sprint` (look at run_summary + available_files) | What got produced, file count, any flags. Frame it: "Everything is rendered. Here's what's ready for delivery." |

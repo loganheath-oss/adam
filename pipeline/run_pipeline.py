@@ -2768,6 +2768,11 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
     review_path = run_dir / "copy_review.csv"
     review_rows = []
     for c in concepts:
+        _tc = c.get("targeting_copy") if isinstance(c.get("targeting_copy"), dict) else {}
+        def _aud(_key, _field):
+            # per-audience FEED field (case-insensitive keys), "" if not a Both concept
+            _v = _tc.get(_key) or _tc.get(_key.lower()) or {}
+            return _v.get(_field, "") if isinstance(_v, dict) else ""
         review_rows.append({
             "Visual_Style": c.get("visual_style", ""),
             "rank": c.get("rank", ""),
@@ -2779,6 +2784,15 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Primary_Text_Long": c.get("body_long", ""),
             "Description": c.get("description", ""),
             "CTA": c.get("cta", ""),
+            # Per-audience FEED copy — populated only for Prospecting+Retargeting
+            # concepts so the operator can review BOTH audience versions at Gate 3
+            # (the on-creative copy above is shared; only the feed copy differs).
+            "Prospecting_Headline": _aud("Prospecting", "headline"),
+            "Prospecting_Text_Short": _aud("Prospecting", "body_short"),
+            "Prospecting_Text_Long": _aud("Prospecting", "body_long"),
+            "Retargeting_Headline": _aud("Retargeting", "headline"),
+            "Retargeting_Text_Short": _aud("Retargeting", "body_short"),
+            "Retargeting_Text_Long": _aud("Retargeting", "body_long"),
             "concept_tag": c.get("concept_tag", ""),
             "review_notes": c.get("review_notes", ""),
         })
