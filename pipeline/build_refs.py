@@ -33,12 +33,12 @@ REF_FILES = {
     "compliance": "Revised Legal Guidance Content Guidelines .txt",
     "copy_playbook": "Claude Meta Ad_Copy_Mini_Playbook .txt",
     "approved_claims": "Copy of Marketing claims III .txt",
-    "smb_copy_bank": "SMB Copy Bank_Phase 1_Final .txt",
+    "smb_copy_bank": "SMB Copy Bank_Phase 3_Final.txt",
     "keyword_research": "New : Trending Subcategory Keyword Research .txt",
     "copy_style_rules": "visual_style_copy_rules.txt",
     "image_style_rules": "visual_style_image_rules.txt",
-    "prospecting_examples": "Prospecting ad copy examples Updated 2026 .txt",
-    "retargeting_examples": "Retargeting Ad copy examples Updated 2026 .txt",
+    "prospecting_examples": "Prospecting ad copy examples Updated 7-2026.txt",
+    "retargeting_examples": "Retargeting Ad copy examples Updated 7-2026.txt",
     "performance_data": "koth top 8 static styles with examples.txt",
 }
 
