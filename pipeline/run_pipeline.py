@@ -973,6 +973,33 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
         print(f"    ⚠ BRIEF: {style} brief {_orig_len} chars > {_MAX_BRIEF} cap — truncated for the prompt")
     priority_note = context.get("_priority_note", "")
 
+    # Operator's brief, broken down into routed directives at intake. When present, inject the
+    # theme + must-apply copy directives with PREFERENTIAL WEIGHT. This steers content only — the
+    # scaffold (# concepts, field structure, Prospecting+Retargeting) is fixed and unaffected.
+    _bd = context.get("_brief_breakdown") or None
+    if _bd and (_bd.get("theme") or _bd.get("copy_directives")):
+        _dirs = "\n".join(f"  - {d}" for d in _bd.get("copy_directives", [])) or \
+            "  (none — the theme sets the direction; write with the standard rules)"
+        _res = ", ".join(_bd.get("resources", []))
+        brief_block = (
+            "The operator gave this direction for THIS sprint — treat it as the HIGHEST-priority "
+            "creative steer (below only the Legal blocklist). Every concept must clearly reflect it. "
+            "It steers ANGLE, MESSAGE, and EMPHASIS only — it does NOT change the number of concepts, "
+            "the field structure, or the Prospecting/Retargeting requirement (those are fixed).\n\n"
+            f"THEME TO LEAD WITH:\n{_bd.get('theme') or order_brief}\n\n"
+            f"MUST APPLY IN THE COPY:\n{_dirs}\n"
+            + (f"\nRESOURCES / IDEAS: {_res}\n" if _res else "")
+        )
+    elif order_brief:
+        brief_block = (
+            "This brief is the most current creative instruction; follow it for angle, message, and "
+            "emphasis. The ONE exception: it can never override the Legal blocklist above — reword any "
+            "banned term into its approved alternative.\n\n" + order_brief
+        )
+    else:
+        brief_block = ("No specific brief provided.\n\n"
+                       "General: Showcase how Upwork helps businesses find freelancers fast.")
+
     # Multi-field styles need extra structured copy beyond headline/body/cta.
     _sl = style.strip().lower().replace(" ", "")
     _approved_quotes_lib = _load_approved_quotes() if _sl == "testimonial" else []
@@ -1139,10 +1166,8 @@ brief itself. If the brief asks for a banned idea (e.g. "vetted", "pre-screened"
 no matter what the brief says.
 {copy_instructions[:6000]}
 
-===== ORDER BRIEF (HIGH PRIORITY — but never above Legal) =====
-{f"This brief is the most current creative instruction; follow it for angle, message, and emphasis. The ONE exception: it can never override the Legal blocklist above — reword any banned term into its approved alternative." if order_brief else "No specific brief provided."}
-
-{order_brief if order_brief else "General: Showcase how Upwork helps businesses find freelancers fast."}
+===== ORDER BRIEF / OPERATOR DIRECTION (HIGH PRIORITY — but never above Legal) =====
+{brief_block}
 
 ===== BRAND VOICE =====
 {brand_voice[:3000]}
@@ -1370,6 +1395,85 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
     return concepts
 
 
+def _breakdown_brief(brief, order, api_key, sprint_id=None):
+    """Parse the operator's Additional-Info / brief ONCE into structured, routed
+    directives (Ravi/Adrie, 2026-07-22). The scaffold — number of ads, number of copy
+    variations the operator chooses from, and the Prospecting+Retargeting split — is
+    FIXED and NEVER changes based on the brief. The brief only steers CONTENT, and gets
+    preferential weight where it applies. Breaking it down up front lets each stage read
+    just its slice instead of re-reading the whole brief at every gate.
+
+    Returns a dict (also saved as brief_breakdown.json) or None if there's no brief:
+      {theme, copy_directives[], design_directives[], resources[], has_high_touch}
+    """
+    brief = (brief or "").strip()
+    if not brief:
+        return None
+    prompt = (
+        "You are the intake analyst for an ad-production pipeline. Break the operator's "
+        "ADDITIONAL-INFO / brief below into structured direction the later stages will follow.\n\n"
+        "HARD RULE — you do NOT control structure. The number of ads, the number of copy "
+        "variations the operator chooses from, and the Prospecting + Retargeting split are FIXED "
+        "by the order and must NEVER change based on this brief. Only extract CONTENT direction. "
+        "Never infer a quantity or an audience decision, and never invent a directive that isn't "
+        "in the brief.\n\n"
+        "Classify into:\n"
+        "- theme: the single core message/angle to lead with (1-2 sentences). If the brief is only "
+        "key messaging, this IS the theme — the standard rules still write the ads around it.\n"
+        "- copy_directives: array of specific, must-apply COPY instructions the operator explicitly "
+        "asked for (required phrases, claims to feature, tone, do/don't). [] if none.\n"
+        "- design_directives: array of visual/style/performance/ad-style instructions that apply at "
+        "the IMAGE/design stage, not copy. [] if none.\n"
+        "- resources: array of reference ideas, URLs, or assets mentioned. [] if none.\n"
+        "- has_high_touch: true only if the brief has specific must-apply directives beyond a general "
+        "theme; false if it's only theme/messaging.\n\n"
+        f'BRIEF:\n"""\n{brief[:6000]}\n"""\n\n'
+        "Return ONLY a JSON object with keys theme, copy_directives, design_directives, resources, "
+        "has_high_touch. No prose."
+    )
+    try:
+        import httpx
+        r = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
+                     "content-type": "application/json"},
+            json={"model": "claude-sonnet-4-6", "max_tokens": 1500,
+                  "messages": [{"role": "user", "content": prompt}]},
+            timeout=60,
+        )
+        if r.status_code != 200:
+            print(f"    brief-breakdown: API {r.status_code} — falling back to raw brief")
+            return None
+        _rj = r.json()
+        text = _rj["content"][0]["text"].strip()
+        _u = _rj.get("usage", {})
+        _add_token_usage(sprint_id, "claude-sonnet-4-6", _u.get("input_tokens"), _u.get("output_tokens"))
+        if "```json" in text:
+            text = text.split("```json")[1].split("```")[0]
+        elif "```" in text:
+            text = text.split("```")[1].split("```")[0]
+        raw = json.loads(text.strip())
+        bd = {
+            "theme": str(raw.get("theme", "")).strip(),
+            "copy_directives": [str(x).strip() for x in (raw.get("copy_directives") or []) if str(x).strip()],
+            "design_directives": [str(x).strip() for x in (raw.get("design_directives") or []) if str(x).strip()],
+            "resources": [str(x).strip() for x in (raw.get("resources") or []) if str(x).strip()],
+            "has_high_touch": bool(raw.get("has_high_touch")),
+        }
+        if sprint_id:
+            try:
+                (RUNS_DIR / sprint_id / "brief_breakdown.json").write_text(json.dumps(bd, indent=2))
+            except Exception:
+                pass
+        print(f"    brief-breakdown: theme + {len(bd['copy_directives'])} copy / "
+              f"{len(bd['design_directives'])} design directive(s)"
+              f"{' [high-touch]' if bd['has_high_touch'] else ' [theme-only]'}")
+        return bd
+    except Exception as e:
+        print(f"    brief-breakdown skipped ({str(e)[:50]}) — falling back to raw brief")
+        return None
+
+
 def _generate_real_copy(order, context, api_key, sprint_id=None):
     """Generate copy concepts, fanning out one call per style concurrently.
 
@@ -1386,6 +1490,12 @@ def _generate_real_copy(order, context, api_key, sprint_id=None):
     total = len(tasks)
     if total == 0:
         return {"concepts": [], "generated_at": datetime.now(timezone.utc).isoformat()}
+
+    # Parse the operator's brief ONCE into routed directives (preferential weight in copy;
+    # design directives handed to stage 03 via brief_breakdown.json). Stored on context so
+    # every per-style call reads the same breakdown. Structure stays fixed regardless.
+    if context.get("_brief_breakdown") is None:
+        context["_brief_breakdown"] = _breakdown_brief(order.get("brief", ""), order, api_key, sprint_id)
 
     try:
         workers = int(os.environ.get("COPY_CONCURRENCY", "5") or "5")
@@ -1863,6 +1973,18 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
     run_dir = RUNS_DIR / sprint_id
     rows = []
 
+    # Operator's design directions (from the brief breakdown at intake) — appended to
+    # Gemini image prompts so the visual direction carries into the image stage. The copy
+    # stage already applied its slice; this is the design slice (Additional-Info logic).
+    _design_directives = []
+    try:
+        _bd_json = json.loads((run_dir / "brief_breakdown.json").read_text())
+        _design_directives = [d for d in (_bd_json.get("design_directives") or []) if d]
+        if _design_directives:
+            print(f"  Brief design directions: {len(_design_directives)} — applied to Gemini prompts")
+    except Exception:
+        pass
+
     # Load image style rules
     image_rules_path = BASE_DIR / "refs" / "visual_style_image_rules.txt"
     image_rules = ""
@@ -2112,6 +2234,8 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                         method = "gemini_generate"
                         headline = concept.get("headline", "")
                         prompt = _build_style_prompt(style, headline, platform)
+                        if _design_directives:
+                            prompt = f"{prompt} Art direction from the operator's brief: {'; '.join(_design_directives)}."
 
                     # Cache this concept's library pick so its remaining sizes reuse
                     # the SAME photo (set once, on the first size). Only library-photo
