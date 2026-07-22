@@ -54,6 +54,24 @@ Consider skill-stacking (mention multiple categories in one ad). Layer in cost-o
   },
 ];
 
+// A fill-in skeleton whose four sections map 1:1 to how ADAM breaks a brief down
+// (theme / copy_directives / design_directives / resources — see _breakdown_brief in
+// run_pipeline.py). Using these exact headers makes the breakdown near-deterministic, so
+// Adrie's key messaging lands where she intends instead of being inferred. Quantity, ad
+// sizes, and Prospecting/Retargeting are set by the form fields above — deliberately NOT
+// here (the breakdown ignores structure decisions in the brief by design).
+const BRIEF_TEMPLATE = `THEME
+(One or two sentences — the single core message or angle every ad should lead with.)
+
+COPY MUST-DOs
+- (A required phrase, claim to feature, tone note, or do/don't. Remove this line if none.)
+
+DESIGN DIRECTION
+- (A visual, style, or ad-format cue for the image stage. Remove this line if none.)
+
+RESOURCES
+- (A reference link, doc, or example asset. Remove this line if none.)`;
+
 type Resolution = { size: string; ratio: string; label?: string };
 type Format = { carousel: boolean; resolutions: Resolution[] };
 type PlatformDef = { desc: string; formats: Record<string, Format> };
@@ -391,8 +409,26 @@ export default function NewOrderPage() {
               <h3 className="text-[15px] font-semibold">Brief</h3>
               <span className="rounded-full bg-[#F0F0F0] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#9aa0a6]">Optional</span>
             </div>
-            <p className="mb-3 text-xs text-[#9aa0a6]">Add campaign context, a key message, or must-includes — or leave it blank and submit.</p>
-            <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={4} placeholder="Campaign context, key message, must-includes…" className="w-full rounded-lg border border-[#E0E0E0] p-3.5 text-sm outline-none focus:border-[#14A800]" />
+            <p className="mb-3 text-xs text-[#9aa0a6]">Add campaign context, a key message, or must-includes — or leave it blank and submit. Insert the template below to structure it so ADAM routes each part where you intend.</p>
+            <textarea value={brief} onChange={(e) => setBrief(e.target.value)} rows={brief.includes("THEME") ? 12 : 4} placeholder="Campaign context, key message, must-includes…" className="w-full rounded-lg border border-[#E0E0E0] p-3.5 text-sm outline-none focus:border-[#14A800]" />
+
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setBrief((b) => (b.includes("THEME") ? b : b.trim() ? `${b.trim()}\n\n${BRIEF_TEMPLATE}` : BRIEF_TEMPLATE))
+                }
+                disabled={brief.includes("THEME")}
+                className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                  brief.includes("THEME")
+                    ? "cursor-default border-[#14A800] bg-[#14A800]/10 text-[#108A00]"
+                    : "border-[#E0E0E0] bg-white hover:border-[#14A800] hover:text-[#108A00]"
+                }`}
+              >
+                {brief.includes("THEME") ? "✓ Template inserted" : "+ Insert brief template"}
+              </button>
+              <span className="text-xs text-[#9aa0a6]">Theme · Copy must-dos · Design direction · Resources — the four things ADAM reads.</span>
+            </div>
 
             {KEY_MESSAGING_THEMES.length > 0 && (
               <div className="mt-3 rounded-lg border border-[#ECECEC] bg-[#FAFBFA] p-3.5">
