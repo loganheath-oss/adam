@@ -367,3 +367,20 @@ Worked Ravi's list top-down; all live on Railway + verified:
 - ❌ **Overview landing page** (top 4-5, then deep-dive) — Ravi wants Adrie/Lee's input on what lands first.
 - ⏸ **Wiki personal names** — the remaining names are legitimate ownership/handoff attribution
   (esp. 14-handoff.md); blanket removal would gut the handoff doc. Recommend keeping; genericize on request.
+
+## 2026-07-22 — Adrie's 3 revised reference docs INGESTED (commit f3e6721, deployed healthy)
+Per Adrie's 07-21 email ("3 of these are revisions of docs already attached to ADAM that
+need to be replaced with these new versions"), exported all 3 Google Docs to text and
+swapped them into `refs/`:
+- ✅ **Prospecting** ad copy examples → `refs/Prospecting ad copy examples Updated 7-2026.txt`
+  (22.7K; 30 categories, 5-field format Primary_Text_Short/Long · Text_On_Visual · Headline_Short/Long).
+- ✅ **Retargeting** ad copy examples → `refs/Retargeting Ad copy examples Updated 7-2026.txt` (20.2K).
+- ✅ **SMB Copy Bank Phase 3** (was Phase 1) → `refs/SMB Copy Bank_Phase 3_Final.txt` (9.8K;
+  Perception/Trust structure — headlines, subheads, short copy, sourced customer quotes).
+- `build_refs.py` REF_FILES remapped to the 3 new filenames; `refs_context.json` recompiled
+  (13/13, `prospecting_examples`/`retargeting_examples`/`smb_copy_bank` all confirmed holding new
+  content). Old versions left in refs/ (no longer referenced). Backend redeploy = 5/5 healthy.
+- ↪ This resolves the 07-21 "Missing refs from Adrie" + "ingest 4 docs when they land" items
+  (the 4th, client testimonials, was already ingested into Approved Quotes on 07-21).
+- ⬜ NOTE for Adrie: the docs are NOW live in ADAM (they weren't before this) — copy runs from
+  today forward calibrate against the July versions.
