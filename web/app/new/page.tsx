@@ -178,7 +178,9 @@ export default function NewOrderPage() {
   const [step, setStep] = useState(1);
   const [done, setDone] = useState<{ [k: number]: boolean }>({});
   const [driver, setDriver] = useState("");
-  const [aud, setAud] = useState<Set<string>>(new Set());
+  // Default to BOTH audiences selected (matches Ravi's reference — the common case is
+  // Prospecting + Retargeting; the operator can deselect one).
+  const [aud, setAud] = useState<Set<string>>(new Set(["Prospecting", "Retargeting"]));
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliverable, setDeliverable] = useState("");
   const [platform, setPlatform] = useState("");
@@ -260,7 +262,7 @@ export default function NewOrderPage() {
         <span className="text-sm text-muted-foreground">Step {step} of 3</span>
       </div>
 
-      <div className="overflow-hidden rounded-[20px] border border-[#ECECEC] bg-white shadow-[0_2px_4px_rgba(0,0,0,.04),0_10px_28px_rgba(0,0,0,.07)]">
+      <div className="overflow-hidden rounded-[20px] border border-[#ECECEC] bg-white elevate-2">
         <div className="grid grid-cols-3 divide-x divide-[#F0F0F0] border-b border-[#ECECEC]">
           {stepTabs.map(([n, label]) => {
             const active = step === n; const isDone = done[n];

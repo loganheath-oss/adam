@@ -28,7 +28,7 @@ export function WikiLayout({ current, md }: { current: string; md: string }) {
             ))}
           </nav>
         </aside>
-        <article className="min-w-0 rounded-2xl border border-[#ECECEC] bg-white p-8 shadow-[0_1px_2px_rgba(0,0,0,.04),0_4px_12px_rgba(0,0,0,.05)]">
+        <article className="min-w-0 rounded-2xl border border-[#ECECEC] bg-white p-8 elevate-1">
           <MarkdownView>{md}</MarkdownView>
         </article>
       </div>

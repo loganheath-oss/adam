@@ -4,7 +4,7 @@ import { useState } from "react";
 import { MarkdownView } from "@/components/markdown";
 
 const CARD =
-  "rounded-2xl border border-[#ECECEC] bg-white shadow-[0_2px_4px_rgba(0,0,0,.04),0_10px_28px_rgba(0,0,0,.07)]";
+  "rounded-2xl border border-[#ECECEC] bg-white elevate-2";
 
 export function LearningsEditor({ initial }: { initial: string }) {
   const [content, setContent] = useState(initial);

@@ -94,7 +94,7 @@ export default function AskAdamPage() {
     <div className="mx-auto flex h-[calc(100vh-11rem)] max-w-3xl flex-col">
       {messages.length === 0 ? (
         <div className="flex flex-1 flex-col items-center px-4 pt-10 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#ECECEC] bg-[#F4FAF1] text-primary shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.05)]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#ECECEC] bg-[#F4FAF1] text-primary elevate-1">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /><path d="M20 2v4" /><path d="M22 4h-4" /><circle cx="4" cy="20" r="2" /></svg>
           </div>
           <h1 className="mt-5 text-4xl font-medium tracking-tight">Ask ADAM</h1>
@@ -106,7 +106,7 @@ export default function AskAdamPage() {
               <button
                 key={s}
                 onClick={() => send(s)}
-                className="rounded-xl border border-[#ECECEC] bg-white px-4 py-3 text-left text-[13.5px] text-[#5b6660] shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.05)] transition-colors hover:border-primary/50 hover:text-foreground"
+                className="rounded-xl border border-[#ECECEC] bg-white px-4 py-3 text-left text-[13.5px] text-[#5b6660] elevate-1 transition-colors hover:border-primary/50 hover:text-foreground"
               >
                 {s}
               </button>

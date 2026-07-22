@@ -45,7 +45,7 @@ function EntryCard({
       href={href}
       className={`group block rounded-3xl border p-8 backdrop-blur-md transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         featured
-          ? "border-[rgba(20,168,0,0.4)] shadow-[0_0_0_1px_rgba(20,168,0,0.16),0_30px_80px_-30px_rgba(20,168,0,0.42)] hover:border-[rgba(20,168,0,0.6)]"
+          ? "border-[rgba(20,168,0,0.4)] glow-featured hover:border-[rgba(20,168,0,0.6)]"
           : "border-[rgba(255,255,255,0.1)] hover:border-[rgba(20,168,0,0.5)] hover:-translate-y-1"
       }`}
       style={{
