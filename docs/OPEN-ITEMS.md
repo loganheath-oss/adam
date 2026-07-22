@@ -438,3 +438,20 @@ Reverse-engineered Ravi's reference (upwork-adam) via computed styles + extracte
   lift + no phantom hover-shadow. Verified live: all 4 icons + featured green wash match #237.
 - METHOD NOTE: everything harvestable from Ravi's live site (SVG paths, computed gradients/shadows,
   hover classes). The one accelerator for future parity work = read access to his upwork-adam repo.
+
+## 2026-07-22 — Systemic Tailwind v4 shadow bug fixed (4 "not the same" reports) ✅
+Root cause of the homepage-cards / Ask ADAM / Wiki / New Order "these aren't the same"
+batch: Tailwind v4's class scanner mis-tokenizes an arbitrary `shadow-[a,b]` value at the
+comma BETWEEN layers, so the class is never generated → box-shadow renders TRANSPARENT.
+Verified: the homepage featured card's computed box-shadow was rgba(0,0,0,0). This flattened
+every multi-layer shadow: featured-card green glow, Ask ADAM cards/input, New Order panels,
+Wiki content article. Fix (systemic, commit 184a8f7): 3 plain unlayered CSS utilities in
+globals.css (elevate-1, elevate-2, glow-featured) + swapped all 6 broken usages. Single-layer
+shadow-[…] (no inter-layer comma) still works, left as-is.
+Verified live (computed styles):
+- Home featured card boxShadow = rgba(20,168,0,.16) 0 0 0 1px, rgba(20,168,0,.42) 0 30px 80px -30px ✅
+- Ask ADAM suggestion card = rgba(0,0,0,.04) 0 1px 2px, rgba(0,0,0,.05) 0 4px 12px ✅
+- Wiki content <article> = same elevate-1 ✅
+Also: New Order now defaults BOTH audiences selected (was none) — matches Ravi ✅ (verified).
+NOTE on "white borders": the non-featured cards' 1px rgba(255,255,255,.1) border already
+matched Ravi exactly; the real gap was the featured card's missing glow (same shadow bug).
