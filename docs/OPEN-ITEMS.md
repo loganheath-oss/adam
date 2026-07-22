@@ -349,3 +349,21 @@ intentional. Full rationale + tokens now in `docs/DESIGN.md`.
   private repo public (the meeting's fallback idea) — exposes all history.
 - Adrie to email 4 docs (testimonials, updated ad examples, copy-update processing,
   retargeting examples) + the copy-bug sprint links → ingest into `refs/` when they land.
+
+## 2026-07-21 — dashboard/nav "do everything" pass (SHIPPED)
+Worked Ravi's list top-down; all live on Railway + verified:
+- ✅ **Tab consistency + icons** — shared fixed-height `AdminHeader` (tabs no longer jump
+  between pages) + an icon per admin tab (b867d2d).
+- ✅ **Nav restructure** — top nav = New Order · Ask ADAM · Wiki; the rest (ADAM Dashboard,
+  Sprint runs, Sync Log, Teach ADAM, Get Help) behind a **profile-icon dropdown**. Role-gating
+  (hide dashboard from members) still needs SSO/identity — the Phase-3 role hook is ready (3cb5325).
+- ✅ **Learnings → "Teach ADAM"** with **Quotes as a tab** under it (dropped from top nav) (3cb5325).
+- ✅ **Issues → "Get Help"** — moved out of the admin dashboard to everyone-accessible `/help`
+  (report form + queue); Issues tab removed; `/admin/issues` redirects to `/help` (297de17).
+- ✅ **PDF export** on the Digest (browser print-to-PDF + print stylesheet) (80671ff).
+- ✅ **Reliability verdict line** — plain-language "all clean / N failed" at-a-glance (80671ff).
+- ✅ **Copy segmentation** fix + **operator sees both audience versions** at Gate 3 (earlier commits).
+- 🟡 **Per-model spend** — plumbing verified working; populates on the next real run (empty-state honest).
+- ❌ **Overview landing page** (top 4-5, then deep-dive) — Ravi wants Adrie/Lee's input on what lands first.
+- ⏸ **Wiki personal names** — the remaining names are legitimate ownership/handoff attribution
+  (esp. 14-handoff.md); blanket removal would gut the handoff doc. Recommend keeping; genericize on request.
