@@ -26,7 +26,7 @@ const TABS = [
 
 export function AdminTabs({ current }: { current: string }) {
   return (
-    <div className="mb-6 flex flex-wrap gap-1 border-b">
+    <div className="mb-6 flex flex-wrap gap-1 border-b print:hidden">
       {TABS.map((t) => (
         <Link
           key={t.key}

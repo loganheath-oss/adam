@@ -1,4 +1,5 @@
 import { AdminHeader } from "@/components/admin-header";
+import { PrintButton } from "@/components/print-button";
 import { CopyTextButton } from "@/components/copy-text-button";
 import { getDigest, type Digest } from "@/lib/admin";
 
@@ -60,18 +61,21 @@ function Header({ days }: { days: number }) {
       title="Digest"
       description="Everything that happened this period, in one screen — and a plaintext version to paste into the change log or Slack."
       right={
-        <div className="flex gap-1 text-sm">
-          {[7, 14, 30].map((d) => (
-            <a
-              key={d}
-              href={`/admin/digest?days=${d}`}
-              className={`rounded-full border px-3 py-1 ${
-                d === days ? "border-[#14A800] font-medium text-foreground" : "text-muted-foreground"
-              }`}
-            >
-              {d}d
-            </a>
-          ))}
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1 text-sm">
+            {[7, 14, 30].map((d) => (
+              <a
+                key={d}
+                href={`/admin/digest?days=${d}`}
+                className={`rounded-full border px-3 py-1 ${
+                  d === days ? "border-[#14A800] font-medium text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {d}d
+              </a>
+            ))}
+          </div>
+          <PrintButton />
         </div>
       }
     />

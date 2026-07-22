@@ -92,6 +92,21 @@ export default async function AdminPage() {
 
       <HealthBanner health={health} />
 
+      {/* Plain-language verdict — the at-a-glance "what's going on" (Ravi). */}
+      <div
+        className={`mb-6 rounded-lg border px-4 py-3 text-sm ${
+          failed > 0
+            ? "border-red-400/40 bg-red-50 text-red-700"
+            : "border-[#14A800]/30 bg-[#14A800]/5 text-[#108A00]"
+        }`}
+      >
+        {resolved > 0
+          ? failed > 0
+            ? `${failed} of ${resolved} recent runs failed — see the incidents below.`
+            : `All ${completed} finished run${completed === 1 ? "" : "s"} completed clean. Nothing needs attention right now.`
+          : "No runs have finished in this window yet — submit an order to see reliability data here."}
+      </div>
+
       {/* Headline: clean-run rate */}
       <div className={`${CARD} mb-4`}>
         <div className="flex flex-wrap items-end justify-between gap-4">
