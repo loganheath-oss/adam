@@ -1,4 +1,4 @@
-import { AdminTabs } from "@/components/admin-tabs";
+import { AdminHeader } from "@/components/admin-header";
 import { getActivity, type ActivityEvent } from "@/lib/admin";
 import { ErrorDiagnose } from "@/components/error-diagnose";
 
@@ -89,13 +89,11 @@ function metaSummary(e: ActivityEvent): string {
 
 function Header() {
   return (
-    <header className="mb-2">
-      <h1 className="text-4xl font-medium tracking-tight">Activity</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Everything that happened, newest first — orders, gates, assemblies, edits, and errors in one
-        timeline. This is the record the team reads in the moment and Logan reads in September.
-      </p>
-    </header>
+    <AdminHeader
+      current="activity"
+      title="Activity"
+      description="Everything that happened, newest first — orders, gates, assemblies, edits, and errors in one timeline. This is the record the team reads in the moment and Logan reads in September."
+    />
   );
 }
 
@@ -116,7 +114,6 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
     return (
       <div>
         <Header />
-        <AdminTabs current="activity" />
         <div className={`${CARD} text-sm text-muted-foreground`}>
           {!data
             ? "Couldn’t reach the backend."
@@ -151,7 +148,6 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
   return (
     <div>
       <Header />
-      <AdminTabs current="activity" />
 
       {/* Filter bar — plain GET form, no client JS. */}
       <form method="get" action="/admin/activity" className={`${CARD} mb-4`}>

@@ -1,4 +1,4 @@
-import { AdminTabs } from "@/components/admin-tabs";
+import { AdminHeader } from "@/components/admin-header";
 import { getSpend, type Spend } from "@/lib/admin";
 
 // Server component: token + cost analytics. Built for Ravi's ask (2026-07-16) —
@@ -36,15 +36,11 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 
 function Header({ days }: { days: number }) {
   return (
-    <>
-      <header className="mb-2 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-medium tracking-tight">Spend</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Approximate token usage and cost — by day, by user, by model. Directional figures for
-            budgeting and usage-approval conversations, not billing.
-          </p>
-        </div>
+    <AdminHeader
+      current="spend"
+      title="Spend"
+      description="Approximate token usage and cost — by day, by user, by model. Directional figures for budgeting and usage-approval conversations, not billing."
+      right={
         <div className="flex gap-1 text-sm">
           {[7, 30, 90].map((d) => (
             <a
@@ -58,9 +54,8 @@ function Header({ days }: { days: number }) {
             </a>
           ))}
         </div>
-      </header>
-      <AdminTabs current="spend" />
-    </>
+      }
+    />
   );
 }
 

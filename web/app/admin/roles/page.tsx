@@ -1,7 +1,7 @@
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { AdminTabs } from "@/components/admin-tabs";
+import { AdminHeader } from "@/components/admin-header";
 import { RoleToggle } from "@/components/role-toggle";
 import { getRoles } from "@/lib/admin";
 
@@ -18,16 +18,11 @@ function fmtTs(ts: string | null): string {
 
 function Header() {
   return (
-    <>
-      <header className="mb-2">
-        <h1 className="text-4xl font-medium tracking-tight">Roles</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Two roles: <strong>admin</strong> (Ravi + Logan) and <strong>member</strong> (everyone at
-          Upwork). Users appear here once they&apos;ve been seen in a run or chat.
-        </p>
-      </header>
-      <AdminTabs current="roles" />
-    </>
+    <AdminHeader
+      current="roles"
+      title="Roles"
+      description="Two roles: admin (manages quotes, testimonials, config) and member (everyone at Upwork). Users appear here once they've been seen in a run or chat."
+    />
   );
 }
 

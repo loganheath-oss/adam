@@ -1,4 +1,4 @@
-import { AdminTabs } from "@/components/admin-tabs";
+import { AdminHeader } from "@/components/admin-header";
 import { CopyTextButton } from "@/components/copy-text-button";
 import { getDigest, type Digest } from "@/lib/admin";
 
@@ -55,15 +55,11 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: str
 
 function Header({ days }: { days: number }) {
   return (
-    <>
-      <header className="mb-2 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-medium tracking-tight">Digest</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Everything that happened this period, in one screen — and a plaintext version to paste into
-            the change log or Slack.
-          </p>
-        </div>
+    <AdminHeader
+      current="digest"
+      title="Digest"
+      description="Everything that happened this period, in one screen — and a plaintext version to paste into the change log or Slack."
+      right={
         <div className="flex gap-1 text-sm">
           {[7, 14, 30].map((d) => (
             <a
@@ -77,9 +73,8 @@ function Header({ days }: { days: number }) {
             </a>
           ))}
         </div>
-      </header>
-      <AdminTabs current="digest" />
-    </>
+      }
+    />
   );
 }
 

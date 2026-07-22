@@ -1,4 +1,4 @@
-import { AdminTabs } from "@/components/admin-tabs";
+import { AdminHeader } from "@/components/admin-header";
 import { ReportIssue } from "@/components/report-issue";
 import { IssueTriage } from "@/components/issue-triage";
 import { getIssues } from "@/lib/admin";
@@ -11,13 +11,11 @@ const STATUS_ORDER = ["open", "triaged", "resolved", "learned"];
 
 function Header() {
   return (
-    <header className="mb-2">
-      <h1 className="text-4xl font-medium tracking-tight">Issues</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Reported problems, triaged and distilled into ADAM&apos;s learnings. The goal: this queue
-        shrinks over time.
-      </p>
-    </header>
+    <AdminHeader
+      current="issues"
+      title="Issues"
+      description="Reported problems, triaged and distilled into ADAM's learnings. The goal: this queue shrinks over time."
+    />
   );
 }
 
@@ -28,7 +26,6 @@ export default async function IssuesPage() {
     return (
       <div>
         <Header />
-        <AdminTabs current="issues" />
         <div className={`${CARD} text-sm text-muted-foreground`}>Couldn&apos;t reach the backend.</div>
       </div>
     );
@@ -37,7 +34,6 @@ export default async function IssuesPage() {
     return (
       <div>
         <Header />
-        <AdminTabs current="issues" />
         <div className={`${CARD} text-sm text-muted-foreground`}>
           {data.error
             ? `Issue query failed: ${data.error}`
@@ -65,7 +61,6 @@ export default async function IssuesPage() {
   return (
     <div>
       <Header />
-      <AdminTabs current="issues" />
 
       {/* Counts */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
