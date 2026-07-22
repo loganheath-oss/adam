@@ -384,3 +384,18 @@ swapped them into `refs/`:
   (the 4th, client testimonials, was already ingested into Approved Quotes on 07-21).
 - ⬜ NOTE for Adrie: the docs are NOW live in ADAM (they weren't before this) — copy runs from
   today forward calibrate against the July versions.
+
+## 2026-07-22 — Copy-segmentation fix VERIFIED against Adrie's two real sprints ✅
+Queried the Railway backend (authed) for Adrie's two flagged P&R sprints. Both are
+real orders (brief "Sprint 10: Outcome Alignment"), targeting = "Prospecting and
+Retargeting", both batches `audience: "Both"` — i.e. the exact scenario that used to
+collapse to one copy set. Copy generated 2026-07-21T18:48 (post-fix). Result:
+- `2026-07-meta-423b11dfe7f1`: **36/36 concepts** carry both a Prospecting AND a
+  Retargeting block; **36/36 DISTINCT** (0 identical-both-slots).
+- `2026-07-meta-0a18955bdb28`: **36/36 both-populated, 36/36 DISTINCT**.
+- Tone is genuinely differentiated, not duplicated — Prospecting = cold value-prop
+  ("Build chatbot support faster on Upwork" / "Fractional experts. Full-time results.");
+  Retargeting = subtle return framing ("Ready to build that chatbot?" / "Still need that
+  senior hire? Try fractional."), matching the "hint of coming back" tone Adrie asked for.
+- ↪ Closes the 07-21 "confirm against Adrie's sprint links" NEXT item. No test run / API
+  spend needed — her live gate-3 sprints already prove it end-to-end.
