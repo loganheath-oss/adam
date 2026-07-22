@@ -46,7 +46,7 @@ export function SiteNav() {
     );
 
   return (
-    <nav className={cn("sticky top-0 z-20 print:hidden", dark ? "bg-[#181818]" : "border-b bg-background")}>
+    <nav className={cn("sticky top-0 z-20 border-b print:hidden", dark ? "border-white/10 bg-[#181818]" : "border-border bg-background")}>
       <div className="mx-auto flex h-16 max-w-[1080px] items-center px-6">
         <Link href="/" className="flex items-center gap-[11px]">
           <UpworkLogo className={cn("h-[15px] w-auto", dark ? "text-white" : "text-[#0a0a0a]")} />
