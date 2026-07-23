@@ -604,6 +604,16 @@ def _field_overflows(concept, field, cap):
     return [f"{field}:{len(s)}>{cap}"] if len(s) > cap else []
 
 
+def _style_uses_subhead(style):
+    """True if this style's guide entry declares a creative_subhead cap — i.e. the ad
+    type actually uses an on-image subhead. Headline-only types (Graphic with Text,
+    Split Screen, Device UI, …) declare no such cap, so a generated subhead is off-spec.
+    Bespoke (no caps at all) is left alone."""
+    _, entry = _guide_entry_for_style(style)
+    cl = (entry or {}).get("char_limits") or {}
+    return (not cl) or ("creative_subhead" in cl)
+
+
 def _enforce_lengths(concept, style):
     """Set concept['length_flags'] (HARD) + ['length_warnings'] (SOFT). Returns the
     hard-flag list (empty = fits)."""
@@ -1419,6 +1429,11 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                                     for _bf in ("body_long", "body_short"):
                                         if _aud.get(_bf):
                                             _aud[_bf] = _emojify_plain_bullets(_aud[_bf])
+                        # Style-guide adherence: a HEADLINE-ONLY ad type must not carry
+                        # an on-image subhead (Adrie 2026-07-23: Graphic with Text was
+                        # emitting a subhead the guide doesn't allow). Strip it.
+                        if concept.get("creative_subhead") and not _style_uses_subhead(style):
+                            concept["creative_subhead"] = ""
                         # Enforce Adrie's sentence-case rule on headlines/CTAs.
                         for _cf in _SENTENCE_CASE_FIELDS:
                             if concept.get(_cf):
