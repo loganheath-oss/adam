@@ -25,7 +25,7 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
   Lifestyle 100) aren't force-capped at 30. `_load_style_guide` / `_style_caps` /
   `_enforce_lengths`. Verified: all 24 styles resolve, over/under-length + array fields flag
   correctly, compiles.
-- ⬜ **Tweet reads too headline-y** (Adrie #2). Entry #19 (organic post) now reaches the
+- ✅ **Tweet reads too headline-y** (Adrie #2) — CONFIRMED via 2026-07-23 live sprint. Entry #19 (organic post) now reaches the
   model untruncated + can run to 115 chars — expected to resolve. **Confirm with a live run.**
 - ℹ️ **Tweet has no dedicated on-image field** — its ~115-char post currently maps to
   `creative_headline`. Works, but a dedicated `tweet_text` field (like Chat Bubble's fields)
@@ -458,3 +458,19 @@ Verified live (computed styles):
 Also: New Order now defaults BOTH audiences selected (was none) — matches Ravi ✅ (verified).
 NOTE on "white borders": the non-featured cards' 1px rgba(255,255,255,.1) border already
 matched Ravi exactly; the real gap was the featured card's missing glow (same shadow bug).
+
+## 2026-07-23 — Live copy-only smoke sprint (2026-07-meta-d5cc) — engine changes VERIFIED end-to-end
+Ran a real copy-only P&R sprint locally (deployed code + refs, service env injected; stopped at
+Gate 3 — no image/Gemini spend, no deployed-DB sprint). Cost: $0.22 (7 Sonnet calls). Results:
+- ✅ **Segmentation**: 12/12 concepts both-audience, 12/12 DISTINCT P vs R — on a fresh sprint.
+- ✅ **Brief-breakdown (Additional-Info)**: structured brief → theme + 3 copy + 2 design directives,
+  high-touch; directives measurably shaped copy (the "contrast slow hiring" directive appeared).
+- ✅ **Truncation fix exercised LIVE**: feed-fit trimmed 20+21 fields; trimmed bodies end on
+  complete bullets or the `…` marker (3) — zero mid-sentence stubs.
+- ✅ **Tweet conversational** (Adrie #2): "You could be reviewing proposals by friday" — a post,
+  not a headline. Closes the "confirm with a live run" item.
+- ✅ **Refs**: 13 docs incl. the new July examples loaded; "using both example sets" for P&R.
+- ✅ Legal + length guardrails fired correctly.
+- ↪ Surfaced a gap: the SYNTHESIZED Gate-3 review (get_copy_concepts, shown before delivery)
+  still used `Headline_On_Creative` + mapped the feed headline → fixed to `Text_On_Visual` from
+  `creative_headline` (commit 5eb2287). Completes the #5 naming alignment across ALL surfaces.
