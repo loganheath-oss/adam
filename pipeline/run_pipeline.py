@@ -1595,6 +1595,14 @@ def _breakdown_brief(brief, order, api_key, sprint_id=None):
     brief = (brief or "").strip()
     if not brief:
         return None
+    # Drop unfilled brief-template placeholder lines — a line that is ONLY a parenthetical
+    # hint (e.g. "(One or two sentences …)" or "- (A required phrase …)") from the Insert-
+    # brief-template scaffold — so an un-edited section isn't parsed as real direction and
+    # doesn't trip the "placeholder sections unfilled" flag (Adrie 2026-07-23).
+    brief = "\n".join(ln for ln in brief.splitlines()
+                      if not re.match(r"^\s*[-*]?\s*\(.*\)\s*$", ln)).strip()
+    if not brief:
+        return None
     prompt = (
         "You are the intake analyst for an ad-production pipeline. Break the operator's "
         "ADDITIONAL-INFO / brief below into structured direction the later stages will follow.\n\n"

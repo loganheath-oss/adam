@@ -505,3 +505,31 @@ OPEN (Logan / code):
 
 NOT code (Logan): invite Sarah (Thursday, review the additional brief section); Monday Lee/Ruby
 call re: Sept timeline + extension (owns Railway accounts + incident response = why present).
+
+## 2026-07-23 (cont.) — autonomous sweep of remaining open items
+SHIPPED:
+- ✅ **#4 Digest → run recap** (5566b88) — leads with "This period's runs" (driver/platform/
+  targeting/styles/deliverable per order); deploys demoted to collapsed "Technical changes".
+  Verified: digest API returns 8 runs.
+- ✅ **#5 Remove Sprint chip** (d1d62cc, deployed w/ the #4 frontend build) — emptied
+  KEY_MESSAGING_THEMES; chip row hides when empty. Code-correct + typechecked; visual confirm
+  blocked by a flaky form interaction (worth a 5-sec eyeball).
+- ✅ **#3 long/short headline + P&R split in review** (d1d62cc) — copy picker shows feed
+  headline long+short and a Prospecting/Retargeting block. Verified data flow.
+- ✅ **Testimonial false-fictional flag** (9420016) — match on substring OR content-word
+  overlap so a legitimately SHORTENED real quote isn't tagged fictional. 6/6 cases pass.
+- ✅ **Gate-2 placeholder flag** — _breakdown_brief now strips unfilled brief-template
+  placeholder lines so an un-edited section isn't parsed as direction (rest = Adrie's template).
+
+FLAGGED (identified, deferred — need coordination or are risky to rush):
+- ⬜ **Style-guide conditional caps** (Split Screen 49/65, Lifestyle 80/100, Platform UI +16):
+  ADAM enforces the looser no-CTA cap; the tighter with-CTA cap needs CTA-aware enforcement,
+  but CTA assignment happens AFTER ranking (cta_mix) — needs an enforcement-timing change.
+- ⬜ **Style-guide combined caps** (Social Media 65 combined; Sticky double-col 136): ADAM caps
+  per-field (Social 60+60=120; Sticky 180) so the COMBINED can exceed the design space. Needs a
+  combined-cap field in the JSON + summed-length enforcement + feed-fit support.
+- ⬜ **Style-guide missing/extra fields** (Us-vs-Them wrap-up line; Social name/title should NOT
+  be generated; Poll needs a headline not options) — changes what ADAM generates; confirm the
+  Figma templates have/lack those layers with Brandon first.
+- ⬜ **Adrie (not code):** variant-model sign-off; Freelancer Work Categories.pdf; brief-template
+  reconciliation (mine vs hers).
