@@ -33,7 +33,10 @@ first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination ·
 - ⛔ **True two-bubble Chat Bubble layer** — a real field rename (chat_bubble_1/2) touches
   the Figma template layers + plugin mapping + manifest columns. Needs Elise. The content
   reframe above is the safe interim; revisit if the template renders bubble 1 as a header.
-- ⬜ **Naming: "Creative Headline" vs `Text_On_Visual`** — align so the PDF/labels don't confuse.
+- ✅ **Naming: "Creative Headline" vs `Text_On_Visual`** — aligned. The Gate-3 review CSV now
+  labels the on-image copy `Text_On_Visual` / `Text_On_Visual_Subhead` (Adrie's copy-spec
+  term), matching her doc and disambiguating from the FEED `Headline`. The Figma manifest
+  keeps `Headline_On_Creative` (layer name, machine handoff). run_pipeline.py copy_review builder.
 
 ## B. Order form
 - ✅ **End at Submit — submitters kept out of the sprint surface.** Confirmation page ends the

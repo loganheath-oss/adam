@@ -2929,15 +2929,20 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "rank": c.get("rank", ""),
             "selected": "YES" if c.get("selected") else "NO",
             "score": c.get("score", ""),
-            "Headline_On_Creative": c.get("creative_headline", c.get("headline", "")),
-            "Subhead_On_Creative": c.get("creative_subhead", ""),
+            # On-image copy. Named Text_On_Visual to match Adrie's copy-spec docs
+            # (her single on-creative field) and to disambiguate from the FEED
+            # `Headline` below — reviewers cross-reference this CSV against her spec.
+            # (The Figma MANIFEST keeps Headline_On_Creative/Subhead_On_Creative as
+            # those are layer names the plugin fills — a machine handoff, not review.)
+            "Text_On_Visual": c.get("creative_headline", c.get("headline", "")),
+            "Text_On_Visual_Subhead": c.get("creative_subhead", ""),
             "Primary_Text_Short": c.get("body_short", c.get("body", "")),
             "Primary_Text_Long": c.get("body_long", ""),
             "Description": c.get("description", ""),
             "CTA": c.get("cta", ""),
             # Per-audience FEED copy — populated only for Prospecting+Retargeting
             # concepts so the operator can review BOTH audience versions at Gate 3
-            # (the on-creative copy above is shared; only the feed copy differs).
+            # (the Text_On_Visual copy above is shared; only the feed copy differs).
             "Prospecting_Headline": _aud("Prospecting", "headline"),
             "Prospecting_Text_Short": _aud("Prospecting", "body_short"),
             "Prospecting_Text_Long": _aud("Prospecting", "body_long"),
