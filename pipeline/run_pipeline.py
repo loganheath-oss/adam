@@ -944,16 +944,41 @@ _SENTENCE_CASE_FIELDS = ("creative_headline", "creative_subhead", "headline",
                          "headline_short", "cta")
 
 
-def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id=None):
-    """Generate 6 copy concepts for one visual style (one Claude call).
+# Total copy concepts generated per style (then reviewed down to top 3). Generated in
+# small sub-batches (COPY_BATCH_SIZE) rather than one big call: a single call for all 6
+# hit the max_tokens output ceiling on rich Prospecting+Retargeting concepts, truncating
+# the JSON so later concepts came back scrawny or empty — the "fatigue" Adrie saw
+# (2026-07-23). Small batches each get the full output budget → no starvation.
+_CONCEPTS_PER_STYLE = 6
+try:
+    _COPY_BATCH_SIZE = max(1, int(os.environ.get("COPY_BATCH_SIZE", "2") or "2"))
+except ValueError:
+    _COPY_BATCH_SIZE = 2
 
-    Extracted so styles can run concurrently — each call is independent and
-    ~120s I/O-bound, so a serial loop stacked minutes on wide orders."""
+# Distinct creative angles, one seeded per sub-batch so concepts diverge instead of
+# repeating ("3 ads in a row saying faster than your competitors" — Adrie). Rotated by seq.
+_COPY_ANGLES = [
+    "Lead with the concrete OUTCOME the client gets.",
+    "Lead with SPEED — time from posting to a hire or a result.",
+    "Lead with VALUE — cost efficiency, budget, or avoiding a bad hire.",
+    "Lead with PROOF — quality, ratings, expertise, or trust signals.",
+    "Lead with a SPECIFIC use-case, role, or niche.",
+    "Contrast the PAIN of the old way against how Upwork works.",
+]
+
+
+def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id=None,
+                             count=None, angle=None, seq=0):
+    """Generate a small batch of copy concepts for one visual style (one Claude call).
+
+    `count` concepts per call (default _CONCEPTS_PER_STYLE); `angle` seeds a distinct
+    creative direction; `seq` disambiguates concept_ids across a style's sub-batches.
+    Styles/sub-batches run concurrently — each call is independent and ~120s I/O-bound."""
     import httpx
 
-    OVERGENERATE_MULTIPLIER = 6
     concepts = []
-    qty = OVERGENERATE_MULTIPLIER  # Always generate 6 regardless of ordered quantity
+    qty = count or _CONCEPTS_PER_STYLE
+    _angle_line = f"\nCREATIVE ANGLE FOR THIS SET (make these concepts distinct): {angle}\n" if angle else ""
 
     # Build rich prompt with all reference context
     brand_voice = context.get("brand_voice", "Professional, clear, human")
@@ -1293,7 +1318,8 @@ other approaches. Specific freelancer categories outperform generic talent messa
 {style_rules_block}
 
 ===== YOUR ASSIGNMENT =====
-Generate {qty} ad copy concepts.
+Generate {qty} ad copy concepts. Each concept must be COMPLETE — never truncate or
+abbreviate later concepts to save space; every field must be fully written for all {qty}.{_angle_line}
 
 Platform: {batch.get('platform', 'Meta')}
 Format: {batch.get('format', 'Static Feed')}
@@ -1377,7 +1403,7 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                     print(f"    {style}: recovered {len(parsed)} concept(s) from truncated JSON")
                 if isinstance(parsed, list):
                     for j, concept in enumerate(parsed):
-                        concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{j}"
+                        concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{seq}_{j}"
                         concept["batch_index"] = i
                         concept["visual_style"] = style
                         # Interim policy (Logan 2026-07-15): no real-quote library exists,
@@ -1576,10 +1602,18 @@ def _generate_real_copy(order, context, api_key, sprint_id=None):
     import threading
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    tasks = []
+    # Sub-batch each style into small angle-seeded calls: _CONCEPTS_PER_STYLE concepts split
+    # into groups of _COPY_BATCH_SIZE, each its own call with a distinct creative angle. Keeps
+    # every call well under the output ceiling (no truncation/"fatigue") and diversifies output.
+    tasks = []  # each: (i, batch, style, count, angle, seq)
     for i, batch in enumerate(order.get("batches", [])):
         for style in batch.get("visual_styles", ["default"]):
-            tasks.append((i, batch, style))
+            pos = seq = 0
+            while pos < _CONCEPTS_PER_STYLE:
+                cnt = min(_COPY_BATCH_SIZE, _CONCEPTS_PER_STYLE - pos)
+                tasks.append((i, batch, style, cnt, _COPY_ANGLES[seq % len(_COPY_ANGLES)], seq))
+                pos += cnt
+                seq += 1
     total = len(tasks)
     if total == 0:
         return {"concepts": [], "generated_at": datetime.now(timezone.utc).isoformat()}
@@ -1600,17 +1634,17 @@ def _generate_real_copy(order, context, api_key, sprint_id=None):
     done = 0
     lock = threading.Lock()
 
-    def _run(idx, i, batch, style):
+    def _run(idx, i, batch, style, cnt, angle, seq):
         nonlocal done
-        res = _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id)
+        res = _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id,
+                                       count=cnt, angle=angle, seq=seq)
         with lock:
             done += 1
             _save_progress(sprint_id, "stage_02_copy_gen", done, total, f"Copy: {style}")
         return idx, res
 
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        futures = [ex.submit(_run, idx, i, batch, style)
-                   for idx, (i, batch, style) in enumerate(tasks)]
+        futures = [ex.submit(_run, idx, *t) for idx, t in enumerate(tasks)]
         for fut in as_completed(futures):
             try:
                 idx, res = fut.result()
@@ -1619,12 +1653,14 @@ def _generate_real_copy(order, context, api_key, sprint_id=None):
                 print(f"    copy task error: {str(e)[:60]}")
 
     concepts = []
-    failed_styles = []
+    # A style "failed" only if EVERY one of its sub-batches produced nothing.
+    style_got = {}
     for idx in range(total):
         res = results.get(idx, [])
         concepts.extend(res)
-        if not res:
-            failed_styles.append(tasks[idx][2])  # style name
+        _st = tasks[idx][2]
+        style_got[_st] = style_got.get(_st, False) or bool(res)
+    failed_styles = [s for s, got in style_got.items() if not got]
     out = {"concepts": concepts, "generated_at": datetime.now(timezone.utc).isoformat()}
     if failed_styles:
         # Record + surface so the Gate 3 reviewer knows some styles will fall
