@@ -425,24 +425,53 @@ def _template_limit_block(style):
 # Dashes are deliberately excluded — "— Name, Title" attribution lines are legitimate.
 _PLAIN_BULLET_RE = re.compile(r"(?m)^([ \t]*)[•▪‣·]\s+")
 
-# When a plain bullet slips through, rotate a varied, punchy, widely-supported palette
-# instead of stacking ✅✅✅ (Logan: the copy should feel picture-rich, never a column of
-# flat green checkmarks). The model is instructed to pick content-apt emoji from the FULL
-# library; this is only the last-resort fallback, and even it must never repeat back-to-back.
-_FALLBACK_BULLET_EMOJI = ["🚀", "⚡", "🎯", "💡", "🔥", "⭐", "📈", "💪", "✨", "🔑",
-                          "📊", "🌱", "🏆", "💬", "🔒", "💻", "🙌", "⏱️"]
+# When a plain bullet slips through, give it a CONTENT-APT, varied emoji — never a stack of
+# flat ✅ or the same three every time (Logan: the copy must feel picture-rich, drawing from
+# the whole library). We match the bullet's OWN words to a fitting emoji; if nothing matches
+# (or it's already used in this list) we take the next unused one from a punchy rotation, so
+# a list never repeats. The model is instructed to pick these itself — this is the safety net.
+_FALLBACK_BULLET_EMOJI = ["🚀", "⚡", "💡", "🔥", "⭐", "📈", "💪", "✨", "🔑", "📊",
+                          "🌱", "🏆", "💬", "🔒", "💻", "🙌", "🎯", "⏱️", "🎨", "🧠"]
+# (emoji, keyword-substrings) — first match wins; ordered most- to least-specific.
+_BULLET_EMOJI_KEYWORDS = [
+    ("⏱️", ("week", "hour", "month", "deadline", "schedule", "wait", "delay", "slow", "timeline", "minute", "same week", "overnight", "days")),
+    ("🚀", ("fast", "quick", "rapid", "instant", "today", "tomorrow", "hit the ground", "ready to start", "move fast", "launch", "ship", "momentum", "speed")),
+    ("👩‍💻", ("hire", "talent", "specialist", "expert", "freelanc", "developer", "designer", "engineer", "professional", "candidate", "team")),
+    ("📩", ("proposal", "apply", "bid", "shortlist", "reach out", "inbox")),
+    ("🎯", ("right fit", "exact", "specific", "precise", "targeted", "perfect match", "niche", "the right")),
+    ("📈", ("result", "grow", "scale", " win", "outcome", "impact", "success", "roi", "performance", "compound", "revenue")),
+    ("⭐", ("quality", "top-tier", "top tier", "best", "rated", "review", "star", "proven", "trusted", "reputation", "portfolio")),
+    ("🔒", ("secure", "protect", "payment", "safe", "escrow", "contract", "peace of mind", "guarantee")),
+    ("💰", ("cost", "budget", "price", "save", "afford", "money", "spend", "dollar", "value", "overhead", "free")),
+    ("💻", ("ai", "chatbot", "automat", "code", "develop", "integrat", "software", "app", "data", "workflow", "tool", "tech")),
+    ("💡", ("idea", "test", "experiment", "learn", "insight", "discover", "strategy", "creative")),
+    ("🌍", ("anywhere", "remote", "global", "worldwide", "time zone", "flexib")),
+    ("💬", ("message", "chat", "talk", "communic", "conversation", "respond", "feedback", "gatekeeper")),
+]
+
+
+def _pick_bullet_emoji(line, used):
+    low = line.lower()
+    for emo, kws in _BULLET_EMOJI_KEYWORDS:
+        if emo not in used and any(k in low for k in kws):
+            return emo
+    for emo in _FALLBACK_BULLET_EMOJI:
+        if emo not in used:
+            return emo
+    return _FALLBACK_BULLET_EMOJI[0]
 
 
 def _emojify_plain_bullets(text):
-    """Give every leftover plain bullet a DISTINCT emoji from the rotating palette, so
-    consecutive fallback bullets never share one. Returns text unchanged if it has none."""
+    """Replace each leftover plain bullet with a content-apt, non-repeating emoji so a list
+    reads picture-rich and varied (never a stack of ✅). No plain bullets → unchanged."""
     if not text or not _PLAIN_BULLET_RE.search(text):
         return text
-    counter = {"i": 0}
+    used = set()
     def _repl(m):
-        e = _FALLBACK_BULLET_EMOJI[counter["i"] % len(_FALLBACK_BULLET_EMOJI)]
-        counter["i"] += 1
-        return f"{m.group(1)}{e} "
+        line = m.string[m.end():].split("\n", 1)[0]
+        emo = _pick_bullet_emoji(line, used)
+        used.add(emo)
+        return f"{m.group(1)}{emo} "
     return _PLAIN_BULLET_RE.sub(_repl, text)
 
 
@@ -771,8 +800,9 @@ def _fit_feed_fields(concepts, style, api_key, sprint_id=None):
         "You wrote Meta ad copy for Upwork; some fields exceed their platform caps and "
         "must be SHORTENED to fit. For each item, rewrite the text to AT MOST max_chars "
         "characters (count spaces). Preserve the meaning, Upwork's clear/supportive tone, "
-        "and the formatting convention (if it uses emoji/checkmark bullets, keep bullets — "
-        "drop whole bullets rather than squeezing; if prose, drop whole sentences). Never "
+        "and the formatting convention. If it uses emoji-led bullets, KEEP each surviving "
+        "bullet's exact leading emoji (never swap it for a plain •/-/generic ✅) — drop whole "
+        "bullets rather than squeezing; if prose, drop whole sentences. Never "
         "end mid-sentence, never add new claims or banned terms (guarantee, vet, staffing, "
         "employee).\n\nITEMS:\n" + json.dumps(payload, ensure_ascii=False)
         + "\n\nReturn ONLY a JSON array: [{\"id\": <int>, \"text\": \"<shortened>\"}]."
