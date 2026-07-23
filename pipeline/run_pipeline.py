@@ -722,6 +722,35 @@ def _load_approved_quotes():
     return out
 
 
+_QUOTE_STOP = {"the", "and", "to", "a", "of", "in", "on", "for", "with", "that", "is",
+               "it", "i", "we", "our", "you", "your", "my", "are", "was", "have", "has",
+               "at", "as", "so", "but", "not", "this", "they", "their", "them"}
+
+
+def _quote_from_library(quote, approved_texts):
+    """True if `quote` is one of the approved/library quotes. The Style Guide lets the model
+    SHORTEN a real quote, so an exact-substring check false-flagged shortened real quotes as
+    fictional (Adrie 2026-07-23). Match on substring OR high content-word overlap: ≥4 shared
+    content words AND ≥75% of the quote's content words present in a library entry."""
+    def _norm(s):
+        return " ".join(str(s or "").split()).lower().strip(" .\"“”'")
+    def _cw(s):
+        return {w for w in _norm(s).split() if len(w) >= 3 and w not in _QUOTE_STOP}
+    qn = _norm(quote)
+    if not qn:
+        return False
+    q_cw = _cw(quote)
+    for bq in approved_texts:
+        bn = _norm(bq)
+        if not bn:
+            continue
+        if qn in bn or bn in qn:
+            return True
+        if q_cw and len(q_cw & _cw(bq)) >= max(4, int(0.75 * len(q_cw))):
+            return True
+    return False
+
+
 # A clean-sentence cut is used when it retains at least this share of the cap; below
 # that we'd be throwing away too much of the field, so we word-cut and mark it with an
 # ellipsis instead (see _smart_trim).
@@ -1439,17 +1468,14 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         # Tag every testimonial concept so reviewers always see it.
                         if _sl == "testimonial":
                             concept["testimonial_fictional"] = True
-                            # Pin marker: an APPROVED quote (from the brief or the
-                            # live quote library) is privileged — selection must not
-                            # drop it, and it is NOT fictional.
-                            _tq = " ".join(str(concept.get("testimonial_quote", "")).split()).lower().rstrip(".")
+                            # Pin marker: an APPROVED quote (brief or live library) is
+                            # privileged — NOT fictional. Match on substring OR content-word
+                            # overlap so a legitimately SHORTENED real quote isn't false-
+                            # flagged fictional (Adrie 2026-07-23).
                             _approved_texts = list(_brief_quotes) + [q for q, _a in _approved_quotes_lib]
-                            for _bq in _approved_texts:
-                                _bqn = " ".join(_bq.split()).lower().rstrip(".")
-                                if _tq and (_tq in _bqn or _bqn in _tq):
-                                    concept["brief_quote_used"] = True
-                                    concept.pop("testimonial_fictional", None)
-                                    break
+                            if _quote_from_library(concept.get("testimonial_quote", ""), _approved_texts):
+                                concept["brief_quote_used"] = True
+                                concept.pop("testimonial_fictional", None)
                         # Brief-quote leakage: the brief's testimonial quote showing up in a
                         # NON-Testimonial concept's copy (found 2026-07-16 on Photo with Text
                         # — ADAM's own reviewer called it a compliance risk).
