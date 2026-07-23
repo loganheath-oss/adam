@@ -474,3 +474,34 @@ Gate 3 — no image/Gemini spend, no deployed-DB sprint). Cost: $0.22 (7 Sonnet 
 - ↪ Surfaced a gap: the SYNTHESIZED Gate-3 review (get_copy_concepts, shown before delivery)
   still used `Headline_On_Creative` + mapped the feed headline → fixed to `Text_On_Visual` from
   `creative_headline` (commit 5eb2287). Completes the #5 naming alignment across ALL surfaces.
+
+## 2026-07-23 — ADAM Working Session (Adrie/Bree/Ravi/Logan): backlog + fixes
+Aligned decision: **Prospecting and Retargeting must each get their OWN creative content.**
+Needs-discussion: Sept engineering timeline (Haresh not ready till end of next week; team off
+in Sept) → Monday call w/ Lee+Ruby, possible Logan extension.
+
+SHIPPED this session (all live on Railway, verified):
+- ✅ **Emoji** green-checkmark bug → varied, content-apt emoji from the full library (a546c58).
+- ✅ **Resolve Styles** — Graphic-with-Text emitted an off-spec subhead → headline-only ad types
+  now strip it (e80468b).
+- ✅ **Fix Copy / fatigue** — 6-in-one call hit the max_tokens ceiling → later concepts truncated/
+  scrawny. Now small angle-seeded sub-batches (COPY_BATCH_SIZE), each full budget (058f1dd).
+  Verified: 12/12 concepts full, diverse.
+- ✅ **Separate P&R creative** (aligned decision) — unique on-visual copy per audience end-to-end:
+  generation (Part A, 2bc6359) + manifest boards + review columns (Part B, 99bf40b). Verified
+  12/12 distinct Text_On_Visual.
+- ✅ **Self-heal** — overlong ON-IMAGE copy (creative_headline/subhead) was flagged not fixed →
+  now rewritten to fit via the feed-fit pass (3adcdcf). Verified: 0 unresolved length flags.
+
+OPEN (Logan / code):
+- ⬜ **#3 Surface long + short headline** in review/deliverable (data has both; web copy-picker
+  shows only one, no P&R split).
+- ⬜ **#4 Update Digest** → recap of what the RUNS did (orders/outputs), not a list of git deploys
+  with cryptic names (Adrie: top section not decision-useful).
+- ⬜ **#5 Remove Sprint 9/10 theme chip** from the intake form (wasn't meant to go live).
+- ⬜ **Gate-2 brief-placeholder flag** — Adrie confused where theme/copy-must-do/design/resources
+  live; she's adjusting her template, smooth the flag/messaging.
+- ⬜ **Testimonial false-fictional flag** — flagged a REAL library testimonial as fictional (monitor).
+
+NOT code (Logan): invite Sarah (Thursday, review the additional brief section); Monday Lee/Ruby
+call re: Sept timeline + extension (owns Railway accounts + incident response = why present).
