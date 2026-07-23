@@ -158,7 +158,7 @@ def get_copy_concepts(sprint_id: str) -> dict[str, Any]:
                 "rank": str(c.get("rank", "")),
                 "selected": "YES" if c.get("selected") else "NO",
                 "score": str(c.get("score", "")),
-                "Headline_On_Creative": c.get("headline", ""),
+                "Text_On_Visual": c.get("creative_headline", c.get("headline", "")),
                 "Primary_Text_Short": c.get("body_short", c.get("body", "")),
                 "Primary_Text_Long": c.get("body_long", ""),
                 "Description": c.get("description", ""),
