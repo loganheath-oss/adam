@@ -776,7 +776,14 @@ def _fit_feed_fields(concepts, style, api_key, sprint_id=None):
     sentence-boundary trim. Deterministic result: feed fields <= caps."""
     import httpx
 
-    caps = _load_style_guide().get("field_caps_meta_feed", {}) or {}
+    caps = dict(_load_style_guide().get("field_caps_meta_feed", {}) or {})
+    # SELF-HEAL (Adrie's "flag but don't fix"): also rewrite the HARD on-image fields
+    # (creative_headline/subhead, multi-image fields) to fit. They break the design when
+    # they overflow, yet were previously only length-flagged — now the same rewrite-to-fit
+    # (drop/shorten, sentence-boundary trim only as last resort) repairs them to spec.
+    _hard, _ = _style_caps(style)
+    for _f, _c in _hard.items():
+        caps[_f] = min(caps.get(_f, _c), _c)
     if not caps:
         return
 
