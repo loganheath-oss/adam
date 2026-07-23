@@ -614,6 +614,37 @@ def _style_uses_subhead(style):
     return (not cl) or ("creative_subhead" in cl)
 
 
+def _enforce_combined_caps(concept, style):
+    """Some ad types cap the COMBINED on-image text, not just each field (Style Guide:
+    Social Media columns combined ≤65; Sticky Note double-column columns combined ≤136).
+    Per-field caps alone let the sum overrun the design's fixed space, so sum the fields and,
+    if over, deterministically trim each proportional to its share — guaranteed ≤ the cap."""
+    _, entry = _guide_entry_for_style(style)
+    for cc in ((entry or {}).get("combined_caps") or []):
+        fields = cc.get("fields") or []
+        cap = cc.get("cap")
+        if not fields or not isinstance(cap, int):
+            continue
+        def _flen(f):
+            v = concept.get(f)
+            return sum(len(str(x)) for x in v) if isinstance(v, list) else len(str(v or ""))
+        total = sum(_flen(f) for f in fields)
+        if total <= cap or total == 0:
+            continue
+        for f in fields:
+            v = concept.get(f)
+            share = _flen(f)
+            if not share:
+                continue
+            budget = max(1, cap * share // total)
+            if isinstance(v, list):
+                per = max(1, budget // max(1, len(v)))
+                concept[f] = [_smart_trim(str(x), per) for x in v]
+            elif isinstance(v, str):
+                concept[f] = _smart_trim(v, budget)
+        print(f"    combined-cap fit: {style} {'+'.join(fields)} {total}>{cap} — trimmed to fit")
+
+
 def _enforce_lengths(concept, style):
     """Set concept['length_flags'] (HARD) + ['length_warnings'] (SOFT). Returns the
     hard-flag list (empty = fits)."""
@@ -1558,6 +1589,10 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                     _fit_feed_fields(concepts, style, api_key, sprint_id)
                 except Exception as _fe:
                     print(f"    feed-fit skipped: {str(_fe)[:60]}")
+                # Combined on-image caps (Social Media 65, Sticky Note double 136) — final
+                # deterministic fit AFTER per-field, so the SUM respects the design's space.
+                for _c in concepts:
+                    _enforce_combined_caps(_c, style)
                 print(f"    {style}: {len(parsed)} concepts generated")
                 return concepts
 

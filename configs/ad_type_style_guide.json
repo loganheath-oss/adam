@@ -172,7 +172,16 @@
         "profile_right": 60,
         "creative_subhead": 28
       },
-      "cta_mix": "none"
+      "cta_mix": "none",
+      "combined_caps": [
+        {
+          "fields": [
+            "profile_left",
+            "profile_right"
+          ],
+          "cap": 65
+        }
+      ]
     },
     "pie-chart": {
       "entry": 7,
@@ -392,7 +401,16 @@
         "single_headline": 26,
         "single_bullets": 34
       },
-      "cta_mix": "none"
+      "cta_mix": "none",
+      "combined_caps": [
+        {
+          "fields": [
+            "left_bullets",
+            "right_bullets"
+          ],
+          "cap": 136
+        }
+      ]
     },
     "poll": {
       "entry": 18,

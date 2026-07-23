@@ -533,3 +533,18 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   Figma templates have/lack those layers with Brandon first.
 - ⬜ **Adrie (not code):** variant-model sign-off; Freelancer Work Categories.pdf; brief-template
   reconciliation (mine vs hers).
+
+## 2026-07-23 (cont.) — read Adrie's actual Test Brief + combined-cap enforcement
+- Read the real ADAM Test Brief (Logan sent it as PDF). RECONCILED: every open issue in it is
+  addressed — theme chip (#5), Gate-2 placeholder note, short+long headline (#3), fatigue/
+  self-flag (fatigue + self-heal), Graphic-with-Text subhead, and "P&R body copy but not on-
+  creative visual copy → distinct creative for all" (P&R creative). Struck-through items (chat
+  bubble, Tweet, manifest stalling, handoff flow, FAQ/diagnose) were already resolved. The
+  spec's caps (125/300/30/50) match what ADAM enforces.
+  - ↪ Highlighted note "need bullet points in SOME long copy versions" — handled by the LONG
+    PRIMARY COPY FORMAT rule (mix of bullet+paragraph required); worth a variety spot-check.
+- ✅ **Style-guide combined caps ENFORCED** (Logan approved): Social Media columns ≤65, Sticky
+  Note double-column ≤136. Added `combined_caps` to the JSON + `_enforce_combined_caps` (sums
+  the fields, proportional deterministic trim to fit). Verified: Social 92→53, Sticky 154→108.
+- DECISIONS: brief template → defer to Adrie's (mine stays until hers lands); emoji → keep the
+  varied professional palette until something else is requested.
