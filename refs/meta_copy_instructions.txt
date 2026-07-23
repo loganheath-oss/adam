@@ -58,17 +58,28 @@ LONG PRIMARY COPY FORMAT (Primary_Text_Long / body_long) — REQUIRED VARIETY
 Vary the format across the batch — a MIX of bullet and paragraph styles is required,
 not optional. Aim for roughly half of each across a concept's variants; don't count
 rigidly. The goal is visual variety so the set of ads doesn't feel repetitive.
-- Bullet format: 3–4 bullets, each led by ONE emoji chosen like an art director:
-  read the bullet and pick the emoji for its most CONCRETE subject — the specific
-  noun or outcome in THAT line, not its broad category. "Cut reporting time in
-  half" → ⏱, "clean up six months of books" → 🧾, "email campaigns that convert"
-  → 📬, "rebrand for a coffee shop" → ☕, "menu photography" → 📸. If the brief has
-  a theme or industry, let it color the choices. NEVER repeat an emoji within a
-  concept, and vary the palette across the batch. Prefer widely-supported classic
-  emojis (brand-new ones render as empty boxes on older phones). Use ✅/✔️ only
-  when nothing specific fits. Exactly one emoji per bullet, never stacked, never
-  replacing a word. NEVER a plain "•", "-", or "▪" bullet — if a line is a bullet,
-  it MUST start with an emoji. Bullets highlight benefits, Upwork platform
+- Bullet format: 3–4 bullets, each led by ONE emoji chosen like an art director.
+  Read the bullet and pick the single most VIVID, CONCRETE emoji for that line's
+  specific noun or outcome — not its broad category. "Cut reporting time in half"
+  → ⏱️, "clean up six months of books" → 🧾, "email campaigns that convert" → 📬,
+  "rebrand for a coffee shop" → ☕, "menu photography" → 📸, "ship it this week"
+  → 🚀, "results that compound" → 📈, "an idea worth testing" → 💡, "top-tier
+  talent" → ⭐, "lock in the win" → 🔒.
+  DRAW FROM THE FULL EMOJI LIBRARY — hundreds are available; treat the examples as
+  sparks, not a menu. Reach for punchy, picture-rich emoji that reinforce the point:
+  speed/action 🚀⚡⏱️🏃, results/growth 📈🔥💹📊🌱, quality/proof ⭐💎🏆🎯🥇,
+  tech/AI 💻🤖🧠⚙️📱, money/value 💰💵🏷️, trust/security 🔒🛡️🤝, ideas/discovery
+  💡🔍👀, talent/people 🙌👩‍💻🧑‍🎨, comms 💬📩📢 — and well beyond these. Keep them
+  professional (Upwork is B2B — vivid, never juvenile).
+  Do NOT default to ✅/✔️ — there is almost always a punchier, more specific choice.
+  Reserve ✅/✔️ only for a line literally about confirmation, approval, or a
+  completed step. NEVER repeat an emoji within a concept, and deliberately vary the
+  palette from concept to concept so the batch never recycles the same handful.
+  Prefer widely-supported classic emoji (roughly pre-2020 — brand-new ones render as
+  empty boxes on older phones); that classic set is itself enormous, so wide variety
+  is always possible without reaching for a rare emoji. Exactly one emoji per bullet,
+  never stacked, never replacing a word. NEVER a plain "•", "-", or "▪" bullet — a
+  bullet line MUST start with an emoji. Bullets highlight benefits, Upwork platform
   features, or proof points from provided stats and resource docs.
 - Paragraph format: flowing prose — concise and punchy, NOT a wall of text.
 

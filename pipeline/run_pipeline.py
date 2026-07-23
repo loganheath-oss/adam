@@ -420,10 +420,30 @@ def _template_limit_block(style):
     )
 
 
-# Adrie's bullet spec: emoji/checkmark-led bullets, never plain glyphs. The model
-# complies intermittently, so plain bullet glyphs get converted deterministically.
+# Adrie's bullet spec: emoji-led bullets, never plain glyphs. The model complies
+# intermittently, so any plain bullet glyph left over gets an emoji deterministically.
 # Dashes are deliberately excluded — "— Name, Title" attribution lines are legitimate.
 _PLAIN_BULLET_RE = re.compile(r"(?m)^([ \t]*)[•▪‣·]\s+")
+
+# When a plain bullet slips through, rotate a varied, punchy, widely-supported palette
+# instead of stacking ✅✅✅ (Logan: the copy should feel picture-rich, never a column of
+# flat green checkmarks). The model is instructed to pick content-apt emoji from the FULL
+# library; this is only the last-resort fallback, and even it must never repeat back-to-back.
+_FALLBACK_BULLET_EMOJI = ["🚀", "⚡", "🎯", "💡", "🔥", "⭐", "📈", "💪", "✨", "🔑",
+                          "📊", "🌱", "🏆", "💬", "🔒", "💻", "🙌", "⏱️"]
+
+
+def _emojify_plain_bullets(text):
+    """Give every leftover plain bullet a DISTINCT emoji from the rotating palette, so
+    consecutive fallback bullets never share one. Returns text unchanged if it has none."""
+    if not text or not _PLAIN_BULLET_RE.search(text):
+        return text
+    counter = {"i": 0}
+    def _repl(m):
+        e = _FALLBACK_BULLET_EMOJI[counter["i"] % len(_FALLBACK_BULLET_EMOJI)]
+        counter["i"] += 1
+        return f"{m.group(1)}{e} "
+    return _PLAIN_BULLET_RE.sub(_repl, text)
 
 
 # ── AD TYPE STYLE GUIDE (structured: configs/ad_type_style_guide.json) ─────────
@@ -1356,18 +1376,19 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                             for _ff in ("headline", "headline_short", "body_short", "body_long", "description"):
                                 if not concept.get(_ff) and isinstance(_p, dict):
                                     concept[_ff] = _p.get(_ff, "")
-                        # Emoji-bullet backstop (Adrie: bullets are ✅/✔️/emoji-led,
-                        # never plain "•" — seen leaking through 2026-07-16).
+                        # Emoji-bullet backstop (Adrie: bullets are emoji-led, never a
+                        # plain "•"). Any leftover plain bullet gets a VARIED emoji from the
+                        # rotating palette — not a stack of flat ✅ (Logan, 2026-07-23).
                         for _bf in ("body_long", "body_short"):
                             if concept.get(_bf):
-                                concept[_bf] = _PLAIN_BULLET_RE.sub(r"\1✅ ", concept[_bf])
+                                concept[_bf] = _emojify_plain_bullets(concept[_bf])
                         _tcb = concept.get("targeting_copy")
                         if isinstance(_tcb, dict):
                             for _aud in _tcb.values():
                                 if isinstance(_aud, dict):
                                     for _bf in ("body_long", "body_short"):
                                         if _aud.get(_bf):
-                                            _aud[_bf] = _PLAIN_BULLET_RE.sub(r"\1✅ ", _aud[_bf])
+                                            _aud[_bf] = _emojify_plain_bullets(_aud[_bf])
                         # Enforce Adrie's sentence-case rule on headlines/CTAs.
                         for _cf in _SENTENCE_CASE_FIELDS:
                             if concept.get(_cf):
