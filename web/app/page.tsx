@@ -54,7 +54,9 @@ function EntryCard({
           : "linear-gradient(250.58deg, rgba(255,255,255,0.06) 0.7%, rgba(255,255,255,0.03) 98.41%)",
       }}
     >
-      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/[0.14] bg-white/[0.06] text-primary">{icon}</div>
+      {/* border matches Ravi's RENDERED value: his `border-white/14` silently falls back to
+          gray-200 (#e5e7eb), which reads as a visible light border — not the faint white/14. */}
+      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white/[0.06] text-primary">{icon}</div>
       <h3 className="mt-5 text-[19px] font-medium tracking-tight text-white">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-white/60">{desc}</p>
       <span className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-primary">
