@@ -34,25 +34,12 @@ const STYLES: [string, string][] = [
 
 // Key messaging themes Paid Acq can drop into the Brief (→ Additional_Info) so the
 // current sprint's angle guides copy generation. Data-driven — add the next sprint's
-// theme here and it appears as an insert chip. Keep entries concise: angle + why +
-// categories + considerations, not full sample ads (those bias generation).
+// theme here and it re-appears as an insert chip; the chip row hides when empty.
+// Emptied 2026-07-23 (Adrie): the leftover "Sprint 9" chip confused the intake; add a
+// real, current sprint theme here only when one is meant to be live.
 type MessagingTheme = { id: string; title: string; subtitle: string; content: string };
 
-const KEY_MESSAGING_THEMES: MessagingTheme[] = [
-  {
-    id: "sprint-9-ai-specialization",
-    title: "Sprint 9 — AI + Specialization",
-    subtitle: "Specialized job titles & skills, infused with Upwork's AI emphasis",
-    content: `Sprint 9 — AI + Specialization
-Angle: Specialized job titles & skills, infused with Upwork's AI emphasis. Lean into top-performing L1 categories where AI crosses over.
-Why: Upwork is growing AI contracts; creative is our best targeting lever.
-Top categories to feature:
-- Design & Creative — Graphic Design, Video Editing (AI tools angle)
-- Development & IT — Web Design, Full Stack, AI/ML engineers
-- Sales & Marketing — Social Media, SEO, Lead Gen (AI copywriting/analytics)
-Consider skill-stacking (mention multiple categories in one ad). Layer in cost-of-waiting / cost-of-a-bad-hire and trust signals (ratings, reviews). Lean into "faster than competitors" language.`,
-  },
-];
+const KEY_MESSAGING_THEMES: MessagingTheme[] = [];
 
 // A fill-in skeleton whose four sections map 1:1 to how ADAM breaks a brief down
 // (theme / copy_directives / design_directives / resources — see _breakdown_brief in

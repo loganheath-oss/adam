@@ -4,6 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 
+export type AudienceCopy = {
+  creative_headline?: string;
+  creative_subhead?: string;
+  headline?: string;
+  headline_short?: string;
+  body_short?: string;
+  body_long?: string;
+};
+
 export type PickerConcept = {
   concept_id?: string;
   visual_style?: string;
@@ -13,9 +22,11 @@ export type PickerConcept = {
   creative_headline?: string;
   creative_subhead?: string;
   headline?: string;
+  headline_short?: string;
   cta?: string;
   body_short?: string;
   review_notes?: string;
+  targeting_copy?: { Prospecting?: AudienceCopy; Retargeting?: AudienceCopy };
 };
 
 // Gate-3 winner picking. The rule: the top options are chosen HERE, while working
@@ -146,14 +157,43 @@ export function CopyPicker({
                             )
                           )}
                         </div>
+                        {/* On-image (Text on Visual) */}
                         <div className="text-base font-semibold">{c.creative_headline || c.headline || "—"}</div>
                         {c.creative_subhead && <div className="text-sm text-muted-foreground">{c.creative_subhead}</div>}
+                        {/* Feed headline — LONG and SHORT */}
+                        {(c.headline || c.headline_short) && (
+                          <div className="text-xs text-muted-foreground">
+                            <span className="font-medium uppercase tracking-wide">Headline</span> {c.headline}
+                            {c.headline_short ? <span> · <span className="font-medium uppercase tracking-wide">short</span> {c.headline_short}</span> : null}
+                          </div>
+                        )}
                         {c.cta && (
                           <div className="text-sm">
                             <span className="text-muted-foreground">CTA:</span> {c.cta}
                           </div>
                         )}
                         {c.body_short && <div className="border-t pt-2 text-xs text-muted-foreground">{c.body_short}</div>}
+                        {/* Prospecting + Retargeting — each has its OWN creative + feed copy */}
+                        {c.targeting_copy && (c.targeting_copy.Prospecting || c.targeting_copy.Retargeting) && (
+                          <div className="mt-2 grid gap-3 border-t pt-2 sm:grid-cols-2">
+                            {(["Prospecting", "Retargeting"] as const).map((seg) => {
+                              const a = c.targeting_copy?.[seg];
+                              if (!a) return null;
+                              return (
+                                <div key={seg} className="space-y-1">
+                                  <div className="text-[11px] font-semibold uppercase tracking-wide text-primary">{seg}</div>
+                                  {a.creative_headline && <div className="text-sm font-medium">{a.creative_headline}</div>}
+                                  {(a.headline || a.headline_short) && (
+                                    <div className="text-[11px] text-muted-foreground">
+                                      HL {a.headline}{a.headline_short ? ` · short ${a.headline_short}` : ""}
+                                    </div>
+                                  )}
+                                  {a.body_short && <div className="text-[11px] text-muted-foreground">{a.body_short}</div>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                         {c.review_notes && (
                           <div className="text-xs italic text-muted-foreground/80">{c.review_notes}</div>
                         )}
