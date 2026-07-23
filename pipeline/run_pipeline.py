@@ -1045,17 +1045,22 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     # Feed-copy field spec + JSON key list branch on single-vs-both targeting.
     if _is_both:
         ad_platform_block = (
-            "AD-PLATFORM copy — the Meta feed fields (headline + primary text) shown AROUND the\n"
-            "image. NEVER printed on the image; distinct wording from the on-creative copy. This\n"
-            "order is BOTH audiences, so provide the feed copy TWICE under a \"targeting_copy\"\n"
-            "object — the shared image + on-creative copy above stay the same; only these differ:\n"
+            "This order is BOTH audiences, and EACH AUDIENCE GETS ITS OWN CREATIVE. The visual\n"
+            "STYLE is the same for both, but the on-image copy (Text_On_Visual) AND the feed copy\n"
+            "must be UNIQUE per audience — provide EVERYTHING twice under a \"targeting_copy\" object.\n"
+            "Do NOT give both audiences identical on-image copy.\n"
             "- targeting_copy: an object with EXACTLY two keys, \"Prospecting\" and \"Retargeting\".\n"
-            "  Each maps to an object with: headline (max 50), headline_short (max 30),\n"
-            "  body_short (max 125), body_long (max 300 — Primary Text; keep the ~half-bulleted\n"
-            "  rule), description (max 25). Apply the Prospecting vs Retargeting rules above.\n"
-            "- concept_tag (short slug like \"talent-speed-v1\")"
+            "  Each maps to an object with BOTH the on-image and the feed copy for that audience:\n"
+            "    ON-IMAGE (Text_On_Visual): creative_headline (follow the matched Style Guide caps),\n"
+            "      creative_subhead (ONLY if the Style Guide entry allows a subhead — else omit),\n"
+            "    FEED (around the image, never printed on it): headline (max 50), headline_short\n"
+            "      (max 30), body_short (max 125), body_long (max 300 — Primary Text; keep the\n"
+            "      ~half-bulleted rule), description (max 25).\n"
+            "  Apply the Prospecting (cold) vs Retargeting (warm) rules above to BOTH the on-image\n"
+            "  and the feed copy — the two audiences must read distinctly.\n"
+            "- cta (one shared CTA label), concept_tag (short slug like \"talent-speed-v1\")"
         )
-        json_keys_full = "creative_headline, creative_subhead, cta, targeting_copy, concept_tag"
+        json_keys_full = "cta, targeting_copy, concept_tag"
     else:
         ad_platform_block = (
             "AD-PLATFORM copy — the Meta feed fields shown AROUND the image (caption + headline).\n"
@@ -1069,6 +1074,27 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
         )
         json_keys_full = ("creative_headline, creative_subhead, headline, headline_short, "
                           "body_short, body_long, description, cta, concept_tag")
+
+    # On-image (Text_On_Visual) field spec. For a BOTH-audience order the on-image copy is
+    # UNIQUE per audience (inside targeting_copy), so only the cta stays top-level here.
+    if _is_both:
+        _on_creative_block = (
+            "- cta (the CTA button label on the image; fallback max 20 characters)\n"
+            "- ALWAYS provide your best cta for EVERY concept — the pipeline applies the Style\n"
+            "  Guide's CTA distribution deterministically after selection, so never return empty.\n"
+            "- NOTE: the on-image copy (creative_headline, creative_subhead) is provided PER\n"
+            "  AUDIENCE inside targeting_copy below, NOT as top-level fields — this both-audience\n"
+            "  order needs UNIQUE Text_On_Visual for Prospecting vs Retargeting."
+        )
+    else:
+        _on_creative_block = (
+            "- creative_headline (the main hook shown ON the ad image; fallback max 30 characters)\n"
+            "- creative_subhead (ONE short supporting line ON the image, must NOT repeat the primary text below; fallback max 55 characters)\n"
+            "- cta (the CTA button label on the image; fallback max 20 characters)\n"
+            "- ALWAYS provide your best cta for EVERY concept, even if the matched Style Guide\n"
+            "  entry says only some variants (or none) display one — the pipeline applies that\n"
+            "  CTA distribution deterministically after selection, so never return an empty cta."
+        )
 
     # Get order brief for priority override
     order_brief = context.get("order_brief", order.get("brief", ""))
@@ -1335,12 +1361,7 @@ fits the design. This is the ONLY copy that appears on the image itself. LENGTH
 IS GOVERNED BY THE MATCHED STYLE GUIDE ENTRY ABOVE (and any TEMPLATE CHARACTER
 LIMITS) — follow those caps; the numbers below are only fallbacks when the entry
 is silent on a field:
-- creative_headline (the main hook shown ON the ad image; fallback max 30 characters)
-- creative_subhead (ONE short supporting line ON the image, must NOT repeat the primary text below; fallback max 55 characters)
-- cta (the CTA button label on the image; fallback max 20 characters)
-- ALWAYS provide your best cta for EVERY concept, even if the matched Style Guide
-  entry says only some variants (or none) display one — the pipeline applies that
-  CTA distribution deterministically after selection, so never return an empty cta.
+{_on_creative_block}
 
 {ad_platform_block}
 {multi_field_instructions}
@@ -1439,7 +1460,10 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         _tc = concept.get("targeting_copy")
                         if isinstance(_tc, dict) and _tc:
                             _p = _tc.get("Prospecting") or _tc.get("prospecting") or {}
-                            for _ff in ("headline", "headline_short", "body_short", "body_long", "description"):
+                            # Includes the on-image creative now that P&R generates it per
+                            # audience — base mirrors Prospecting so single-audience readers work.
+                            for _ff in ("creative_headline", "creative_subhead", "headline",
+                                        "headline_short", "body_short", "body_long", "description"):
                                 if not concept.get(_ff) and isinstance(_p, dict):
                                     concept[_ff] = _p.get(_ff, "")
                         # Emoji-bullet backstop (Adrie: bullets are emoji-led, never a
@@ -1464,6 +1488,16 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         for _cf in _SENTENCE_CASE_FIELDS:
                             if concept.get(_cf):
                                 concept[_cf] = _to_sentence_case(concept[_cf])
+                        # Same on-image enforcement for EACH audience's creative (P&R): strip an
+                        # off-spec subhead on headline-only styles, then sentence-case its fields.
+                        if isinstance(_tcb, dict):
+                            for _aud in _tcb.values():
+                                if isinstance(_aud, dict):
+                                    if _aud.get("creative_subhead") and not _style_uses_subhead(style):
+                                        _aud["creative_subhead"] = ""
+                                    for _cf in _SENTENCE_CASE_FIELDS:
+                                        if _aud.get(_cf):
+                                            _aud[_cf] = _to_sentence_case(_aud[_cf])
                         _flags = _scan_banned_terms(concept)
                         if _flags:
                             concept["legal_flags"] = _flags
