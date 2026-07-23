@@ -504,6 +504,13 @@ def digest(since_days: int = 7, monthly_budget: float = 0.0) -> dict:
                 .where(UsageEvent.action == "deploy.detected", UsageEvent.ts >= since)
                 .order_by(UsageEvent.ts.desc()).limit(30)
             ).all()
+            # The actual RUNS this period — what orders came in + what they asked for.
+            # This is the recap Adrie wants front-and-center (2026-07-23), not deploys.
+            runs = s.execute(
+                select(UsageEvent.ts, UsageEvent.sprint_id, UsageEvent.user_email, UsageEvent.meta)
+                .where(UsageEvent.action == "order.submitted", UsageEvent.ts >= since)
+                .order_by(UsageEvent.ts.desc()).limit(40)
+            ).all()
         return {
             "enabled": True,
             "since_days": since_days,
@@ -524,6 +531,17 @@ def digest(since_days: int = 7, monthly_budget: float = 0.0) -> dict:
             "month_to_date_usd": spend.get("month_to_date_usd"),
             "projected_month_usd": spend.get("projected_month_usd"),
             "monthly_budget_usd": spend.get("monthly_budget_usd"),
+            "runs": [
+                {"ts": t.isoformat() if t else None,
+                 "sprint_id": sid,
+                 "driver": (m or {}).get("driver") or ue,
+                 "platform": (m or {}).get("platform"),
+                 "targeting": (m or {}).get("targeting"),
+                 "styles": (m or {}).get("styles") or [],
+                 "deliverable": (m or {}).get("deliverable"),
+                 "assets": (m or {}).get("total_assets")}
+                for t, sid, ue, m in runs
+            ],
             "deploys": [
                 {"ts": t.isoformat() if t else None,
                  "sha": (m or {}).get("sha"), "message": (m or {}).get("message"),

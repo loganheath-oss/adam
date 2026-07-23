@@ -541,6 +541,8 @@ def _log_order_submitted(sprint_id: str, payload: dict) -> None:
                      meta={"platform": payload.get("platform"), "formats": formats,
                            "styles": styles, "total_assets": total_assets,
                            "deliverable": payload.get("deliverable"),
+                           "targeting": payload.get("targeting"),
+                           "driver": payload.get("driver"),
                            "brief_len": len(payload.get("brief") or "")})
     except Exception as e:
         print(f"[db] order.submitted log skipped: {e}")

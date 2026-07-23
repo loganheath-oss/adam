@@ -174,6 +174,16 @@ export type Digest = {
   month_to_date_usd?: number;
   projected_month_usd?: number;
   monthly_budget_usd?: number;
+  runs?: Array<{
+    ts?: string | null;
+    sprint_id?: string;
+    driver?: string;
+    platform?: string;
+    targeting?: string;
+    styles?: string[];
+    deliverable?: string;
+    assets?: number;
+  }>;
   deploys?: Array<{ ts: string | null; sha?: string; message?: string; service?: string }>;
 };
 

@@ -28,6 +28,15 @@ function digestText(d: Digest, days: number): string {
   L.push(`Issues: ${d.issues_new ?? 0} new · ${d.issues_open ?? 0} still open`);
   if ((d.errors ?? 0) > 0) L.push(`Errors logged: ${d.errors}`);
   L.push(`Spend: ${usd(d.spend_usd)} this period · ${usd(d.month_to_date_usd)} month-to-date · projected ${usd(d.projected_month_usd)}${d.monthly_budget_usd ? ` of ${usd(d.monthly_budget_usd)} budget` : ""}`);
+  if (d.runs && d.runs.length) {
+    L.push("");
+    L.push("Runs this period:");
+    for (const r of d.runs) {
+      const when = r.ts ? new Date(r.ts).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "?";
+      const styles = r.styles && r.styles.length ? r.styles.join(", ") : "—";
+      L.push(`  - ${when} · ${r.driver ?? "?"} · ${r.platform ?? "?"} · ${r.targeting ?? "?"} · ${styles} · ${r.deliverable ?? "?"}`);
+    }
+  }
   if (d.incidents && d.incidents.length) {
     L.push("");
     L.push("Incidents:");
@@ -37,10 +46,7 @@ function digestText(d: Digest, days: number): string {
   }
   if (d.deploys && d.deploys.length) {
     L.push("");
-    L.push(`Deploys: ${d.deploys.length}`);
-    for (const dep of d.deploys.slice(0, 6)) {
-      L.push(`  - ${dep.sha ?? "?"} ${dep.message ?? ""}`);
-    }
+    L.push(`Technical changes (deploys): ${d.deploys.length}`);
   }
   return L.join("\n");
 }
@@ -133,6 +139,50 @@ export default async function DigestPage({ searchParams }: { searchParams: Promi
         )}
       </div>
 
+      {/* This period's runs — what came in and what it asked for. The recap Adrie
+          wants front-and-center (2026-07-23), not the deploy log. */}
+      <div className="mb-6">
+        <h2 className="mb-3 text-lg font-medium">This period’s runs</h2>
+        {d.runs && d.runs.length > 0 ? (
+          <div className={`${CARD} overflow-x-auto`}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="pb-2 pr-4 font-medium">When</th>
+                  <th className="pb-2 pr-4 font-medium">Requested by</th>
+                  <th className="pb-2 pr-4 font-medium">Platform</th>
+                  <th className="pb-2 pr-4 font-medium">Audience</th>
+                  <th className="pb-2 pr-4 font-medium">Styles</th>
+                  <th className="pb-2 pr-4 font-medium">Deliverable</th>
+                  <th className="pb-2 font-medium">Sprint</th>
+                </tr>
+              </thead>
+              <tbody>
+                {d.runs.map((r, idx) => (
+                  <tr key={idx} className="border-t align-top">
+                    <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground">
+                      {r.ts ? new Date(r.ts).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—"}
+                    </td>
+                    <td className="py-2 pr-4">{r.driver ?? "—"}</td>
+                    <td className="py-2 pr-4">{r.platform ?? "—"}</td>
+                    <td className="py-2 pr-4">{r.targeting ?? "—"}</td>
+                    <td className="py-2 pr-4">{r.styles && r.styles.length ? r.styles.join(", ") : "—"}</td>
+                    <td className="py-2 pr-4">{r.deliverable ?? "—"}</td>
+                    <td className="py-2 font-mono text-xs text-muted-foreground">
+                      {r.sprint_id ? (
+                        <a className="underline" href={`/sprints/${r.sprint_id}`}>{r.sprint_id.slice(-6)}</a>
+                      ) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className={`${CARD} text-sm text-muted-foreground`}>No orders submitted this period.</div>
+        )}
+      </div>
+
       {/* Callouts */}
       {(degraded || hasErrors) && (
         <div className="mb-6 space-y-2">
@@ -172,11 +222,14 @@ export default async function DigestPage({ searchParams }: { searchParams: Promi
         </div>
       )}
 
-      {/* Deploys */}
+      {/* Technical changes (deploys) — demoted to a collapsed section: useful for Logan's
+          bug-tracing, but not decision-relevant for the team (Adrie 2026-07-23). */}
       {d.deploys && d.deploys.length > 0 && (
-        <div className="mb-6">
-          <h2 className="mb-3 text-lg font-medium">Deploys ({d.deploys.length})</h2>
-          <div className={CARD}>
+        <details className="mb-6">
+          <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+            Technical changes this period ({d.deploys.length} deploys) — code-change log, for reference
+          </summary>
+          <div className={`${CARD} mt-3`}>
             <ul className="space-y-1.5 text-sm">
               {d.deploys.map((dep, idx) => (
                 <li key={idx} className="flex gap-3">
@@ -187,7 +240,7 @@ export default async function DigestPage({ searchParams }: { searchParams: Promi
               ))}
             </ul>
           </div>
-        </div>
+        </details>
       )}
 
       {/* Pasteable text */}
