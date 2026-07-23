@@ -3020,15 +3020,20 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "export_file": str(export_path) if has_export else "",
             "status": "delivered" if has_export else "pending_assembly"
         }
-        # "Prospecting and Retargeting": one shared creative, two feed-copy sets →
-        # emit a Prospecting row AND a Retargeting row (same image/creative; only
-        # headline + primary text + Targeting differ). Otherwise, a single row.
+        # "Prospecting and Retargeting": each audience gets its OWN creative now (Adrie
+        # 2026-07-23) — emit a Prospecting row AND a Retargeting row, same image/style but
+        # UNIQUE on-image (Text_On_Visual) AND feed copy per audience. Otherwise a single row.
         _tc = concept.get("targeting_copy")
         if isinstance(_tc, dict) and _tc:
             for _tgt in ("Prospecting", "Retargeting"):
                 _v = _tc.get(_tgt) if isinstance(_tc.get(_tgt), dict) else {}
                 _r = dict(base_row)
                 _r["Targeting"] = _tgt
+                # ON-IMAGE (Text_On_Visual) — unique per audience
+                if _v.get("creative_headline"):
+                    _r["Headline_On_Creative"] = _v["creative_headline"]
+                _r["Subhead_On_Creative"] = _v.get("creative_subhead", _r.get("Subhead_On_Creative", ""))
+                # FEED copy — unique per audience
                 _r["Primary_Text_Short"] = _v.get("body_short", _r["Primary_Text_Short"])
                 _r["Primary_Text_Long"] = _v.get("body_long", _r["Primary_Text_Long"])
                 _r["Headline"] = _v.get("headline", _r["Headline"])
@@ -3076,12 +3081,14 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "Primary_Text_Long": c.get("body_long", ""),
             "Description": c.get("description", ""),
             "CTA": c.get("cta", ""),
-            # Per-audience FEED copy — populated only for Prospecting+Retargeting
-            # concepts so the operator can review BOTH audience versions at Gate 3
-            # (the Text_On_Visual copy above is shared; only the feed copy differs).
+            # Per-audience copy — populated only for Prospecting+Retargeting concepts so the
+            # operator reviews BOTH audience versions at Gate 3. Each audience now has its OWN
+            # on-visual copy (Text_On_Visual) AND feed copy (Adrie 2026-07-23).
+            "Prospecting_Text_On_Visual": _aud("Prospecting", "creative_headline"),
             "Prospecting_Headline": _aud("Prospecting", "headline"),
             "Prospecting_Text_Short": _aud("Prospecting", "body_short"),
             "Prospecting_Text_Long": _aud("Prospecting", "body_long"),
+            "Retargeting_Text_On_Visual": _aud("Retargeting", "creative_headline"),
             "Retargeting_Headline": _aud("Retargeting", "headline"),
             "Retargeting_Text_Short": _aud("Retargeting", "body_short"),
             "Retargeting_Text_Long": _aud("Retargeting", "body_long"),
