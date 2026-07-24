@@ -1047,6 +1047,25 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     qty = count or _CONCEPTS_PER_STYLE
     _angle_line = f"\nCREATIVE ANGLE FOR THIS SET (make these concepts distinct): {angle}\n" if angle else ""
 
+    # LONG-BODY FORMAT — deterministic 50/50 bullet-vs-paragraph across a style's concepts
+    # (Logan 2026-07-24: the model defaulted to 100% bulleted). Assign each concept a format
+    # by GLOBAL index parity (seq*batch_size + position), so even indices → bulleted, odd →
+    # paragraph. Across the style's full set that lands ~half bulleted / half flowing prose;
+    # the human then picks from a balanced pool. Feed-fit trim already preserves each format.
+    _fmt_lines = []
+    for _j in range(qty):
+        _gidx = seq * _COPY_BATCH_SIZE + _j
+        if _gidx % 2 == 0:
+            _fmt_lines.append(f"  Concept {_j+1}: body_long / Primary_Text_Long = EMOJI-BULLETED list "
+                              "(3-4 short bullets, each led by a DISTINCT relevant emoji — vary them, not all the same).")
+        else:
+            _fmt_lines.append(f"  Concept {_j+1}: body_long / Primary_Text_Long = FLOWING PARAGRAPH prose "
+                              "(2-3 sentences, NO bullets, NO emoji-led lines).")
+    _body_format_line = (
+        "\nLONG-BODY FORMAT — ASSIGNED per concept, follow EXACTLY. This bullet-vs-paragraph split "
+        "is REQUIRED (do NOT make them all the same format):\n" + "\n".join(_fmt_lines) + "\n"
+    )
+
     # Build rich prompt with all reference context
     brand_voice = context.get("brand_voice", "Professional, clear, human")
     writing_style = context.get("writing_style", "")
@@ -1412,7 +1431,7 @@ other approaches. Specific freelancer categories outperform generic talent messa
 
 ===== YOUR ASSIGNMENT =====
 Generate {qty} ad copy concepts. Each concept must be COMPLETE — never truncate or
-abbreviate later concepts to save space; every field must be fully written for all {qty}.{_angle_line}
+abbreviate later concepts to save space; every field must be fully written for all {qty}.{_angle_line}{_body_format_line}
 
 Platform: {batch.get('platform', 'Meta')}
 Format: {batch.get('format', 'Static Feed')}

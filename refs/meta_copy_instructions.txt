@@ -54,10 +54,12 @@ FIELD SPECS (exact — enforce every limit)
                        "Post job". Longer verb-led CTAs allowed when warranted
                        (e.g., "Find expert help today"). CTA is optional.
 
-LONG PRIMARY COPY FORMAT (Primary_Text_Long / body_long) — REQUIRED VARIETY
-Vary the format across the batch — a MIX of bullet and paragraph styles is required,
-not optional. Aim for roughly half of each across a concept's variants; don't count
-rigidly. The goal is visual variety so the set of ads doesn't feel repetitive.
+LONG PRIMARY COPY FORMAT (Primary_Text_Long / body_long) — FORMAT IS ASSIGNED PER CONCEPT
+Each concept is given an EXACT format for body_long in its assignment — either an emoji-
+BULLETED list or a FLOWING PARAGRAPH. Follow the per-concept assignment EXACTLY; do NOT
+default every concept to bullets. The set is intentionally ~50/50 bullet vs paragraph so the
+ads don't feel repetitive. If (and only if) no assignment is present, split the batch half
+and half yourself.
 - Bullet format: 3–4 bullets, each led by ONE emoji chosen like an art director.
   Read the bullet and pick the single most VIVID, CONCRETE emoji for that line's
   specific noun or outcome — not its broad category. "Cut reporting time in half"

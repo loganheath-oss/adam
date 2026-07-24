@@ -607,3 +607,14 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
      nudge).
   3. **Gemini image cost is NOT tracked** — `_estimate_cost` prices text models only, so
      `/admin/spend` under-reports any image-generating run. Add a per-image estimate.
+
+## 2026-07-24 — Long-body 50/50 bullet-vs-paragraph enforcement (Logan)
+- FINDING (from Phase 1 samples): body_long came out 100% bulleted (112/112). The
+  "required variety" instruction was soft and the model ignored it.
+- FIX: deterministic per-concept format assignment in `_generate_copy_for_style` —
+  each concept's body_long format assigned by GLOBAL index parity (even→emoji-bulleted,
+  odd→flowing paragraph), injected into the prompt; refs instruction rewritten to
+  "format is assigned per concept, follow exactly" + recompiled.
+- VERIFIED: 4 previously-100%-bulleted styles regenerated → each 3 bullet / 3 paragraph,
+  total 12/12 (was 0 paragraph), $0.27. Both formats high quality. Resolves the earlier
+  "bullet-format variety" follow-up.
