@@ -28,7 +28,11 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-RUNS_DIR = REPO_ROOT / "runs"
+# Env-overridable so the same tools can read the deployment's live runs dir.
+# On Railway the backend sets RUNS_DIR=/data/runs (the persistent volume); when
+# this module is imported into main.py the MCP tools then see live sprints.
+# Unset (Fly / local stdio) falls back to the repo-baked runs/ dir as before.
+RUNS_DIR = Path(os.environ.get("RUNS_DIR", str(REPO_ROOT / "runs")))
 PIPELINE_SCRIPT = REPO_ROOT / "pipeline" / "run_pipeline.py"
 INTAKE_PATH = REPO_ROOT / "pipeline" / "00_intake.py"
 
@@ -64,7 +68,7 @@ GATE_NAMES = {
 # Allowed Host header values for DNS rebinding protection. We add the public
 # Fly hostname so claude.ai can reach us; localhost stays for local testing.
 # Override via MCP_ALLOWED_HOSTS env var (comma-separated) when deploying elsewhere.
-_default_hosts = "adam-pipeline-cm.fly.dev,localhost,127.0.0.1"
+_default_hosts = "adam-pipeline-cm.fly.dev,adam-production-9618.up.railway.app,localhost,127.0.0.1"
 _allowed_hosts = [h.strip() for h in os.environ.get("MCP_ALLOWED_HOSTS", _default_hosts).split(",") if h.strip()]
 _security = TransportSecuritySettings(
     enable_dns_rebinding_protection=True,

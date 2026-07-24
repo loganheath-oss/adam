@@ -288,6 +288,50 @@ async def require_api_key_or_session(
     )
 
 
+# ---------------------------------------------------------------------------
+# MCP connector (mounted at /mcp) — exposes the ADAM pipeline tools to claude.ai
+# as a Streamable-HTTP connector that reads THIS deployment's live runs dir + env.
+# Replaces the separate Fly server, which served a stale runs/ copy baked into its
+# image. The FastMCP instance + its 7 tools live in mcp_server/server.py; that
+# file has a leading-dir path and no package, so we load it by file path (same
+# trick main.py already uses for pipeline modules) and mount its streamable-http
+# app. Its session manager MUST run inside the app lifespan or every call 500s.
+# ---------------------------------------------------------------------------
+import importlib.util as _ilu
+
+_mcp_spec = _ilu.spec_from_file_location("adam_mcp_server", str(BASE_DIR / "mcp_server" / "server.py"))
+adam_mcp_server = _ilu.module_from_spec(_mcp_spec)
+_mcp_spec.loader.exec_module(adam_mcp_server)
+adam_mcp = adam_mcp_server.mcp
+adam_mcp.settings.streamable_http_path = "/"   # mounted at /mcp -> canonical endpoint /mcp/
+_mcp_app = adam_mcp.streamable_http_app()       # lazily creates adam_mcp.session_manager
+
+# Connector auth: accept ?auth=<token> or "Authorization: Bearer <token>". Reuse
+# PIPELINE_API_KEY (already set on the service) unless a dedicated MCP_AUTH_TOKEN
+# is provided. If neither is set the endpoint is open (matches local/stdio use).
+_MCP_TOKEN = os.environ.get("MCP_AUTH_TOKEN") or os.environ.get("PIPELINE_API_KEY", "")
+
+
+class _MCPAuth:
+    """Pure-ASGI auth gate for the mounted MCP app. A BaseHTTPMiddleware would
+    buffer/break the streaming transport, so this stays at the ASGI layer."""
+
+    def __init__(self, app, token):
+        self.app, self.token = app, token
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or not self.token:
+            return await self.app(scope, receive, send)
+        from urllib.parse import parse_qs
+        qs = parse_qs(scope.get("query_string", b"").decode())
+        auth_q = (qs.get("auth") or [""])[0]
+        headers = {k.lower(): v for k, v in (scope.get("headers") or [])}
+        authz = headers.get(b"authorization", b"").decode()
+        if auth_q == self.token or authz == f"Bearer {self.token}":
+            return await self.app(scope, receive, send)
+        return await JSONResponse({"error": "unauthorized"}, status_code=401)(scope, receive, send)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """On startup, connect the usage DB (best-effort) and mark any in-flight
@@ -339,10 +383,14 @@ async def lifespan(app: FastAPI):
                     state_path.write_text(json.dumps(state_data, indent=2))
             except Exception:
                 pass
-    yield
+    # Run the MCP streamable-http session manager for the life of the app; without
+    # this the mounted /mcp endpoint raises "Task group is not initialized".
+    async with adam_mcp.session_manager.run():
+        yield
 
 
 app = FastAPI(title="ADAM Pipeline", lifespan=lifespan)
+app.mount("/mcp", _MCPAuth(_mcp_app, _MCP_TOKEN))
 
 
 @app.exception_handler(Exception)

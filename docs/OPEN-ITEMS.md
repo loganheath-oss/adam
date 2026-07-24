@@ -548,3 +548,25 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   the fields, proportional deterministic trim to fit). Verified: Social 92→53, Sticky 154→108.
 - DECISIONS: brief template → defer to Adrie's (mine stays until hers lands); emoji → keep the
   varied professional palette until something else is requested.
+
+## 2026-07-23 (cont.) — Mount MCP into Railway (retire stale Fly connector)
+- ROOT CAUSE: the claude.ai MCP connector talked to adam-pipeline-cm.fly.dev, whose
+  server reads a runs/ folder BAKED INTO its Docker image (frozen ~May). So the
+  connector showed April/May sprints while Railway's live pipeline is all July.
+  Railway served no MCP endpoint (main.py only mounted /fonts). Verified: MCP
+  list_sprints returned 2026-04/05 sprints; Railway /admin/storage all 2026-07.
+- FIX (Logan chose "Mount MCP into Railway"): mounted the FastMCP streamable-http
+  app at /mcp inside main.py so the SAME tools read Railway's live /data/runs + env.
+  - mcp_server/server.py: RUNS_DIR now env-overridable (reads RUNS_DIR → /data/runs
+    on Railway; unchanged for Fly/local). Added the Railway host to allowed_hosts.
+  - main.py: load server.py by path, streamable_http_path="/", mount at /mcp,
+    compose adam_mcp.session_manager.run() into the lifespan (required or every
+    call 500s), pure-ASGI _MCPAuth gate (?auth= / Bearer vs MCP_AUTH_TOKEN ||
+    PIPELINE_API_KEY). pyproject.toml: added mcp>=1.27.0.
+  - Canonical endpoint is /mcp/ (trailing slash; /mcp 307-redirects to it).
+  - VALIDATED locally before deploy: isolated mount proof + full real-main.py boot
+    (health 200, bad-token 401, 7 tools, list_sprints reads live runs). PASS.
+- FOLLOW-UP for Logan: repoint the claude.ai connector to the Railway /mcp URL
+  (auth token = PIPELINE_API_KEY) and delete the Fly app. Connector auth currently
+  reuses PIPELINE_API_KEY; set a dedicated MCP_AUTH_TOKEN later to stop embedding
+  the admin key in the connector URL.
