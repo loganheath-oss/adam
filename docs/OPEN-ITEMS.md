@@ -585,3 +585,25 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   set a dedicated MCP_AUTH_TOKEN so the connector carries a purpose-built token, not the
   admin PIPELINE_API_KEY; (4) full rewrite of architecture_and_logging.md; (5) in-app
   wiki text goes live on the next adam-web deploy (source committed now).
+
+## 2026-07-23 — Full-style regression (Phases 1 & 2)
+- **PHASE 1 — copy, all 24 styles (copy-only, P&R "both", 4-section brief):** 23 pass · 1 warn
+  · 0 FAIL · 144 concepts · **$2.86**. Every style generated; hard caps respected on selected
+  concepts; combined caps (Social/Sticky) held; headline-only styles carry no subhead (strip
+  works); P&R distinct; emoji varied; no dangling. Copy is FULL-LENGTH (fill: creative_headline
+  97%, body_long 94%, body_short 87%, headline 85%) and brief-adherent (said "AI-skilled" 24/24,
+  "AI expert" 0/24, "48 hours" 24/24). Quality reads well across styles.
+  - warn: Us vs Them — 2 UNSELECTED alt concepts have a bullet 29>28 (selected ones clean).
+  - caveat: description field (25-char cap) truncates with an ellipsis ~4/24.
+- **PHASE 2 — image path + manifest, all 24 styles ($0 metered, Figma API only):** routing
+  correct (8 skip · 8 background · 6+1 library · 3 gemini); design-direction appended to 3/3
+  gemini prompts; Figma library lookup filled 26 asset picks; **P&R manifest doubling 26→52
+  rows**, on-image distinct 25/26, feed 20/26; copy_review P&R columns 140/144 filled + distinct.
+  Sample P&R pair genuinely differentiated (Prospecting "find fast" vs Retargeting "right now").
+  - NOT exercised: actual Gemini pixel render (stage 04) — unchanged code, prompts verified.
+- **NEW FOLLOW-UPS (small):**
+  1. description-field (25-char) ellipsis truncation — teach it to write a complete short fragment.
+  2. occasional identical P&R copy — 1/26 on-image, 6/26 feed share a line (structure fine; model
+     nudge).
+  3. **Gemini image cost is NOT tracked** — `_estimate_cost` prices text models only, so
+     `/admin/spend` under-reports any image-generating run. Add a per-image estimate.
