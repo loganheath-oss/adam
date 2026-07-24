@@ -16,7 +16,7 @@ flowchart LR
 | Web app (order form, dashboard, chat) | **Railway** — auto-deploys from GitHub `loganheath-oss/adam` | FastAPI from `main.py` |
 | Pipeline | Inside the web app, or locally via `run_pipeline.py` | Per-sprint state in `runs/` |
 | Figma plugin | Figma desktop (manual) | Against file `DoDwumxELkuAuKKSP5p00e` |
-| MCP server | Fly config in repo (`mcp_server/fly.toml`) | 🗄️ Historical; superseded by the web app |
+| MCP connector | Mounted in the web app at `/mcp` (Railway) | ✅ Live claude.ai connector, reads the same `runs/`; `mcp_server/fly.toml` = retired standalone host |
 
 > **Source of truth = GitHub `loganheath-oss/adam`.** Any local clone (on any machine) is kept in sync — there's nothing special about the original author's checkout.
 > Push to `main` → Railway redeploys.

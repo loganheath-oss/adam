@@ -570,3 +570,18 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   (auth token = PIPELINE_API_KEY) and delete the Fly app. Connector auth currently
   reuses PIPELINE_API_KEY; set a dedicated MCP_AUTH_TOKEN later to stop embedding
   the admin key in the connector URL.
+
+## 2026-07-23 (cont.) — MCP mount LIVE + docs synced
+- ✅ VERIFIED LIVE: https://adam-production-9618.up.railway.app/mcp/ returns 7 tools
+  and current July sprints through the claude.ai-style handshake (was stale April/May
+  Fly data). New deploy came up ~30s after the lockfile fix.
+- ✅ Docs updated to match: in-app wiki (02-architecture, 03-repo-map, 08-deployment-
+  and-ops, README — both web/content/wiki + docs/wiki mirrors), CLAUDE.md §4 + status +
+  quickstart + current-state + pointers, and an OUTDATED banner on
+  docs/architecture_and_logging.md (that doc predates Railway wholesale — needs a full
+  rewrite, flagged separate).
+- FOLLOW-UPS (Logan): (1) repoint the claude.ai connector to the Railway /mcp/ URL;
+  (2) delete the Fly app adam-pipeline-cm once the connector is flipped; (3) optional:
+  set a dedicated MCP_AUTH_TOKEN so the connector carries a purpose-built token, not the
+  admin PIPELINE_API_KEY; (4) full rewrite of architecture_and_logging.md; (5) in-app
+  wiki text goes live on the next adam-web deploy (source committed now).

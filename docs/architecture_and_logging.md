@@ -5,6 +5,24 @@
 
 This document answers the infosec question *"where is each part of the pipeline running, and where is its activity logged?"* It's intentionally a map, not a system design — code and infrastructure both evolve and this doc is the index.
 
+> ⚠️ **OUTDATED (as of 2026-07-23) — pending a full rewrite.** This doc predates the
+> Railway migration and describes a Fly.io/AWS architecture that no longer matches
+> reality. Corrections that supersede everything below:
+> - **Everything runs on Railway** (project `angelic-liberation`, service `adam` for the
+>   backend + `adam-web` for the frontend + Railway Postgres). There is no Fly.io host
+>   and no "soon AWS" — that migration path was dropped.
+> - **The MCP is a connector mounted inside the Railway web app at `/mcp`** (canonical
+>   `https://adam-production-9618.up.railway.app/mcp/`), reading the same live
+>   `/data/runs` volume. The standalone Fly server (`adam-pipeline-cm`) is retired.
+> - Sprint state lives on Railway's volume (`/data/runs`); usage/reliability/spend/
+>   audit data lives in Railway Postgres, surfaced at `/admin/*`.
+> - Secrets are Railway service variables (`ANTHROPIC_API_KEY`, `GEMINI_API_KEY`,
+>   `PIPELINE_API_KEY`, etc.), not Fly secrets.
+>
+> **Current source of truth:** `CLAUDE.md` §4 (MCP) + the in-app wiki
+> (`web/content/wiki/`, esp. `02-architecture`, `08-deployment-and-ops`). Read those,
+> not the Fly/AWS detail below, until this doc is rewritten.
+
 ---
 
 ## 1. End-to-end flow

@@ -35,7 +35,7 @@ flowchart LR
 | Admin backend (`/admin`) | ✅ Reliability dashboard (clean-run % + incidents), Issues→Learnings loop, Roles — live July 2026 |
 | Per-ad-type copy rules | ✅ Adrie's 24-entry Ad Type Style Guide enforced in code (`configs/ad_type_style_guide.json`) |
 | Prospecting / Retargeting | ✅ Differentiated copy per audience; "both" = two feed-copy sets sharing one creative |
-| MCP server (`mcp_server/`) | 🟡 Exists (Fly config in repo); superseded by the web app for day-to-day use |
+| MCP connector (`mcp_server/`) | ✅ Mounted in the web app at `/mcp` — live claude.ai connector reading the current `runs/` (replaced the stale standalone Fly server) |
 | Production hardening (LLM Gateway, OAuth, audit) | ⏳ Pending — owned by Upwork eng |
 
 > ✅ **Verified (2026-06-29):** copy-gen produces real, unique copy on the live Railway key — a 5-style test

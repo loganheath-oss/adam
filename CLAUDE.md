@@ -2,7 +2,7 @@
 
 **Purpose:** AI-assisted creative production for Upwork's Paid Acquisition team. Takes a brief, produces ad copy + assembled static creatives across multiple sizes and visual styles. Replaces manual concepting and design assembly for batch ad production.
 
-**Status:** Alpha. Local pipeline runs end-to-end; MCP server is hosted on Fly; Figma plugin assembles final creatives. Architectural direction is shifting toward Replit as the user-facing platform (see §10).
+**Status:** Alpha. Web app, pipeline, and the MCP connector all run on **Railway** (deployed from `loganheath-oss/adam`); the Figma plugin assembles final creatives. (The earlier Replit direction in §10 is retired — Railway is the platform.)
 
 **Owner during build:** Logan Heath (CM). Day-to-day collaborators: Adrie Etherington (creative lead, copy), Brandon Morayo (motion/graphic, Figma templates and library), Bree (design producer). Architectural sponsor inside Upwork: Leon Zhao.
 
@@ -28,7 +28,7 @@ upwork-creative-pipeline/
 ├── mcp_server/
 │   ├── server.py                 7-tool MCP server (stdio + Streamable HTTP)
 │   ├── Dockerfile
-│   └── fly.toml                  App: adam-pipeline-cm
+│   └── fly.toml                  Retired standalone Fly host (MCP now mounted in the web app)
 ├── plugin/                       Figma plugin (Brandon's assembly UI)
 ├── order-form/                   HTML order forms (local + hosted)
 ├── configs/
@@ -65,8 +65,8 @@ python3 pipeline/run_pipeline.py --csv path/to/order.csv
 # 4. Run the MCP server locally (stdio, for Claude Code)
 python3 mcp_server/server.py
 
-# 5. Deploy MCP server to Fly (only when changes need to land in claude.ai connector)
-fly deploy --config mcp_server/fly.toml --dockerfile mcp_server/Dockerfile --remote-only
+# 5. The MCP connector is mounted in the web app at /mcp — it ships WITH the backend.
+#    Push to main → Railway redeploys and the connector updates. No separate deploy.
 ```
 
 Required env vars (`.env`): `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `FIGMA_ACCESS_TOKEN`, `GOOGLE_SERVICE_ACCOUNT_JSON`. See `.env.example` for the full list.
@@ -101,21 +101,21 @@ For where each piece runs, what's logged, and how secrets are managed, see `docs
 
 ---
 
-## 4. MCP server
+## 4. MCP connector
 
-Live at `https://adam-pipeline-cm.fly.dev/mcp` (no trailing slash; `/mcp/` triggers a 307 that drops POST bodies).
+Mounted **inside the Railway web app** at `/mcp` — canonical `https://adam-production-9618.up.railway.app/mcp/` (trailing slash; bare `/mcp` 307-redirects to it, preserving POST + query). `main.py` loads the FastMCP instance from `mcp_server/server.py` by path, mounts `mcp.streamable_http_app()` at `/mcp`, and runs its session manager inside the app lifespan — so the connector reads the **same live `/data/runs` volume + env** as the web app.
 
 **Tools exposed:** `list_sprints`, `get_sprint`, `get_copy_concepts`, `get_image_prompts`, `get_manifest`, `get_generation_log`, `approve_gate`.
 
-**Transports:** stdio (Claude Code, default) and Streamable HTTP (`MCP_TRANSPORT=http`, used on Fly).
+**Transports:** stdio (Claude Code, default — `python3 mcp_server/server.py`) and Streamable HTTP (mounted in the web app on Railway; `MCP_TRANSPORT=http` still runs `server.py` standalone for local HTTP testing).
 
-**Auth:** bearer token via query param (`?auth=<token>`). Anthropic's connector form only supports OAuth or no-auth, so we bake the token into the URL and treat the URL as the secret. Pre-production hardening is real OAuth.
+**Auth:** `?auth=<token>` query param or `Authorization: Bearer <token>`, checked against `MCP_AUTH_TOKEN` (falls back to `PIPELINE_API_KEY` when unset). Anthropic's connector form only supports OAuth or no-auth, so we bake the token into the URL and treat the URL as the secret. Pre-production hardening is real OAuth (and a dedicated `MCP_AUTH_TOKEN` so the admin key isn't in the URL).
 
-**Hosting:** Fly.io account `logan.heath@cm.studio` (CM-billed). Single machine (`fly scale count 1`) because session state is in-memory. App name `adam-pipeline-cm`.
+**Hosting:** Railway service `adam` (same container as the web app). The old standalone Fly server (`adam-pipeline-cm`, `mcp_server/fly.toml`, CM-billed) is **retired** — it served a `runs/` copy baked into its image, which is exactly why it went stale.
 
-**Connector registration:** today the connector is registered in **Logan's personal Claude Max account**, not Upwork's Enterprise org. Upwork is on Anthropic Enterprise (which permits custom connectors), but Logan's role in the org doesn't have permission to add connectors — the button is grayed out. Org-wide registration is a follow-up requiring escalation.
+**Connector registration:** the connector is registered in **Logan's personal Claude Max account**, not Upwork's Enterprise org. Upwork is on Anthropic Enterprise (which permits custom connectors), but Logan's role in the org doesn't have permission to add connectors — the button is grayed out. Org-wide registration is a follow-up requiring escalation.
 
-**`runs/` is baked into the Docker image.** Sprints created locally won't appear on the deployed server until you redeploy. Long-term fix is moving `runs/` to S3 / a database.
+**Live data, no redeploy.** The connector reads `/data/runs` (Railway's persistent volume) directly, so sprints appear immediately — no image rebuild. This replaced the old Fly server's baked-in `runs/`, the root cause of its stale data.
 
 For details on how each tool is wired up: read `mcp_server/server.py`. For a complete inventory of where the deployed server's secrets and state live: `docs/architecture_and_logging.md` §2.
 
@@ -191,7 +191,7 @@ Decisions that affect how to read the code or extend it. Older decisions move do
 
 **Working:**
 - Local pipeline runs end-to-end with `python3 pipeline/run_pipeline.py --csv` or `--test`
-- MCP server live on Fly with all 7 tools functional
+- MCP connector mounted in the Railway backend at `/mcp` — all 7 tools live, reading the current `runs/`
 - Figma plugin assembles for the 3 confirmed templates (Lifestyle Photo, Photo with Text, Quote)
 - Adrie can drive gates from her Claude Project
 - Brandon's tagged brand library lookup in Figma is operational
@@ -253,7 +253,7 @@ The MCP server + pipeline can stay portable Python; the orchestration brain (Cla
 
 ## 12. Pointers
 
-- **Live MCP server:** https://adam-pipeline-cm.fly.dev (health: `/healthz`)
+- **Live MCP connector:** https://adam-production-9618.up.railway.app/mcp/ (mounted in the web app; auth via `?auth=<token>`)
 - **Figma file:** `DoDwumxELkuAuKKSP5p00e` (Paid Acquisition 2026)
 - **Drive folders** (IDs in `configs/upwork_config.json`):
   - Brand: `1Jn42lIOVAir9QU-PAMGnDmO8gMsz6BGA`

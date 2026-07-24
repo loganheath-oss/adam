@@ -10,7 +10,7 @@ How the pieces fit together, end to end. For *where the files are*, see [Repo ma
 | 2 | **Pipeline** | `pipeline/run_pipeline.py` | Python (local or in the web app) | The brain: copy-gen → imagery → manifest, gated in 6 stages |
 | 3 | **In-app chat** | `agent/orchestrator.py` | Railway (part of the web app) | Claude tool-use loop over sprints + learnings — "ask ADAM anything" |
 | 4 | **Figma plugin** | `plugin/` | Figma desktop (manual) | Clones templates and fills copy/images into named layers |
-| 5 | **MCP server** | `mcp_server/` | Fly config in repo (historical) | Exposes sprint data as MCP tools to claude.ai; superseded by the web app |
+| 5 | **MCP connector** | `mcp_server/` | Mounted in the Railway web app at `/mcp` | Exposes the 7 pipeline tools to claude.ai as a connector, reading the live `runs` dir (replaced the old standalone Fly server) |
 
 > **Source of truth for pipeline logic is `pipeline/run_pipeline.py`.** The numbered stage files
 > (`00_intake.py` … `06_deliver.py`) are an older AWS-bound scaffold that lags behind it.

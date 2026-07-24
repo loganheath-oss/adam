@@ -50,7 +50,7 @@ adam/
 ├── learnings.md             ✅ Institutional memory the chat reads every session (/learnings page)
 ├── CLAUDE.md                🟡 Original master spec — decisions/constraints still good; status section is stale
 ├── README.md                🟡 One-liner repo readme
-├── mcp_server/              🟡 MCP server (server.py) + Fly config — superseded by the web app for daily use
+├── mcp_server/              ✅ MCP tools (server.py) — mounted into the web app at /mcp (live claude.ai connector); fly.toml = retired standalone host
 ├── scripts/                 🟡 git-credential + post-merge hooks
 ├── sync_from_github.sh      🟡 Sync helper · sync_log.jsonl is its log
 ├── replit-poc/              🗄️ Retired Replit proof-of-concept
