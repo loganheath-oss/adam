@@ -636,3 +636,28 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   "different every time" = model varies flat vs nested). FIXED with _flatten_audience() applied at
   all 3 read sites. Verified against her real run a660373837cd: 12/12 empty-body concepts recover.
   FOLLOW-UP: also tighten the prompt so the model stops nesting under "feed" (source fix).
+
+## 2026-07-27 (cont.) — Copy-CRAFT rewrite + Sonnet 5 config decision
+- CONTEXT: Logan flagged that "Hire in 48h" is weak ad copy regardless of metrics. Fill/
+  completeness are table stakes; the headlines had no craft. Root cause: the prompt is
+  ~40k chars of compliance/legal with almost no push for craft, so the model played it
+  safe and literal, restating the brief instead of selling it.
+- FIX 1 — CRAFT BAR: added a craft directive at the TOP of the copy prompt (before the
+  compliance wall): interpret don't restate, every headline needs a hook, distinct angle
+  per concept, flat-vs-sharp exemplars (incl. "Hire in 48h" as an anti-example). Dramatic
+  lift, validated across all 24 styles ("The role you've been stuck on? Filled", "Skip the
+  bad-hire tax", "Finally automated the thing I kept putting off").
+- FIX 2 — MODEL/THINKING DECISION (data-driven, 3-way A/B on all 24 styles):
+  4.6 = $4.69, 23/24 clean, more varied headlines. S5 thinking-ON = $7.00. S5 thinking-OFF
+  = $2.53 (CHEAPEST + 24/24 clean). Thinking adds ~3x cost with NO copy-quality gain once
+  the craft prompt is in place. DECISION: Sonnet 5 + thinking OFF (ADAM_COPY_THINKING=off
+  default) + craft prompt. Toggle env-overridable per call.
+- FIX 3 — CASING: _to_sentence_case was lowercasing proper nouns ("friday"). Refs prompt
+  fix got ~70%; added a DETERMINISTIC backstop (_fix_proper_nouns / _fix_concept_proper_nouns)
+  that re-capitalizes days + Upwork AFTER sentence-casing. Verified 0/18 lowercase days.
+- BILLING NOTE: heavy test-run day drained the Anthropic key mid-testing (400 "credit
+  balance too low"); Logan topped it up. Be economical with test spend.
+- FOLLOW-UPS: "by Friday" over-used across styles (partly the narrow test brief — a varied
+  brief spreads it out; maybe a prompt nudge); Sticky Note 12-char title cap forces fragments
+  ("Work…") — Adrie/Brandon design call; structured-output rebuild (robustness, step 3);
+  chat agent still on 4.6 (ADAM_CHAT_MODEL).

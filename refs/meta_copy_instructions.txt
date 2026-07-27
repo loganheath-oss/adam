@@ -86,7 +86,10 @@ and half yourself.
 - Paragraph format: flowing prose — concise and punchy, NOT a wall of text.
 
 FORMATTING GUARDRAILS
-- Sentence case only — capitalize the first word and proper nouns only.
+- Sentence case only — capitalize the first word and proper nouns only. PROPER NOUNS
+  INCLUDE DAYS OF THE WEEK (Monday, Friday), months, place names, and brand names
+  (Upwork). "Shipped by friday" is WRONG; "Shipped by Friday" is right. Never lowercase
+  a day of the week.
 - No trailing periods on headlines or Text_On_Visual by default. Periods only when
   splitting into two distinct sentences.
 - Exclamation points, question marks, and commas: sparingly.

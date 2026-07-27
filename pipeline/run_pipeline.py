@@ -56,6 +56,51 @@ RUNS_DIR.mkdir(parents=True, exist_ok=True)
 # Copy-generation model. Centralized + env-overridable so it can be swapped without a
 # code change (set ADAM_COPY_MODEL on the service). Default is Sonnet 5 (Logan 2026-07-27).
 _COPY_MODEL = os.environ.get("ADAM_COPY_MODEL", "claude-sonnet-5")
+# Sonnet 5 auto-thinks, but testing showed thinking adds ~3x cost with NO copy-quality
+# gain once the craft prompt is in place (Logan 2026-07-27), so default it OFF. Set
+# ADAM_COPY_THINKING=on to re-enable. Only affects models that support thinking.
+_COPY_THINKING = os.environ.get("ADAM_COPY_THINKING", "off")
+
+
+def _thinking_params():
+    return {} if _COPY_THINKING != "off" else {"thinking": {"type": "disabled"}}
+
+
+# Craft directive — placed FIRST in the copy prompt (before the 20k-char compliance wall)
+# so the model reads "write something compelling" before it reads "obey these 40 rules."
+# Fixes flat, literal, brief-echoing headlines like "Hire in 48h" (Logan 2026-07-27).
+_CRAFT_BAR = """===== THE CRAFT BAR (READ FIRST — this is what separates a shippable ad from filler) =====
+You are a senior paid-social copywriter, not a form-filler. The headline and the on-image line
+ARE the ad. If they are flat, the ad fails no matter how correct everything else is. Correct,
+on-brief, and within the caps is the FLOOR, not the goal.
+
+RULE 1 — Interpret the brief, do not restate it. The brief is the idea; your job is to make
+someone STOP scrolling and feel something. A headline that just repeats what the brief said
+(brief: "hire AI talent in 48 hours" -> headline: "Hire in 48h") is a failure. Say the thing
+the brief implies but does not say.
+
+RULE 2 — Every headline must earn attention with a HOOK: tension, a sharp specific, curiosity,
+a reframe, social proof, or a vivid outcome. Never a bare instruction or a category label.
+
+RULE 3 — Distinct angles. Across the concepts you generate, no two headlines may lean on the
+same idea. Rotate deliberately: pain, aspiration, curiosity, contrast, proof, specificity. If
+two of your headlines could swap places and no one would notice, rewrite one.
+
+RULE 4 — Write it like an ad, not a text message. No abbreviations in a headline ("48 hours",
+never "48h"). No filler. Cut every word that is not pulling weight. Sentence case, but proper
+nouns STAY capitalized — "Monday"/"Friday"/"Upwork", never "monday"/"friday".
+
+FLAT — never write like this (literal, generic, interchangeable):
+  "Hire in 48h" | "Hire AI-skilled talent fast" | "Hired in 48 hours" | "Find talent today" | "AI talent, fast"
+SHARP — this is the bar (hook-driven, specific, each a different angle):
+  "The specialist you need is already on Upwork"
+  "Skip the three-month hiring slog"
+  "Your competitor already hired theirs"
+  "From job post to shipped by Friday"
+  "Stop scrolling resumes. Start shipping work."
+  "One specialist beats a stack of maybes"
+
+All of this operates WITHIN the Legal blocklist below, which still wins over everything."""
 
 
 def _response_text(rj):
@@ -67,6 +112,51 @@ def _response_text(rj):
         if _b.get("type") == "text":
             return _b.get("text", "")
     return ""
+
+
+_DAY_RE = re.compile(r"\b(mon|tues|wednes|thurs|fri|satur|sun)day\b", re.IGNORECASE)
+
+
+def _fix_proper_nouns(text):
+    """Deterministic backstop: capitalize days of the week and 'Upwork', which the model
+    lowercases under the sentence-case rule (prompting only gets ~70% there). Days and
+    Upwork are unambiguous proper nouns; months are skipped (May/March collide with words)."""
+    if not isinstance(text, str) or not text:
+        return text
+    text = _DAY_RE.sub(lambda m: m.group(0).capitalize(), text)
+    text = re.sub(r"\bupwork\b", "Upwork", text)
+    return text
+
+
+_PN_TEXT_FIELDS = ("creative_headline", "creative_subhead", "headline", "headline_short",
+                   "body_short", "body", "body_long", "description", "cta", "us_headline",
+                   "them_headline", "left_headline", "right_headline", "single_headline",
+                   "poll_question", "testimonial_quote", "chat_message", "chat_label",
+                   "button_text", "profile_left", "profile_right", "pie_center")
+_PN_LIST_FIELDS = ("left_bullets", "right_bullets", "single_bullets", "us_bullets",
+                   "them_bullets", "search_results", "pie_labels")
+
+
+def _fix_concept_proper_nouns(concept):
+    """Apply _fix_proper_nouns across a concept's copy fields (incl. nested targeting_copy)."""
+    for _f in _PN_TEXT_FIELDS:
+        if isinstance(concept.get(_f), str):
+            concept[_f] = _fix_proper_nouns(concept[_f])
+    for _f in _PN_LIST_FIELDS:
+        if isinstance(concept.get(_f), list):
+            concept[_f] = [_fix_proper_nouns(x) if isinstance(x, str) else x for x in concept[_f]]
+    _tc = concept.get("targeting_copy")
+    if isinstance(_tc, dict):
+        for _aud in _tc.values():
+            if not isinstance(_aud, dict):
+                continue
+            for _k, _v in _aud.items():
+                if isinstance(_v, str):
+                    _aud[_k] = _fix_proper_nouns(_v)
+                elif isinstance(_v, dict):
+                    for _k2, _v2 in _v.items():
+                        if isinstance(_v2, str):
+                            _v[_k2] = _fix_proper_nouns(_v2)
 
 
 def _flatten_audience(aud):
@@ -922,7 +1012,7 @@ def _fit_feed_fields(concepts, style, api_key, sprint_id=None):
             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
                      "content-type": "application/json"},
             json={"model": _COPY_MODEL, "max_tokens": 4000,
-                  "messages": [{"role": "user", "content": prompt}]},
+                  "messages": [{"role": "user", "content": prompt}], **_thinking_params()},
             timeout=90,
         )
         if resp.status_code == 200:
@@ -1414,6 +1504,8 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
 
     prompt = f"""You are writing paid acquisition ad copy for Upwork. Follow every brand rule below exactly.
 
+{_CRAFT_BAR}
+
 ===== AUTHORITATIVE COPY INSTRUCTIONS (BINDING — Adrie's spec) =====
 These govern voice, field limits, formatting, legal, and QA. Apply them to every
 field. The LEGAL "Terms to Avoid" blocklist is ABSOLUTE — it overrides the order
@@ -1515,7 +1607,8 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                     # with _salvage_json_array below so a truncated array still yields
                     # its complete concepts instead of zero.
                     "max_tokens": 8000,
-                    "messages": [{"role": "user", "content": prompt}]
+                    "messages": [{"role": "user", "content": prompt}],
+                    **_thinking_params(),
                 },
                 timeout=120
             )
@@ -1613,6 +1706,10 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                                     for _cf in _SENTENCE_CASE_FIELDS:
                                         if _aud.get(_cf):
                                             _aud[_cf] = _to_sentence_case(_aud[_cf])
+                        # Re-capitalize proper nouns (days of the week, Upwork) that
+                        # _to_sentence_case just lowercased. Deterministic, runs LAST so it
+                        # wins over sentence-casing. Fixes "friday" -> "Friday" (2026-07-27).
+                        _fix_concept_proper_nouns(concept)
                         _flags = _scan_banned_terms(concept)
                         if _flags:
                             concept["legal_flags"] = _flags
@@ -1718,7 +1815,7 @@ def _breakdown_brief(brief, order, api_key, sprint_id=None):
             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
                      "content-type": "application/json"},
             json={"model": _COPY_MODEL, "max_tokens": 1500,
-                  "messages": [{"role": "user", "content": prompt}]},
+                  "messages": [{"role": "user", "content": prompt}], **_thinking_params()},
             timeout=60,
         )
         if r.status_code != 200:
@@ -1950,7 +2047,7 @@ Return ONLY the JSON array. No other text."""
                 json={
                     "model": _COPY_MODEL,
                     "max_tokens": 2000,
-                    "messages": [{"role": "user", "content": review_prompt}]
+                    "messages": [{"role": "user", "content": review_prompt}], **_thinking_params()
                 },
                 timeout=120
             )
