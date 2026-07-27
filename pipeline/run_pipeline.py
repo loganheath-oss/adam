@@ -52,6 +52,38 @@ load_env()
 BASE_DIR = Path(__file__).parent.parent
 RUNS_DIR = Path(os.environ.get("RUNS_DIR", str(BASE_DIR / "runs")))
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Copy-generation model. Centralized + env-overridable so it can be swapped without a
+# code change (set ADAM_COPY_MODEL on the service). Default is Sonnet 5 (Logan 2026-07-27).
+_COPY_MODEL = os.environ.get("ADAM_COPY_MODEL", "claude-sonnet-5")
+
+
+def _response_text(rj):
+    """Extract the assistant's text from an Anthropic /v1/messages response, skipping
+    any non-text blocks. Sonnet 5 (and other thinking models) prepend a 'thinking' block,
+    so content[0] is NOT the text — reading content[0]['text'] blindly KeyErrors. Iterate
+    and return the first 'text' block. Safe for older models that return only a text block."""
+    for _b in (rj.get("content") or []):
+        if _b.get("type") == "text":
+            return _b.get("text", "")
+    return ""
+
+
+def _flatten_audience(aud):
+    """A P&R ('both') audience block from targeting_copy may put the Meta-feed fields
+    (headline, body_short, …) FLAT, or nest them under a 'feed' object — the model is
+    inconsistent, and when it nests, the flat body/headline fields come out EMPTY
+    (Adrie's "empty body copy" bug, found 2026-07-27). Return a flat view: promote any
+    nested 'feed' fields up, keeping existing flat fields. Robust to either structure."""
+    if not isinstance(aud, dict):
+        return {}
+    flat = dict(aud)
+    feed = aud.get("feed")
+    if isinstance(feed, dict):
+        for _k, _v in feed.items():
+            if not flat.get(_k):
+                flat[_k] = _v
+    return flat
 CONFIG_PATH = BASE_DIR / "configs" / "upwork_config.json"
 TEMPLATE_REGISTRY_PATH = BASE_DIR / "configs" / "template_registry.json"
 
@@ -889,16 +921,16 @@ def _fit_feed_fields(concepts, style, api_key, sprint_id=None):
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
                      "content-type": "application/json"},
-            json={"model": "claude-sonnet-4-6", "max_tokens": 4000,
+            json={"model": _COPY_MODEL, "max_tokens": 4000,
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=90,
         )
         if resp.status_code == 200:
             _rj = resp.json()
-            _add_token_usage(sprint_id, "claude-sonnet-4-6",
+            _add_token_usage(sprint_id, _COPY_MODEL,
                              _rj.get("usage", {}).get("input_tokens"),
                              _rj.get("usage", {}).get("output_tokens"))
-            text = _rj["content"][0]["text"].strip()
+            text = _response_text(_rj).strip()
             if "```" in text:
                 text = text.split("```json")[-1].split("```")[0] if "```json" in text                     else text.split("```")[1]
             try:
@@ -1475,7 +1507,7 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                     "content-type": "application/json"
                 },
                 json={
-                    "model": "claude-sonnet-4-6",
+                    "model": _COPY_MODEL,
                     # 6 concepts × many fields (incl. 300-char body_long + per-style
                     # extras like testimonial_quote) can exceed a tight cap and get
                     # truncated mid-JSON ("Unterminated string" → 0 concepts). Give
@@ -1490,9 +1522,9 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
 
             if response.status_code == 200:
                 _rj = response.json()
-                text = _rj["content"][0]["text"].strip()
+                text = _response_text(_rj).strip()
                 _u = _rj.get("usage", {})
-                _add_token_usage(sprint_id, "claude-sonnet-4-6",
+                _add_token_usage(sprint_id, _COPY_MODEL,
                                  _u.get("input_tokens"), _u.get("output_tokens"))
                 if "```json" in text:
                     text = text.split("```json")[1].split("```")[0]
@@ -1542,7 +1574,7 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         # expands targeting_copy into a Prospecting + a Retargeting row.
                         _tc = concept.get("targeting_copy")
                         if isinstance(_tc, dict) and _tc:
-                            _p = _tc.get("Prospecting") or _tc.get("prospecting") or {}
+                            _p = _flatten_audience(_tc.get("Prospecting") or _tc.get("prospecting") or {})
                             # Includes the on-image creative now that P&R generates it per
                             # audience — base mirrors Prospecting so single-audience readers work.
                             for _ff in ("creative_headline", "creative_subhead", "headline",
@@ -1685,7 +1717,7 @@ def _breakdown_brief(brief, order, api_key, sprint_id=None):
             "https://api.anthropic.com/v1/messages",
             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
                      "content-type": "application/json"},
-            json={"model": "claude-sonnet-4-6", "max_tokens": 1500,
+            json={"model": _COPY_MODEL, "max_tokens": 1500,
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=60,
         )
@@ -1693,9 +1725,9 @@ def _breakdown_brief(brief, order, api_key, sprint_id=None):
             print(f"    brief-breakdown: API {r.status_code} — falling back to raw brief")
             return None
         _rj = r.json()
-        text = _rj["content"][0]["text"].strip()
+        text = _response_text(_rj).strip()
         _u = _rj.get("usage", {})
-        _add_token_usage(sprint_id, "claude-sonnet-4-6", _u.get("input_tokens"), _u.get("output_tokens"))
+        _add_token_usage(sprint_id, _COPY_MODEL, _u.get("input_tokens"), _u.get("output_tokens"))
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0]
         elif "```" in text:
@@ -1916,7 +1948,7 @@ Return ONLY the JSON array. No other text."""
                     "content-type": "application/json"
                 },
                 json={
-                    "model": "claude-sonnet-4-6",
+                    "model": _COPY_MODEL,
                     "max_tokens": 2000,
                     "messages": [{"role": "user", "content": review_prompt}]
                 },
@@ -1925,9 +1957,9 @@ Return ONLY the JSON array. No other text."""
 
             if response.status_code == 200:
                 _rj = response.json()
-                text = _rj["content"][0]["text"].strip()
+                text = _response_text(_rj).strip()
                 _u = _rj.get("usage", {})
-                _add_token_usage(sprint_id, "claude-sonnet-4-6",
+                _add_token_usage(sprint_id, _COPY_MODEL,
                                  _u.get("input_tokens"), _u.get("output_tokens"))
                 if "```json" in text:
                     text = text.split("```json")[1].split("```")[0]
@@ -2851,7 +2883,7 @@ Respond with ONLY a JSON object:
                 "content-type": "application/json"
             },
             json={
-                "model": "claude-sonnet-4-6",
+                "model": _COPY_MODEL,
                 "max_tokens": 300,
                 "messages": [{
                     "role": "user",
@@ -2865,7 +2897,7 @@ Respond with ONLY a JSON object:
         )
 
         if response.status_code == 200:
-            text = response.json()["content"][0]["text"].strip()
+            text = _response_text(response.json()).strip()
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0]
             elif "```" in text:
@@ -3121,7 +3153,7 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
         _tc = concept.get("targeting_copy")
         if isinstance(_tc, dict) and _tc:
             for _tgt in ("Prospecting", "Retargeting"):
-                _v = _tc.get(_tgt) if isinstance(_tc.get(_tgt), dict) else {}
+                _v = _flatten_audience(_tc.get(_tgt))
                 _r = dict(base_row)
                 _r["Targeting"] = _tgt
                 # ON-IMAGE (Text_On_Visual) — unique per audience
@@ -3157,8 +3189,9 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
     for c in concepts:
         _tc = c.get("targeting_copy") if isinstance(c.get("targeting_copy"), dict) else {}
         def _aud(_key, _field):
-            # per-audience FEED field (case-insensitive keys), "" if not a Both concept
-            _v = _tc.get(_key) or _tc.get(_key.lower()) or {}
+            # per-audience FEED field (case-insensitive keys), "" if not a Both concept.
+            # Flattened so nested {feed:{…}} structures resolve too (Adrie 2026-07-27).
+            _v = _flatten_audience(_tc.get(_key) or _tc.get(_key.lower()) or {})
             return _v.get(_field, "") if isinstance(_v, dict) else ""
         review_rows.append({
             "Visual_Style": c.get("visual_style", ""),
@@ -3605,6 +3638,7 @@ def resume_gate_6(sprint_id):
 # ---- Burn-rate counter -------------------------------------------------------
 # Rough $/1M-token pricing for the estimate. Update when models/prices change.
 _TOKEN_PRICING = {
+    "claude-sonnet-5":   (3.0, 15.0),   # standard Sonnet tier — VERIFY vs actual Sonnet 5 pricing
     "claude-sonnet-4-6": (3.0, 15.0),
     "claude-opus-4-8":   (5.0, 25.0),
     "claude-haiku-4-5":  (1.0, 5.0),

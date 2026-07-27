@@ -869,7 +869,10 @@ async def run_agent_turn(
 
     while True:
         response = client.messages.create(
-            model="claude-sonnet-4-6",
+            # Chat agent stays on stable Sonnet 4.6 for now: Sonnet 5 auto-thinks, and
+            # thinking blocks in a tool-use loop need separate handling (untested here).
+            # Separate env var so copy-gen can be Sonnet 5 while chat stays put.
+            model=os.environ.get("ADAM_CHAT_MODEL", "claude-sonnet-4-6"),
             max_tokens=2048,
             system=system_prompt,
             tools=active_tools,

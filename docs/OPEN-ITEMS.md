@@ -618,3 +618,21 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
 - VERIFIED: 4 previously-100%-bulleted styles regenerated → each 3 bullet / 3 paragraph,
   total 12/12 (was 0 paragraph), $0.27. Both formats high quality. Resolves the earlier
   "bullet-format variety" follow-up.
+
+## 2026-07-27 — Sonnet 5 switch + TWO root-cause bug fixes
+- **Sonnet 5 (Logan/call request):** switched copy-gen to claude-sonnet-5 via env-overridable
+  _COPY_MODEL (ADAM_COPY_MODEL). BUT the naive swap BROKE copy gen: Sonnet 5 auto-thinks on
+  complex prompts and returns a THINKING block as content[0], while the pipeline read
+  content[0]["text"] -> KeyError -> all styles failed -> 0 concepts. FIXED with _response_text()
+  (extracts the text block regardless of leading thinking block); 5 call sites routed through it.
+  Re-verified: Sonnet 5 now generates all concepts. COST CAVEAT: thinking tokens make Sonnet 5
+  ~2-3x the copy cost of 4.6 ($0.78 vs ~$0.27 for 3 styles) — the call assumed same/lower; the
+  thinking changes real cost. Can disable thinking to cut it, at a possible quality tradeoff.
+  Chat agent pinned to Sonnet 4.6 (ADAM_CHAT_MODEL) — thinking+tool-loop interaction untested.
+- **Adrie's "empty body copy" bug (the active fire):** for P&R "both" runs the model
+  INCONSISTENTLY nests feed copy under targeting_copy.{aud}.feed.{field} instead of flat, and the
+  mirroring + manifest + review code only read the flat location -> empty body/headline fields.
+  Matched her report exactly (Tweet 0/6, Notification 2/6, Talent Profile 4/6, Poll/Sticky 6/6;
+  "different every time" = model varies flat vs nested). FIXED with _flatten_audience() applied at
+  all 3 read sites. Verified against her real run a660373837cd: 12/12 empty-body concepts recover.
+  FOLLOW-UP: also tighten the prompt so the model stops nesting under "feed" (source fix).
