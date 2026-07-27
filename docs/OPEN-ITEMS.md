@@ -661,3 +661,24 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   brief spreads it out; maybe a prompt nudge); Sticky Note 12-char title cap forces fragments
   ("Work…") — Adrie/Brandon design call; structured-output rebuild (robustness, step 3);
   chat agent still on 4.6 (ADAM_CHAT_MODEL).
+
+## 2026-07-27 (cont.) — Adrie's doc explored (browser) + varied-brief validation
+- EXPLORED her ADAM Test Brief gdoc (all 7 tabs) + her Sprint 9/10 reference copy deck via
+  the Work-profile browser. Everything captured to docs/adrie-materials/ (expected-output
+  spec, all 5 real key-messaging briefs, her brief TEMPLATE, her P&R definition + craft
+  exemplars, her open issues, her Aug/Sept timeline).
+- Her 7/27 failing run = a660373837cd = the nested-feed bug (FIXED earlier today). Her
+  "brief section is the culprit" hunch resolved.
+- NEW asks surfaced: (1) TOP 2 choices per audience per style (ADAM surfaces top 1) —
+  selection change; (2) order form ends at submit (requesters can't browse sprints);
+  (3) Browse thumbnails for Notification + Bespoke from Figma; (4) Chat Bubble = one
+  conversation / Tweet reads like a tweet (craft nudge); (5) her updated refs land FRI
+  (Prospecting/Retargeting examples 7-2026, SMB Copy Bank Phase 3) — re-ingest then.
+- ✅ VARIED-BRIEF TEST (her real Sprint 10 + Meet-the-Moment briefs, P&R both, 6 styles,
+  $1.66): craft HOLDS on real themes — Sprint10 output is outcome-led ("She built their
+  pipeline in weeks", "This site converts. Built in days"), MTM is cost/control-led ("Only
+  pay for work you need", "Nobody talks about how much a bad hire actually costs").
+  Time-hook repetition collapsed to 1/8 per run (toy-brief artifact CONFIRMED). P&R feed
+  36/36 present + 36/36 distinct on both runs (nested-feed fix verified on real briefs).
+  Chat Bubble now reads conversational ("Budget's tight this qtr") — matches her ask.
+  Sticky Note title still fragments ("Site…") — the 12-char cap decision stands (Adrie/design).
