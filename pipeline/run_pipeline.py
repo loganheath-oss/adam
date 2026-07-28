@@ -97,7 +97,7 @@ SHARP — this is the bar (hook-driven, specific, each a different angle):
   "Skip the three-month hiring slog"
   "Your competitor already hired theirs"
   "From job post to shipped by Friday"
-  "Stop scrolling resumes. Start shipping work."
+  "Stop scrolling profiles. Start shipping work."
   "One specialist beats a stack of maybes"
 
 All of this operates WITHIN the Legal blocklist below, which still wins over everything."""
@@ -1682,6 +1682,17 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                                         "headline_short", "body_short", "body_long", "description"):
                                 if not concept.get(_ff) and isinstance(_p, dict):
                                     concept[_ff] = _p.get(_ff, "")
+                            # Reciprocal backfill: the model sometimes emits an EMPTY audience
+                            # feed field ("body_short": ""). Fill it from the base concept so
+                            # every audience block is complete for review + manifest (found on
+                            # Notification, rerun v2 2026-07-27).
+                            for _aud_k, _aud_v in _tc.items():
+                                if not isinstance(_aud_v, dict):
+                                    continue
+                                for _ff in ("headline", "headline_short", "body_short",
+                                            "body_long", "description"):
+                                    if not _flatten_audience(_aud_v).get(_ff) and concept.get(_ff):
+                                        _aud_v[_ff] = concept[_ff]
                         # Emoji-bullet backstop (Adrie: bullets are emoji-led, never a
                         # plain "•"). Any leftover plain bullet gets a VARIED emoji from the
                         # rotating palette — not a stack of flat ✅ (Logan, 2026-07-23).
@@ -3303,13 +3314,15 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
                 # ON-IMAGE (Text_On_Visual) — unique per audience
                 if _v.get("creative_headline"):
                     _r["Headline_On_Creative"] = _v["creative_headline"]
-                _r["Subhead_On_Creative"] = _v.get("creative_subhead", _r.get("Subhead_On_Creative", ""))
-                # FEED copy — unique per audience
-                _r["Primary_Text_Short"] = _v.get("body_short", _r["Primary_Text_Short"])
-                _r["Primary_Text_Long"] = _v.get("body_long", _r["Primary_Text_Long"])
-                _r["Headline"] = _v.get("headline", _r["Headline"])
-                _r["Headline_Short"] = _v.get("headline_short", _r["Headline_Short"])
-                _r["Description"] = _v.get("description", _r["Description"])
+                _r["Subhead_On_Creative"] = _v.get("creative_subhead") or _r.get("Subhead_On_Creative", "")
+                # FEED copy — unique per audience. `or` (not .get default): the model
+                # sometimes emits an EMPTY-STRING audience field, and "key exists but
+                # blank" must fall back to the base copy, not overwrite it with "".
+                _r["Primary_Text_Short"] = _v.get("body_short") or _r["Primary_Text_Short"]
+                _r["Primary_Text_Long"] = _v.get("body_long") or _r["Primary_Text_Long"]
+                _r["Headline"] = _v.get("headline") or _r["Headline"]
+                _r["Headline_Short"] = _v.get("headline_short") or _r["Headline_Short"]
+                _r["Description"] = _v.get("description") or _r["Description"]
                 _sfx = _tgt[:4].lower()
                 _r["asset_id"] = f"{base_row['asset_id']}_{_sfx}"
                 _r["concept_tag"] = f"{base_row.get('concept_tag', '')}-{_sfx}"
