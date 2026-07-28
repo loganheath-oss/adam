@@ -804,3 +804,12 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
 - OPEN follow-through: remap plugin STYLE_ADTYPE_CONTAINERS / STYLE_TEMPLATE_PREFIXES
   primaries to the standard (legacy as fallbacks); share the doc + lint output with Elise
   for the August 17-template build.
+
+## 2026-07-28 (cont.) — Plugin remapped to the standard (verified names)
+- Extracted VERIFIED container/template names per style from both files and prepended
+  them as primaries in plugin STYLE_ADTYPE_CONTAINERS + STYLE_TEMPLATE_PREFIXES (legacy
+  kept as fallbacks). Lint: 46 findings → 16/21 styles fully ✅ on the standard.
+- RESIDUALS (= Elise's August list): Photo-with-Text / Meme / Social-Media-Profile /
+  Text-Only templates exist only in the KOTH file (copy into PA2026 or bless KOTH as the
+  assembly file); Us-vs-Them has NO Adtype container anywhere; Lifestyle + Pie missing a
+  4:5 frame in PA2026; 13 nested Image-Placeholders to rename per the leaf rule.

@@ -37,41 +37,41 @@ var LEGACY_LAYER_NAMES = {
 // Visual style → template name prefix(es). First match wins; subsequent
 // entries are fallbacks for styles whose primary template doesn't exist yet.
 var STYLE_TEMPLATE_PREFIXES = {
-  "lifestyle photo": ["Template_LifestylePhoto"],
-  "photo with text": ["Template_PhotoWithText"],
-  "testimonial":     ["Template_TestimonialC", "Template_TestimonialB", "Template_TestimonialA"],
+  "lifestyle photo": ["Template_Lifestyle-Photo-Full-Bleed", "Template_LifestylePhoto"],
+  "photo with text": ["Template_Photo-With-Text", "Template_PhotoWithText"],
+  "testimonial":     ["Template_Testimonial-Photo", "Template_TestimonialC", "Template_TestimonialB", "Template_TestimonialA"],
   // The REAL sticky templates shipped as Adtype_Sticky-Note_Single_{size} /
   // _Double_{size} (found 2026-07-27 — the old "Template_StickyNote" name never
   // existed, so assembly silently fell back to the Testimonial placeholder).
   "sticky note":     ["Adtype_Sticky-Note_Single", "Template_StickyNote", "Template_TestimonialA"],
-  "text with button": ["Template_TextWithButton"],
+  "text with button": ["Template_Text-with-Button", "Template_TextWithButton"],
   // Notification: variant frames are misnamed Template_ChatBubble_* in the
   // current file. Container scoping (STYLE_ADTYPE_CONTAINERS) keeps this from
   // colliding with the real Chat Bubble adtype.
   "notification":    ["Template_Notification", "Template_ChatBubble"],
-  "chat bubble":     ["Template_ChatBubble"],
+  "chat bubble":     ["Template_Chat-Bubble", "Template_ChatBubble"],
   // Text Only frames are named Template_TestimonialC_* (Brandon re-used the
   // TestimonialC base). Container scoping isolates them from Testimonial.
-  "text only":       ["Template_TestimonialC"],
+  "text only":       ["Template_Text-Only", "Template_TestimonialC"],
   // Split Screen has clean unique naming.
-  "split screen":    ["Template_SplitScreen"],
+  "split screen":    ["Template_Split-Screen", "Template_SplitScreen"],
   // Reminder lives in its own template — clean naming.
   "reminder":        ["Template_Reminder"],
   // Meme frames ALSO named Template_SplitScreen_* (Brandon reused the
   // SplitScreen skeleton). Container scoping (STYLE_ADTYPE_CONTAINERS)
   // keeps Meme from colliding with the real Split Screen adtype.
-  "meme":            ["Template_SplitScreen"],
+  "meme":            ["Template_Meme", "Template_SplitScreen"],
   // ── New styles (2026-06-22): rebuilt on reused base skeletons; the Adtype
   // container (STYLE_ADTYPE_CONTAINERS) disambiguates the shared prefixes.
-  "poll":            ["Template_SplitScreen"],
-  "us vs them":      ["Template_TestimonialC"],
-  "platform ui":     ["Template_ChatBubble"],
-  "search results":  ["Template_ChatBubble", "Template_TestimonialC"],
-  "device ui":       ["Template_TestimonialC"],
-  "hybrid":          ["Template_PhotoWithTextB", "Template_PhotoWithText"],
-  "pie chart":       ["Template_TestimonialC"],
+  "poll":            ["Template_Poll", "Template_SplitScreen"],
+  "us vs them":      ["Template_Us-Vs-Them", "Template_TestimonialC"],
+  "platform ui":     ["Template_Platform-UI", "Template_ChatBubble"],
+  "search results":  ["Adtype_Search-Results", "Template_ChatBubble", "Template_TestimonialC"],
+  "device ui":       ["Template_Device-UI", "Template_TestimonialC"],
+  "hybrid":          ["Template_Adtype_Hybrid", "Template_PhotoWithTextB", "Template_PhotoWithText"],
+  "pie chart":       ["Adtype_Pie-Chart", "Template_TestimonialC"],
   "social media profile": ["Template_TestimonialC"],
-  "talent profile":  ["Template_TestimonialC"],
+  "talent profile":  ["Template_Adtype_Talent-Profile", "Template_TestimonialC"],
   // Mockup is a multi-row notification mock on the Reminder base. Its 6 body
   // layers all share the name Notification_Headline_Text, so only the primary
   // one fills (via the reminder branch); per-row copy needs distinct layer
@@ -85,29 +85,29 @@ var STYLE_TEMPLATE_PREFIXES = {
 // (e.g., Brandon's Sticky Note template is named "Template_TestimonialA"
 // internally but lives inside "Adtype: Sticky Note").
 var STYLE_ADTYPE_CONTAINERS = {
-  "lifestyle photo": ["Adtype: Lifestyle Photo (Full Bleed)", "Adtype: Lifestyle Photo"],
-  "photo with text": ["Adtype: Photo with Text"],
-  "testimonial":     ["Adtype: Testimonial Variants", "Adtype: Testimonial"],
+  "lifestyle photo": ["Adtype_Lifestyle-Photo-Full-Bleed", "Adtype: Lifestyle Photo (Full Bleed)", "Adtype: Lifestyle Photo"],
+  "photo with text": ["Adtype_Photo-with-Text", "Adtype: Photo with Text"],
+  "testimonial":     ["Adtype_Testimonial", "Adtype: Testimonial Variants", "Adtype: Testimonial"],
   "sticky note":     ["Adtype_Sticky-Note", "Adtype: Sticky Note"],
-  "text with button": ["Adtype: Text with Button"],
-  "notification":    ["Adtype: Notification"],
-  "chat bubble":     ["Adtype: Chat Bubble"],
-  "text only":       ["Adtype: Text Only"],
-  "split screen":    ["Adtype: Split Screen"],
-  "reminder":        ["Adtype: Reminder"],
+  "text with button": ["Adtype_Text-with-Button", "Adtype: Text with Button"],
+  "notification":    ["Adtype_Notification", "Adtype: Notification"],
+  "chat bubble":     ["Adtype_Chat-Bubble", "Adtype: Chat Bubble"],
+  "text only":       ["Adtype_Text-Only", "Adtype: Text Only"],
+  "split screen":    ["Adtype_Split-Screen", "Adtype: Split Screen"],
+  "reminder":        ["Adtype_Reminder", "Adtype: Reminder"],
   "meme":            ["Adtype: Meme"],
   // New styles (2026-06-22) — container scoping is what isolates these, since
   // several share the Template_TestimonialC / Template_ChatBubble bases.
-  "poll":            ["Adtype: Poll"],
+  "poll":            ["Adtype_Poll", "Adtype: Poll"],
   "us vs them":      ["AdType: UsVsThem"],
-  "platform ui":     ["AdType_PlatformUI"],
-  "search results":  ["AdType_SearchResults"],
-  "device ui":       ["Upwork - Mobile Homepage"],
-  "hybrid":          ["AdType: Hybrid"],
-  "pie chart":       ["AdType: PieChart"],
-  "social media profile": ["AdType: SocialMediaProfile"],
-  "talent profile":  ["AdType: TalentProfile"],
-  "tweet / post mockup":          ["Adtype: Mockup"],
+  "platform ui":     ["Adtype_Platform-UI", "AdType_PlatformUI"],
+  "search results":  ["Adtype_Search-Results", "AdType_SearchResults"],
+  "device ui":       ["Adtype_Device-UI", "Upwork - Mobile Homepage"],
+  "hybrid":          ["Adtype_Hybrid", "AdType: Hybrid"],
+  "pie chart":       ["Adtype_Pie-Chart", "AdType: PieChart"],
+  "social media profile": ["Adtype_Social-Media-Profile", "AdType: SocialMediaProfile"],
+  "talent profile":  ["Adtype_Talent-Profile", "AdType: TalentProfile"],
+  "tweet / post mockup":          ["Adtype_Mockup", "Adtype: Mockup"],
 };
 
 // When a template is a COMPONENT_SET, prefer variants whose name contains one
