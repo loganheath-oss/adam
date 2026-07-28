@@ -244,6 +244,25 @@ def _headlines_near_dup(a, b):
     return (len(ta & tb) / max(1, len(ta | tb))) >= 0.6 or ta <= tb or tb <= ta
 
 
+def _enforce_conditional_caps(concepts, style):
+    """Style Guide caps that depend on the CTA decision (Split Screen: with-CTA headline
+    max 49 / without 65; Lifestyle: 80/100). The with/without split is only known after
+    _apply_cta_mix runs, so this enforces AFTER it: pick the applicable cap per concept
+    and smart-trim overflow. Deterministic backstop (flagged 2026-07-23, green-lit 7/28)."""
+    _k, entry = _guide_entry_for_style(style)
+    cc = (entry or {}).get("conditional_caps")
+    if not isinstance(cc, dict):
+        return
+    field = cc.get("field", "creative_headline")
+    for c in concepts:
+        cap = cc.get("without_cta") if c.get("no_cta") else cc.get("with_cta")
+        v = c.get(field)
+        if isinstance(cap, int) and isinstance(v, str) and len(v) > cap:
+            c[field] = _smart_trim(v, cap)
+            print(f"    conditional-cap fit: {style} {field} "
+                  f"{'no-CTA' if c.get('no_cta') else 'with-CTA'} {len(v)}>{cap} — trimmed")
+
+
 def _flatten_audience(aud):
     """A P&R ('both') audience block from targeting_copy may put the Meta-feed fields
     (headline, body_short, …) FLAT, or nest them under a 'feed' object — the model is
@@ -503,6 +522,30 @@ def stage_02_copy_gen(sprint_id, order, context):
         if copy_outputs.get("concepts"):
             print("  Phase 2: Self-review — scoring and ranking...")
             copy_outputs = _review_and_rank_copy(copy_outputs, order, context, api_key, sprint_id)
+
+    # Per-run copy-quality telemetry (regressions surface without anyone running tests):
+    # legal-flag rate, selection counts, bullet/paragraph split, near-dup pair rate.
+    _cs = copy_outputs.get("concepts", [])
+    if _cs:
+        _sel = [c for c in _cs if c.get("selected")]
+        _bl = [c.get("body_long") for c in _cs if c.get("body_long")]
+        _nb = sum(1 for t in _bl if re.search(r"\n\s*([^\w\s]|[-•*])", str(t)))
+        _dups = 0
+        _by_style = {}
+        for c in _sel:
+            _by_style.setdefault(c.get("visual_style"), []).append(
+                c.get("creative_headline") or c.get("headline") or "")
+        for _hls in _by_style.values():
+            _dups += sum(1 for i in range(len(_hls)) for j in range(i + 1, len(_hls))
+                         if _headlines_near_dup(_hls[i], _hls[j]))
+        copy_outputs["quality"] = {
+            "concepts": len(_cs), "selected": len(_sel),
+            "legal_flagged": sum(1 for c in _cs if c.get("legal_flags")),
+            "legal_flagged_selected": sum(1 for c in _sel if c.get("legal_flags")),
+            "bulleted_long": _nb, "paragraph_long": len(_bl) - _nb,
+            "near_dup_selected_pairs": _dups,
+        }
+        print(f"  Quality: {copy_outputs['quality']}")
 
     copy_path = run_dir / "copy_outputs.json"
     with open(copy_path, "w") as f:
@@ -1918,7 +1961,18 @@ def _breakdown_brief(brief, order, api_key, sprint_id=None):
             headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
                      "content-type": "application/json"},
             json={"model": _COPY_MODEL, "max_tokens": 1500,
-                  "messages": [{"role": "user", "content": prompt}], **_thinking_params()},
+                  "messages": [{"role": "user", "content": prompt}], **_thinking_params(),
+                  # Schema-enforced brief breakdown.
+                  "output_config": {"format": {"type": "json_schema", "schema": {
+                      "type": "object", "properties": {
+                          "theme": {"type": "string"},
+                          "copy_directives": {"type": "array", "items": {"type": "string"}},
+                          "design_directives": {"type": "array", "items": {"type": "string"}},
+                          "resources": {"type": "array", "items": {"type": "string"}},
+                          "has_high_touch": {"type": "boolean"}},
+                      "required": ["theme", "copy_directives", "design_directives",
+                                   "resources", "has_high_touch"],
+                      "additionalProperties": False}}}},
             timeout=60,
         )
         if r.status_code != 200:
@@ -2159,7 +2213,19 @@ Return ONLY the JSON array. No other text."""
                 json={
                     "model": _COPY_MODEL,
                     "max_tokens": 2000,
-                    "messages": [{"role": "user", "content": review_prompt}], **_thinking_params()
+                    "messages": [{"role": "user", "content": review_prompt}], **_thinking_params(),
+                    # Schema-enforced review response (same guarantee as generation).
+                    "output_config": {"format": {"type": "json_schema", "schema": {
+                        "type": "object", "properties": {"rankings": {"type": "array", "items": {
+                            "type": "object", "properties": {
+                                "original_index": {"type": "integer"},
+                                "rank": {"type": "integer"},
+                                "selected": {"type": "boolean"},
+                                "score": {"type": "number"},
+                                "review_notes": {"type": "string"}},
+                            "required": ["original_index", "rank", "selected", "score", "review_notes"],
+                            "additionalProperties": False}}},
+                        "required": ["rankings"], "additionalProperties": False}}},
                 },
                 timeout=120
             )
@@ -2176,6 +2242,9 @@ Return ONLY the JSON array. No other text."""
                     text = text.split("```")[1].split("```")[0]
 
                 rankings = json.loads(text.strip())
+                # Structured output wraps the array: {"rankings": [...]}
+                if isinstance(rankings, dict) and isinstance(rankings.get("rankings"), list):
+                    rankings = rankings["rankings"]
 
                 # Apply rankings back to the concepts
                 for ranking in rankings:
@@ -2301,6 +2370,7 @@ Return ONLY the JSON array. No other text."""
         # Style Guide CTA distribution (one-with/rest-without etc.) — applied to the
         # final selection regardless of which path (ranked or fallback) produced it.
         _apply_cta_mix(reviewed, style)
+        _enforce_conditional_caps(reviewed, style)
         return reviewed
 
     group_items = list(groups.items())

@@ -827,3 +827,16 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
 - Quality program 1-5 now COMPLETE: regression suite, Figma lint, brief guard, image cost
   tracking, naming convention + plugin remap, structured output. Background passes still
   open: wiki accuracy audit, agent honesty eval, review-call schema (same pattern, later).
+
+## 2026-07-28 (cont.) — "everything now" sweep
+- Conditional CTA-dependent caps ENFORCED (Split Screen 49/65, Lifestyle 80/100) —
+  machine-readable conditional_caps in the guide + _enforce_conditional_caps after
+  _apply_cta_mix. Unit-verified. (The last old flagged item.)
+- Review call + brief-breakdown now schema-enforced (same output_config pattern as
+  generation). Feed-fit + micro-rewrites stay legacy BY DESIGN (deterministic trim
+  fallback is their contract).
+- Per-run copy-quality telemetry in copy_outputs.json ("quality": concepts/selected/
+  legal_flagged(+selected)/bulleted vs paragraph/near-dup selected pairs) — printed in
+  the run log; regressions visible per sprint without running tests.
+- Ask ADAM chat → Sonnet 5 with thinking DISABLED (tool loop smoke-tested live: no
+  thinking blocks, clean two-round tool use). ADAM_CHAT_MODEL still overrides.
