@@ -703,3 +703,9 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   Notification = Template_Notification_1440x1440 (5310:337, Paid Acquisition 2026 file);
   Bespoke = the "52%" Gen-Z stat card (5310:5083) from the KOTH board SHE linked in her
   issue ("pull any unique design from our previous bespoke"). JSON-validated, deployed.
+- CORRECTION (Logan's catch): her doc embeds a SCREENSHOT of the intended Bespoke example
+  — "The 40% you forgot to budget for" flower/roots ad — right under the Figma link. My
+  text capture couldn't see embedded images (flagged limitation), and I picked a candidate
+  (52% card) instead of asking. Replaced: Bespoke tile now = the 40%-budget ad (node
+  5415:1605, found by text search). LESSON: when a doc pairs a link with an embedded image,
+  screenshot-check the image region before choosing on the author's behalf.
