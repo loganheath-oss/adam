@@ -754,3 +754,23 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   exemplar; vetted, salary ×1). Shipping copy protected by design (flagged never ships).
   Added a VOCAB TRAP line to the craft bar (resume→profiles/proposals, vetted→rated,
   salary→cost) to improve yield on future runs.
+
+## 2026-07-27 (late) — assembled-board defects: sticky "atrocious" + 4:5 wrong photo
+- STICKY ROOT CAUSES (Logan's boards): (1) the REAL sticky templates EXIST in Figma
+  (Adtype_Sticky-Note_Single/_Double, all 3 sizes, "Copy Rules V1 Complete") — the plugin
+  searched stale names ("Adtype: Sticky Note" / Template_StickyNote) and silently fell back
+  to the Testimonial placeholder; (2) BOTH board-mode and per-row mode filled the 12-char
+  trimmed headline stub ("Hired by…") into the note — board mode via legacy
+  fillStickyNoteCopy which duplicates it into two slots; (3) the manifest's REAL sticky
+  content (Single_Headline "Speed lives in the fit" + bullets + two-column comparison)
+  was never used. FIXED: template mapping updated to the real names; both assembly paths
+  now fill Copy_Headline←Single_Headline, Copy_Body←Single_Bullets, Copy_Headline-Left/
+  Right←Left/Right_Headline; legacy call is last-resort only.
+- 4:5 NOTIFICATION WRONG PHOTO: manifest pins ONE photo per concept across sizes
+  (verified), but Template_Notification_1440x1800 names BOTH the frame AND its child
+  rect "Image-Placeholder"; the plugin picked the LARGEST match (the frame), filled it
+  under the child's baked stock photo → every 4:5 showed the couch guy. FIXED: nested
+  placeholder matches now drop ancestors (leaf placeholder wins).
+- Logan action: re-run the plugin (Figma re-reads code.js on next run) — sticky + 4:5
+  fixes land together. Template naming conventions drift (Adtype:/Adtype_/AdType_) —
+  worth an Elise/design alignment note for August.

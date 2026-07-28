@@ -40,7 +40,10 @@ var STYLE_TEMPLATE_PREFIXES = {
   "lifestyle photo": ["Template_LifestylePhoto"],
   "photo with text": ["Template_PhotoWithText"],
   "testimonial":     ["Template_TestimonialC", "Template_TestimonialB", "Template_TestimonialA"],
-  "sticky note":     ["Template_StickyNote", "Template_TestimonialA"],
+  // The REAL sticky templates shipped as Adtype_Sticky-Note_Single_{size} /
+  // _Double_{size} (found 2026-07-27 — the old "Template_StickyNote" name never
+  // existed, so assembly silently fell back to the Testimonial placeholder).
+  "sticky note":     ["Adtype_Sticky-Note_Single", "Template_StickyNote", "Template_TestimonialA"],
   "text with button": ["Template_TextWithButton"],
   // Notification: variant frames are misnamed Template_ChatBubble_* in the
   // current file. Container scoping (STYLE_ADTYPE_CONTAINERS) keeps this from
@@ -85,7 +88,7 @@ var STYLE_ADTYPE_CONTAINERS = {
   "lifestyle photo": ["Adtype: Lifestyle Photo (Full Bleed)", "Adtype: Lifestyle Photo"],
   "photo with text": ["Adtype: Photo with Text"],
   "testimonial":     ["Adtype: Testimonial Variants", "Adtype: Testimonial"],
-  "sticky note":     ["Adtype: Sticky Note"],
+  "sticky note":     ["Adtype_Sticky-Note", "Adtype: Sticky Note"],
   "text with button": ["Adtype: Text with Button"],
   "notification":    ["Adtype: Notification"],
   "chat bubble":     ["Adtype: Chat Bubble"],
@@ -655,6 +658,23 @@ async function applyLibraryImageToClone(clone, libraryNodeId) {
   // Prefer a NAMED image placeholder (the intended photo slot) over the largest
   // layer that merely has an image fill — this stops the photo landing on a
   // decorative background when both exist (e.g. Poll's glimmer vs Image-Placeholder).
+  // When placeholders NEST (Notification 4:5: a FRAME named Image-Placeholder
+  // containing a RECTANGLE named Image-Placeholder), filling the parent paints
+  // UNDER the child's baked default photo — the ad ships the template's stock
+  // image. Keep only leaf placeholders: drop any that contain another match.
+  if (placeholders.length > 1) {
+    var phIds = {};
+    placeholders.forEach(function (p) { phIds[p.id] = true; });
+    placeholders = placeholders.filter(function (p) {
+      var containsAnother = false;
+      if (typeof p.findAll === "function") {
+        try {
+          containsAnother = p.findAll(function (d) { return phIds[d.id] && d.id !== p.id; }).length > 0;
+        } catch (e) { /* node types without findAll */ }
+      }
+      return !containsAnother;
+    });
+  }
   var pool, poolType;
   if (placeholders.length > 0) { pool = placeholders; poolType = "named image-placeholder"; }
   else { pool = withImageFill; poolType = "with-existing-image-fill"; }
@@ -1566,6 +1586,20 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
 
       // Sticky Note: also try to fill the right-side headline if we have a body
       if (key === "sticky note") {
+        // SINGLE-layout template (Adtype_Sticky-Note_Single_*): a title
+        // (Copy_Headline, max 26) + a bullet list (Copy_Body, max 112). Use the
+        // purpose-built Single_* copy — NOT the 12-char double-column headline
+        // stub ("Hired by…") that made assembled notes read as gibberish.
+        var singleHl = row.Single_Headline || row.single_headline || "";
+        var singleBullets = splitPipe(row.Single_Bullets || row.single_bullets);
+        if (singleHl) await setFirstTextByCandidates(clone, ["Copy_Headline"], singleHl);
+        if (singleBullets.length)
+          await setFirstTextByCandidates(clone, ["Copy_Body"], singleBullets.join("\n"));
+        // DOUBLE-layout template: real per-column headline layers.
+        var dl = row.Left_Headline || row.left_headline || "";
+        var dr = row.Right_Headline || row.right_headline || "";
+        if (dl) await setFirstTextByCandidates(clone, ["Copy_Headline-Left"], dl);
+        if (dr) await setFirstTextByCandidates(clone, ["Copy_Headline-Right"], dr);
         // Prefer the structured two-column copy (Left/Right headline + 2 bullets each).
         var lh = row.Left_Headline || row.left_headline || headlineText || "";
         var rh = row.Right_Headline || row.right_headline || "";
@@ -1853,7 +1887,28 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
           await setFirstTextByCandidates(styledClone, ["Copy_CTA", "cta_text", "CTA_Text", "CTA", "cta"], leadCta);
         }
         if (key === "sticky note") {
-          await fillStickyNoteCopy(styledClone, leadHeadline, leadPrimary, leadRow.Primary_Text_Long || leadPrimary);
+          // Use the REAL sticky copy from the manifest (Single_* for the single-note
+          // template; Left/Right_* for the double). The legacy fillStickyNoteCopy
+          // duplicated the 12-char headline stub into both slots ("Hired by…" twice —
+          // the atrocious boards of 2026-07-27). Legacy call kept only as last resort
+          // when the manifest predates the structured sticky fields.
+          var stHl = leadRow.Single_Headline || leadRow.single_headline || "";
+          var stBul = splitPipe(leadRow.Single_Bullets || leadRow.single_bullets);
+          var stDl = leadRow.Left_Headline || leadRow.left_headline || "";
+          var stDr = leadRow.Right_Headline || leadRow.right_headline || "";
+          if (stHl) await setFirstTextByCandidates(styledClone, ["Copy_Headline"], stHl);
+          if (stBul.length) await setFirstTextByCandidates(styledClone, ["Copy_Body"], stBul.join("\n"));
+          if (stDl) await setFirstTextByCandidates(styledClone, ["Copy_Headline-Left", "Left_Headline_Text"], stDl);
+          if (stDr) await setFirstTextByCandidates(styledClone, ["Copy_Headline-Right", "right_headline_text", "Right_Headline_Text"], stDr);
+          var stLb = splitPipe(leadRow.Left_Bullets || leadRow.left_bullets);
+          var stRb = splitPipe(leadRow.Right_Bullets || leadRow.right_bullets);
+          if (stLb[0]) await setFirstTextByCandidates(styledClone, ["Left_Bullet_Text1", "Left_Bullet_Text_1"], stLb[0]);
+          if (stLb[1]) await setFirstTextByCandidates(styledClone, ["Left_Bullet_Text2", "Left_Bullet_Text_2"], stLb[1]);
+          if (stRb[0]) await setFirstTextByCandidates(styledClone, ["Right_Bullet_Text1", "Right_Bullet_Text_1"], stRb[0]);
+          if (stRb[1]) await setFirstTextByCandidates(styledClone, ["Right_Bullet_Text2", "Right_Bullet_Text_2"], stRb[1]);
+          if (!stHl && !stBul.length && !stDl && !stDr) {
+            await fillStickyNoteCopy(styledClone, leadHeadline, leadPrimary, leadRow.Primary_Text_Long || leadPrimary);
+          }
         }
 
         // ── Per-style STRUCTURED copy (same fills as the styled_per_row path) ──
