@@ -100,7 +100,11 @@ SHARP — this is the bar (hook-driven, specific, each a different angle):
   "Stop scrolling profiles. Start shipping work."
   "One specialist beats a stack of maybes"
 
-All of this operates WITHIN the Legal blocklist below, which still wins over everything."""
+All of this operates WITHIN the Legal blocklist below, which still wins over everything.
+VOCAB TRAP — when writing "one expert beats many candidates" copy, do NOT reach for
+"resume/resumes" (restricted term — it costs the concept its shipping slot every time).
+Say "profiles", "proposals", "past work", or "maybes" instead. Same for "vetted"
+(say "rated", "reviewed", "proven") and "salary" (say "cost", "budget", "overhead")."""
 
 
 def _response_text(rj):

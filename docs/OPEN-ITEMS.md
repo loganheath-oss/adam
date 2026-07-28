@@ -739,3 +739,18 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   Issues page; cites this incident. (2) Gate-3 instruction updated — per-audience
   on-creative is the spec now ("shared on-creative" wording removed); a missing audience
   block = defect to flag.
+
+## 2026-07-27 (final) — Rerun v3 = ALL CLEAN; the sprint to show Adrie
+- v2 surfaced 2 defects, both fixed: (1) MY craft exemplar contained "resumes" (restricted
+  term) — model imitated it, legal flagged 5/6 Sticky concepts, selection came up short.
+  Exemplar reworded; legal system worked as designed. (2) empty-string audience fields
+  ("body_short": "") overwrote base copy downstream — manifest doubling now uses `or`
+  fallbacks + generation backfills empty audience fields from base.
+- **v3 = 2026-07-meta-83a1c40ebbd3 — ALL CLEAN ✅**: every style sel=2, 2 Prospecting +
+  2 Retargeting choices, on-creative + long/short headlines on all, 18b/18p long-body,
+  0 casing violations, all selected concepts legal-clean. $0.88. THIS is the "after" to
+  pair with her original a660373837cd.
+- Legal-flag yield note: 13/36 alternates flagged (resumes×11 — theme-driven, not the
+  exemplar; vetted, salary ×1). Shipping copy protected by design (flagged never ships).
+  Added a VOCAB TRAP line to the craft bar (resume→profiles/proposals, vetted→rated,
+  salary→cost) to improve yield on future runs.
