@@ -726,3 +726,16 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   sentence-casing; "it" deliberately excluded (pronoun false-positive). Unit-tested.
 - (minor, watch): Sticky Note selected 6/6 on the rerun — review fallback likely kept all;
   ≥2-choice spec still met. If it recurs, check the reviewer response parse for Sticky.
+
+## 2026-07-27 (cont.) — the agent's "by design, not a bug" answer (Adrie's question)
+- Her chat question ("why don't all ad types have on-creative copy?") was pointing at the
+  nested-feed bug. The agent's answer OPENED with "by design, not a bug" (false), then
+  self-contradicted lower down ("this is a generation gap"), and its style table answered
+  which styles SUPPORT on-creative copy rather than which of HER concepts actually had it.
+  It rationalized a real defect. She was right not to act on it.
+- FIXES: (1) DIAGNOSTIC HONESTY section added to the agent prompt — on missing/blank
+  output: inspect real data field-by-field first, never claim "by design" without an
+  explicit wiki/style-guide citation, call a probable defect a defect + point to the
+  Issues page; cites this incident. (2) Gate-3 instruction updated — per-audience
+  on-creative is the spec now ("shared on-creative" wording removed); a missing audience
+  block = defect to flag.
