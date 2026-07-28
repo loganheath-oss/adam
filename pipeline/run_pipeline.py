@@ -66,6 +66,57 @@ def _thinking_params():
     return {} if _COPY_THINKING != "off" else {"thinking": {"type": "disabled"}}
 
 
+# Fields whose values are LISTS of strings (bullets/labels); everything else is a string.
+_LIST_FIELDS = {"us_bullets", "them_bullets", "left_bullets", "right_bullets",
+                "single_bullets", "search_results", "pie_labels", "labels", "tags"}
+# Base feed fields every concept carries.
+_BASE_FIELDS = ("concept_tag", "creative_headline", "headline", "headline_short",
+                "body_short", "body_long", "description", "cta")
+
+
+def _concept_schema(style, is_both, qty):
+    """Per-style JSON schema for structured copy output (output_config.format).
+
+    The API guarantees the response matches this shape, which makes the whole class
+    of shape bugs impossible at the source: nested {feed:{…}} audiences, missing
+    headline fields, truncated JSON, empty-string-vs-missing drift, thinking-block
+    parses. additionalProperties=false everywhere is the teeth."""
+    def _prop(f):
+        if f in _LIST_FIELDS:
+            return {"type": "array", "items": {"type": "string"}}
+        return {"type": "string"}
+
+    props = {f: _prop(f) for f in _BASE_FIELDS}
+    required = list(_BASE_FIELDS)
+    if _style_uses_subhead(style):
+        props["creative_subhead"] = {"type": "string"}
+    # Style extras from the guide entry (poll_question, left_bullets, …).
+    _k, entry = _guide_entry_for_style(style)
+    for f in ((entry or {}).get("char_limits") or {}):
+        if f not in props and f not in ("creative_headline", "creative_subhead", "cta"):
+            props[f] = _prop(f)
+    if is_both:
+        aud_fields = ["creative_headline", "headline", "headline_short",
+                      "body_short", "body_long", "description"]
+        aud_props = {f: {"type": "string"} for f in aud_fields}
+        if _style_uses_subhead(style):
+            aud_props["creative_subhead"] = {"type": "string"}
+        aud = {"type": "object", "properties": aud_props,
+               "required": aud_fields, "additionalProperties": False}
+        props["targeting_copy"] = {"type": "object",
+                                   "properties": {"Prospecting": aud, "Retargeting": aud},
+                                   "required": ["Prospecting", "Retargeting"],
+                                   "additionalProperties": False}
+        required.append("targeting_copy")
+    concept = {"type": "object", "properties": props,
+               "required": required, "additionalProperties": False}
+    # NOTE: the API rejects minItems/maxItems > 1 on arrays — the concept COUNT stays
+    # prompt-enforced (as it always was); the schema enforces the SHAPE of each concept.
+    return {"type": "object",
+            "properties": {"concepts": {"type": "array", "items": concept}},
+            "required": ["concepts"], "additionalProperties": False}
+
+
 # Craft directive — placed FIRST in the copy prompt (before the 20k-char compliance wall)
 # so the model reads "write something compelling" before it reads "obey these 40 rules."
 # Fixes flat, literal, brief-echoing headlines like "Hire in 48h" (Logan 2026-07-27).
@@ -1642,6 +1693,10 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                     # its complete concepts instead of zero.
                     "max_tokens": 8000,
                     "messages": [{"role": "user", "content": prompt}],
+                    # STRUCTURED OUTPUT: the API enforces the per-style schema, so the
+                    # response is guaranteed-valid JSON in the declared shape (2026-07-28).
+                    "output_config": {"format": {"type": "json_schema",
+                                                 "schema": _concept_schema(style, _is_both, qty)}},
                     **_thinking_params(),
                 },
                 timeout=120
@@ -1661,12 +1716,15 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                 try:
                     parsed = json.loads(text.strip())
                 except json.JSONDecodeError as je:
-                    # Truncated/partial JSON — salvage complete concepts instead of
-                    # returning zero (which previously stalled the sprint / manifest).
+                    # Should be unreachable with structured output; kept as belt-and-
+                    # suspenders for older models / gateway paths without output_config.
                     parsed = _salvage_json_array(text)
                     if not parsed:
                         raise je
                     print(f"    {style}: recovered {len(parsed)} concept(s) from truncated JSON")
+                # Structured output wraps the array: {"concepts": [...]}
+                if isinstance(parsed, dict) and isinstance(parsed.get("concepts"), list):
+                    parsed = parsed["concepts"]
                 if isinstance(parsed, list):
                     for j, concept in enumerate(parsed):
                         concept["concept_id"] = f"concept_{i}_{style.lower().replace(' ', '_')}_{seq}_{j}"

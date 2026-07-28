@@ -813,3 +813,17 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   Text-Only templates exist only in the KOTH file (copy into PA2026 or bless KOTH as the
   assembly file); Us-vs-Them has NO Adtype container anywhere; Lifestyle + Pie missing a
   4:5 frame in PA2026; 13 nested Image-Placeholders to rename per the leaf rule.
+
+## 2026-07-28 — #18 STRUCTURED-OUTPUT REBUILD SHIPPED (quality program complete)
+- Copy generation now sends a per-style JSON schema via output_config.format — the API
+  GUARANTEES the response shape: required audience blocks (nested-feed bug now
+  structurally impossible), required headline fields, typed bullet arrays,
+  additionalProperties=false throughout. Legacy parse/salvage kept only as fallback for
+  gateway paths without structured output. Schema built dynamically from the style guide
+  (_concept_schema): base fields + per-style extras + subhead only where the style uses it.
+- THE SUITE EARNED ITS KEEP: first live pass caught a total failure pre-deploy ($0.0056 —
+  API rejects minItems>1 on arrays); fixed (count stays prompt-enforced) and re-verified.
+- VERIFIED: offline green; live 6-style regression ALL GREEN on the schema engine ($0.91).
+- Quality program 1-5 now COMPLETE: regression suite, Figma lint, brief guard, image cost
+  tracking, naming convention + plugin remap, structured output. Background passes still
+  open: wiki accuracy audit, agent honesty eval, review-call schema (same pattern, later).
