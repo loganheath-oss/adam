@@ -15,7 +15,7 @@ flowchart LR
 1. **Submit an order** in the order form: platform, format, quantity, **visual styles**, **resolutions**,
    and a **brief** (the brief is the highest-priority instruction — it overrides standing refs).
 2. **Gate 2 — confirm order + refs.** Last checkpoint before any API spend.
-3. **Gate 3 — review copy — PICK YOUR WINNERS.** Claude generated 6 concepts/style and pre-picked its top 3, but the human chooses what ships: open the sprint's **Copy review** page, toggle concepts on/off, **Save picks**, then approve the gate. **Only selected concepts get images, manifest rows, and Figma boards** — nothing reaches Figma that wasn't chosen here.
+3. **Gate 3 — review copy — PICK YOUR WINNERS.** Claude generated 6 concepts/style and pre-picked its top picks (min 2 per style, quantity-driven, diversity-filtered), but the human chooses what ships: open the sprint's **Copy review** page, toggle concepts on/off, **Save picks**, then approve the gate. **Only selected concepts get images, manifest rows, and Figma boards** — nothing reaches Figma that wasn't chosen here.
 4. **Gate 4 — scan image prompts** (skipped/thin for library-fed and skip-image styles).
 5. **Gate 5 — review images + manifest.**
 6. **Gate 6 — final QA**, then deliver.
@@ -71,6 +71,5 @@ Tip: a batch of **skip-image styles** (Pie Chart, Us vs Them, Sticky Note, Poll,
 quota — the fastest way to exercise copy-gen end to end.
 
 ## Before you can get *unique* output
-On the **live (Railway)** tool, copy-gen is unblocked (model fixed, key clears billing) — pending one
-verification sprint. For **local** runs you need your *own* funded Anthropic key; with an empty key every ad assembles with
+On the **live (Railway)** tool, copy-gen is verified live (2026-06-29; full gate flow incl. Figma manifest verified 2026-07-27). For **local** runs you need your *own* funded Anthropic key; with an empty key every ad assembles with
 template placeholder text. See [Troubleshooting](11-troubleshooting.md).

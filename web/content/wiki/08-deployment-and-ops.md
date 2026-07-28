@@ -60,3 +60,7 @@ The app needs these (set in **Railway env vars**, mirrored locally in `.env`):
 - Move sprint state off ephemeral storage to a DB / blob.
 
 See [Constraints](10-constraints.md) for the hard rules behind these.
+
+## Test gates (run before deploying)
+- `python3 tests/copy_regression.py` — free offline checks; add `--live` (via `railway run --service adam --`) for a real copy run asserting the full output spec.
+- `railway run --service adam -- python3 tests/figma_template_lint.py` — diffs the Figma file against the plugin's template/layer expectations (naming drift, nested Image-Placeholder).

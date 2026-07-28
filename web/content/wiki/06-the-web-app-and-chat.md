@@ -47,13 +47,13 @@ and learnings, and (with approval) edit orders and approve gates. The tools it h
 It reads [`learnings.md`](../../learnings.md) every session, so durable guidance there shapes its answers.
 
 ## Making the wiki answerable (the handoff goal)
-Today the chat is **sprint-aware** but not **wiki-aware** — it can tell you about *runs*, not about *how
+Today the chat is **sprint-aware AND wiki-aware** (`search_wiki` + `get_wiki` shipped) — it can tell you about *runs*, not about *how
 ADAM is built*. To deliver "ask the tool any question and get an answer," wire the wiki in as a knowledge
 source. Options, smallest → biggest:
 
 1. **Seed learnings** — add a pointer block to `learnings.md` summarizing the wiki + linking pages. Cheapest;
    immediately improves answers. *(Good first step.)*
-2. **Add a `get_wiki` / `search_wiki` tool** to `orchestrator.py` that reads `docs/wiki/*.md` so the chat
+2. **(DONE — `get_wiki` and `search_wiki` are live tools.)
    can quote exact pages. *(Recommended — makes answers grounded and citable.)*
 3. **Retrieval** over the wiki + refs for larger corpora later.
 

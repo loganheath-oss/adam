@@ -840,3 +840,10 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   the run log; regressions visible per sprint without running tests.
 - Ask ADAM chat → Sonnet 5 with thinking DISABLED (tool loop smoke-tested live: no
   thinking blocks, clean two-round tool use). ADAM_CHAT_MODEL still overrides.
+
+## 2026-07-28 (cont.) — Wiki accuracy audit APPLIED (quality program truly complete)
+- Agent-audited all 16 wiki pages vs code; ~23 stale facts corrected: model refs → sonnet-5
+  everywhere; top-3 → min-2 diverse selection; P&R = distinct creative per audience; chat IS
+  wiki-aware (15 tools); glossary MCP = live; 24 order-form styles vs 21 plugin mappings
+  reconciled; stale "pending verification"/"known blocker" framing resolved; test-gates +
+  naming-standard sections added to 08/16/09. Mirror synced; adam-web deployed.

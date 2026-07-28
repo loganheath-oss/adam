@@ -7,7 +7,7 @@ flowchart TD
   Q["Ads show placeholder / Lorem Ipsum?"] --> A{"Did copy-gen run?"}
   A -->|no| K{"Anthropic API error?"}
   K -->|400 credit too low| FUND["Fund / swap the key"]
-  K -->|404 model not found| MODEL["Fix model ID to claude-sonnet-4-6"]
+  K -->|404 model not found| MODEL["Fix model ID to claude-sonnet-5"]
   A -->|ran, manifest hand-made| RUN["Run the full pipeline<br/>to make a real manifest"]
   A -->|ran fine| LAYER["Check the layer name<br/>in STYLE star LAYERS"]
 ```
@@ -27,7 +27,7 @@ import httpx
 key=[l.split('=',1)[1].strip().strip('"') for l in open('.env') if l.startswith('ANTHROPIC_API_KEY=')][0]
 r=httpx.post("https://api.anthropic.com/v1/messages",
   headers={"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json"},
-  json={"model":"claude-sonnet-4-6","max_tokens":20,"messages":[{"role":"user","content":"OK"}]})
+  json={"model":"claude-sonnet-5","max_tokens":20,"messages":[{"role":"user","content":"OK"}]})
 print(r.status_code, r.text[:200])
 PY
 ```

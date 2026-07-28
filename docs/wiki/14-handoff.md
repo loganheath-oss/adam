@@ -85,12 +85,12 @@ flowchart TD
 - Web app (order form + dashboard + chat) deployed on Railway.
 - Plugin recognizes **all 21** templates with document-wide auto-discovery.
 - Multi-field copy-gen wired (Us vs Them, Sticky Note, Pie Chart).
-- In-app chat with 13 sprint/learnings tools.
+- In-app chat with 15 tools (13 sprint/learnings + 2 wiki).
 
 ## What's left (priority order)
 1. ✅ **Live copy-gen verified (2026-06-29).** A 5-style sprint generated **30 real, on-brief concepts** on
    the Railway key — the original "make unique copy" blocker is resolved. (It was a dead model ID,
-   `claude-sonnet-4-20250514` → `claude-sonnet-4-6`; the Railway key clears billing, only the local `.env`
+   `claude-sonnet-4-20250514` → `claude-sonnet-5`; the Railway key clears billing, only the local `.env`
    key is empty.) Remaining: drive it through the **web UI gates** end-to-end (needs `PIPELINE_API_KEY` set).
 2. **Confirm Gemini quota** for image styles, then run an image-style sprint.
 3. **Set `GOOGLE_SERVICE_ACCOUNT_JSON` on Railway** — delivery stage (Drive upload) needs it.

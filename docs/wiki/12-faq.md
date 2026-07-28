@@ -12,7 +12,7 @@ the manifest already contains.
 
 **Q: Why do my assembled ads show placeholder text?**
 A: Copy-gen didn't run, or you loaded a hand-made manifest. The two classic causes — a **dead model ID**
-(404, now fixed → `claude-sonnet-4-6`) and a **$0 local key** (HTTP 400) — are why; on the live tool both are
+(404, now fixed → `claude-sonnet-5`) and a **$0 local key** (HTTP 400) — are why; on the live tool both are
 resolved. See [Troubleshooting](11-troubleshooting.md).
 
 **Q: Where is it deployed?**
@@ -44,4 +44,4 @@ A: Add it to `learnings.md` (or the `/learnings` page). The chat reads it every 
 
 **Q: What's blocking "make it live with unique output" right now?**
 A: Essentially nothing new — the dead-model-ID bug is fixed and the Railway key clears billing. It just needs
-**one end-to-end verification sprint** on the live tool to confirm. (For local dev, bring your own funded key.)
+nothing — it was verified end-to-end on the live tool (copy 2026-06-29; full gate flow 2026-07-27). (For local dev, bring your own funded key.)

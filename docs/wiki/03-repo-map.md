@@ -16,7 +16,7 @@ flowchart TD
 adam/
 ├── main.py                  ✅ Web app entry (FastAPI): order form, dashboard, pipeline runner, chat mount
 ├── agent/                   ✅ The in-app AI assistant ("ask ADAM anything")
-│   ├── orchestrator.py        Claude tool-use loop + the 13 tools (sprints, gates, learnings…)
+│   ├── orchestrator.py        Claude tool-use loop + the 15 tools (sprints, gates, learnings…)
 │   ├── routes.py              /chat router (GET chat UI, POST chat)
 │   ├── chat_ui.html           Standalone chat page
 │   ├── sprint_chat_ui.html    Per-sprint chat (gate orchestration)

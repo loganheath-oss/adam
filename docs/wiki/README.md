@@ -30,16 +30,16 @@ flowchart LR
 | Local pipeline (`run_pipeline.py`) | ✅ Runs end-to-end through all 6 gates |
 | Web app (`main.py`: order form + dashboard + chat) | ✅ Deployed on **Railway** (auto-deploy from GitHub) |
 | In-app AI chat (`agent/`) | ✅ Live — Claude tool-use loop over sprints + learnings |
-| Figma assembly plugin | ✅ Recognizes **all 24** ad types; auto-discovers templates; assembles grouped boards |
+| Figma assembly plugin | ✅ Recognizes **all 24** order-form ad types (21 with plugin template mappings); auto-discovers templates; assembles grouped boards |
 | Copy generation (Claude) | ✅ **Verified** — generated 30 real concepts on the Railway key (model fixed); local `.env` key is $0 for *local* dev only |
 | Admin backend (`/admin`) | ✅ Reliability dashboard (clean-run % + incidents), Issues→Learnings loop, Roles — live July 2026 |
 | Per-ad-type copy rules | ✅ Adrie's 24-entry Ad Type Style Guide enforced in code (`configs/ad_type_style_guide.json`) |
-| Prospecting / Retargeting | ✅ Differentiated copy per audience; "both" = two feed-copy sets sharing one creative |
+| Prospecting / Retargeting | ✅ Differentiated copy per audience; "both" = DISTINCT on-creative AND feed copy per audience (unique Text_On_Visual for Prospecting vs Retargeting) |
 | MCP connector (`mcp_server/`) | ✅ Mounted in the web app at `/mcp` — live claude.ai connector reading the current `runs/` (replaced the stale standalone Fly server) |
 | Production hardening (LLM Gateway, OAuth, audit) | ⏳ Pending — owned by Upwork eng |
 
 > ✅ **Verified (2026-06-29):** copy-gen produces real, unique copy on the live Railway key — a 5-style test
-> sprint generated **30 concepts** (the dead model ID `claude-sonnet-4-20250514` is fixed → `claude-sonnet-4-6`).
+> sprint generated **30 concepts** (the dead model ID `claude-sonnet-4-20250514` is fixed → `claude-sonnet-5`).
 > (Local dev still needs your *own* funded key; the committed local `.env` key is empty.)
 
 ---

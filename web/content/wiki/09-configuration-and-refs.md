@@ -45,3 +45,6 @@ To change what the copy-gen "knows":
 Per-style unique, mountain-peak-with-underscores names (e.g. `PhotoWithText_Headline_Text`,
 `Left_Headline_Text`) — no generic cross-template `headline_text` that would collide. The plugin's lookup
 tables encode these; see [Figma plugin](05-figma-plugin.md).
+
+## Figma naming standard (decided 2026-07-28)
+Containers `Adtype_Style-Name`, template frames `Template_Style-Name[_Variant]_WxH`, text layers `Copy_<Role>`, photo slot `Image-Placeholder` (leaf-only — wrapper frames are named `Image`). Full doc: `docs/figma-naming-convention.md`; enforced by `tests/figma_template_lint.py`.

@@ -82,3 +82,6 @@ Two rules cover every deploy failure we ever hit:
 | Reference docs (brand/legal/examples) | `refs/` → compiled by `pipeline/build_refs.py` |
 | Templates | Figma "Paid Acquisition 2026" (Elise) |
 | The code | github.com/loganheath-oss/adam (private; Haresh has read access) |
+
+## Template/layer problems in assembled boards
+Run `railway run --service adam -- python3 tests/figma_template_lint.py` — it reports per-style template resolution and nested `Image-Placeholder` layers (the cause of wrong/duplicated photos and placeholder text). Naming standard: `docs/figma-naming-convention.md`.

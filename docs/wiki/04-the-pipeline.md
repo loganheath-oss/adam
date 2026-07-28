@@ -24,7 +24,7 @@ flowchart LR
 |---|---|---|---|
 | 00 intake | order parse | `order.json`, sprint ID | From the order form, a CSV, or `--test` |
 | 01 load_refs | `stage_01` | `context.json` | Compiled brand + legal + performance refs (from `refs_context.json`) |
-| 02 copy_gen | `stage_02_copy_gen` → `_generate_real_copy` | `copy_outputs.json` | Claude writes **6 concepts/style**, self-scores, picks top 3 |
+| 02 copy_gen | `stage_02_copy_gen` → `_generate_real_copy` | `copy_outputs.json` | Claude writes **6 concepts/style**, self-scores, picks top picks (min 2 per style, quantity-driven, diversity-filtered) |
 | 03 image_prompts | `stage_03` | `image_prompts.csv` **or** photo selections | Gemini prompts **or** a rights-cleared library photo pick |
 | 04 generate_images | `stage_04` | `images/*.png` | Gemini PNGs; **skipped** for library-fed and skip-image styles |
 | 05 figma_assembly | `stage_05` | `asset_manifest.csv` | The handoff to the Figma plugin |
@@ -61,14 +61,14 @@ Gates don't block on stdin — each stage **saves state and returns**; you resum
 > redesign is proposed but **not** done — don't refactor mid-sprint. See [Decisions log](15-decisions-log.md).
 
 ## Copy generation details
-- Calls Anthropic `/v1/messages` directly (model `claude-sonnet-4-*`) via `httpx`.
+- Calls Anthropic `/v1/messages` directly (model `claude-sonnet-5`) via `httpx`.
 - Builds a rich prompt from `refs_context.json`: brand voice, writing style, compliance, approved claims,
   copy bank, targeting-specific examples, and the **order brief (highest priority)**.
 - **Multi-field styles** get extra structured fields in the prompt + return keys:
   - **Us vs Them** → `us_headline`, `them_headline`, `us_bullets[3]`, `them_bullets[3]`
   - **Sticky Note** → `left_headline`, `right_headline`, `left_bullets[2]`, `right_bullets[2]`
   - **Pie Chart** → a `%` extracted from the concept (`_extract_chart_pct`) into `Chart_Pct`
-- Output is reviewed/ranked by a second Claude pass (`_review_and_rank_copy`) that scores all 6 and selects top 3.
+- Output is reviewed/ranked by a second Claude pass (`_review_and_rank_copy`) that scores all 6 and selects the top picks (min 2 per style, diversity-filtered).
 
 ## The manifest (the handoff artifact)
 `asset_manifest.csv` is what the Figma plugin reads. One row per asset, with columns the plugin maps to
@@ -76,8 +76,8 @@ template layers: `Visual_Style`, `Resolutions`, `Headline`, `CTA`, `Description`
 columns (`Chart_Pct`, `Us_Headline`, `Them_Bullets`, `Left_Bullets`, …) and optional `figma_node_id` /
 `template_frame_id`. See [Figma plugin](05-figma-plugin.md) for how each column is consumed.
 
-## Known blocker
+## Known blocker (RESOLVED)
 Historic gotcha (now fixed): copy-gen used a **dead model ID** (`claude-sonnet-4-20250514` → 404) — now
-`claude-sonnet-4-6`. On Railway the Anthropic key **clears billing**; the **local** `.env` key is $0, so for
+`claude-sonnet-5`. On Railway the Anthropic key **clears billing**; the **local** `.env` key is $0, so for
 *local* runs supply your own funded key.
-See [Troubleshooting](11-troubleshooting.md). This is the single thing stopping live unique output.
+RESOLVED — copy generation is verified live on Railway (model `claude-sonnet-5`, schema-enforced structured output; regression-gated by `tests/copy_regression.py`).
