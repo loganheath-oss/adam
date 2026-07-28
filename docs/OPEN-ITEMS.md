@@ -847,3 +847,16 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   wiki-aware (15 tools); glossary MCP = live; 24 order-form styles vs 21 plugin mappings
   reconciled; stale "pending verification"/"known blocker" framing resolved; test-gates +
   naming-standard sections added to 08/16/09. Mirror synced; adam-web deployed.
+
+## 2026-07-28 (eve) — Adrie's quality complaint: cross-style monotony FIXED
+- Her 18:17 sprint (50687c618197, Speed & Cost brief): per-style guards all clean but 6/14
+  on-creative headlines used the same "Post X, hire Y" construction — isolated parallel
+  style-calls converge on a brief's most obvious expression; no guard existed at BATCH scope.
+- FIXES: craft RULE 5 (max one "Post…/hire…" construction per set; vary sentence shapes) +
+  cross-style diversity pass (swaps picks that echo another style's headline for that style's
+  best clean alternate) + cross_style_dup_pairs in quality telemetry.
+- VERIFIED on her exact order rerun: "Post…"-led 6/14 → 0/14, cross-style dups 0, varied
+  shapes (questions/reframes/style-native), offline suite green. $1.11.
+- SYSTEMIC NOTE: same class predicts CROSS-SPRINT repetition (no memory of prior sprints'
+  shipped copy → Meta ad fatigue by ~Sprint 3). Proposed: batch-level creative-director pass
+  + recent-sprint headline memory. Awaiting Logan's go.

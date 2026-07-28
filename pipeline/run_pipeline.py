@@ -141,6 +141,13 @@ RULE 4 — Write it like an ad, not a text message. No abbreviations in a headli
 never "48h"). No filler. Cut every word that is not pulling weight. Sentence case, but proper
 nouns STAY capitalized — "Monday"/"Friday"/"Upwork", never "monday"/"friday".
 
+RULE 5 — Ban the transactional formula. "Post a job, hire by Friday" / "Post today, hire
+tomorrow" is the DEFAULT construction every lazy speed-themed ad reaches for — when a whole
+campaign leads with "Post X, hire Y" it reads as one ad photocopied (real operator complaint,
+2026-07-28). At most ONE concept in your set may use a "Post…/hire…" imperative construction;
+the rest must open differently: a question, a sharp stat, a reframe, social proof, a
+consequence, a customer's voice. Vary the SENTENCE SHAPE, not just the words.
+
 FLAT — never write like this (literal, generic, interchangeable):
   "Hire in 48h" | "Hire AI-skilled talent fast" | "Hired in 48 hours" | "Find talent today" | "AI talent, fast"
 SHARP — this is the bar (hook-driven, specific, each a different angle):
@@ -523,6 +530,41 @@ def stage_02_copy_gen(sprint_id, order, context):
             print("  Phase 2: Self-review — scoring and ranking...")
             copy_outputs = _review_and_rank_copy(copy_outputs, order, context, api_key, sprint_id)
 
+    # CROSS-STYLE diversity: each style's call can't see the others, so a whole batch can
+    # converge on one construction ("Post today, hire Friday" x7 — Adrie, 2026-07-28).
+    # Walk selected concepts across styles; when one near-dups an already-accepted headline
+    # from ANOTHER style, swap it for that style's best non-dup, legal-clean alternate.
+    _cs_all = copy_outputs.get("concepts", [])
+    if _cs_all:
+        _accepted = []   # (style, headline) accepted so far across the batch
+        _swaps = 0
+        _by_style_all = {}
+        for c in _cs_all:
+            _by_style_all.setdefault(c.get("visual_style"), []).append(c)
+        for _style, _pool in _by_style_all.items():
+            for c in [x for x in _pool if x.get("selected")]:
+                _hl = c.get("creative_headline") or c.get("headline") or ""
+                _clash = any(_headlines_near_dup(_hl, h) for st, h in _accepted if st != _style)
+                if _clash:
+                    _alt = next((a for a in _pool
+                                 if not a.get("selected") and not a.get("legal_flags")
+                                 and not any(_headlines_near_dup(
+                                     a.get("creative_headline") or a.get("headline") or "", h)
+                                     for _st2, h in _accepted)), None)
+                    if _alt is not None:
+                        c["selected"] = False
+                        _alt["selected"] = True
+                        _alt["review_notes"] = ("↔ swapped in for cross-style variety — prior pick "
+                                                f"echoed another style's headline. " + str(_alt.get("review_notes", "")))
+                        _apply_cta_mix(_pool, _style)
+                        c = _alt
+                        _hl = c.get("creative_headline") or c.get("headline") or ""
+                        _swaps += 1
+                        print(f"    cross-style variety: {_style} pick swapped ({_hl[:40]!r})")
+                _accepted.append((_style, _hl))
+        if _swaps:
+            print(f"  Cross-style variety: {_swaps} pick(s) swapped for batch-level diversity")
+
     # Per-run copy-quality telemetry (regressions surface without anyone running tests):
     # legal-flag rate, selection counts, bullet/paragraph split, near-dup pair rate.
     _cs = copy_outputs.get("concepts", [])
@@ -544,6 +586,12 @@ def stage_02_copy_gen(sprint_id, order, context):
             "legal_flagged_selected": sum(1 for c in _sel if c.get("legal_flags")),
             "bulleted_long": _nb, "paragraph_long": len(_bl) - _nb,
             "near_dup_selected_pairs": _dups,
+            "cross_style_dup_pairs": sum(
+                1 for i in range(len(_sel)) for j in range(i + 1, len(_sel))
+                if _sel[i].get("visual_style") != _sel[j].get("visual_style")
+                and _headlines_near_dup(
+                    _sel[i].get("creative_headline") or _sel[i].get("headline") or "",
+                    _sel[j].get("creative_headline") or _sel[j].get("headline") or "")),
         }
         print(f"  Quality: {copy_outputs['quality']}")
 
