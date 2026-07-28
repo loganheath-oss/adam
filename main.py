@@ -383,6 +383,9 @@ async def lifespan(app: FastAPI):
                     state_path.write_text(json.dumps(state_data, indent=2))
             except Exception:
                 pass
+    # Daily self-check loop — ADAM verifies itself (credits, refs, styles, volume,
+    # stuck sprints) and logs system.selfcheck events without a human trigger.
+    asyncio.create_task(_self_check_loop())
     # Run the MCP streamable-http session manager for the life of the app; without
     # this the mounted /mcp endpoint raises "Task group is not initialized".
     async with adam_mcp.session_manager.run():
@@ -2490,12 +2493,116 @@ async def admin_diagnose(request: Request):
     return JSONResponse({"diagnosis": diag, "cached": False, "cost_usd": cost})
 
 
+# ── DAILY SELF-CHECK ─────────────────────────────────────────────────────────
+# ADAM checks itself without a human trigger: API-credit canary, refs freshness +
+# integrity, style/schema resolution, volume threshold, stuck sprints. Results are
+# logged as system.selfcheck events (digest/activity) and cached for /admin/health.
+_LAST_SELFCHECK: dict = {}
+
+
+def _run_self_check() -> dict:
+    checks = {}
+    try:  # 1. API credit canary — a ~1-token live call; catches a drained balance.
+        import httpx as _hx
+        _r = _hx.post("https://api.anthropic.com/v1/messages",
+                      headers={"x-api-key": os.environ.get("ANTHROPIC_API_KEY", ""),
+                               "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                      json={"model": "claude-haiku-4-5", "max_tokens": 2,
+                            "messages": [{"role": "user", "content": "ok"}]}, timeout=20)
+        checks["api_credit"] = {"ok": _r.status_code == 200, "detail": f"HTTP {_r.status_code}"}
+    except Exception as e:
+        checks["api_credit"] = {"ok": False, "detail": str(e)[:80]}
+    try:  # 2. Refs compiled + fresh (Adrie's docs update; stale refs = stale copy).
+        _rp = BASE_DIR / "configs" / "refs_context.json"
+        _age_d = (datetime.now(timezone.utc).timestamp() - _rp.stat().st_mtime) / 86400
+        _refs = json.loads(_rp.read_text())
+        _ok = len(_refs.get("copy_instructions", "")) > 5000
+        checks["refs"] = {"ok": _ok, "detail": f"age {int(_age_d)}d; "
+                          f"{'fresh' if _age_d <= 14 else 'STALE >14d — re-ingest?'}"}
+        if _age_d > 14:
+            checks["refs"]["ok"] = False
+    except Exception as e:
+        checks["refs"] = {"ok": False, "detail": str(e)[:80]}
+    try:  # 3. Style guide resolves for every order-form style (schema builder sanity).
+        import importlib as _il
+        _rpm = sys.modules.get("run_pipeline")
+        _styles = ["Graphic with Text", "Split Screen", "Us vs Them", "Photo with Text",
+                   "Lifestyle Photo", "Testimonial", "Social Media Profile", "Pie Chart",
+                   "Hybrid", "Search Results", "Text Only", "Chat Bubble", "Notification",
+                   "Reminder", "Device UI", "Platform UI", "Meme", "Sticky Note", "Poll",
+                   "Tweet / Post Mockup", "Text with Button", "Talent Profile", "Bespoke"]
+        _bad = []
+        for _s in _styles:
+            try:
+                _rpm._concept_schema(_s, True, 2)
+            except Exception:
+                _bad.append(_s)
+        checks["styles"] = {"ok": not _bad, "detail": f"{len(_styles) - len(_bad)}/{len(_styles)} resolve"
+                            + (f"; failing: {_bad}" if _bad else "")}
+    except Exception as e:
+        checks["styles"] = {"ok": False, "detail": str(e)[:80]}
+    try:  # 4. Volume threshold.
+        import shutil as _sh
+        _u = _sh.disk_usage(str(RUNS_DIR))
+        _pct = round(_u.used / _u.total * 100, 1)
+        checks["volume"] = {"ok": _pct < 80, "detail": f"{_pct}% used"}
+    except Exception as e:
+        checks["volume"] = {"ok": False, "detail": str(e)[:80]}
+    try:  # 5. Stuck sprints (awaiting a gate > 7 days — someone forgot a review).
+        _stuck = 0
+        _now = datetime.now(timezone.utc).timestamp()
+        for _d in RUNS_DIR.iterdir():
+            _sp = _d / "pipeline_state.json"
+            if _d.is_dir() and _sp.exists():
+                _st = _load_json(_sp)
+                if str(_st.get("state", "")).startswith("awaiting_gate") and \
+                        (_now - _sp.stat().st_mtime) > 7 * 86400:
+                    _stuck += 1
+        checks["stuck_sprints"] = {"ok": _stuck == 0, "detail": f"{_stuck} waiting >7d"}
+    except Exception as e:
+        checks["stuck_sprints"] = {"ok": False, "detail": str(e)[:80]}
+    result = {"ts": datetime.now(timezone.utc).isoformat(),
+              "ok": all(c.get("ok") for c in checks.values()), "checks": checks}
+    _LAST_SELFCHECK.clear()
+    _LAST_SELFCHECK.update(result)
+    try:
+        db.log_event("system.selfcheck", user_email="selfcheck",
+                     meta={"ok": result["ok"],
+                           "failing": [k for k, c in checks.items() if not c.get("ok")]})
+    except Exception:
+        pass
+    if not result["ok"]:
+        print(f"[selfcheck] ⚠ FAILING: {[k for k, c in checks.items() if not c.get('ok')]}")
+    else:
+        print("[selfcheck] all checks ok")
+    return result
+
+
+async def _self_check_loop():
+    while True:
+        try:
+            await asyncio.get_event_loop().run_in_executor(None, _run_self_check)
+        except Exception:
+            pass
+        await asyncio.sleep(24 * 3600)
+
+
+@app.post("/admin/selfcheck", dependencies=[Depends(require_api_key)])
+async def admin_selfcheck():
+    """Run the self-check on demand."""
+    loop = asyncio.get_event_loop()
+    return JSONResponse(await loop.run_in_executor(None, _run_self_check))
+
+
 @app.get("/admin/health", dependencies=[Depends(require_api_key)])
 async def admin_health():
     """Proactive health: volume %, Anthropic key + model-availability, and 24h error
     count. Drives the warning banner on the Reliability dashboard."""
     loop = asyncio.get_event_loop()
-    return JSONResponse(await loop.run_in_executor(None, _compute_health))
+    _h = await loop.run_in_executor(None, _compute_health)
+    if _LAST_SELFCHECK:
+        _h["selfcheck"] = dict(_LAST_SELFCHECK)
+    return JSONResponse(_h)
 
 
 @app.get("/admin/reliability", dependencies=[Depends(require_api_key)])

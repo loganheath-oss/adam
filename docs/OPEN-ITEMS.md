@@ -873,3 +873,11 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
 - **Admin**: copy.quality event logged after every gate-2 copy gen; digest aggregates a
   Copy-quality line (runs, CD flags, cross-style dupes, repeats vs recent sprints, avg
   $/run) in both the visual digest and the Slack-paste block.
+
+## 2026-07-28 (late) — SELF-CHECK: ADAM now verifies itself daily
+- New _run_self_check + daily loop (started at app boot): API-credit canary (live 2-token
+  ping — catches a drained balance BEFORE a sprint dies), refs compiled + freshness (>14d
+  = stale flag, catches missed Friday re-ingests), style/schema resolution for all order
+  styles, volume threshold (80%), stuck sprints (awaiting a gate >7d). Results cached into
+  /admin/health ("selfcheck") + logged as system.selfcheck events (visible in activity/
+  digest counts). POST /admin/selfcheck runs it on demand.
