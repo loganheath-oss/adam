@@ -683,6 +683,21 @@ async def _run_gate_task(sprint_id: str, gate_num: int):
     handler = GATE_HANDLERS[gate_num]
     try:
         await loop.run_in_executor(_PIPELINE_EXECUTOR, handler, sprint_id)
+        # After gate 2 (copy generation), surface the run's quality + cost telemetry
+        # into the events stream so the admin dashboard/digest can report it.
+        if gate_num == 2:
+            try:
+                _co = _load_json(RUNS_DIR / sprint_id / "copy_outputs.json") or {}
+                _tu = _load_json(RUNS_DIR / sprint_id / "token_usage.json") or {}
+                _q = dict(_co.get("quality") or {})
+                _q["cd_flags"] = len((_co.get("cd_review") or {}).get("flags", []))
+                _q["cost_usd"] = _tu.get("estimated_cost_usd")
+                _q["cache_read_tokens"] = _tu.get("cache_read_tokens", 0)
+                _o = _load_json(RUNS_DIR / sprint_id / "order.json") or {}
+                db.log_event("copy.quality", user_email=(_o.get("email") or _o.get("driver")),
+                             sprint_id=sprint_id, meta=_q)
+            except Exception:
+                pass
     except Exception as exc:
         sprint_dir = RUNS_DIR / sprint_id
         (sprint_dir / "pipeline_state.json").write_text(json.dumps({

@@ -495,6 +495,20 @@ def digest(since_days: int = 7, monthly_budget: float = 0.0) -> dict:
                 .where(UsageEvent.action == "assembly.completed", UsageEvent.ts >= since,
                        UsageEvent.meta["degraded"].astext == "true")
             ).scalar() or 0
+            # Copy-quality telemetry logged after each gate-2 copy generation.
+            _cq_rows = s.execute(
+                select(UsageEvent.meta).where(UsageEvent.action == "copy.quality",
+                                              UsageEvent.ts >= since)
+            ).all()
+            _cq = [r[0] or {} for r in _cq_rows]
+            copy_quality = {
+                "runs": len(_cq),
+                "cd_flags": sum(int(m.get("cd_flags") or 0) for m in _cq),
+                "cross_style_dups": sum(int(m.get("cross_style_dup_pairs") or 0) for m in _cq),
+                "vs_recent_sprint_dups": sum(int(m.get("vs_recent_sprint_dups") or 0) for m in _cq),
+                "legal_flagged_selected": sum(int(m.get("legal_flagged_selected") or 0) for m in _cq),
+                "avg_cost_usd": round(sum(float(m.get("cost_usd") or 0) for m in _cq) / len(_cq), 3) if _cq else None,
+            } if _cq else None
             errors = s.execute(
                 select(func.count()).select_from(UsageEvent)
                 .where(UsageEvent.action.like("error.%"), UsageEvent.ts >= since)
@@ -531,6 +545,7 @@ def digest(since_days: int = 7, monthly_budget: float = 0.0) -> dict:
             "month_to_date_usd": spend.get("month_to_date_usd"),
             "projected_month_usd": spend.get("projected_month_usd"),
             "monthly_budget_usd": spend.get("monthly_budget_usd"),
+            "copy_quality": copy_quality,
             "runs": [
                 {"ts": t.isoformat() if t else None,
                  "sprint_id": sid,

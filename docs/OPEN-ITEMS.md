@@ -860,3 +860,16 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
 - SYSTEMIC NOTE: same class predicts CROSS-SPRINT repetition (no memory of prior sprints'
   shipped copy → Meta ad fatigue by ~Sprint 3). Proposed: batch-level creative-director pass
   + recent-sprint headline memory. Awaiting Logan's go.
+
+## 2026-07-28 (night) — Optimization sweep: caching + CD pass + cross-sprint memory + dashboard
+- **Prompt caching LIVE**: the ~40k-char reference pack now rides a cached system block
+  (split at the assignment marker; cache-write 1.25x / read 0.1x priced into the tracker).
+  Verified: 5-style run $0.40 vs ~$0.90 pre-caching — roughly HALF cost, better on big runs.
+- **CD batch pass (advisory)**: one schema-enforced call reviews the WHOLE campaign after
+  the deterministic guards — flags land in review_notes + copy_outputs.cd_review. Verified
+  live (3 flags, director-grade note).
+- **Cross-sprint memory**: recent sprints' shipped headlines injected as "write away from
+  these" (Meta fatigue guard) + vs_recent_sprint_dups telemetry.
+- **Admin**: copy.quality event logged after every gate-2 copy gen; digest aggregates a
+  Copy-quality line (runs, CD flags, cross-style dupes, repeats vs recent sprints, avg
+  $/run) in both the visual digest and the Slack-paste block.

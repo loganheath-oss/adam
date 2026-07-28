@@ -26,6 +26,10 @@ function digestText(d: Digest, days: number): string {
   L.push(`Assemblies: ${d.assemblies ?? 0}${d.assemblies_degraded ? ` (${d.assemblies_degraded} degraded — check templates)` : ""}`);
   L.push(`Workflow: ${d.gate_approvals ?? 0} gate approvals · Gate-3 picker used ${d.picker_uses ?? 0}×`);
   L.push(`Issues: ${d.issues_new ?? 0} new · ${d.issues_open ?? 0} still open`);
+  if (d.copy_quality) {
+    const q = d.copy_quality;
+    L.push(`Copy quality: ${q.runs ?? 0} runs · ${q.cd_flags ?? 0} CD flags · ${q.cross_style_dups ?? 0} cross-style dupes · ${q.vs_recent_sprint_dups ?? 0} repeats vs recent sprints · avg ${q.avg_cost_usd != null ? `$${q.avg_cost_usd}` : "—"}/run`);
+  }
   if ((d.errors ?? 0) > 0) L.push(`Errors logged: ${d.errors}`);
   L.push(`Spend: ${usd(d.spend_usd)} this period · ${usd(d.month_to_date_usd)} month-to-date · projected ${usd(d.projected_month_usd)}${d.monthly_budget_usd ? ` of ${usd(d.monthly_budget_usd)} budget` : ""}`);
   if (d.runs && d.runs.length) {
@@ -138,6 +142,17 @@ export default async function DigestPage({ searchParams }: { searchParams: Promi
           <span className="text-amber-600"> — team is approving copy without the picker</span>
         )}
       </div>
+
+      {/* Copy-quality read — batch-level health per period (CD flags, monotony, repeats). */}
+      {d.copy_quality && (
+        <div className="mb-6 text-sm text-muted-foreground">
+          Copy quality: <span className="font-medium text-foreground">{d.copy_quality.runs ?? 0}</span> runs ·{" "}
+          <span className={(d.copy_quality.cd_flags ?? 0) > 0 ? "text-amber-600" : ""}>{d.copy_quality.cd_flags ?? 0} CD flags</span> ·{" "}
+          <span className={(d.copy_quality.cross_style_dups ?? 0) > 0 ? "text-amber-600" : ""}>{d.copy_quality.cross_style_dups ?? 0} cross-style dupes</span> ·{" "}
+          <span className={(d.copy_quality.vs_recent_sprint_dups ?? 0) > 0 ? "text-amber-600" : ""}>{d.copy_quality.vs_recent_sprint_dups ?? 0} repeats vs recent sprints</span>
+          {d.copy_quality.avg_cost_usd != null && <> · avg ${d.copy_quality.avg_cost_usd}/run</>}
+        </div>
+      )}
 
       {/* This period's runs — what came in and what it asked for. The recap Adrie
           wants front-and-center (2026-07-23), not the deploy log. */}

@@ -66,6 +66,21 @@ def _thinking_params():
     return {} if _COPY_THINKING != "off" else {"thinking": {"type": "disabled"}}
 
 
+_ASSIGNMENT_MARKER = "===== YOUR ASSIGNMENT ====="
+
+
+def _cached_prompt_params(prompt):
+    """Split a copy prompt into a CACHED system block (the big static reference pack —
+    identical across every call in a sprint) + the per-style user message. Falls back to
+    a plain user message when the marker isn't present."""
+    if _ASSIGNMENT_MARKER in prompt:
+        pre, post = prompt.split(_ASSIGNMENT_MARKER, 1)
+        return {"system": [{"type": "text", "text": pre,
+                            "cache_control": {"type": "ephemeral"}}],
+                "messages": [{"role": "user", "content": _ASSIGNMENT_MARKER + post}]}
+    return {"messages": [{"role": "user", "content": prompt}]}
+
+
 # Fields whose values are LISTS of strings (bullets/labels); everything else is a string.
 _LIST_FIELDS = {"us_bullets", "them_bullets", "left_bullets", "right_bullets",
                 "single_bullets", "search_results", "pie_labels", "labels", "tags"}
@@ -249,6 +264,90 @@ def _headlines_near_dup(a, b):
     if len(ta) < 2 or len(tb) < 2:
         return False
     return (len(ta & tb) / max(1, len(ta | tb))) >= 0.6 or ta <= tb or tb <= ta
+
+
+def _cd_batch_review(concepts, order, api_key, sprint_id=None):
+    """Batch-level 'creative director' pass: ONE call that sees every selected concept
+    across the whole campaign at once — the scope no per-style call can see — and flags
+    batch-level problems (monotony, tonal drift, weak outliers). ADVISORY: flags land in
+    review_notes for the operator; deterministic guards remain the enforcement layer."""
+    sel = [c for c in concepts if c.get("selected")]
+    if len(sel) < 4:
+        return None
+    lines = "\n".join(f"{i+1}. [{c.get('visual_style')}] "
+                      f"{c.get('creative_headline') or c.get('headline') or ''}"
+                      for i, c in enumerate(sel))
+    prompt = (
+        "You are the creative director reviewing an assembled ad CAMPAIGN — all concepts "
+        "together, the view no single generation call had. Brief theme:\n"
+        f"{str(order.get('brief', ''))[:600]}\n\n"
+        f"THE CAMPAIGN'S ON-CREATIVE HEADLINES:\n{lines}\n\n"
+        "Judge the BATCH: repeated constructions or ideas across styles, tonal drift, and "
+        "any weak outlier that undercuts the set. Flag sparingly — only what a CD would "
+        "actually send back. Return verdicts for flagged items only, plus one overall note."
+    )
+    schema = {"type": "object", "properties": {
+        "overall_note": {"type": "string"},
+        "flags": {"type": "array", "items": {"type": "object", "properties": {
+            "index": {"type": "integer"}, "issue": {"type": "string"}},
+            "required": ["index", "issue"], "additionalProperties": False}}},
+        "required": ["overall_note", "flags"], "additionalProperties": False}
+    try:
+        import httpx
+        r = httpx.post("https://api.anthropic.com/v1/messages",
+                       headers={"x-api-key": api_key, "anthropic-version": "2023-06-01",
+                                "content-type": "application/json"},
+                       json={"model": _COPY_MODEL, "max_tokens": 800,
+                             "messages": [{"role": "user", "content": prompt}],
+                             "output_config": {"format": {"type": "json_schema", "schema": schema}},
+                             **_thinking_params()},
+                       timeout=90)
+        if r.status_code != 200:
+            print(f"    CD pass skipped (API {r.status_code})")
+            return None
+        _rj = r.json()
+        _u = _rj.get("usage", {})
+        _add_token_usage(sprint_id, _COPY_MODEL, _u.get("input_tokens"), _u.get("output_tokens"))
+        cd = json.loads(_response_text(_rj).strip())
+        for f in cd.get("flags", []):
+            i = int(f.get("index", 0)) - 1
+            if 0 <= i < len(sel):
+                sel[i]["review_notes"] = (f"🎬 CD flag: {f.get('issue', '')} "
+                                          + str(sel[i].get("review_notes", "")))
+        print(f"  CD batch review: {len(cd.get('flags', []))} flag(s) — {cd.get('overall_note', '')[:90]}")
+        return cd
+    except Exception as e:
+        print(f"    CD pass skipped ({str(e)[:60]})")
+        return None
+
+
+def _recent_shipped_headlines(current_sprint_id, max_sprints=8, cap=50):
+    """Selected on-creative headlines from recent OTHER sprints on this volume — the
+    cross-sprint memory that stops Sprint 3 re-shipping Sprint 1's lines (Meta ad
+    fatigue). Best-effort: missing/corrupt sprints are skipped silently."""
+    out, seen = [], set()
+    try:
+        dirs = sorted((d for d in RUNS_DIR.iterdir() if d.is_dir()
+                       and d.name != str(current_sprint_id)),
+                      key=lambda d: d.stat().st_mtime, reverse=True)[:max_sprints]
+        for d in dirs:
+            try:
+                co = json.loads((d / "copy_outputs.json").read_text())
+            except Exception:
+                continue
+            for c in co.get("concepts", []):
+                if not c.get("selected"):
+                    continue
+                h = str(c.get("creative_headline") or c.get("headline") or "").strip()
+                k = h.lower()
+                if h and k not in seen:
+                    seen.add(k)
+                    out.append(h)
+                    if len(out) >= cap:
+                        return out
+    except Exception:
+        pass
+    return out
 
 
 def _enforce_conditional_caps(concepts, style):
@@ -565,6 +664,11 @@ def stage_02_copy_gen(sprint_id, order, context):
         if _swaps:
             print(f"  Cross-style variety: {_swaps} pick(s) swapped for batch-level diversity")
 
+        # Batch-level creative-director pass (advisory) — one call over the whole campaign.
+        _cd = _cd_batch_review(_cs_all, order, api_key, sprint_id)
+        if _cd:
+            copy_outputs["cd_review"] = _cd
+
     # Per-run copy-quality telemetry (regressions surface without anyone running tests):
     # legal-flag rate, selection counts, bullet/paragraph split, near-dup pair rate.
     _cs = copy_outputs.get("concepts", [])
@@ -586,6 +690,10 @@ def stage_02_copy_gen(sprint_id, order, context):
             "legal_flagged_selected": sum(1 for c in _sel if c.get("legal_flags")),
             "bulleted_long": _nb, "paragraph_long": len(_bl) - _nb,
             "near_dup_selected_pairs": _dups,
+            "vs_recent_sprint_dups": (lambda _rh: sum(
+                1 for c in _sel for h in _rh
+                if _headlines_near_dup(c.get("creative_headline") or c.get("headline") or "", h))
+                )(_recent_shipped_headlines(sprint_id, max_sprints=8, cap=50)),
             "cross_style_dup_pairs": sum(
                 1 for i in range(len(_sel)) for j in range(i + 1, len(_sel))
                 if _sel[i].get("visual_style") != _sel[j].get("visual_style")
@@ -1522,6 +1630,12 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
         brief_block = ("No specific brief provided.\n\n"
                        "General: Showcase how Upwork helps businesses find freelancers fast.")
 
+    _recent = context.get("_recent_headlines") or []
+    if _recent:
+        brief_block += ("\n\nRECENTLY SHIPPED HEADLINES (previous sprints — Meta punishes "
+                        "repetition; do NOT echo these lines or their constructions):\n"
+                        + "\n".join(f"  - {h}" for h in _recent[:40]) + "\n")
+
     # Multi-field styles need extra structured copy beyond headline/body/cta.
     _sl = style.strip().lower().replace(" ", "")
     _approved_quotes_lib = _load_approved_quotes() if _sl == "testimonial" else []
@@ -1783,7 +1897,13 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                     # with _salvage_json_array below so a truncated array still yields
                     # its complete concepts instead of zero.
                     "max_tokens": 8000,
-                    "messages": [{"role": "user", "content": prompt}],
+                    # PROMPT CACHING (2026-07-28): the ~40k-char reference pack (craft bar,
+                    # compliance, brand voice, examples, brief) is IDENTICAL across every
+                    # call in a sprint — split it into a cached system block so the ~20-70
+                    # calls per run read it at ~10% of input price instead of re-buying it.
+                    # The per-style assignment stays in the user message (cache-safe split
+                    # at the assignment marker; falls back to uncached if marker missing).
+                    **_cached_prompt_params(prompt),
                     # STRUCTURED OUTPUT: the API enforces the per-style schema, so the
                     # response is guaranteed-valid JSON in the declared shape (2026-07-28).
                     "output_config": {"format": {"type": "json_schema",
@@ -1798,7 +1918,9 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                 text = _response_text(_rj).strip()
                 _u = _rj.get("usage", {})
                 _add_token_usage(sprint_id, _COPY_MODEL,
-                                 _u.get("input_tokens"), _u.get("output_tokens"))
+                                 _u.get("input_tokens"), _u.get("output_tokens"),
+                                 _u.get("cache_creation_input_tokens"),
+                                 _u.get("cache_read_input_tokens"))
                 if "```json" in text:
                     text = text.split("```json")[1].split("```")[0]
                 elif "```" in text:
@@ -2086,6 +2208,12 @@ def _generate_real_copy(order, context, api_key, sprint_id=None):
     # every per-style call reads the same breakdown. Structure stays fixed regardless.
     if context.get("_brief_breakdown") is None:
         context["_brief_breakdown"] = _breakdown_brief(order.get("brief", ""), order, api_key, sprint_id)
+    # Cross-sprint memory: recent shipped headlines, injected into every call's cached
+    # context so new sprints write AWAY from what already ran (Meta fatigue guard).
+    if "_recent_headlines" not in context:
+        context["_recent_headlines"] = _recent_shipped_headlines(sprint_id)
+        if context["_recent_headlines"]:
+            print(f"  Cross-sprint memory: {len(context['_recent_headlines'])} recent headlines loaded")
 
     try:
         workers = int(os.environ.get("COPY_CONCURRENCY", "5") or "5")
@@ -2283,7 +2411,9 @@ Return ONLY the JSON array. No other text."""
                 text = _response_text(_rj).strip()
                 _u = _rj.get("usage", {})
                 _add_token_usage(sprint_id, _COPY_MODEL,
-                                 _u.get("input_tokens"), _u.get("output_tokens"))
+                                 _u.get("input_tokens"), _u.get("output_tokens"),
+                                 _u.get("cache_creation_input_tokens"),
+                                 _u.get("cache_read_input_tokens"))
                 if "```json" in text:
                     text = text.split("```json")[1].split("```")[0]
                 elif "```" in text:
@@ -4027,10 +4157,14 @@ def _estimate_cost(by_model):
         pin, pout = _TOKEN_PRICING.get(model, (0.0, 0.0))
         total += (u.get("input_tokens", 0) / 1_000_000) * pin
         total += (u.get("output_tokens", 0) / 1_000_000) * pout
+        # Prompt caching: writes bill at 1.25x input, reads at 0.1x input.
+        total += (u.get("cache_write_tokens", 0) / 1_000_000) * pin * 1.25
+        total += (u.get("cache_read_tokens", 0) / 1_000_000) * pin * 0.10
     return total
 
 
-def _add_token_usage(sprint_id, model, input_tokens, output_tokens):
+def _add_token_usage(sprint_id, model, input_tokens, output_tokens,
+                     cache_write=0, cache_read=0):
     """Accumulate LLM token usage for the burn-rate counter. Thread-safe
     (copy-gen runs concurrently) and best-effort — never breaks the pipeline."""
     if not sprint_id:
@@ -4043,13 +4177,18 @@ def _add_token_usage(sprint_id, model, input_tokens, output_tokens):
             except Exception:
                 data = {"input_tokens": 0, "output_tokens": 0, "calls": 0, "by_model": {}}
             it, ot = int(input_tokens or 0), int(output_tokens or 0)
+            cw, cr = int(cache_write or 0), int(cache_read or 0)
             data["input_tokens"] += it
             data["output_tokens"] += ot
+            data["cache_write_tokens"] = data.get("cache_write_tokens", 0) + cw
+            data["cache_read_tokens"] = data.get("cache_read_tokens", 0) + cr
             data["calls"] = data.get("calls", 0) + 1
             bm = data.setdefault("by_model", {}).setdefault(
                 model, {"input_tokens": 0, "output_tokens": 0, "calls": 0})
             bm["input_tokens"] += it
             bm["output_tokens"] += ot
+            bm["cache_write_tokens"] = bm.get("cache_write_tokens", 0) + cw
+            bm["cache_read_tokens"] = bm.get("cache_read_tokens", 0) + cr
             bm["calls"] += 1
             data["estimated_cost_usd"] = round(
                 _estimate_cost(data["by_model"])

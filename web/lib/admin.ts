@@ -174,6 +174,10 @@ export type Digest = {
   month_to_date_usd?: number;
   projected_month_usd?: number;
   monthly_budget_usd?: number;
+  copy_quality?: {
+    runs?: number; cd_flags?: number; cross_style_dups?: number;
+    vs_recent_sprint_dups?: number; legal_flagged_selected?: number; avg_cost_usd?: number | null;
+  } | null;
   runs?: Array<{
     ts?: string | null;
     sprint_id?: string;
