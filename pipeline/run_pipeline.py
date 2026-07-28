@@ -171,6 +171,28 @@ def _fix_concept_proper_nouns(concept):
                             _v[_k2] = _fix_proper_nouns(_v2)
 
 
+# Near-duplicate headline detection for the diverse top-N selection (module-level so
+# the regression suite can unit-test it directly).
+_HL_STOP = {"your", "the", "a", "an", "is", "are", "was", "be", "being",
+            "could", "can", "will", "by", "to", "of", "in", "on", "for",
+            "with", "and", "or", "it", "its", "you", "we", "our", "at",
+            "this", "that", "not", "no", "now", "get", "just"}
+
+
+def _headline_tokens(text):
+    return set(re.findall(r"[a-z0-9']+", str(text or "").lower())) - _HL_STOP
+
+
+def _headlines_near_dup(a, b):
+    """True when two headlines are effectively the same idea: content-word Jaccard
+    >= 0.6 OR one's content words contained in the other's ("Hired by Friday" vs
+    "Hired by Friday, not next quarter"). Tiny titles (<2 content words) never match."""
+    ta, tb = _headline_tokens(a), _headline_tokens(b)
+    if len(ta) < 2 or len(tb) < 2:
+        return False
+    return (len(ta & tb) / max(1, len(ta | tb))) >= 0.6 or ta <= tb or tb <= ta
+
+
 def _flatten_audience(aud):
     """A P&R ('both') audience block from targeting_copy may put the Meta-feed fields
     (headline, body_short, …) FLAT, or nest them under a 'feed' object — the model is
@@ -2183,25 +2205,11 @@ Return ONLY the JSON array. No other text."""
                 # "...converting by Friday"). Greedy diverse pick: take cleanest-first,
                 # skipping any whose on-image headline near-duplicates an already-picked
                 # one; backfill from the skipped if the diverse pool runs short.
-                _HL_STOP = {"your", "the", "a", "an", "is", "are", "was", "be", "being",
-                            "could", "can", "will", "by", "to", "of", "in", "on", "for",
-                            "with", "and", "or", "it", "its", "you", "we", "our", "at",
-                            "this", "that", "not", "no", "now", "get", "just"}
-
-                def _hl_tokens(c):
-                    toks = set(re.findall(r"[a-z0-9']+",
-                                          str(c.get("creative_headline") or c.get("headline") or "").lower()))
-                    return toks - _HL_STOP
+                def _hl_of(c):
+                    return c.get("creative_headline") or c.get("headline") or ""
                 picked, skipped = [], []
                 for c in eligible:
-                    t = _hl_tokens(c)
-                    # near-dup = high content-word Jaccard OR one headline's content words
-                    # contained in the other's ("Hired by Friday" ⊂ "Hired by Friday, not
-                    # next quarter"). Tiny titles (<2 content words) skip the check.
-                    dup = len(t) >= 2 and any(
-                        len(p) >= 2 and ((len(t & p) / max(1, len(t | p))) >= 0.6
-                                         or t <= p or p <= t)
-                        for p in (_hl_tokens(x) for x in picked))
+                    dup = any(_headlines_near_dup(_hl_of(c), _hl_of(x)) for x in picked)
                     (picked if (len(picked) < target and not dup) else skipped).append(c)
                 for c in skipped:
                     if len(picked) >= target:
@@ -2957,6 +2965,7 @@ def stage_04_generate_images(sprint_id, image_rows):
             resized.save(str(img_path), "PNG", quality=95)
             results[row["asset_id"]] = str(img_path)
             generated += 1
+            _add_image_usage(sprint_id, 1)
 
         time.sleep(2)
 
@@ -3805,6 +3814,35 @@ _TOKEN_PRICING = {
     "claude-haiku-4-5":  (1.0, 5.0),
 }
 _TOKEN_LOCK = threading.Lock()
+# Per-image Gemini cost estimate. Image spend was previously INVISIBLE to the burn-rate
+# counter and /admin/spend (they only priced text tokens) — runs that generated images
+# under-reported real cost. Env-tunable when real Gemini pricing is confirmed.
+try:
+    _IMAGE_COST_USD = float(os.environ.get("ADAM_IMAGE_COST_USD", "0.13") or "0.13")
+except ValueError:
+    _IMAGE_COST_USD = 0.13
+
+
+def _add_image_usage(sprint_id, count=1):
+    """Accumulate generated-image count + estimated cost into token_usage.json so image
+    runs show real spend. Thread-safe, best-effort — never breaks the pipeline."""
+    if not sprint_id or count <= 0:
+        return
+    try:
+        with _TOKEN_LOCK:
+            path = RUNS_DIR / sprint_id / "token_usage.json"
+            try:
+                data = json.loads(path.read_text())
+            except Exception:
+                data = {"input_tokens": 0, "output_tokens": 0, "calls": 0, "by_model": {}}
+            data["images_generated"] = data.get("images_generated", 0) + int(count)
+            data["image_cost_usd"] = round(data["images_generated"] * _IMAGE_COST_USD, 4)
+            data["estimated_cost_usd"] = round(
+                _estimate_cost(data.get("by_model", {}))
+                + data["images_generated"] * _IMAGE_COST_USD, 4)
+            path.write_text(json.dumps(data, indent=2))
+    except Exception:
+        pass
 
 
 def _estimate_cost(by_model):
@@ -3837,7 +3875,9 @@ def _add_token_usage(sprint_id, model, input_tokens, output_tokens):
             bm["input_tokens"] += it
             bm["output_tokens"] += ot
             bm["calls"] += 1
-            data["estimated_cost_usd"] = round(_estimate_cost(data["by_model"]), 4)
+            data["estimated_cost_usd"] = round(
+                _estimate_cost(data["by_model"])
+                + data.get("images_generated", 0) * _IMAGE_COST_USD, 4)
             data["updated_at"] = datetime.now(timezone.utc).isoformat()
             tmp = path.with_suffix(".json.tmp")
             tmp.write_text(json.dumps(data, indent=2))

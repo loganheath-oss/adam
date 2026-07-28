@@ -215,6 +215,12 @@ export default function NewOrderPage() {
           };
         }).filter((b) => b.visual_styles.length)
       : [];
+    // Empty-brief guard: a silently-missing brief caused the 7/27 "(empty — no custom
+    // brief)" confusion — copy ran on standing refs only and the requester didn't know.
+    // Make it a conscious choice, never an accident.
+    if (!brief.trim() && !window.confirm(
+      "No brief provided.\n\nADAM will write copy from the standing reference docs only — no sprint theme, no key messaging.\n\nSubmit without a brief?"
+    )) return;
     const order = { delivery_date: deliveryDate, driver, targeting, deliverable, platform: platform || null, batches: orderBatches, brief };
     try {
       const res = await fetch("/api/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(order) });

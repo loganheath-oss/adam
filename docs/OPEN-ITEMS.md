@@ -774,3 +774,23 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
 - Logan action: re-run the plugin (Figma re-reads code.js on next run) — sticky + 4:5
   fixes land together. Template naming conventions drift (Adtype:/Adtype_/AdType_) —
   worth an Elise/design alignment note for August.
+
+## 2026-07-27 (night) — QUALITY PROGRAM items 1-4 shipped
+1. **tests/copy_regression.py** — committed regression gate. Offline mode (free, ~70
+   deterministic checks: casing/trim/combined-caps/flatten/near-dup/parity/style
+   resolution/intake/craft-bar-banned-terms/refs) + --live mode (real copy run in a
+   FORCED scratch dir asserting Adrie's full spec incl. diverse picks). VALIDATED: offline
+   all green; live 6-style run all green ($0.95). Run before every pipeline deploy.
+2. **tests/figma_template_lint.py** — walks the Figma file, extracts the plugin's own
+   expectation maps from code.js, reports per-style container/template/size resolution +
+   nested Image-Placeholder duplicates. FIRST RUN: 46 findings — the container map is
+   stale nearly across the board (file moved to Adtype_ naming; assembly survives on
+   fallbacks) + 13 MORE nested-placeholder instances of the 4:5 photo-bug class.
+   → the ready-made naming-alignment agenda for Elise/August. File key = argv[1].
+3. **Empty-brief guard** — form submit now requires explicit confirm when brief is empty;
+   agent gate-2 prompt leads with a warning + edit_order offer on brief-less orders.
+4. **Gemini image cost tracked** — _add_image_usage folds images×$0.13 (ADAM_IMAGE_COST_USD)
+   into token_usage.json estimated_cost_usd; image runs no longer under-report. Unit-tested.
+- Also: near-dup similarity extracted to module fns (_headline_tokens/_headlines_near_dup)
+  for testability. NEXT: #18 structured-output rebuild (scheduled); wiki audit + agent
+  honesty eval as background passes.
