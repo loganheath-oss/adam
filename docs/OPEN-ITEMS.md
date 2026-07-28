@@ -709,3 +709,20 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   (52% card) instead of asking. Replaced: Bespoke tile now = the 40%-budget ad (node
   5415:1605, found by text search). LESSON: when a doc pairs a link with an embedded image,
   screenshot-check the image region before choosing on the author's behalf.
+
+## 2026-07-27 (cont.) — Adrie's failing run: root sequence + LIVE rerun proof
+- SEQUENCE SOLVED (live chat history): her order was submitted at 18:35 WITHOUT a brief
+  (the Gate-2 "(empty — no custom brief)" display was ACCURATE, not a bug); 90s later she
+  pasted the Sprint-1 brief into CHAT ("I'm adding the brief information here…"), agent
+  saved via edit_order + refs reloaded, gate 2 approved 18:37. Brief WAS in effect for
+  copy gen; the output failures were the (now-fixed) nested-feed bug.
+- LIVE RERUN as proof: cloned her exact order (same 6 styles, P&R, her 1,983-char brief in
+  the FORM path) → sprint 2026-07-meta-98b46de321f4 on the deployed fixed engine.
+  SPEC CHECK ALL ✅: every style ≥2 selected, 2 Prospecting + 2 Retargeting choices,
+  on-creative + long/short headlines on every selected concept, long-body 18 bulleted /
+  18 paragraph. Copy is on-theme ("One expert beats a hundred maybes", fractional titles).
+  Live cost $0.86. Her original sprint left untouched as the before.
+- + casing backstop extended: C-suite/common acronyms (cfo→CFO, roi→ROI, ai→AI…) after
+  sentence-casing; "it" deliberately excluded (pronoun false-positive). Unit-tested.
+- (minor, watch): Sticky Note selected 6/6 on the rerun — review fallback likely kept all;
+  ≥2-choice spec still met. If it recurs, check the reviewer response parse for Sticky.

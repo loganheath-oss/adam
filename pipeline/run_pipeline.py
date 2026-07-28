@@ -117,14 +117,22 @@ def _response_text(rj):
 _DAY_RE = re.compile(r"\b(mon|tues|wednes|thurs|fri|satur|sun)day\b", re.IGNORECASE)
 
 
+# NOTE: "it" is deliberately absent — uppercasing the pronoun "it" everywhere is far
+# worse than leaving the rare standalone "IT" (industry) lowercase.
+_ACRONYM_RE = re.compile(r"\b(cfo|cmo|coo|ceo|cto|cio|chro|roi|seo|ppc|kpi|smb|ai|ml)\b",
+                         re.IGNORECASE)
+
+
 def _fix_proper_nouns(text):
-    """Deterministic backstop: capitalize days of the week and 'Upwork', which the model
-    lowercases under the sentence-case rule (prompting only gets ~70% there). Days and
-    Upwork are unambiguous proper nouns; months are skipped (May/March collide with words)."""
+    """Deterministic backstop: capitalize days of the week, 'Upwork', and common acronyms
+    (CFO/CMO/ROI/AI…), which the model lowercases under the sentence-case rule (prompting
+    only gets ~70% there; Adrie's guardrails: 'No ALL CAPS except acronyms like AI, ROI').
+    Days and Upwork are unambiguous; months are skipped (May/March collide with words)."""
     if not isinstance(text, str) or not text:
         return text
     text = _DAY_RE.sub(lambda m: m.group(0).capitalize(), text)
     text = re.sub(r"\bupwork\b", "Upwork", text)
+    text = _ACRONYM_RE.sub(lambda m: m.group(0).upper(), text)
     return text
 
 
