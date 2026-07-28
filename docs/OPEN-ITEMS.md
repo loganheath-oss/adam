@@ -794,3 +794,13 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
 - Also: near-dup similarity extracted to module fns (_headline_tokens/_headlines_near_dup)
   for testability. NEXT: #18 structured-output rebuild (scheduled); wiki audit + agent
   honesty eval as background passes.
+
+## 2026-07-28 — Naming convention DECIDED (Logan)
+- Audit ranked all naming strata by node recency across both files. Elise's newest work
+  = `Adtype_Style-Name` containers + `Template_Style-Name[_Variant]_WxH` frames +
+  `Copy_*` text + `Image-Placeholder` (leaf-only). DECISION: adopt her convention as THE
+  standard (nothing renamed retroactively; plugin adapts). Canonized in
+  docs/figma-naming-convention.md incl. the leaf rule that outlaws the 4:5 photo-bug class.
+- OPEN follow-through: remap plugin STYLE_ADTYPE_CONTAINERS / STYLE_TEMPLATE_PREFIXES
+  primaries to the standard (legacy as fallbacks); share the doc + lint output with Elise
+  for the August 17-template build.
