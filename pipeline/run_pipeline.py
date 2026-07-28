@@ -1974,7 +1974,16 @@ def _review_and_rank_copy(copy_outputs, order, context, api_key, sprint_id=None)
         """Review + rank one style's concepts (one Claude call)."""
         reviewed = []
         style = group_concepts[0].get("visual_style", "unknown")
-        target = _targets.get(_norm_style(style), 3)
+        # Adrie's expected-output spec (7/27): every run must return the TOP 2 copy
+        # choices per ad style — so a P&R run yields 2 Prospecting + 2 Retargeting
+        # choices after the manifest doubling. Orders of qty 1 previously selected
+        # just 1 concept (= 1 choice per audience). Floor the selection at 2
+        # (env-tunable via ADAM_MIN_CHOICES); larger ordered quantities still win.
+        try:
+            _min_choices = int(os.environ.get("ADAM_MIN_CHOICES", "2") or "2")
+        except ValueError:
+            _min_choices = 2
+        target = max(_min_choices, _targets.get(_norm_style(style), 3))
 
         # Build the concepts as a numbered list for review
         concepts_text = ""
@@ -2146,8 +2155,38 @@ Return ONLY the JSON array. No other text."""
                                              len(c.get("length_flags", [])),
                                              len(c.get("length_warnings", [])),
                                              c.get("rank", 99)))
-                for pos, c in enumerate(eligible):
-                    c["selected"] = pos < target
+                # The selected set is the operator's CHOICES (Adrie: top 2 per style) —
+                # near-duplicate picks defeat the point ("...live by Friday" vs
+                # "...converting by Friday"). Greedy diverse pick: take cleanest-first,
+                # skipping any whose on-image headline near-duplicates an already-picked
+                # one; backfill from the skipped if the diverse pool runs short.
+                _HL_STOP = {"your", "the", "a", "an", "is", "are", "was", "be", "being",
+                            "could", "can", "will", "by", "to", "of", "in", "on", "for",
+                            "with", "and", "or", "it", "its", "you", "we", "our", "at",
+                            "this", "that", "not", "no", "now", "get", "just"}
+
+                def _hl_tokens(c):
+                    toks = set(re.findall(r"[a-z0-9']+",
+                                          str(c.get("creative_headline") or c.get("headline") or "").lower()))
+                    return toks - _HL_STOP
+                picked, skipped = [], []
+                for c in eligible:
+                    t = _hl_tokens(c)
+                    # near-dup = high content-word Jaccard OR one headline's content words
+                    # contained in the other's ("Hired by Friday" ⊂ "Hired by Friday, not
+                    # next quarter"). Tiny titles (<2 content words) skip the check.
+                    dup = len(t) >= 2 and any(
+                        len(p) >= 2 and ((len(t & p) / max(1, len(t | p))) >= 0.6
+                                         or t <= p or p <= t)
+                        for p in (_hl_tokens(x) for x in picked))
+                    (picked if (len(picked) < target and not dup) else skipped).append(c)
+                for c in skipped:
+                    if len(picked) >= target:
+                        break
+                    picked.append(c)
+                _picked_ids = {id(c) for c in picked}
+                for c in eligible:
+                    c["selected"] = id(c) in _picked_ids
                 got = sum(1 for c in reviewed if c.get("selected"))
                 if got < target:
                     print(f"    ⚠ {style}: only {got} shippable concept(s) for a target of {target}")

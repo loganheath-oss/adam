@@ -682,3 +682,14 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   36/36 present + 36/36 distinct on both runs (nested-feed fix verified on real briefs).
   Chat Bubble now reads conversational ("Budget's tight this qtr") — matches her ask.
   Sticky Note title still fragments ("Site…") — the 12-char cap decision stands (Adrie/design).
+
+## 2026-07-27 (cont.) — Top-2 choices per audience (Adrie's spec) SHIPPED
+- Selection floor raised: every style now selects ≥2 concepts (ADAM_MIN_CHOICES, default 2;
+  larger ordered quantities still win), so P&R runs surface 2 Prospecting + 2 Retargeting
+  choices per style through review + manifest doubling. Was: qty-1 orders selected 1.
+- PLUS diverse-pick: the selected choices must be DIFFERENT angles — greedy pick skips a
+  candidate whose on-image headline near-duplicates an already-picked one (content-word
+  Jaccard ≥0.6 OR containment, stopword-filtered; tiny titles exempt; backfills if short).
+  Caught real case: "…live by Friday" vs "…converting by Friday" was surfacing as "2 choices".
+- VERIFIED live twice (her Sprint-10 brief, qty 1, P&R): 2 selected per style, 2 choices per
+  audience, visibly distinct angles. ~$0.8 verification total.
