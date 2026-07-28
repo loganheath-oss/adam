@@ -693,3 +693,13 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   Caught real case: "…live by Friday" vs "…converting by Friday" was surfacing as "2 choices".
 - VERIFIED live twice (her Sprint-10 brief, qty 1, P&R): 2 selected per style, 2 choices per
   audience, visibly distinct angles. ~$0.8 verification total.
+
+## 2026-07-27 (cont.) — Browse thumbnails for Notification + Bespoke (Adrie's issue)
+- AUDIT (Logan's catch): two "open" items were ALREADY DONE — order form ends at submit
+  (the /handoff page implements her Slack-link flow nearly verbatim) and her P&R
+  definition in the prompt (awareness-vs-familiarity language shipped with the P&R work).
+- The real gap was the form's Browse tiles: STYLE_THUMBS (web/lib/style-thumbs.ts) had 22
+  entries; Notification + Bespoke were missing → blank tiles. Added both as data URIs:
+  Notification = Template_Notification_1440x1440 (5310:337, Paid Acquisition 2026 file);
+  Bespoke = the "52%" Gen-Z stat card (5310:5083) from the KOTH board SHE linked in her
+  issue ("pull any unique design from our previous bespoke"). JSON-validated, deployed.
