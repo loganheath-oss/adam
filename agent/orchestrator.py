@@ -211,6 +211,24 @@ def tool_get_manifest(sprint_id: str) -> dict:
     return {"sprint_id": sprint_id, "rows": rows, "count": len(rows)}
 
 
+def tool_log_issue(description: str, sprint_id: str = "", category: str = "") -> dict:
+    """Log an issue to the running admin Issues list (same store the /admin/issues
+    page and digest read). Lets the operator file an issue WITHOUT leaving chat."""
+    d = (description or "").strip()
+    if not d:
+        return {"ok": False, "error": "A description is required."}
+    try:
+        import db as _db
+        ok = _db.report_issue(description=d[:4000],
+                              user_email="chat-operator",
+                              sprint_id=(sprint_id or None),
+                              category=(category or None), context=None)
+        return {"ok": bool(ok),
+                "note": "Logged to the admin Issues list." if ok else "Issue tracking DB unavailable."}
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)[:120]}
+
+
 EDITABLE_TOP_LEVEL_FIELDS = ("brief", "delivery_date", "driver", "targeting")
 
 
@@ -681,6 +699,18 @@ TOOLS = [
         "input_schema": {"type": "object", "properties": {}},
     },
     {
+        "name": "log_issue",
+        "description": ("Log an issue the operator reports to the running admin Issues list "
+                        "(visible at /admin/issues and counted in the digest). Use whenever the "
+                        "user describes a problem, bug, or quality complaint and confirms logging "
+                        "— or says 'log this'. Include sprint_id when it relates to this sprint."),
+        "input_schema": {"type": "object", "properties": {
+            "description": {"type": "string"},
+            "sprint_id": {"type": "string"},
+            "category": {"type": "string"}},
+            "required": ["description"]},
+    },
+    {
         "name": "append_learning",
         "description": (
             "Append a new entry to the ADAM learnings doc. Use this when the user "
@@ -744,6 +774,7 @@ TOOL_DISPATCH = {
     "get_gate_decisions": lambda args: tool_get_gate_decisions(**args),
     "search_past_sprints": lambda args: tool_search_past_sprints(**args),
     "get_learnings": lambda args: tool_get_learnings(),
+    "log_issue": lambda args: tool_log_issue(**args),
     "append_learning": lambda args: tool_append_learning(**args),
     "search_wiki": lambda args: tool_search_wiki(**args),
     "get_wiki": lambda args: tool_get_wiki(**args),

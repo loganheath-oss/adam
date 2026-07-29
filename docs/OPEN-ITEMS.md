@@ -902,3 +902,10 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   (two verbatim-shape examples: lead-in → emoji bullet per line → CTA closer) + a
   deterministic _bullet_body_shape_ok validator in the Python with malformed_bullet_bodies
   in per-run quality telemetry. Prompt asks; Python verifies; telemetry watches.
+
+## 2026-07-29 (cont.) — Issues loop CLOSED IN CHAT
+- The running admin Issues list already existed (/admin/issues page + POST /report-issue +
+  digest counts + Issues→Learnings triage) — but the chat agent ASKED "want to log an
+  issue?" with NO tool to do it. Added tool_log_issue (16th tool): logs straight to the
+  same DB store with sprint_id + category, so Adrie files issues without leaving the
+  conversation; they appear in /admin/issues + digest immediately.
