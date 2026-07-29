@@ -892,3 +892,13 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
 - (2) SUMMARY VIEW at Gate 3: agent instruction never forbade summarizing → she had to
   ask twice. Gate-3 rule now requires FULL field detail on FIRST presentation (on-creative
   per audience, headline L/S, body S/L, CTA), citing her complaint.
+
+## 2026-07-29 (cont.) — OPERATOR TRANSPARENCY law + canonical bullet examples (Logan)
+- PRINCIPLE ENCODED (agent prompt, non-negotiable section): the operator sees ALL work
+  up front at EVERY gate — complete work product on first message, never a summary or
+  sample; gate 3 shows EVERY concept incl. non-selected with reasons; continue across
+  messages rather than truncate.
+- CANONICAL BULLET SHAPE from Adrie's REAL reference-deck examples now lives in the refs
+  (two verbatim-shape examples: lead-in → emoji bullet per line → CTA closer) + a
+  deterministic _bullet_body_shape_ok validator in the Python with malformed_bullet_bodies
+  in per-run quality telemetry. Prompt asks; Python verifies; telemetry watches.

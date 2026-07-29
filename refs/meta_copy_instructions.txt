@@ -85,6 +85,24 @@ and half yourself.
   never stacked, never replacing a word. NEVER a plain "•", "-", or "▪" bullet — a
   bullet line MUST start with an emoji. Bullets highlight benefits, Upwork platform
   features, or proof points from provided stats and resource docs.
+- CANONICAL BULLETED-BODY SHAPE — these REAL Upwork examples are the binding pattern
+  (lead-in sentences → one emoji bullet per line → closer with CTA). Match this shape exactly:
+
+  EXAMPLE 1:
+  Creative drives growth. But testing new ads shouldn't take weeks — or drain budgets on agencies.
+  On Upwork, you can build a creative team on demand: designers, video editors, media buyers.
+  🚀 Test ads faster
+  📊 Learn what resonates
+  📈 Scale campaigns with confidence
+
+  EXAMPLE 2:
+  From concept to launch, your app deserves more than piece-meal development. On Upwork, founders
+  connect with independent professionals — many rated and reviewed by clients.
+  ⏱️ Skip traditional hiring delays
+  🧩 Build leaner, agile teams
+  📱 Bring your app closer to launch
+  Post your job free today and connect with app talent on Upwork.
+
 - Paragraph format: flowing prose — concise and punchy, NOT a wall of text.
 
 FORMATTING GUARDRAILS

@@ -690,6 +690,8 @@ def stage_02_copy_gen(sprint_id, order, context):
             "legal_flagged_selected": sum(1 for c in _sel if c.get("legal_flags")),
             "bulleted_long": _nb, "paragraph_long": len(_bl) - _nb,
             "near_dup_selected_pairs": _dups,
+            "malformed_bullet_bodies": sum(
+                1 for c in _cs if not _bullet_body_shape_ok(c.get("body_long"))),
             "vs_recent_sprint_dups": (lambda _rh: sum(
                 1 for c in _sel for h in _rh
                 if _headlines_near_dup(c.get("creative_headline") or c.get("headline") or "", h))
@@ -865,6 +867,23 @@ def _pick_bullet_emoji(line, used):
         if emo not in used:
             return emo
     return _FALLBACK_BULLET_EMOJI[0]
+
+
+_EMOJI_RE = re.compile(r"[\U0001F300-\U0001FAFF☀-➿]")
+
+
+def _bullet_body_shape_ok(text):
+    """Deterministic check of the canonical Upwork bulleted-body shape (built from
+    Adrie's real reference-deck examples): a lead-in line of real copy first, then 2+
+    emoji-led bullet lines. Returns True for paragraphs (shape rules don't apply)."""
+    t = str(text or "")
+    lines = [ln.strip() for ln in t.split("\n") if ln.strip()]
+    bullet_lines = [ln for ln in lines if _EMOJI_RE.match(ln)]
+    if len(bullet_lines) < 2:
+        return True                      # paragraph body — no bullet shape to enforce
+    if not lines or _EMOJI_RE.match(lines[0]):
+        return False                     # starts with a bullet — missing lead-in
+    return len(bullet_lines) >= 2
 
 
 def _normalize_bullet_newlines(text):
