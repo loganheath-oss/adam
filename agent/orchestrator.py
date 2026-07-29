@@ -33,7 +33,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # get_sprint tools look in the wrong directory and report "no sprints found"
 # even while the web UI (which honors RUNS_DIR) shows the sprint at its gate.
 RUNS_DIR = Path(os.environ.get("RUNS_DIR", str(BASE_DIR / "runs")))
-LEARNINGS_PATH = BASE_DIR / "learnings.md"
+# LEARNINGS must live on PERSISTENT storage. It used to sit on the container FS
+# (BASE_DIR), where every deploy reset it to the git copy — silently wiping every
+# operator-appended learning (found 2026-07-29: Adrie's logged items vanished).
+# On Railway, RUNS_DIR is on the /data volume — keep learnings beside it; seed the
+# volume copy from the repo file on first touch so the baseline content carries over.
+_REPO_LEARNINGS = BASE_DIR / "learnings.md"
+if str(RUNS_DIR).startswith("/data"):
+    LEARNINGS_PATH = RUNS_DIR.parent / "learnings.md"
+    try:
+        if not LEARNINGS_PATH.exists() and _REPO_LEARNINGS.exists():
+            LEARNINGS_PATH.write_text(_REPO_LEARNINGS.read_text())
+    except Exception:
+        LEARNINGS_PATH = _REPO_LEARNINGS
+else:
+    LEARNINGS_PATH = _REPO_LEARNINGS
 
 GATE_NAMES = {
     2: "Order + Refs Review",

@@ -3701,7 +3701,9 @@ async def sync_log_page(request: Request):
 </html>""")
 
 
-LEARNINGS_PATH = BASE_DIR / "learnings.md"
+# Persistent learnings path — same volume-aware logic as the agent (a container-FS
+# learnings.md is wiped on every deploy; operator edits were being silently lost).
+from agent.orchestrator import LEARNINGS_PATH  # noqa: E402 — single source of truth
 
 # Approved customer quotes — Adrie's live quote library (decided 2026-07-16: a
 # static PDF goes stale; this is editable in-app and read by testimonial copy-gen

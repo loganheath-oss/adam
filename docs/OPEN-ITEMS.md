@@ -909,3 +909,16 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   issue?" with NO tool to do it. Added tool_log_issue (16th tool): logs straight to the
   same DB store with sprint_id + category, so Adrie files issues without leaving the
   conversation; they appear in /admin/issues + digest immediately.
+
+## 2026-07-29 (cont.) — DATA-LOSS BUG: learnings were wiped by every deploy (FIXED)
+- Adrie's call question ("where do my logged items show up?") exposed it: the agent HAD
+  been appending her logs to learnings.md — but LEARNINGS_PATH pointed at the CONTAINER
+  filesystem, reset to the git copy on every deploy. Her 7/28 entries were wiped by our
+  deploy cadence. FIX: learnings now live on the /data volume (seeded from the repo copy
+  on first touch); agent + main.py share one path.
+- RECOVERED from chat transcripts: (1) her standing Gate-3 rule ("always present the full
+  copy field set") — already permanently encoded as the agent's OPERATOR TRANSPARENCY law;
+  (2) her Sticky-note style-guide issue — backfilled into the Issues list as a ticket.
+- Also captured verbatim from her chats: "yes, i want you to show it all, every time i
+  run a sprint" / "It should never be collapsed and none of the required fields should
+  ever be hidden from my view" — the transparency law's canonical citations.
