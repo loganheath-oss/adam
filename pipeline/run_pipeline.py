@@ -867,6 +867,25 @@ def _pick_bullet_emoji(line, used):
     return _FALLBACK_BULLET_EMOJI[0]
 
 
+def _normalize_bullet_newlines(text):
+    """Bulleted bodies sometimes come back with the bullets INLINE on one line
+    (lead-in 🚀 bullet 💻 bullet …) — found 2026-07-29. If a body has 3+ emoji and
+    no newlines, put each emoji-led bullet on its own line so it renders as a list."""
+    t = str(text or "")
+    if "\n" in t:
+        return text
+    _em = list(re.finditer(r"[\U0001F300-\U0001FAFF☀-➿]", t))
+    if len(_em) < 3:
+        return text
+    out, last = [], 0
+    for m in _em:
+        if m.start() > last:
+            out.append(t[last:m.start()].rstrip())
+        last = m.start()
+    out.append(t[last:].rstrip())
+    return "\n".join(x for x in out if x)
+
+
 def _emojify_plain_bullets(text):
     """Replace each leftover plain bullet with a content-apt, non-repeating emoji so a list
     reads picture-rich and varied (never a stack of ✅). No plain bullets → unchanged."""
@@ -1462,8 +1481,12 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     for _j in range(qty):
         _gidx = seq * _COPY_BATCH_SIZE + _j
         if _gidx % 2 == 0:
-            _fmt_lines.append(f"  Concept {_j+1}: body_long / Primary_Text_Long = EMOJI-BULLETED list "
-                              "(3-4 short bullets, each led by a DISTINCT relevant emoji — vary them, not all the same).")
+            _fmt_lines.append(f"  Concept {_j+1}: body_long / Primary_Text_Long = LEAD-IN + EMOJI BULLETS: "
+                              "open with 1-2 full sentences of real copy (the hook/context — NEVER start "
+                              "with a bullet), then 3-4 short bullets EACH ON ITS OWN LINE — separate "
+                              "every bullet with a newline (\\n); never run bullets together inline — "
+                              "each led by a DISTINCT relevant emoji, then optionally one closing line. "
+                              "Bullets support the lead-in; they never replace it.")
         else:
             _fmt_lines.append(f"  Concept {_j+1}: body_long / Primary_Text_Long = FLOWING PARAGRAPH prose "
                               "(2-3 sentences, NO bullets, NO emoji-led lines).")
@@ -1995,14 +2018,14 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         # rotating palette — not a stack of flat ✅ (Logan, 2026-07-23).
                         for _bf in ("body_long", "body_short"):
                             if concept.get(_bf):
-                                concept[_bf] = _emojify_plain_bullets(concept[_bf])
+                                concept[_bf] = _normalize_bullet_newlines(_emojify_plain_bullets(concept[_bf]))
                         _tcb = concept.get("targeting_copy")
                         if isinstance(_tcb, dict):
                             for _aud in _tcb.values():
                                 if isinstance(_aud, dict):
                                     for _bf in ("body_long", "body_short"):
                                         if _aud.get(_bf):
-                                            _aud[_bf] = _emojify_plain_bullets(_aud[_bf])
+                                            _aud[_bf] = _normalize_bullet_newlines(_emojify_plain_bullets(_aud[_bf]))
                         # Style-guide adherence: a HEADLINE-ONLY ad type must not carry
                         # an on-image subhead (Adrie 2026-07-23: Graphic with Text was
                         # emitting a subhead the guide doesn't allow). Strip it.

@@ -60,7 +60,9 @@ BULLETED list or a FLOWING PARAGRAPH. Follow the per-concept assignment EXACTLY;
 default every concept to bullets. The set is intentionally ~50/50 bullet vs paragraph so the
 ads don't feel repetitive. If (and only if) no assignment is present, split the batch half
 and half yourself.
-- Bullet format: 3–4 bullets, each led by ONE emoji chosen like an art director.
+- Bullet format: a 1–2 sentence LEAD-IN of real copy first (hook/context — a bulleted
+  body must NEVER start with a bullet), then 3–4 bullets each led by ONE emoji chosen
+  like an art director, then optionally a one-line closer.
   Read the bullet and pick the single most VIVID, CONCRETE emoji for that line's
   specific noun or outcome — not its broad category. "Cut reporting time in half"
   → ⏱️, "clean up six months of books" → 🧾, "email campaigns that convert" → 📬,

@@ -881,3 +881,14 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   styles, volume threshold (80%), stuck sprints (awaiting a gate >7d). Results cached into
   /admin/health ("selfcheck") + logged as system.selfcheck events (visible in activity/
   digest counts). POST /admin/selfcheck runs it on demand.
+
+## 2026-07-29 — Adrie's two morning complaints: FIXED + gated
+- (1) BARE BULLETS: my 50/50 format directive said "EMOJI-BULLETED list" with no lead-in →
+  model shipped naked bullet stacks. Fixed: directive now demands 1-2 sentence lead-in +
+  one bullet PER LINE; first fix round exposed inline-bullets-on-one-line, so added a
+  deterministic _normalize_bullet_newlines (3+ emoji, no newlines → split to lines;
+  paragraphs untouched, unit-tested). Suite gained permanent lead-in + line-break checks.
+  Live verify ALL GREEN (50/50 restored, lead-ins present). ~$2 verification.
+- (2) SUMMARY VIEW at Gate 3: agent instruction never forbade summarizing → she had to
+  ask twice. Gate-3 rule now requires FULL field detail on FIRST presentation (on-creative
+  per audience, headline L/S, body S/L, CTA), citing her complaint.

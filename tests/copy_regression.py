@@ -194,6 +194,11 @@ def live_checks(all_styles=False):
     bl = [c.get("body_long") for c in cs if c.get("body_long")]
     nb = sum(1 for t in bl if re.search(r"\n\s*([^\w\s]|[-•*])", str(t)))
     check("live: ~50/50 long-body split", bl and 0.35 <= nb / len(bl) <= 0.65, f"{nb}/{len(bl)} bulleted")
+    # Bulleted bodies must OPEN with a lead-in sentence, never a bare bullet
+    # (Adrie 2026-07-29: "just the bullet points with no copy before it").
+    bare = [t for t in bl if re.match(r"\s*[^\w\s]", str(t).strip())]
+    check("live: bulleted bodies have a lead-in", not bare,
+          f"{len(bare)} start with a bullet: {str(bare[0])[:60]!r}" if bare else "")
     blob = " ".join(json.dumps(c) for c in cs if c.get("selected"))
     lows = re.findall(r"\b(monday|tuesday|wednesday|thursday|friday|cfo|cmo|roi|upwork)\b", blob)
     check("live: casing clean in selected copy", not lows, f"lowercase hits {set(lows)}")
