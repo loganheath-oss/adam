@@ -1,7 +1,7 @@
 import { AdminHeader } from "@/components/admin-header";
 import { PrintButton } from "@/components/print-button";
 import { CopyTextButton } from "@/components/copy-text-button";
-import { getDigest, type Digest } from "@/lib/admin";
+import { getDigest, getIssues, type Digest, type Issue } from "@/lib/admin";
 
 // Server component: the period digest — async catch-up for the team and Logan. The
 // automated version of Bree's manual August change log. Renders a visual summary
@@ -18,7 +18,7 @@ function pct(n: number | null | undefined): string {
 }
 
 // The Slack-pasteable text — plain, scannable, no markdown that renders oddly.
-function digestText(d: Digest, days: number): string {
+function digestText(d: Digest, days: number, openIssues: Issue[] = []): string {
   const L: string[] = [];
   L.push(`ADAM — last ${days} days`);
   L.push("");
@@ -40,6 +40,11 @@ function digestText(d: Digest, days: number): string {
       const styles = r.styles && r.styles.length ? r.styles.join(", ") : "—";
       L.push(`  - ${when} · ${r.driver ?? "?"} · ${r.platform ?? "?"} · ${r.targeting ?? "?"} · ${styles} · ${r.deliverable ?? "?"}`);
     }
+  }
+  if (openIssues.length) {
+    L.push("");
+    L.push("Open issues (operator-flagged):");
+    for (const i of openIssues.slice(0, 8)) L.push(`  - #${i.id} ${i.description}${i.sprint_id ? ` (${i.sprint_id.slice(-6)})` : ""}`);
   }
   if (d.incidents && d.incidents.length) {
     L.push("");
@@ -96,6 +101,7 @@ export default async function DigestPage({ searchParams }: { searchParams: Promi
   const sp = await searchParams;
   const days = Number(sp.days ?? 7);
   const d: Digest | null = await getDigest(days);
+  const openIssues: Issue[] = (await getIssues("open"))?.issues ?? [];
 
   if (!d || !d.enabled || d.error) {
     return (
@@ -112,7 +118,7 @@ export default async function DigestPage({ searchParams }: { searchParams: Promi
     );
   }
 
-  const text = digestText(d, days);
+  const text = digestText(d, days, openIssues);
   const degraded = (d.assemblies_degraded ?? 0) > 0;
   const hasErrors = (d.errors ?? 0) > 0;
 
@@ -140,6 +146,35 @@ export default async function DigestPage({ searchParams }: { searchParams: Promi
         Gate-3 picker used <span className="font-medium text-foreground">{d.picker_uses ?? 0}×</span>
         {(d.completed ?? 0) > 0 && (d.picker_uses ?? 0) === 0 && (
           <span className="text-amber-600"> — team is approving copy without the picker</span>
+        )}
+      </div>
+
+      {/* Open issues — the operator→developer ticketing view (Logan 2026-07-29):
+          what Adrie has flagged, visible to admins until resolved. */}
+      <div className="mb-6">
+        <h2 className="mb-3 text-lg font-medium">Open issues ({openIssues.length})</h2>
+        {openIssues.length > 0 ? (
+          <div className={CARD}>
+            <ul className="space-y-3 text-sm">
+              {openIssues.map((i) => (
+                <li key={i.id} className="flex gap-3 border-b border-border/60 pb-2 last:border-none last:pb-0">
+                  <span className="font-mono text-xs text-muted-foreground">#{i.id}</span>
+                  <div className="min-w-0 flex-1">
+                    <div>{i.description}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      {i.ts ? new Date(i.ts).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""}
+                      {i.user ? <> · {i.user}</> : null}
+                      {i.category ? <> · {i.category}</> : null}
+                      {i.sprint_id ? <> · <a className="underline" href={`/sprints/${i.sprint_id}`}>{i.sprint_id.slice(-6)}</a></> : null}
+                    </div>
+                  </div>
+                  <a href="/admin/issues" className="text-xs text-muted-foreground underline">triage</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className={`${CARD} text-sm text-muted-foreground`}>No open issues — the log is clear.</div>
         )}
       </div>
 
