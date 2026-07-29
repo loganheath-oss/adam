@@ -197,6 +197,9 @@ def live_checks(all_styles=False):
     # Bulleted bodies must OPEN with a lead-in sentence, never a bare bullet
     # (Adrie 2026-07-29: "just the bullet points with no copy before it").
     bare = [t for t in bl if re.match(r"\s*[^\w\s]", str(t).strip())]
+    ell = [c.get("description") for c in cs if c.get("selected")
+           and str(c.get("description") or "").rstrip().endswith(("…", "..."))]
+    check("live: no ellipsis-trimmed descriptions", not ell, str(ell[:2]))
     check("live: bulleted bodies have a lead-in", not bare,
           f"{len(bare)} start with a bullet: {str(bare[0])[:60]!r}" if bare else "")
     blob = " ".join(json.dumps(c) for c in cs if c.get("selected"))

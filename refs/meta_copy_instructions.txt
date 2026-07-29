@@ -48,6 +48,9 @@ FIELD SPECS (exact — enforce every limit)
                        the old "55–100 characters" default. Note the resolved entry in
                        the brief summary (e.g. "resolved to: Chat Bubble — entry #11").
                        (This is the copy printed ON the creative.)
+- Description        : ≤25 characters. A COMPLETE punchy fragment ("Fast hiring for SMBs")
+                       — compose it to fit; NEVER a longer sentence trimmed with an
+                       ellipsis ("Specialized talent…" is a failure).
 - Headline_Short     : ≤30 characters. Sentence case. No trailing period.
 - Headline_Long      : ≤50 characters. Sentence case. No trailing period.
 - CTA                : verb-led. Defaults: "Sign up", "Get started", "Learn more",

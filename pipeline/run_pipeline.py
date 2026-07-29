@@ -2064,6 +2064,17 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                                     for _cf in _SENTENCE_CASE_FIELDS:
                                         if _aud.get(_cf):
                                             _aud[_cf] = _to_sentence_case(_aud[_cf])
+                        # Description must never SHOW its trim: strip a trailing ellipsis
+                        # (and any dangling stopword) so it reads as a complete fragment
+                        # ("Specialized talent…" -> "Specialized talent") — economy-bias
+                        # audit, 2026-07-29.
+                        _d = str(concept.get("description") or "")
+                        if _d.rstrip().endswith(("…", "...")):
+                            _d = _d.rstrip().rstrip(".").rstrip("…").rstrip()
+                            _dw = _d.split()
+                            while _dw and _dw[-1].lower() in _HL_STOP:
+                                _dw.pop()
+                            concept["description"] = " ".join(_dw)
                         # Re-capitalize proper nouns (days of the week, Upwork) that
                         # _to_sentence_case just lowercased. Deterministic, runs LAST so it
                         # wins over sentence-casing. Fixes "friday" -> "Friday" (2026-07-27).

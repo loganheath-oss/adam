@@ -922,3 +922,18 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
 - Also captured verbatim from her chats: "yes, i want you to show it all, every time i
   run a sprint" / "It should never be collapsed and none of the required fields should
   ever be hidden from my view" — the transparency law's canonical citations.
+
+## 2026-07-29 (eve) — THIRD SYSTEMIC FORCE named + audited: ECONOMY BIAS
+- Logan's insight: Adrie's issues share one root — the model produces the MINIMUM output
+  that plausibly satisfies (summary views, bare bullets, 12-char stubs, "Logged ✅" without
+  logging, late-batch fatigue). Now named alongside convergence bias + shape drift.
+- AUDIT found 3 more live instances BEFORE being reported: Gate 2's instruction literally
+  said "order summary" (brief never required verbatim); Gate 4/5 permitted trimming
+  prompts/manifest rows; description fields shipping ellipsis-trims ("Specialized
+  talent…" — 2/12 in the sprint just sent to Adrie).
+- FIXES: gates 2/4/5/6 rewritten to FULL-detail specs (brief VERBATIM at gate 2; every
+  image prompt in full; every manifest row; complete QA list; continue across messages,
+  never sample); description = composed complete fragment (refs spec) + deterministic
+  de-ellipsis + permanent suite check. Suite green.
+- STANDING RULE (ledger-worthy): wherever an LLM presents or produces, economy bias
+  applies — spec fullness EXPLICITLY and verify deterministically. Silence ≠ fullness.
