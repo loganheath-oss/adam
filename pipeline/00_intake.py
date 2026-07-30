@@ -144,7 +144,14 @@ def validate_payload(payload: dict) -> list[str]:
                     normalized.append(style)
                 else:
                     normalized.append(canonical)
-            batch["visual_styles"] = normalized
+            # DEDUPE: the form's "+ Add Style" can add the same style twice; duplicates
+            # flow into the fan-out and produce colliding concept_ids (two different
+            # concepts sharing one id — found 2026-07-30 on a live sprint, scrambling
+            # review display + copy/image matching). Keep first occurrence, in order;
+            # style_quantities merging below already sums the quantities.
+            _seen = set()
+            batch["visual_styles"] = [x for x in normalized
+                                      if not (x in _seen or _seen.add(x))]
 
             # Canonicalize style_quantities keys so downstream lookups by
             # canonical style name find the right quantity.

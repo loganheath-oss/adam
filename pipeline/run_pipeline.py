@@ -719,7 +719,7 @@ def _generate_placeholder_copy(order):
     """Generate placeholder copy when no API key is available."""
     concepts = []
     for i, batch in enumerate(order.get("batches", [])):
-        for style in batch.get("visual_styles", ["default"]):
+        for style in dict.fromkeys(batch.get("visual_styles", ["default"])):
             concepts.append({
                 "concept_id": f"concept_{i}_{style.lower().replace(' ', '_')}",
                 "batch_index": i,

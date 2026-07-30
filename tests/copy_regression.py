@@ -130,6 +130,12 @@ def offline_checks():
                             "style_quantities": {s: 1 for s in STYLES_24},
                             "resolutions": [{"size": "1440 x 1440", "ratio": "1:1"}],
                             "quantity": 1, "audience": "Both"}]}
+    dup_payload = json.loads(json.dumps(payload))
+    dup_payload["batches"][0]["visual_styles"] = ["Sticky Note", "Poll", "Sticky Note"]
+    intake.validate_payload(dup_payload)
+    check("intake dedupes duplicate styles",
+          dup_payload["batches"][0]["visual_styles"] == ["Sticky Note", "Poll"],
+          str(dup_payload["batches"][0]["visual_styles"]))
     errs = intake.validate_payload(payload)
     check("intake accepts 24-style payload", not errs, str(errs)[:120])
 

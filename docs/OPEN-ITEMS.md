@@ -937,3 +937,18 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
   de-ellipsis + permanent suite check. Suite green.
 - STANDING RULE (ledger-worthy): wherever an LLM presents or produces, economy bias
   applies — spec fullness EXPLICITLY and verify deterministically. Silence ≠ fullness.
+
+## 2026-07-30 — Adrie's Slack feedback: all three signals run down
+- (1) "Truncated first sentences → 'I did that, not ADAM'": the DISPLAY layer trimmed
+  body_long lead-ins in chat while the data was complete — the diagnostic-honesty rule
+  worked exactly as designed (agent self-attributed + verified raw data). Added an
+  explicit copy-fields-VERBATIM rule to the transparency law.
+- (2) "Fatigue / later ads not to spec": root cause found — her order contained the SAME
+  STYLE TWICE ("+ Add Style" allows it), producing 12 concepts with COLLIDING concept_ids
+  (two different concepts sharing an id) that scramble review display + copy/image
+  matching. FIXED: intake dedupes visual_styles (quantities already merge), fan-out has a
+  defensive dedupe, and the suite permanently checks it. (Style-extra completeness and
+  body caps verified fine; an initial 782-char scare was my diagnostic's math bug.)
+- (3) Quality vs her examples doc: her canonical examples are already embedded in the
+  refs (canonical bulleted shape) + craft bar; Friday's updated docs get ingested on
+  arrival.

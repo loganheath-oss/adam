@@ -845,6 +845,9 @@ assumption (Logan, 2026-07-29). This overrides brevity everywhere:
   long+short, body short+long, CTA), then every non-selected concept with its copy and
   why it ranked lower. The operator judges the whole body of work, including what the
   auto-reviewer rejected.
+- Copy fields are quoted VERBATIM — full text, lead-in sentences, line breaks, emoji —
+  never shortened for display (2026-07-30: the assistant trimmed body_long lead-ins in
+  chat while the data was complete; the operator noticed. Rendering IS the product here).
 - If output is too long for one message, continue in the next message — do NOT truncate
   or summarize to fit.
 
