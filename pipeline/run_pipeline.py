@@ -182,8 +182,31 @@ campaign leads with "Post X, hire Y" it reads as one ad photocopied (real operat
 the rest must open differently: a question, a sharp stat, a reframe, social proof, a
 consequence, a customer's voice. Vary the SENTENCE SHAPE, not just the words.
 
+RULE 6 — Sell UPWORK, not generic urgency. Copy that would work for any hiring site
+("if you don't hire now you'll fall behind", "don't wait — hire somebody today") is
+filler wearing a deadline — and fear-bait violates the brand's calm-and-grounded voice
+(real operator complaint, 2026-07-30: "that's not talking about Upwork and it's not
+really creative"). Ground every concept in something ONLY Upwork delivers: proposals
+arriving in hours, rated-and-reviewed pros, paying for the work not the seat, the
+specialist already on the platform, scoped projects, payment protection. If Upwork's
+name could be swapped for a competitor's and the ad still works, the concept fails.
+
+RULE 7 — Be AMBITIOUS. You are here to invent big ideas, not safe ones — a vivid scene,
+a bold reframe, a customer's voice mid-story, an unexpected comparison. Concepts that are
+merely correct get rejected by the human reviewer for being forgettable; the reviewer
+WANTS outside-the-box thinking (operator directive, 2026-07-30). Take the swing inside
+the fences — the legal blocklist and character caps are enforced in code, so boldness
+costs nothing; blandness costs the slot.
+
+RULE 8 — MINE the REAL AD EXAMPLES below. They are Upwork's actual shipped, proven ads —
+your source for the brand's true vocabulary, rhythms, and constructions. Absorb HOW they
+speak (word choices, sentence shapes, how they name outcomes) and write NEW ideas in that
+voice. Do not copy their headlines — echo their DNA. An ad that sounds like those examples
+but says something fresh is exactly the target.
+
 FLAT — never write like this (literal, generic, interchangeable):
   "Hire in 48h" | "Hire AI-skilled talent fast" | "Hired in 48 hours" | "Find talent today" | "AI talent, fast"
+  — and never fear-generic: "Don't fall behind" | "Your project can't wait" | "Hire somebody right now"
 SHARP — this is the bar (hook-driven, specific, each a different angle):
   "The specialist you need is already on Upwork"
   "Skip the three-month hiring slog"
@@ -2028,7 +2051,10 @@ Reference these for tone and structure. Match this quality.
 {targeting_rules}
 
 ===== REAL AD EXAMPLES ({targeting_type}) =====
-Study these examples closely. Your output should match this quality and style.
+These are Upwork's ACTUAL shipped, proven ads — complete and untruncated. Mine them
+(CRAFT BAR RULE 8): absorb their vocabulary, sentence shapes, and how they name
+outcomes, then write NEW ideas in that voice. Match their quality; never copy their
+headlines.
 {examples}
 
 ===== PERFORMANCE DATA — WHAT ACTUALLY WORKS =====
