@@ -5,6 +5,29 @@ Claude copy instructions, provided 2026-07-14. Grouped by workstream; most-actio
 first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination · ⬜ not started.
 
 ## A. Copy engine
+- ✅ **2026-07-30 audit round 2: the structural program's core.** (1) `sprint_state.py`
+  — atomic cross-process state API (flock + temp/fsync/os.replace + CAS claims);
+  ALL FOUR approval surfaces (HTTP button, chat tool, MCP connector, CLI --resume)
+  now pass ONE `claim_gate`; the MCP path had NO state check and could run a stage
+  twice in parallel; MCP timeout no longer SIGKILLs mid-stage (leaves it running,
+  reports still_running). Non-atomic `write_text` state writes replaced; readers
+  tolerant (a torn file reads as visible `corrupt` state instead of 500ing every
+  sprint page). Suite: 8-thread race → exactly one winner. (2) Gate-5 VETO
+  RECONCILE — deleting an image at Gate 5 now actually removes its exports/
+  hardlink twins at delivery; vetoes persisted in run_summary
+  (`removed_at_gate_5`) + row status. (3) NO-AI-PEOPLE enforced in code —
+  library fetch retries 3x; photo styles route to needs_human_selection (never
+  Gemini) on library outage; deterministic post-pass assertion flips any
+  violating row + `policy_flag`; PHOTO_LIBRARY_STYLES hoisted to module level.
+  (4) ASYNC CHAT — AsyncAnthropic + 15s SSE keepalives + tool dispatch via
+  asyncio.to_thread; chat gate approvals schedule the same background task as
+  the HTTP button via a thread-safe hook (a chat approval used to run the WHOLE
+  stage inline on the event loop, freezing every request for minutes). Offline
+  smoke proves the loop stays live mid-call. (5) DISK GUARD — /submit + approve
+  refuse (507) under ADAM_MIN_FREE_MB (default 60MB) so ENOSPC can't strand a
+  sprint mid-stage. REMAINING: /data backup (needs Drive-cred verification),
+  stuck-detector widening, drain-before-restart, stage-scaffold retirement,
+  .env.example regen, canonical style table (Elise), spend dedup.
 - ✅ **2026-07-30 audit quick wins (round 1 of the structural program).** From
   `docs/ARCHITECTURE-AUDIT-2026-07-30.md`: (1) FAIL-CLOSED review — legal/length
   de-selection + the selection floor extracted to `_deterministic_selection`, run

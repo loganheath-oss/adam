@@ -486,6 +486,18 @@ def load_template_registry() -> dict:
 # Styles that need TWO distinct library photos (left + right placeholder).
 # Add new dual-image styles here and the row builder will pick two photos.
 DUAL_PHOTO_LIBRARY_STYLES = {"Split Screen"}
+# Photo-based styles — pull from the Figma brand library, not Gemini.
+# Per Brian's rule: no AI-generated photography; people photos come from
+# Brandon's curated 2026 library. Module-level (audit 2026-07-30) so the
+# no-AI-people policy assertion and the test suite share ONE definition.
+PHOTO_LIBRARY_STYLES = {
+    "Lifestyle Photo", "Photo with Text", "Testimonial",
+    "Notification",   # template has a small portrait slot we fill from library
+    "Image Library",  # legacy name — same routing
+    "Split Screen",   # TWO library photos — dual pick via DUAL_PHOTO_LIBRARY_STYLES
+    "Hybrid",         # dashboard mock with a real image_placeholder (2026-06-22)
+    "Poll",           # full-bleed placeholder behind the poll card (2026-07-02)
+}
 
 # Styles that produce multiple variant outputs per concept. The pipeline emits
 # one image-prompt row per variant. Brandon gets every variant as a separate
@@ -2914,23 +2926,6 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
 
     concepts = (copy_outputs or {}).get("concepts", [])
 
-    # Photo-based styles — pull from the Figma brand library, not Gemini.
-    # Per Brian's rule: no AI-generated photography; people photos come from
-    # Brandon's curated 2026 library.
-    PHOTO_LIBRARY_STYLES = {
-        "Lifestyle Photo", "Photo with Text", "Testimonial",
-        "Notification",  # template has a small portrait slot we fill from library
-        "Image Library",  # legacy name — same routing
-        # Split Screen pulls TWO library photos — one per placeholder. The dual
-        # pick is handled below by branching on DUAL_PHOTO_LIBRARY_STYLES.
-        "Split Screen",
-        # Hybrid (2026-06-22): dashboard mock with a real image_placeholder — fed
-        # a library photo like Photo with Text.
-        "Hybrid",
-        # Poll (2026-07-02): has a full-bleed Image-Placeholder behind the poll
-        # card — feed it a library photo so polls don't repeat the template image.
-        "Poll",
-    }
 
     # Styles that only need a background (no scene generation)
     BACKGROUND_ONLY = {
@@ -2962,14 +2957,26 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
         for style in batch.get("visual_styles", [])
     )
     if needs_library:
-        try:
-            from figma_library import fetch_library_components
-            print("  Fetching Figma photo library...")
-            library_cache = fetch_library_components()
-            print(f"  Library: {len(library_cache)} tagged components available")
-        except Exception as e:
-            print(f"  WARNING: could not fetch Figma library ({e}). Photo-based styles will fall back to Gemini.")
-            library_cache = None
+        # 3 attempts with backoff (audit 2026-07-30: one un-retried urllib call;
+        # a single Figma 429/timeout used to reroute people-styles into
+        # AI-GENERATED PEOPLE — Brian's ratified no-AI-photography rule broken
+        # by a network blip). On final failure the photo styles go to
+        # needs_human_selection, NEVER Gemini — enforced again deterministically
+        # after the loop below.
+        from figma_library import fetch_library_components
+        for _attempt in range(3):
+            try:
+                print("  Fetching Figma photo library...")
+                library_cache = fetch_library_components()
+                print(f"  Library: {len(library_cache)} tagged components available")
+                break
+            except Exception as e:
+                if _attempt == 2:
+                    print(f"  WARNING: could not fetch Figma library after 3 attempts ({e}). "
+                          "Photo-based styles will be flagged for HUMAN selection (no AI people).")
+                    library_cache = None
+                else:
+                    time.sleep(3 * (_attempt + 1))
 
     # Track library photos already used in THIS sprint so each ad gets a distinct
     # image. select_photo only excludes what the caller passes, so without this
@@ -3033,7 +3040,13 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                         figma_asset_name_right = _concept_photo["figma_asset_name_right"]
                         method = _concept_photo["method"]
                         prompt = _concept_photo["prompt"]
-                    elif style in DUAL_PHOTO_LIBRARY_STYLES and library_cache:
+                    elif style in DUAL_PHOTO_LIBRARY_STYLES and not library_cache:
+                        # Library unavailable: NEVER fall through to Gemini for a
+                        # people-photo style (no-AI-photography rule).
+                        method = "needs_human_selection"
+                        prompt = ""
+                        print(f"    {style} — library unavailable — flagged for human selection")
+                    elif style in DUAL_PHOTO_LIBRARY_STYLES:
                         # Style needs TWO distinct library photos (one per
                         # placeholder). Pick the second with exclude_ids so it
                         # cannot collide with the first.
@@ -3084,7 +3097,11 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                             method = "needs_human_selection"
                             prompt = ""
                             print(f"    {style} — dual library lookup failed: {e}")
-                    elif style in PHOTO_LIBRARY_STYLES and library_cache:
+                    elif style in PHOTO_LIBRARY_STYLES and not library_cache:
+                        method = "needs_human_selection"
+                        prompt = ""
+                        print(f"    {style} — library unavailable — flagged for human selection")
+                    elif style in PHOTO_LIBRARY_STYLES:
                         # Pull a photo from the tagged library, EXCLUDING photos
                         # already used this sprint so each ad gets a distinct image.
                         try:
@@ -3203,6 +3220,25 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                             "concept_tag": concept.get("concept_tag", ""),
                             "headline": concept.get("headline", ""),
                         })
+
+    # NO-AI-PHOTOGRAPHY ASSERTION (deterministic, audit 2026-07-30): a
+    # people-photo style must NEVER carry method=gemini_generate, no matter
+    # which branch produced the row — Brian's ratified rule, enforced in code
+    # rather than by branch ordering. Violations flip to human selection and
+    # are recorded on the row so the gate surfaces them.
+    _policy_flips = 0
+    for _row in rows:
+        _row.setdefault("policy_flag", "")
+        if (_row.get("visual_style") in PHOTO_LIBRARY_STYLES
+                or _row.get("visual_style") in DUAL_PHOTO_LIBRARY_STYLES) \
+                and _row.get("method") == "gemini_generate":
+            _row["method"] = "needs_human_selection"
+            _row["prompt"] = ""
+            _row["policy_flag"] = "blocked_ai_people_photo"
+            _policy_flips += 1
+    if _policy_flips:
+        print(f"  ⚠ POLICY: {_policy_flips} row(s) tried to Gemini-generate a "
+              "people-photo style — flipped to human selection (no-AI-photo rule)")
 
     csv_path = run_dir / "image_prompts.csv"
     if rows:
@@ -3635,11 +3671,31 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
     manifest_rows = []
     concepts = (copy_outputs or {}).get("concepts", [])
 
+    _vetoed_assets = []
     for row in (image_rows or []):
         asset_id = row["asset_id"]
         img_path = image_results.get(asset_id, "")
         export_path = exports_dir / f"{asset_id}_final.png" if exports_dir.exists() else ""
         has_export = Path(export_path).exists() if export_path else False
+
+        # GATE-5 VETO RECONCILE (audit 2026-07-30): images/ is the single
+        # approval truth. Stage 05 hardlinked every image into exports/ BEFORE
+        # the gate, so an operator deleting a rejected image from images/ left
+        # a surviving exports/ twin that shipped marked 'delivered'. If the
+        # source image is gone, remove the export twins and mark the veto.
+        _src_generated = row.get("method") in ("gemini_generate", "text_background")
+        _src_missing = _src_generated and (not img_path or not Path(img_path).exists())
+        if _src_missing and has_export:
+            for _suffix in ("", "_final"):
+                _twin = exports_dir / f"{asset_id}{_suffix}.png"
+                try:
+                    if _twin.exists():
+                        _twin.unlink()
+                except OSError as _ve:
+                    print(f"    ⚠ could not remove vetoed export {_twin.name}: {_ve}")
+            has_export = False
+            _vetoed_assets.append(asset_id)
+            print(f"    Gate-5 veto honored: {asset_id} removed from exports/")
 
         # Find matching concept. Normalize batch_index to string for comparison —
         # row may come from a CSV reload where the value is a string, but the
@@ -3761,7 +3817,8 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "template_frame_id": row.get("template_frame_id", ""),
             "image_file": str(img_path) if img_path else "",
             "export_file": str(export_path) if has_export else "",
-            "status": "delivered" if has_export else "pending_assembly"
+            "status": ("removed_at_gate_5" if asset_id in _vetoed_assets
+                       else "delivered" if has_export else "pending_assembly")
         }
         # "Prospecting and Retargeting": each audience gets its OWN creative now (Adrie
         # 2026-07-23) — emit a Prospecting row AND a Retargeting row, same image/style but
@@ -3860,6 +3917,9 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
         "total_assets": len(manifest_rows),
         "delivered": sum(1 for r in manifest_rows if r["status"] == "delivered"),
         "pending_assembly": sum(1 for r in manifest_rows if r["status"] == "pending_assembly"),
+        # Gate-5 vetoes honored at delivery (exports/ twins removed) — persisted
+        # so the veto is auditable, not just a console line (audit 2026-07-30).
+        "removed_at_gate_5": _vetoed_assets,
         "total_concepts_generated": total_concepts,
         "concepts_selected": selected_concepts,
         "concepts_rejected": total_concepts - selected_concepts,
@@ -4468,6 +4528,9 @@ if __name__ == "__main__":
     parser.add_argument("--test", action="store_true", help="Run with built-in test order")
     parser.add_argument("--resume", type=str, metavar="SPRINT_ID", help="Resume a paused pipeline run")
     parser.add_argument("--gate", type=int, default=2, help="Which gate to resume from (2=order confirmed, 3=copy approved, 4=prompts approved, 5=images approved, 6=final QA)")
+    parser.add_argument("--claimed", action="store_true",
+                        help="The caller already claimed the gate via sprint_state.claim_gate "
+                             "(used by the MCP connector); skip the CLI's own claim.")
 
     args = parser.parse_args()
 
@@ -4488,6 +4551,29 @@ if __name__ == "__main__":
         if not handler:
             print(f"Unknown gate: {gate}. Valid gates: 1-6")
             sys.exit(1)
+
+        # Gate claim (audit 2026-07-30): the CLI used to bypass every state
+        # check — a repeated `--resume --gate 4` double-spent image gen. All
+        # entry surfaces now pass the same cross-process CAS; `--claimed`
+        # means the dispatcher (MCP) already holds the claim.
+        if str(BASE_DIR) not in sys.path:
+            sys.path.insert(0, str(BASE_DIR))
+        import sprint_state as _ss
+        _sprint_dir = RUNS_DIR / sprint_id
+        if not _sprint_dir.exists():
+            print(f"Sprint not found: {sprint_id}")
+            sys.exit(1)
+        if args.claimed:
+            _st = _ss.read_state(_sprint_dir).get("state", "unknown")
+            if _st != f"resuming_gate_{gate}":
+                print(f"--claimed but state is '{_st}', expected 'resuming_gate_{gate}' — refusing.")
+                sys.exit(1)
+        else:
+            _won, _prior = _ss.claim_gate(_sprint_dir, gate)
+            if not _won:
+                print(f"Sprint is in state '{_prior}', expected 'awaiting_gate_{gate}' — "
+                      "refusing to run the stage twice.")
+                sys.exit(1)
 
         handler(sprint_id)
         sys.exit(0)

@@ -203,6 +203,45 @@ def offline_checks():
           _fc[0]["selected"] and _fc[2]["selected"],
           "flagged concept selected ahead of a clean one")
 
+    # 11d. No-AI-photography policy: photo-library styles are module-level and
+    # the policy set must contain the people styles (audit 2026-07-30 — a
+    # library outage used to reroute these into Gemini person-prompts).
+    check("photo policy: people styles in PHOTO_LIBRARY_STYLES",
+          {"Lifestyle Photo", "Photo with Text", "Testimonial"} <= rp.PHOTO_LIBRARY_STYLES,
+          str(rp.PHOTO_LIBRARY_STYLES))
+    check("photo policy: assertion marker present in stage 03",
+          "blocked_ai_people_photo" in (REPO / "pipeline" / "run_pipeline.py").read_text())
+
+    # 11c. sprint_state: atomic CAS gate claims (audit 2026-07-30 — three
+    # approval surfaces used to race; now exactly one claimer can win).
+    import threading as _th
+    import sprint_state as _ss
+    _sd = SCRATCH / "state_test_sprint"
+    _sd.mkdir(exist_ok=True)
+    _ss.write_state(_sd, {"state": "awaiting_gate_3"})
+    _wins = []
+    def _try_claim():
+        won, _ = _ss.claim_gate(_sd, 3)
+        if won:
+            _wins.append(1)
+    _threads = [_th.Thread(target=_try_claim) for _ in range(8)]
+    [t.start() for t in _threads]
+    [t.join() for t in _threads]
+    check("sprint_state: exactly one concurrent claimer wins", len(_wins) == 1,
+          f"{len(_wins)} winners out of 8 racers")
+    check("sprint_state: claimed state is resuming",
+          _ss.read_state(_sd).get("state") == "resuming_gate_3")
+    _won2, _prior2 = _ss.claim_gate(_sd, 3)
+    check("sprint_state: second claim loses with prior state",
+          not _won2 and _prior2 == "resuming_gate_3", f"won={_won2} prior={_prior2}")
+    (_sd / "pipeline_state.json").write_text('{"state": "awaiting_ga')  # torn write
+    _cor = _ss.read_state(_sd)
+    check("sprint_state: torn file reads as visible corrupt state",
+          _cor.get("state") == "corrupt" and "error" in _cor, str(_cor))
+    _ss.write_state(_sd, {"state": "error", "failed_gate": 4})
+    check("sprint_state: atomic write recovers over torn file",
+          _ss.read_state(_sd).get("failed_gate") == 4)
+
     # 11. NO SILENT REF TRUNCATION (2026-07-30 audit: fixed [:N] slices were cutting
     # 40-91% of the reference docs — Adrie's examples lost 91%, the legal blocklist
     # was amputated mid-sentence). Ratchet: any `var[:N]` slice in run_pipeline.py

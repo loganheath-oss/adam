@@ -8,6 +8,7 @@ drive the ADAM pipeline from a chat interface without leaving the browser.
 """
 from __future__ import annotations
 
+import asyncio
 import csv
 import json
 import logging
@@ -27,6 +28,10 @@ def _is_safe_sprint_id(sprint_id: str) -> bool:
     return bool(sprint_id and _SPRINT_ID_RE.match(sprint_id) and ".." not in sprint_id)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+import sys as _sys
+if str(BASE_DIR) not in _sys.path:
+    _sys.path.insert(0, str(BASE_DIR))
+import sprint_state as _sprint_state  # atomic cross-process state (audit 2026-07-30)
 # Read sprints from the SAME location main.py writes them. On Railway that's
 # the persistent volume (/data/runs via the RUNS_DIR env var), NOT the empty
 # runs/ folder baked into the image. Without this the chat's list_sprints /
@@ -374,6 +379,13 @@ def tool_edit_order(sprint_id: str, updates: dict) -> dict:
     }
 
 
+# Set by main.py at startup: schedules the SAME background _run_gate_task the
+# HTTP Approve button uses, so a chat approval never runs a whole gate stage
+# inline on the event loop (it froze every request for minutes — audit
+# 2026-07-30). Standalone/no-web use falls back to the inline handler.
+APPROVE_HOOK = None
+
+
 def tool_approve_gate(sprint_id: str, gate: int, note: str = "") -> dict:
     if gate not in GATE_NAMES:
         return {"error": f"gate must be one of {sorted(GATE_NAMES)}; got {gate}"}
@@ -381,25 +393,52 @@ def tool_approve_gate(sprint_id: str, gate: int, note: str = "") -> dict:
     if not path.exists():
         return {"error": f"Sprint not found: {sprint_id}"}
 
-    state_data = _read_json(path / "pipeline_state.json") or {}
-    current = state_data.get("state", "unknown")
-    expected = f"awaiting_gate_{gate}"
-    if current != expected:
-        return {"error": f"Sprint is in state '{current}', expected '{expected}'"}
+    # Cross-process CAS — the same claim the HTTP route and MCP connector use,
+    # so simultaneous approvals on different surfaces can't run a stage twice.
+    won, prior = _sprint_state.claim_gate(path, gate)
+    if not won:
+        return {"error": f"Sprint is in state '{prior}', expected 'awaiting_gate_{gate}'"}
 
+    _append_jsonl(path / "gate_decisions.jsonl", {
+        "ts": _now(),
+        "sprint_id": sprint_id,
+        "gate": gate,
+        "gate_name": GATE_NAMES[gate],
+        "decision": "approved",
+        "note": (note or "").strip(),
+        "source": "agent",
+    })
+    try:
+        import db as _db
+        _order = _read_json(path / "order.json") or {}
+        _db.log_event("gate.approved",
+                      user_email=(_order.get("email") or _order.get("driver")),
+                      sprint_id=sprint_id,
+                      meta={"gate": gate, "gate_name": GATE_NAMES[gate], "source": "agent"})
+    except Exception:
+        pass
+
+    if APPROVE_HOOK is not None:
+        try:
+            APPROVE_HOOK(sprint_id, gate)
+        except Exception as exc:
+            return {"error": f"approved but failed to start the stage: {exc}"}
+        return {
+            "ok": True,
+            "gate": gate,
+            "gate_name": GATE_NAMES[gate],
+            "new_state": f"resuming_gate_{gate}",
+            "running_in_background": True,
+            "note_recorded": bool((note or "").strip()),
+            "message": "Stage is running in the background — progress and the "
+                       "next gate will appear here when it finishes.",
+        }
+
+    # Standalone fallback (no web app): run the stage inline as before.
     try:
         handlers = _get_gate_handlers()
         handlers[gate](sprint_id)
         new_state = _read_json(path / "pipeline_state.json") or {}
-        _append_jsonl(path / "gate_decisions.jsonl", {
-            "ts": _now(),
-            "sprint_id": sprint_id,
-            "gate": gate,
-            "gate_name": GATE_NAMES[gate],
-            "decision": "approved",
-            "note": (note or "").strip(),
-            "source": "agent",
-        })
         return {
             "ok": True,
             "gate": gate,
@@ -922,7 +961,7 @@ async def run_agent_turn(
     """
     import anthropic as _anthropic
 
-    client = _anthropic.Anthropic(api_key=api_key)
+    client = _anthropic.AsyncAnthropic(api_key=api_key)
 
     loop_messages = list(messages)
 
@@ -959,7 +998,13 @@ async def run_agent_turn(
     continuations = 0
 
     while True:
-        response = client.messages.create(
+        # ASYNC client (audit 2026-07-30): the sync client ran a minutes-long
+        # model call ON the event loop, freezing every other request — state
+        # polls, other users' chats, /health — for the whole turn. The await
+        # yields the loop; the keepalive comments stop edge proxies from
+        # idle-killing the otherwise-silent SSE stream (both chat clients skip
+        # non-`data:` parts, so the comments are invisible to them).
+        _call = asyncio.ensure_future(client.messages.create(
             # Sonnet 5 with thinking explicitly DISABLED: no thinking blocks are emitted,
             # so the tool-use loop sees the same shapes as 4.6 (2026-07-28). Env-tunable.
             model=os.environ.get("ADAM_CHAT_MODEL", "claude-sonnet-5"),
@@ -968,7 +1013,13 @@ async def run_agent_turn(
             system=system_prompt,
             tools=active_tools,
             messages=loop_messages,
-        )
+        ))
+        while True:
+            _done, _ = await asyncio.wait({_call}, timeout=15)
+            if _done:
+                break
+            yield ": keepalive\n\n"
+        response = _call.result()
 
         tool_uses = []
         text_blocks = []
@@ -1008,7 +1059,10 @@ async def run_agent_turn(
             yield f"data: {json.dumps({'type': 'tool_call', 'name': tu.name, 'input': tu.input})}\n\n"
 
             try:
-                result = TOOL_DISPATCH[tu.name](tu.input)
+                # Off-loop dispatch (audit 2026-07-30): tool bodies do file and
+                # DB I/O — run them in a worker thread so the SSE stream (and
+                # every other request) stays live while they work.
+                result = await asyncio.to_thread(TOOL_DISPATCH[tu.name], tu.input)
             except Exception as exc:
                 result = {"error": str(exc)}
 

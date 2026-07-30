@@ -220,25 +220,59 @@ def approve_gate(sprint_id: str, gate: int, timeout_seconds: int = 600) -> dict[
     """
     if gate not in GATE_NAMES:
         raise ValueError(f"gate must be one of {sorted(GATE_NAMES)}; got {gate}")
-    _sprint_dir(sprint_id)  # validate sprint exists
+    sprint_dir = _sprint_dir(sprint_id)  # validate sprint exists
 
-    proc = subprocess.run(
-        [sys.executable, str(PIPELINE_SCRIPT), "--resume", sprint_id, "--gate", str(gate)],
-        capture_output=True,
+    # Cross-process CAS shared with the HTTP route and chat tool (audit
+    # 2026-07-30): this path used to have NO state check at all — a retried
+    # connector call ran the same stage twice in parallel processes.
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    import sprint_state
+    won, prior = sprint_state.claim_gate(sprint_dir, gate)
+    if not won:
+        return {
+            "success": False,
+            "gate": gate,
+            "gate_name": GATE_NAMES[gate],
+            "error": f"Sprint is in state '{prior}', expected 'awaiting_gate_{gate}' — "
+                     "the gate was already approved (possibly on another surface) or "
+                     "isn't ready.",
+            "new_state": sprint_state.read_state(sprint_dir),
+        }
+
+    proc = subprocess.Popen(
+        [sys.executable, str(PIPELINE_SCRIPT), "--resume", sprint_id,
+         "--gate", str(gate), "--claimed"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
-        timeout=timeout_seconds,
         cwd=REPO_ROOT,
     )
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout_seconds)
+    except subprocess.TimeoutExpired:
+        # Do NOT kill the child: a SIGKILL mid-stage used to leave half-written
+        # artifacts with the state still claiming the old gate. The stage keeps
+        # running; the caller polls get_sprint for the outcome.
+        return {
+            "success": None,
+            "still_running": True,
+            "gate": gate,
+            "gate_name": GATE_NAMES[gate],
+            "message": f"The stage is still running after {timeout_seconds}s — it was "
+                       "NOT interrupted. Check get_sprint for the new state; do not "
+                       "re-approve.",
+            "new_state": sprint_state.read_state(sprint_dir),
+        }
 
-    new_state = _read_json(_sprint_dir(sprint_id) / "pipeline_state.json")
     return {
         "success": proc.returncode == 0,
         "gate": gate,
         "gate_name": GATE_NAMES[gate],
         "exit_code": proc.returncode,
-        "stdout_tail": proc.stdout[-2000:] if proc.stdout else "",
-        "stderr_tail": proc.stderr[-2000:] if proc.stderr else "",
-        "new_state": new_state,
+        "stdout_tail": stdout[-2000:] if stdout else "",
+        "stderr_tail": stderr[-2000:] if stderr else "",
+        "new_state": sprint_state.read_state(sprint_dir),
     }
 
 

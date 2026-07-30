@@ -21,6 +21,7 @@ import subprocess
 import sys
 import threading
 import uuid
+import sprint_state
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -90,7 +91,6 @@ def _is_interruptible(state: str) -> bool:
 # Serializes gate approvals / resumes so a double-click or retried request can't
 # pass the state check twice and spawn the same stage twice (duplicate API spend
 # + racing file writers). Approvals are infrequent, so one global lock is fine.
-_APPROVE_LOCK = asyncio.Lock()
 
 # Dedicated pool for pipeline/gate STAGES so they don't compete with FastAPI's
 # own default run_in_executor offloads (and vice versa). Each stage holds one
@@ -361,7 +361,7 @@ async def lifespan(app: FastAPI):
             if not state_path.exists():
                 continue
             try:
-                state_data = json.loads(state_path.read_text())
+                state_data = sprint_state.read_state(d)
                 state = state_data.get("state", "")
                 if state.startswith("resuming_gate_"):
                     # Mid-gate restart: recoverable via /resume (re-runs just this
@@ -375,17 +375,28 @@ async def lifespan(app: FastAPI):
                         state_data["failed_gate"] = gate_num
                     state_data["error"] = "Server restarted mid-stage — Resume to re-run this step."
                     state_data["updated_at"] = datetime.now(timezone.utc).isoformat()
-                    state_path.write_text(json.dumps(state_data, indent=2))
+                    sprint_state.write_state(d, state_data)
                 elif _is_interruptible(state):
                     state_data["state"] = "interrupted"
                     state_data["updated_at"] = datetime.now(timezone.utc).isoformat()
                     state_data["interrupted_reason"] = "Server restarted while pipeline was in progress"
-                    state_path.write_text(json.dumps(state_data, indent=2))
+                    sprint_state.write_state(d, state_data)
             except Exception:
                 pass
     # Daily self-check loop — ADAM verifies itself (credits, refs, styles, volume,
     # stuck sprints) and logs system.selfcheck events without a human trigger.
     asyncio.create_task(_self_check_loop())
+    # Chat gate approvals schedule the SAME background task as the HTTP button
+    # instead of running the stage inline on the event loop (audit 2026-07-30).
+    # run_coroutine_threadsafe because tool dispatch runs in a worker thread
+    # (asyncio.to_thread) — create_task would raise "no running event loop" there.
+    try:
+        from agent import orchestrator as _orch
+        _hook_loop = asyncio.get_running_loop()
+        _orch.APPROVE_HOOK = lambda sid, g: asyncio.run_coroutine_threadsafe(
+            _run_gate_task(sid, g), _hook_loop)
+    except Exception as _he:
+        print(f"[startup] approve hook not set: {_he}")
     # Run the MCP streamable-http session manager for the life of the app; without
     # this the mounted /mcp endpoint raises "Task group is not initialized".
     async with adam_mcp.session_manager.run():
@@ -507,6 +518,22 @@ def _load_json(path: Path) -> dict:
     return json.loads(path.read_text()) if path.exists() else {}
 
 
+def _disk_guard(min_free_mb: int | None = None) -> str | None:
+    """Refuse to START write-heavy work when the volume is nearly full (audit
+    2026-07-30: ENOSPC mid-stage strands sprints in a state even the error
+    handler can't record, because its own write fails too). Returns an error
+    message to surface, or None when there's room."""
+    try:
+        floor = min_free_mb or int(os.environ.get("ADAM_MIN_FREE_MB", "60") or "60")
+        free_mb = shutil.disk_usage(RUNS_DIR).free / 1_000_000
+        if free_mb < floor:
+            return (f"Storage nearly full ({free_mb:.0f}MB free; {floor}MB required to "
+                    "start new work). Prune old sprints at /admin/storage first.")
+    except Exception:
+        return None
+    return None
+
+
 # ── sprint_id safety + concurrent-safe JSONL append ──────────────────────────
 _SPRINT_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
 _JSONL_LOCK = threading.Lock()
@@ -547,9 +574,17 @@ def _append_jsonl_safe(path: Path, record: dict) -> bool:
 
 def _sprint_data(sprint_id: str) -> dict:
     d = RUNS_DIR / sprint_id
-    state_raw = _load_json(d / "pipeline_state.json")
-    order = _load_json(d / "order.json")
-    summary = _load_json(d / "run_summary.json")
+    # Tolerant reads (audit 2026-07-30): one torn file used to 500 /sprints,
+    # the sprint page, AND /api/sprints for every sprint at once.
+    state_raw = sprint_state.read_state(d)
+
+    def _tol(path):
+        try:
+            return _load_json(path)
+        except Exception:
+            return {}
+    order = _tol(d / "order.json")
+    summary = _tol(d / "run_summary.json")
     state = state_raw.get("state", "unknown")
     outputs = {
         f: (d / f).exists()
@@ -647,7 +682,7 @@ async def _run_pipeline_task(payload: dict):
         data = {"sprint_id": sprint_id, "state": state, "updated_at": datetime.now(timezone.utc).isoformat()}
         if error:
             data["error"] = error
-        (sprint_dir / "pipeline_state.json").write_text(json.dumps(data, indent=2))
+        sprint_state.write_state(sprint_dir, data)  # atomic (audit 2026-07-30)
 
     _write_state("running")
     try:
@@ -703,12 +738,12 @@ async def _run_gate_task(sprint_id: str, gate_num: int):
                 pass
     except Exception as exc:
         sprint_dir = RUNS_DIR / sprint_id
-        (sprint_dir / "pipeline_state.json").write_text(json.dumps({
+        sprint_state.write_state(sprint_dir, {
             "sprint_id": sprint_id, "state": "error",
             "error": str(exc),
             "failed_gate": gate_num,  # so /resume can re-run the stage that died
             "updated_at": datetime.now(timezone.utc).isoformat(),
-        }, indent=2))
+        })
     finally:
         _record_state_notification(sprint_id)
         try:
@@ -887,6 +922,9 @@ async def order_form_page():
 
 @app.post("/submit")
 async def submit_order(request: Request):
+    _dg = _disk_guard()
+    if _dg:
+        return JSONResponse({"ok": False, "error": _dg}, status_code=507)
     payload = await request.json()
     sprint_id = payload.get("sprint_id") or _generate_sprint_id(payload)
     _validate_sprint_id(sprint_id)
@@ -2075,15 +2113,17 @@ async def sprint_handoff(sprint_id: str):
 
 @app.post("/sprints/{sprint_id}/approve/{gate_num}", dependencies=[Depends(require_api_key_or_session)])
 async def approve_gate(sprint_id: str, gate_num: int, request: Request):
+    _dg = _disk_guard()
+    if _dg:
+        raise HTTPException(status_code=507, detail=_dg)
     if gate_num not in GATE_HANDLERS:
         return JSONResponse({"ok": False, "error": f"Unknown gate {gate_num}. Valid: 2–6"}, status_code=400)
     sprint_dir = _safe_sprint_dir(sprint_id)
     if not sprint_dir.exists():
         return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
-    state_path = sprint_dir / "pipeline_state.json"
 
     # Capture optional rationale note from request body (JSON or form) BEFORE
-    # taking the lock (no state dependency, and it's an await point).
+    # the claim (no state dependency, and it's an await point).
     note = ""
     try:
         body = await request.json()
@@ -2095,37 +2135,33 @@ async def approve_gate(sprint_id: str, gate_num: int, request: Request):
     expected_state = f"awaiting_gate_{gate_num}"
     GATE_NAMES_LOCAL = {2: "Order + Refs Review", 3: "Copy Review", 4: "Image Prompt Scan", 5: "Assembly Review", 6: "Final QA"}
 
-    # Atomic check-and-set: two near-simultaneous approvals (double-click,
-    # retried request) must not both pass the guard and spawn the stage twice.
-    async with _APPROVE_LOCK:
-        current_state = _load_json(state_path).get("state", "unknown")
-        if current_state != expected_state:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Sprint is in state '{current_state}', expected '{expected_state}'",
-            )
-        _append_jsonl_safe(sprint_dir / "gate_decisions.jsonl", {
-            "ts": datetime.now(timezone.utc).isoformat(),
-            "sprint_id": sprint_id,
-            "gate": gate_num,
-            "gate_name": GATE_NAMES_LOCAL.get(gate_num, ""),
-            "decision": "approved",
-            "note": note,
-            "source": "http",
-        })
-        try:
-            _o = _load_json(sprint_dir / "order.json")
-            db.log_event("gate.approved", user_email=(_o.get("email") or _o.get("driver")),
-                         sprint_id=sprint_id,
-                         meta={"gate": gate_num, "gate_name": GATE_NAMES_LOCAL.get(gate_num, "")})
-        except Exception:
-            pass
-        state_path.write_text(json.dumps({
-            "sprint_id": sprint_id,
-            "state": f"resuming_gate_{gate_num}",
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }, indent=2))
-        asyncio.create_task(_run_gate_task(sprint_id, gate_num))
+    # Cross-process CAS (sprint_state.claim_gate): the chat tool and the MCP
+    # connector approve through the SAME claim, so any second approver — on any
+    # surface, in any process — loses deterministically (audit 2026-07-30; the
+    # old asyncio lock only covered this route).
+    won, prior = sprint_state.claim_gate(sprint_dir, gate_num)
+    if not won:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Sprint is in state '{prior}', expected '{expected_state}'",
+        )
+    _append_jsonl_safe(sprint_dir / "gate_decisions.jsonl", {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "sprint_id": sprint_id,
+        "gate": gate_num,
+        "gate_name": GATE_NAMES_LOCAL.get(gate_num, ""),
+        "decision": "approved",
+        "note": note,
+        "source": "http",
+    })
+    try:
+        _o = _load_json(sprint_dir / "order.json")
+        db.log_event("gate.approved", user_email=(_o.get("email") or _o.get("driver")),
+                     sprint_id=sprint_id,
+                     meta={"gate": gate_num, "gate_name": GATE_NAMES_LOCAL.get(gate_num, "")})
+    except Exception:
+        pass
+    asyncio.create_task(_run_gate_task(sprint_id, gate_num))
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "gate": gate_num, "note_recorded": bool(note), "message": f"Gate {gate_num} approved, pipeline resuming"})
 
 
@@ -2134,24 +2170,19 @@ async def retry_sprint(sprint_id: str):
     sprint_dir = RUNS_DIR / sprint_id
     if not sprint_dir.exists():
         return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
-    state_path = sprint_dir / "pipeline_state.json"
-    pipeline_state = _load_json(state_path)
-    current_state = pipeline_state.get("state", "unknown")
-    if current_state != "interrupted":
-        raise HTTPException(
-            status_code=409,
-            detail=f"Sprint is in state '{current_state}', expected 'interrupted'",
-        )
     order_path = sprint_dir / "order.json"
     if not order_path.exists():
         return JSONResponse({"ok": False, "error": "order.json not found — cannot retry"}, status_code=400)
+    # Cross-process CAS (audit 2026-07-30) — a double-clicked Retry must not
+    # queue the pipeline twice.
+    won, prior = sprint_state.claim(sprint_dir, {"interrupted"}, {"state": "queued"})
+    if not won:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Sprint is in state '{prior}', expected 'interrupted'",
+        )
     payload = _load_json(order_path)
     payload["sprint_id"] = sprint_id
-    state_path.write_text(json.dumps({
-        "sprint_id": sprint_id,
-        "state": "queued",
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }, indent=2))
     asyncio.create_task(_run_pipeline_task(payload))
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "message": "Sprint re-queued from interrupted state"})
 
@@ -2168,45 +2199,40 @@ async def resume_sprint(sprint_id: str):
     sprint_dir = _safe_sprint_dir(sprint_id)
     if not sprint_dir.exists():
         return JSONResponse({"ok": False, "error": "Sprint not found"}, status_code=404)
-    state_path = sprint_dir / "pipeline_state.json"
-    # Atomic check-and-set (same double-trigger guard as approve_gate).
-    async with _APPROVE_LOCK:
-        pipeline_state = _load_json(state_path)
-        current_state = pipeline_state.get("state", "unknown")
-        if current_state != "error":
+    # Cross-process CAS (same guard as approve_gate — audit 2026-07-30).
+    pipeline_state = sprint_state.read_state(sprint_dir)
+    failed_gate = pipeline_state.get("failed_gate")
+    if failed_gate in GATE_HANDLERS:
+        won, prior = sprint_state.claim(sprint_dir, {"error"},
+                                        {"state": f"resuming_gate_{failed_gate}"})
+        if not won:
             raise HTTPException(
                 status_code=409,
-                detail=f"Sprint is in state '{current_state}', expected 'error'",
+                detail=f"Sprint is in state '{prior}', expected 'error'",
             )
-
-        failed_gate = pipeline_state.get("failed_gate")
-        if failed_gate in GATE_HANDLERS:
-            state_path.write_text(json.dumps({
-                "sprint_id": sprint_id,
-                "state": f"resuming_gate_{failed_gate}",
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-            }, indent=2))
-            asyncio.create_task(_run_gate_task(sprint_id, failed_gate))
-            return JSONResponse({"ok": True, "sprint_id": sprint_id,
-                                 "resumed_gate": failed_gate,
-                                 "message": f"Re-running gate {failed_gate} stage"})
-
-        # Pre-gate (intake) error — re-run the whole pipeline from order.json.
-        order_path = sprint_dir / "order.json"
-        if not order_path.exists():
-            return JSONResponse(
-                {"ok": False,
-                 "error": "No failed_gate recorded and order.json missing — cannot resume"},
-                status_code=400)
-        payload = _load_json(order_path)
-        payload["sprint_id"] = sprint_id
-        state_path.write_text(json.dumps({
-            "sprint_id": sprint_id, "state": "queued",
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        }, indent=2))
-        asyncio.create_task(_run_pipeline_task(payload))
+        asyncio.create_task(_run_gate_task(sprint_id, failed_gate))
         return JSONResponse({"ok": True, "sprint_id": sprint_id,
-                             "message": "Re-running pipeline from intake"})
+                             "resumed_gate": failed_gate,
+                             "message": f"Re-running gate {failed_gate} stage"})
+
+    # Pre-gate (intake) error — re-run the whole pipeline from order.json.
+    order_path = sprint_dir / "order.json"
+    if not order_path.exists():
+        return JSONResponse(
+            {"ok": False,
+             "error": "No failed_gate recorded and order.json missing — cannot resume"},
+            status_code=400)
+    won, prior = sprint_state.claim(sprint_dir, {"error"}, {"state": "queued"})
+    if not won:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Sprint is in state '{prior}', expected 'error'",
+        )
+    payload = _load_json(order_path)
+    payload["sprint_id"] = sprint_id
+    asyncio.create_task(_run_pipeline_task(payload))
+    return JSONResponse({"ok": True, "sprint_id": sprint_id,
+                         "message": "Re-running pipeline from intake"})
 
 
 @app.delete("/sprints/{sprint_id}", dependencies=[Depends(require_api_key)])
@@ -2254,7 +2280,7 @@ async def prune_sprints(request: Request):
         to_delete.update(sid for sid in all_ids if sid not in keep_set)
     if body.get("errored"):
         for sid in all_ids:
-            st = _load_json(RUNS_DIR / sid / "pipeline_state.json").get("state", "")
+            st = sprint_state.read_state(RUNS_DIR / sid).get("state", "")
             if "error" in st:
                 to_delete.add(sid)
     deleted = []
@@ -2294,7 +2320,7 @@ async def storage_report():
             if d.is_dir():
                 sz = _dir_size(d)
                 grand += sz
-                st = _load_json(d / "pipeline_state.json").get("state", "unknown")
+                st = sprint_state.read_state(d).get("state", "unknown")
                 sprints.append({"sprint_id": d.name, "state": st,
                                 "size_mb": round(sz / 1_000_000, 1)})
     sprints.sort(key=lambda x: x["size_mb"], reverse=True)
