@@ -21,9 +21,13 @@ export default function SprintChatPage() {
     fetch(`/api/sprints/${id}/chat`)
       .then((r) => r.json())
       .then((d) => {
+        // History records are {seq, role, text, ts} — the field is `text`, not
+        // `content` (audit 2026-07-30: reading m.content rendered every restored
+        // chat blank and broke the next send with role-only messages).
         const msgs: Msg[] = (d.messages ?? [])
-          .filter((m: Msg) => m.role === "user" || m.role === "assistant")
-          .map((m: Msg) => ({ role: m.role, content: m.content }));
+          .filter((m: Msg & { text?: string }) => m.role === "user" || m.role === "assistant")
+          .map((m: Msg & { text?: string }) => ({ role: m.role, content: m.text ?? m.content ?? "" }))
+          .filter((m: Msg) => m.content);
         if (msgs.length) setMessages(msgs);
       })
       .catch(() => {});
@@ -115,7 +119,7 @@ export default function SprintChatPage() {
             </div>
           ) : (
             <div key={i} className="max-w-[92%] text-sm leading-relaxed [&_p]:my-2 [&_p:first-child]:mt-0">
-              {m.content ? <MarkdownView>{m.content}</MarkdownView> : status && <span className="text-muted-foreground">{status}</span>}
+              {m.content ? <MarkdownView breaks>{m.content}</MarkdownView> : status && <span className="text-muted-foreground">{status}</span>}
             </div>
           ),
         )}

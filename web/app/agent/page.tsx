@@ -126,7 +126,7 @@ export default function AskAdamPage() {
             <div key={i} className="max-w-[92%]">
               {m.content ? (
                 <div className="text-sm leading-relaxed [&_p]:my-2 [&_p:first-child]:mt-0">
-                  <MarkdownView>{m.content}</MarkdownView>
+                  <MarkdownView breaks>{m.content}</MarkdownView>
                 </div>
               ) : (
                 status && <div className="text-sm text-muted-foreground">{status}</div>

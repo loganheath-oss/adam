@@ -1,13 +1,19 @@
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import { Mermaid } from "@/components/mermaid";
 
-// Shared markdown renderer for the Wiki and Learnings pages. Styles elements with
-// Tailwind and rewrites internal `*.md` links to `/wiki/*` so the wiki cross-links work.
-export function MarkdownView({ children }: { children: string }) {
+// Shared markdown renderer for the Wiki, Learnings, and chat surfaces.
+// `breaks` (chat): single newlines render as line breaks. Markdown's default
+// collapses them into spaces, which silently destroyed the exact line breaks
+// the operator-transparency law protects — verbatim copy (lead-in sentences,
+// one emoji bullet per line) displayed as a run-on paragraph while the stored
+// transcript was byte-perfect (audit 2026-07-30). Wiki pages keep standard
+// markdown semantics.
+export function MarkdownView({ children, breaks }: { children: string; breaks?: boolean }) {
   return (
     <Markdown
-      remarkPlugins={[remarkGfm]}
+      remarkPlugins={breaks ? [remarkGfm, remarkBreaks] : [remarkGfm]}
       components={{
         h1: (p) => <h1 className="mt-8 mb-4 text-3xl font-medium tracking-tight first:mt-0" {...p} />,
         h2: (p) => <h2 className="mt-8 mb-3 text-xl font-medium tracking-tight" {...p} />,

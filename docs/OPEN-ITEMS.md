@@ -5,6 +5,25 @@ Claude copy instructions, provided 2026-07-14. Grouped by workstream; most-actio
 first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination · ⬜ not started.
 
 ## A. Copy engine
+- ✅ **2026-07-30 audit quick wins (round 1 of the structural program).** From
+  `docs/ARCHITECTURE-AUDIT-2026-07-30.md`: (1) FAIL-CLOSED review — legal/length
+  de-selection + the selection floor extracted to `_deterministic_selection`, run
+  on EVERY path incl. API-failure fallbacks (was: a 529 shipped all 6 concepts w/
+  legal flags selected); review call got generation's 3-attempt retry. (2) Poll
+  percentages restored — `_SCHEMA_EXTRA_FIELDS` declares prompted non-char-limit
+  fields so `additionalProperties:false` can't strip them (every Poll since
+  07-28 shipped empty pcts); live-verified arriving. (3) XSS — order fields now
+  escaped on the sprint review page + list page (public /submit → operator's
+  session was a stored-XSS path). (4) Gate-3 picker now shows `body_long`
+  (whitespace-faithful) + `description`, base AND per-audience (the shipping
+  Primary Text was picked blind). (5) Chat line breaks — `remark-breaks` on all
+  three chat surfaces (markdown collapsed the exact newlines the verbatim law
+  protects); wiki rendering unchanged. (6) Web chat page read `m.content` but
+  history sends `text` — restored chats rendered blank; fixed. Suite: schema-
+  coverage check (24 styles), fail-closed unit checks, live poll-pct check.
+  REMAINING from the audit (next week): atomic state API, MCP approve choke
+  point, async chat, gate-5 exports reconcile, photo-policy assertion, style
+  table, /data backup — tracked in the audit doc §structural program.
 - ✅ **2026-07-30 limits audit: silent truncation removed everywhere.** Trigger: the
   chat agent's 2048-token output cap made the transparency law arithmetically impossible
   (Adrie's trimmed lead-ins) → cap now 16000 + auto-continue on `max_tokens` (capped ×3).

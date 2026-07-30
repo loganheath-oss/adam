@@ -88,6 +88,16 @@ _LIST_FIELDS = {"us_bullets", "them_bullets", "left_bullets", "right_bullets",
 _BASE_FIELDS = ("concept_tag", "creative_headline", "headline", "headline_short",
                 "body_short", "body_long", "description", "cta")
 
+# Prompted style fields that have NO char_limits entry (the schema's other
+# source) — without a declaration here they are silently STRIPPED by
+# additionalProperties:false. Poll's integer percentages were lost this way
+# for every Poll sprint from 2026-07-28 until the 2026-07-30 audit. Keyed by
+# the resolved guide key (_guide_entry_for_style's first return value).
+_SCHEMA_EXTRA_FIELDS = {
+    "poll": {"poll_pct_a": {"type": "integer"},
+             "poll_pct_b": {"type": "integer"}},
+}
+
 
 def _concept_schema(style, is_both, qty):
     """Per-style JSON schema for structured copy output (output_config.format).
@@ -110,6 +120,15 @@ def _concept_schema(style, is_both, qty):
     for f in ((entry or {}).get("char_limits") or {}):
         if f not in props and f not in ("creative_headline", "creative_subhead", "cta"):
             props[f] = _prop(f)
+    # NON-char-limit style fields. The schema used to be built from char_limits
+    # keys ONLY, so prompted fields with no char cap (Poll's integer percentages)
+    # were silently STRIPPED by additionalProperties:false — every Poll since
+    # structured output landed shipped empty Poll_Pct_A/B (audit 2026-07-30).
+    # Any prompted field that isn't a char-capped string must be declared here.
+    for f, spec in (_SCHEMA_EXTRA_FIELDS.get(_k) or {}).items():
+        if f not in props:
+            props[f] = dict(spec)
+            required.append(f)
     if is_both:
         aud_fields = ["creative_headline", "headline", "headline_short",
                       "body_short", "body_long", "description"]
@@ -367,6 +386,71 @@ def _enforce_conditional_caps(concepts, style):
             c[field] = _smart_trim(v, cap)
             print(f"    conditional-cap fit: {style} {field} "
                   f"{'no-CTA' if c.get('no_cta') else 'with-CTA'} {len(v)}>{cap} — trimmed")
+
+
+def _deterministic_selection(reviewed, target, style):
+    """FAIL-CLOSED enforcement pass — runs after review on EVERY path (ranked,
+    API-error fallback, exception fallback). Review judges; this enforces.
+    Until 2026-07-30 it lived inside the review success branch only, so a
+    single 529 shipped all 6 concepts with legal-flagged copy selected.
+
+    1. HARD de-select: legal_flags (banned terms) or length_flags (over an
+       on-image template cap) never ship as-is.
+    2. SOFT demote: length_warnings (over Meta feed caps) prefer a clean pick.
+    3. Select exactly `target`, cleanest-first, greedy-diverse on headlines
+       (near-duplicate choices defeat the point of choices), backfilling from
+       skipped if the diverse pool runs short. Legal-flagged NEVER selected.
+    """
+    for concept in reviewed:
+        if concept.get("legal_flags") or concept.get("length_flags"):
+            concept["selected"] = False
+            concept["rank"] = 99
+            _notes = []
+            if concept.get("legal_flags") and "⚠ LEGAL" not in concept.get("review_notes", ""):
+                _notes.append("⚠ LEGAL — banned term(s): "
+                              + ", ".join(concept["legal_flags"]))
+            if concept.get("length_flags") and "⚠ LENGTH" not in concept.get("review_notes", ""):
+                _notes.append("⚠ LENGTH — over template cap: "
+                              + ", ".join(concept["length_flags"]))
+            if _notes:
+                concept["review_notes"] = (". ".join(_notes) + ". "
+                                           + concept.get("review_notes", ""))
+        elif concept.get("length_warnings") and concept.get("selected"):
+            # Found live 2026-07-15: warnings were recorded but never consulted
+            # at selection time; two Testimonial concepts shipped 30% over cap.
+            concept["selected"] = False
+            if "⚠ FEED LENGTH" not in concept.get("review_notes", ""):
+                concept["review_notes"] = (
+                    "⚠ FEED LENGTH — over Meta field cap(s): "
+                    + ", ".join(concept["length_warnings"]) + ". "
+                    + concept.get("review_notes", ""))
+
+    eligible = [c for c in reviewed if not c.get("legal_flags")]
+    eligible.sort(key=lambda c: (not c.get("brief_quote_used"),
+                                 bool(c.get("length_flags")),
+                                 bool(c.get("length_warnings")),
+                                 len(c.get("length_flags", [])),
+                                 len(c.get("length_warnings", [])),
+                                 c.get("rank", 99)))
+
+    def _hl_of(c):
+        return c.get("creative_headline") or c.get("headline") or ""
+    picked, skipped = [], []
+    for c in eligible:
+        dup = any(_headlines_near_dup(_hl_of(c), _hl_of(x)) for x in picked)
+        (picked if (len(picked) < target and not dup) else skipped).append(c)
+    for c in skipped:
+        if len(picked) >= target:
+            break
+        picked.append(c)
+    _picked_ids = {id(c) for c in picked}
+    for c in eligible:
+        c["selected"] = id(c) in _picked_ids
+    got = sum(1 for c in reviewed if c.get("selected"))
+    if got < target:
+        print(f"    ⚠ {style}: only {got} shippable concept(s) for a target of {target}")
+    print(f"    Reviewed {style}: {got} of {len(reviewed)} selected (target {target})")
+    return reviewed
 
 
 def _flatten_audience(aud):
@@ -2464,8 +2548,30 @@ Return as JSON array with one object per concept in ranked order (best first):
 
 Return ONLY the JSON array. No other text."""
 
-        try:
-            response = httpx.post(
+        def _post_review():
+            # Same retry policy as generation (audit 2026-07-30: review had ONE
+            # attempt, so a transient 529 dropped the whole ranking and — before
+            # the fail-closed pass — shipped everything). Retries transient
+            # statuses/exceptions; a final failure falls to the fallback paths,
+            # where _deterministic_selection still enforces legal/caps/floor.
+            last = None
+            for _attempt in range(3):
+                try:
+                    r = _post_review_once()
+                    if r.status_code == 200 or r.status_code not in (429, 500, 502, 503, 529):
+                        return r
+                    last = r
+                except Exception as _re:
+                    if _attempt == 2:
+                        raise
+                    last = _re
+                time.sleep(2 * (_attempt + 1))
+            if isinstance(last, Exception):
+                raise last
+            return last
+
+        def _post_review_once():
+            return httpx.post(
                 "https://api.anthropic.com/v1/messages",
                 headers={
                     "x-api-key": api_key,
@@ -2491,6 +2597,9 @@ Return ONLY the JSON array. No other text."""
                 },
                 timeout=120
             )
+
+        try:
+            response = _post_review()
 
             if response.status_code == 200:
                 _rj = response.json()
@@ -2519,34 +2628,11 @@ Return ONLY the JSON array. No other text."""
                         concept["selected"] = ranking.get("selected", False)
                         concept["score"] = ranking.get("score", 0)
                         concept["review_notes"] = ranking.get("review_notes", "")
-                        # Backstop: a concept that tripped the banned-terms scan
-                        # (legal) or overflowed a HARD on-image char cap (length) is
-                        # never shipped as-is — de-select it and push it to the bottom
-                        # so a clean concept takes its place.
-                        if concept.get("legal_flags") or concept.get("length_flags"):
-                            concept["selected"] = False
-                            concept["rank"] = 99
-                            _notes = []
-                            if concept.get("legal_flags"):
-                                _notes.append("⚠ LEGAL — banned term(s): "
-                                              + ", ".join(concept["legal_flags"]))
-                            if concept.get("length_flags"):
-                                _notes.append("⚠ LENGTH — over template cap: "
-                                              + ", ".join(concept["length_flags"]))
-                            concept["review_notes"] = (". ".join(_notes) + ". "
-                                                       + concept.get("review_notes", ""))
-                        # SOFT demotion: feed-field overflow (length_warnings = over
-                        # Adrie's Meta caps, e.g. body_long>300) prefers a clean
-                        # alternative but stays shippable. Keep rank (it orders the
-                        # backfill); found live 2026-07-15: two Testimonial concepts
-                        # shipped 30% over body_long because warnings were recorded
-                        # but never consulted at selection time.
-                        elif concept.get("length_warnings") and concept.get("selected"):
-                            concept["selected"] = False
-                            concept["review_notes"] = (
-                                "⚠ FEED LENGTH — over Meta field cap(s): "
-                                + ", ".join(concept["length_warnings"]) + ". "
-                                + concept.get("review_notes", ""))
+                        # (Legal/length de-selection + the selection floor now run
+                        # UNCONDITIONALLY after the try/except — see
+                        # _deterministic_selection below. They used to live only in
+                        # this success path, so a review-API failure shipped all 6
+                        # concepts with the legal guard bypassed — audit 2026-07-30.)
                         # Duplicate-quote backstop: multiple concepts sharing one
                         # testimonial quote render as different headshots with the SAME
                         # attribution on the boards (five faces, one name — found
@@ -2579,41 +2665,6 @@ Return ONLY the JSON array. No other text."""
                                 + concept.get("review_notes", ""))
                         reviewed.append(concept)
 
-                # Select EXACTLY `target` concepts (the style's ordered quantity;
-                # default 3), cleanest-first: fully-clean by rank, then soft-warned
-                # by (warning count, rank), then hard-flagged by (flag count, rank)
-                # only if still short. A legal-flagged concept NEVER ships. The AI's
-                # own top-3 flags are advisory — its RANK is the quality signal here.
-                eligible = [c for c in reviewed if not c.get("legal_flags")]
-                eligible.sort(key=lambda c: (not c.get("brief_quote_used"),
-                                             bool(c.get("length_flags")),
-                                             bool(c.get("length_warnings")),
-                                             len(c.get("length_flags", [])),
-                                             len(c.get("length_warnings", [])),
-                                             c.get("rank", 99)))
-                # The selected set is the operator's CHOICES (Adrie: top 2 per style) —
-                # near-duplicate picks defeat the point ("...live by Friday" vs
-                # "...converting by Friday"). Greedy diverse pick: take cleanest-first,
-                # skipping any whose on-image headline near-duplicates an already-picked
-                # one; backfill from the skipped if the diverse pool runs short.
-                def _hl_of(c):
-                    return c.get("creative_headline") or c.get("headline") or ""
-                picked, skipped = [], []
-                for c in eligible:
-                    dup = any(_headlines_near_dup(_hl_of(c), _hl_of(x)) for x in picked)
-                    (picked if (len(picked) < target and not dup) else skipped).append(c)
-                for c in skipped:
-                    if len(picked) >= target:
-                        break
-                    picked.append(c)
-                _picked_ids = {id(c) for c in picked}
-                for c in eligible:
-                    c["selected"] = id(c) in _picked_ids
-                got = sum(1 for c in reviewed if c.get("selected"))
-                if got < target:
-                    print(f"    ⚠ {style}: only {got} shippable concept(s) for a target of {target}")
-                print(f"    Reviewed {style}: {got} of {len(reviewed)} selected (target {target})")
-
             else:
                 print(f"API error {response.status_code}, keeping all unranked")
                 for c in group_concepts:
@@ -2631,6 +2682,11 @@ Return ONLY the JSON array. No other text."""
                 c["score"] = 0
                 c["review_notes"] = f"Review error: {str(e)[:60]}"
                 reviewed.append(c)
+        # FAIL-CLOSED (audit 2026-07-30): the deterministic guard runs on EVERY
+        # path — ranked, API-error, and exception — so a review failure can never
+        # ship legal-flagged copy or all 6 concepts. Judgment (the model's ranking)
+        # and enforcement (this pass) are now separate layers.
+        _deterministic_selection(reviewed, target, style)
         # Style Guide CTA distribution (one-with/rest-without etc.) — applied to the
         # final selection regardless of which path (ranked or fallback) produced it.
         _apply_cta_mix(reviewed, style)

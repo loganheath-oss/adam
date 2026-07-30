@@ -11,6 +11,7 @@ export type AudienceCopy = {
   headline_short?: string;
   body_short?: string;
   body_long?: string;
+  description?: string;
 };
 
 export type PickerConcept = {
@@ -25,6 +26,8 @@ export type PickerConcept = {
   headline_short?: string;
   cta?: string;
   body_short?: string;
+  body_long?: string;
+  description?: string;
   review_notes?: string;
   targeting_copy?: { Prospecting?: AudienceCopy; Retargeting?: AudienceCopy };
 };
@@ -173,6 +176,20 @@ export function CopyPicker({
                           </div>
                         )}
                         {c.body_short && <div className="border-t pt-2 text-xs text-muted-foreground">{c.body_short}</div>}
+                        {/* body_long is the field that SHIPS as Meta Primary Text — it must
+                            never be absent from the surface where picks are made, and it
+                            renders whitespace-faithfully (audit 2026-07-30). */}
+                        {c.body_long && (
+                          <div className="whitespace-pre-wrap border-t pt-2 text-xs">
+                            <span className="font-medium uppercase tracking-wide text-muted-foreground">Primary text</span>
+                            {"\n"}{c.body_long}
+                          </div>
+                        )}
+                        {c.description && (
+                          <div className="text-xs text-muted-foreground">
+                            <span className="font-medium uppercase tracking-wide">Description</span> {c.description}
+                          </div>
+                        )}
                         {/* Prospecting + Retargeting — each has its OWN creative + feed copy */}
                         {c.targeting_copy && (c.targeting_copy.Prospecting || c.targeting_copy.Retargeting) && (
                           <div className="mt-2 grid gap-3 border-t pt-2 sm:grid-cols-2">
@@ -189,6 +206,12 @@ export function CopyPicker({
                                     </div>
                                   )}
                                   {a.body_short && <div className="text-[11px] text-muted-foreground">{a.body_short}</div>}
+                                  {a.body_long && (
+                                    <div className="whitespace-pre-wrap text-[11px]">{a.body_long}</div>
+                                  )}
+                                  {a.description && (
+                                    <div className="text-[11px] text-muted-foreground">Desc: {a.description}</div>
+                                  )}
                                 </div>
                               );
                             })}

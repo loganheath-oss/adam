@@ -566,7 +566,7 @@ export function SprintWorkspace({
                 <div className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">A</div>
                 <div className="min-w-0 flex-1 text-sm leading-relaxed [&_p:first-child]:mt-0 [&_p]:my-2">
                   {it.content ? (
-                    <MarkdownView>{it.content}</MarkdownView>
+                    <MarkdownView breaks>{it.content}</MarkdownView>
                   ) : it.streaming ? (
                     <span className="text-muted-foreground">thinking…</span>
                   ) : null}

@@ -155,6 +155,54 @@ def offline_checks():
     check("refs: proper-noun day rule present",
           "days of the week" in refs.get("copy_instructions", "").lower())
 
+    # 11a. SCHEMA COVERS EVERY PROMPTED FIELD (audit 2026-07-30: Poll's integer
+    # percentages had no char_limits entry, so additionalProperties:false
+    # stripped them from every Poll concept since structured output landed).
+    # Mirror of the multi_field branches in _generate_copy_for_style, keyed by
+    # the same _sl normalization.
+    _EXTRAS_BY_SL = {
+        "usvsthem": ["us_headline", "them_headline", "us_bullets", "them_bullets"],
+        "stickynote": ["left_headline", "right_headline", "left_bullets", "right_bullets"],
+        "poll": ["poll_question", "poll_option_a", "poll_pct_a", "poll_option_b", "poll_pct_b"],
+        "testimonial": ["testimonial_quote", "testimonial_author"],
+        "searchresults": ["search_results"],
+        "socialmediaprofile": ["profile_name", "profile_title", "profile_left", "profile_right"],
+        "chatbubble": ["chat_label", "chat_message"],
+        "textwithbutton": ["button_text"],
+        "piechart": ["pie_labels", "pie_center"],
+    }
+    _schema_missing = []
+    for _style in STYLES_24:
+        _fields = _EXTRAS_BY_SL.get(_style.strip().lower().replace(" ", ""), [])
+        if not _fields:
+            continue
+        _props = rp._concept_schema(_style, False, 6)["properties"]["concepts"]["items"]["properties"]
+        _schema_missing += [f"{_style}:{f}" for f in _fields if f not in _props]
+    check("schema declares every prompted style field", not _schema_missing,
+          str(_schema_missing))
+
+    # 11b. Fail-closed selection: _deterministic_selection enforces legal/caps
+    # even when review never ranked (the API-failure fallback path).
+    _fc = [
+        {"headline": "Clean one", "creative_headline": "Ship it this week",
+         "rank": 0, "selected": True},
+        {"headline": "Illegal one", "creative_headline": "Vetted talent now",
+         "rank": 0, "selected": True, "legal_flags": ["vetted"]},
+        {"headline": "Clean two", "creative_headline": "Proposals by Tuesday",
+         "rank": 0, "selected": True},
+        {"headline": "Overflow", "creative_headline": "Way over the template cap",
+         "rank": 0, "selected": True, "length_flags": ["creative_headline 90>65"]},
+    ]
+    rp._deterministic_selection(_fc, 2, "test-style")
+    check("fail-closed: legal-flagged never selected", not _fc[1]["selected"],
+          "legal concept survived selection")
+    check("fail-closed: selection floor respected",
+          sum(1 for c in _fc if c["selected"]) == 2,
+          f"{sum(1 for c in _fc if c['selected'])} selected, wanted 2")
+    check("fail-closed: clean concepts win over flagged",
+          _fc[0]["selected"] and _fc[2]["selected"],
+          "flagged concept selected ahead of a clean one")
+
     # 11. NO SILENT REF TRUNCATION (2026-07-30 audit: fixed [:N] slices were cutting
     # 40-91% of the reference docs — Adrie's examples lost 91%, the legal blocklist
     # was amputated mid-sentence). Ratchet: any `var[:N]` slice in run_pipeline.py
@@ -229,6 +277,13 @@ def live_checks(all_styles=False):
         if len(sel) >= 2:
             a, b = (sel[0].get("creative_headline") or "", sel[1].get("creative_headline") or "")
             check(f"live diverse picks: {s}", not rp._headlines_near_dup(a, b), f"{a!r} vs {b!r}")
+        # Poll percentages must ARRIVE (audit 2026-07-30: the schema stripped
+        # them for every Poll sprint since structured output landed).
+        if s.strip().lower().replace(" ", "") == "poll":
+            _nopct = [c.get("concept_id") for c in sel
+                      if not (isinstance(c.get("poll_pct_a"), int)
+                              and isinstance(c.get("poll_pct_b"), int))]
+            check("live: poll percentages present", not _nopct, str(_nopct))
     bl = [c.get("body_long") for c in cs if c.get("body_long")]
     nb = sum(1 for t in bl if re.search(r"\n\s*([^\w\s]|[-•*])", str(t)))
     check("live: ~50/50 long-body split", bl and 0.35 <= nb / len(bl) <= 0.65, f"{nb}/{len(bl)} bulleted")
