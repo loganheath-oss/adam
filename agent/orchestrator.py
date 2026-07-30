@@ -951,13 +951,20 @@ async def run_agent_turn(
 
     wiki_sources: dict = {}
 
+    # Output budget must EXCEED what the transparency law demands. A full Gate-3
+    # presentation (12 concepts x 2 audiences x all fields, verbatim) runs 6-8k
+    # tokens; the old 2048 cap made "show everything" arithmetically impossible,
+    # so the model silently compressed — Adrie's truncated lead-ins, 2026-07-30.
+    max_out = int(os.environ.get("ADAM_CHAT_MAX_TOKENS", "16000"))
+    continuations = 0
+
     while True:
         response = client.messages.create(
             # Sonnet 5 with thinking explicitly DISABLED: no thinking blocks are emitted,
             # so the tool-use loop sees the same shapes as 4.6 (2026-07-28). Env-tunable.
             model=os.environ.get("ADAM_CHAT_MODEL", "claude-sonnet-5"),
             thinking={"type": "disabled"},
-            max_tokens=2048,
+            max_tokens=max_out,
             system=system_prompt,
             tools=active_tools,
             messages=loop_messages,
@@ -975,6 +982,21 @@ async def run_agent_turn(
         if text_blocks:
             combined = "".join(text_blocks)
             yield f"data: {json.dumps({'type': 'text', 'text': combined})}\n\n"
+
+        # Safety net: if the response still hit the output ceiling mid-message
+        # (no pending tool calls to naturally continue the loop), auto-continue
+        # instead of silently shipping a truncated presentation. Capped so a
+        # pathological loop can't run away.
+        if response.stop_reason == "max_tokens" and not tool_uses and continuations < 3:
+            continuations += 1
+            loop_messages.append({"role": "assistant", "content": response.content})
+            loop_messages.append({
+                "role": "user",
+                "content": "[SYSTEM: your message hit the output limit mid-stream. "
+                           "Continue EXACTLY where you left off — do not repeat text "
+                           "already sent, do not summarize, do not apologize.]",
+            })
+            continue
 
         if response.stop_reason == "end_turn" or not tool_uses:
             break
