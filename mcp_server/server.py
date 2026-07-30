@@ -100,14 +100,17 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
 
 
 @mcp.tool()
-def list_sprints(limit: int = 20) -> list[dict[str, Any]]:
+def list_sprints(limit: int = 20) -> dict[str, Any]:
     """List recent sprints with their current pipeline state.
+
+    Returns {sprints, total, truncated} — `total` is the real sprint count, so
+    a capped page can never read as "all sprints" (audit 2026-07-30).
 
     Args:
         limit: Maximum number of sprints to return (default 20, newest first).
     """
     if not RUNS_DIR.exists():
-        return []
+        return {"sprints": [], "total": 0, "truncated": False}
     sprints = []
     for path in sorted(RUNS_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
         if not path.is_dir():
@@ -126,7 +129,8 @@ def list_sprints(limit: int = 20) -> list[dict[str, Any]]:
         )
         if len(sprints) >= limit:
             break
-    return sprints
+    total = sum(1 for p in RUNS_DIR.iterdir() if p.is_dir()) if RUNS_DIR.exists() else 0
+    return {"sprints": sprints, "total": total, "truncated": total > len(sprints)}
 
 
 @mcp.tool()
@@ -153,6 +157,18 @@ def get_copy_concepts(sprint_id: str) -> dict[str, Any]:
     """
     path = _sprint_dir(sprint_id)
     outputs = _read_json(path / "copy_outputs.json")
+    # Authoritative presentation fields (audit 2026-07-30): on_creative =
+    # exactly what prints on the template; pipeline_flags with an explicit
+    # none:true. Shared with the chat agent so claude.ai reviewers see the
+    # same ground truth (this synth previously omitted the per-audience
+    # copy at exactly the gate where it must be reviewed).
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    from agent.orchestrator import _enrich_concept_view
+    if isinstance(outputs, dict) and isinstance(outputs.get("concepts"), list):
+        outputs = dict(outputs)
+        outputs["concepts"] = [_enrich_concept_view(c) if isinstance(c, dict) else c
+                               for c in outputs["concepts"]]
     review = _read_csv(path / "copy_review.csv")
     if not review and outputs:
         concepts = outputs.get("concepts") or []
@@ -163,10 +179,13 @@ def get_copy_concepts(sprint_id: str) -> dict[str, Any]:
                 "selected": "YES" if c.get("selected") else "NO",
                 "score": str(c.get("score", "")),
                 "Text_On_Visual": c.get("creative_headline", c.get("headline", "")),
+                "On_Creative_Fields": c.get("on_creative") or {},
                 "Primary_Text_Short": c.get("body_short", c.get("body", "")),
                 "Primary_Text_Long": c.get("body_long", ""),
                 "Description": c.get("description", ""),
                 "CTA": c.get("cta", ""),
+                "targeting_copy": c.get("targeting_copy") or {},
+                "pipeline_flags": c.get("pipeline_flags") or {"none": True},
                 "concept_tag": c.get("concept_tag", ""),
                 "review_notes": c.get("review_notes", ""),
             }
@@ -193,7 +212,6 @@ def get_manifest(sprint_id: str) -> dict[str, Any]:
     return {
         "sprint_id": sprint_id,
         "asset_manifest": _read_csv(path / "asset_manifest.csv"),
-        "plugin_manifest": _read_csv(path / "plugin_manifest.csv"),
     }
 
 

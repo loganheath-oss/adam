@@ -156,12 +156,27 @@ def tool_get_sprint(sprint_id: str) -> dict:
     path = RUNS_DIR / sprint_id
     if not path.exists():
         return {"error": f"Sprint not found: {sprint_id}"}
+    # RECURSIVE inventory (audit 2026-07-30): the old listing showed top-level
+    # files only, so everything inside images/ and finals/ was invisible and
+    # the Gate-6 "complete inventory" spec was structurally impossible — the
+    # model filled the gap by guessing. Facts the model presents must be
+    # computed here, never derived by it.
+    files = sorted(str(p.relative_to(path)) for p in path.rglob("*")
+                   if p.is_file() and not p.name.startswith("."))
+    per_dir: dict[str, int] = {}
+    for f in files:
+        top = f.split("/", 1)[0] if "/" in f else "(root)"
+        per_dir[top] = per_dir.get(top, 0) + 1
+    truncated = len(files) > 400
     return {
         "sprint_id": sprint_id,
         "pipeline_state": _read_json(path / "pipeline_state.json"),
         "order": _read_json(path / "order.json"),
         "run_summary": _read_json(path / "run_summary.json"),
-        "available_files": sorted(p.name for p in path.iterdir() if p.is_file()),
+        "available_files": files[:400],
+        "file_total": len(files),
+        "files_truncated": truncated,
+        "files_per_dir": per_dir,
     }
 
 
@@ -235,10 +250,23 @@ def tool_get_copy_concepts(sprint_id: str) -> dict:
             }
             for c in concepts
         ]
+    # Deterministic per-style tallies so counts in presentations are DATA, not
+    # model arithmetic (audit 2026-07-30: every fact the model can miscompute,
+    # Python computes instead).
+    summary: dict[str, dict] = {}
+    for c in ((outputs or {}).get("concepts") or []):
+        st = c.get("visual_style", "unknown")
+        s = summary.setdefault(st, {"generated": 0, "selected": 0, "flagged": 0})
+        s["generated"] += 1
+        if c.get("selected"):
+            s["selected"] += 1
+        if c.get("legal_flags") or c.get("length_flags"):
+            s["flagged"] += 1
     return {
         "sprint_id": sprint_id,
         "copy_outputs": outputs,
         "copy_review": review,
+        "style_summary": summary,
     }
 
 
