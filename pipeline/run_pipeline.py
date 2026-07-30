@@ -115,11 +115,17 @@ def _concept_schema(style, is_both, qty):
     required = list(_BASE_FIELDS)
     if _style_uses_subhead(style):
         props["creative_subhead"] = {"type": "string"}
-    # Style extras from the guide entry (poll_question, left_bullets, …).
+    # Style extras from the guide entry (poll_question, left_bullets, …) —
+    # REQUIRED, not optional. Optional props under additionalProperties:false
+    # let the model legally omit them, and on 2026-07-30 a live rerun shipped
+    # Sticky concepts with NO sticky fields at all (single/left/right all
+    # absent) while every check passed. The style's own fields ARE the ad —
+    # the schema must force them, not hope for them.
     _k, entry = _guide_entry_for_style(style)
     for f in ((entry or {}).get("char_limits") or {}):
         if f not in props and f not in ("creative_headline", "creative_subhead", "cta"):
             props[f] = _prop(f)
+            required.append(f)
     # NON-char-limit style fields. The schema used to be built from char_limits
     # keys ONLY, so prompted fields with no char cap (Poll's integer percentages)
     # were silently STRIPPED by additionalProperties:false — every Poll since

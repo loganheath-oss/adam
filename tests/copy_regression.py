@@ -54,6 +54,23 @@ STYLES_24 = ["Graphic with Text", "Split Screen", "Us vs Them", "Photo with Text
 # Styles allowed to have no style-guide entry (generic rules apply).
 NO_GUIDE_OK = {"Search Bar with Talent Badge"}
 
+# Prompted style-extra fields per normalized style (_sl) — mirrors the
+# multi_field branches in _generate_copy_for_style. Used by BOTH the offline
+# schema-coverage check and the live extras-presence check (2026-07-30: the
+# live spec only verified creative_headline, so a run shipping Sticky concepts
+# with NO sticky fields passed every check).
+EXTRAS_BY_SL = {
+    "usvsthem": ["us_headline", "them_headline", "us_bullets", "them_bullets"],
+    "stickynote": ["left_headline", "right_headline", "left_bullets", "right_bullets"],
+    "poll": ["poll_question", "poll_option_a", "poll_pct_a", "poll_option_b", "poll_pct_b"],
+    "testimonial": ["testimonial_quote", "testimonial_author"],
+    "searchresults": ["search_results"],
+    "socialmediaprofile": ["profile_name", "profile_title", "profile_left", "profile_right"],
+    "chatbubble": ["chat_label", "chat_message"],
+    "textwithbutton": ["button_text"],
+    "piechart": ["pie_labels", "pie_center"],
+}
+
 
 def offline_checks():
     print("\n== OFFLINE (deterministic) ==")
@@ -160,26 +177,23 @@ def offline_checks():
     # stripped them from every Poll concept since structured output landed).
     # Mirror of the multi_field branches in _generate_copy_for_style, keyed by
     # the same _sl normalization.
-    _EXTRAS_BY_SL = {
-        "usvsthem": ["us_headline", "them_headline", "us_bullets", "them_bullets"],
-        "stickynote": ["left_headline", "right_headline", "left_bullets", "right_bullets"],
-        "poll": ["poll_question", "poll_option_a", "poll_pct_a", "poll_option_b", "poll_pct_b"],
-        "testimonial": ["testimonial_quote", "testimonial_author"],
-        "searchresults": ["search_results"],
-        "socialmediaprofile": ["profile_name", "profile_title", "profile_left", "profile_right"],
-        "chatbubble": ["chat_label", "chat_message"],
-        "textwithbutton": ["button_text"],
-        "piechart": ["pie_labels", "pie_center"],
-    }
     _schema_missing = []
+    _schema_optional = []
     for _style in STYLES_24:
-        _fields = _EXTRAS_BY_SL.get(_style.strip().lower().replace(" ", ""), [])
+        _fields = EXTRAS_BY_SL.get(_style.strip().lower().replace(" ", ""), [])
         if not _fields:
             continue
-        _props = rp._concept_schema(_style, False, 6)["properties"]["concepts"]["items"]["properties"]
+        _item = rp._concept_schema(_style, False, 6)["properties"]["concepts"]["items"]
+        _props, _req = _item["properties"], _item["required"]
         _schema_missing += [f"{_style}:{f}" for f in _fields if f not in _props]
+        # Optional extras under additionalProperties:false = the model may
+        # legally omit the fields that ARE the ad (live incident 2026-07-30).
+        _schema_optional += [f"{_style}:{f}" for f in _fields
+                             if f in _props and f not in _req]
     check("schema declares every prompted style field", not _schema_missing,
           str(_schema_missing))
+    check("schema REQUIRES every prompted style field", not _schema_optional,
+          str(_schema_optional))
 
     # 11b. Fail-closed selection: _deterministic_selection enforces legal/caps
     # even when review never ranked (the API-failure fallback path).
@@ -346,6 +360,11 @@ def live_checks(all_styles=False):
         p = sum(1 for c in sel if rp._flatten_audience((c.get("targeting_copy") or {}).get("Prospecting") or {}).get("body_short"))
         r = sum(1 for c in sel if rp._flatten_audience((c.get("targeting_copy") or {}).get("Retargeting") or {}).get("body_short"))
         oc = sum(1 for c in sel if str(c.get("creative_headline") or "").strip())
+        _extras = EXTRAS_BY_SL.get(s.strip().lower().replace(" ", ""), [])
+        if _extras:
+            _missing_ex = [f"{c.get('concept_id')}:{f}" for c in sel for f in _extras
+                           if c.get(f) in (None, "", [])]
+            check(f"live extras present: {s}", not _missing_ex, str(_missing_ex[:4]))
         hl = sum(1 for c in sel if str(c.get("headline") or "").strip() and str(c.get("headline_short") or "").strip())
         check(f"live spec: {s}", len(sel) >= 2 and p >= 2 and r >= 2 and oc == len(sel) and hl == len(sel),
               f"sel={len(sel)} P={p} R={r} oc={oc} hl={hl}")
