@@ -45,6 +45,7 @@ function digestText(d: Digest, days: number, openIssues: Issue[] = []): string {
     L.push("");
     L.push("Open issues (operator-flagged):");
     for (const i of openIssues.slice(0, 8)) L.push(`  - #${i.id} ${i.description}${i.sprint_id ? ` (${i.sprint_id.slice(-6)})` : ""}`);
+    if (openIssues.length > 8) L.push(`  (+${openIssues.length - 8} more — see /admin/digest)`);
   }
   if (d.incidents && d.incidents.length) {
     L.push("");

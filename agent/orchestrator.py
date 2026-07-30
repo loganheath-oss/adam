@@ -411,7 +411,7 @@ def tool_approve_gate(sprint_id: str, gate: int, note: str = "") -> dict:
         return {"error": str(exc)}
 
 
-def tool_get_chat_history(sprint_id: str, limit: int = 50) -> dict:
+def tool_get_chat_history(sprint_id: str, limit: int = 200) -> dict:
     path = RUNS_DIR / sprint_id / "chat.jsonl"
     history = _read_jsonl(path)
     if limit and limit > 0:

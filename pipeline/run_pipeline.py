@@ -280,7 +280,7 @@ def _cd_batch_review(concepts, order, api_key, sprint_id=None):
     prompt = (
         "You are the creative director reviewing an assembled ad CAMPAIGN — all concepts "
         "together, the view no single generation call had. Brief theme:\n"
-        f"{str(order.get('brief', ''))[:600]}\n\n"
+        f"{str(order.get('brief', ''))[:2000]}\n\n"
         f"THE CAMPAIGN'S ON-CREATIVE HEADLINES:\n{lines}\n\n"
         "Judge the BATCH: repeated constructions or ideas across styles, tonal drift, and "
         "any weak outlier that undercuts the set. Flag sparingly — only what a CD would "
@@ -1271,6 +1271,31 @@ def _smart_trim(text, cap):
     return (base + "…") if base else cut[:cap]
 
 
+def _deellipsis_descriptions(concept):
+    """Description must read as a COMPLETE fragment — a visible trim
+    ("Specialized talent…") is a spec failure (Adrie). Strips a trailing
+    ellipsis + dangling stopwords from the base AND per-audience description.
+    Must run after EVERY pass that can trim: the first cleaning ran before
+    feed-fit, whose _smart_trim fallback re-ellipsized descriptions — caught
+    live by the regression suite, 2026-07-30."""
+    def _clean(d):
+        d = str(d or "")
+        if not d.rstrip().endswith(("…", "...")):
+            return d
+        d = d.rstrip().rstrip(".").rstrip("…").rstrip()
+        w = d.split()
+        while w and w[-1].lower() in _HL_STOP:
+            w.pop()
+        return " ".join(w)
+    if concept.get("description"):
+        concept["description"] = _clean(concept["description"])
+    tc = concept.get("targeting_copy")
+    if isinstance(tc, dict):
+        for _aud in tc.values():
+            if isinstance(_aud, dict) and _aud.get("description"):
+                _aud["description"] = _clean(_aud["description"])
+
+
 def _fit_feed_fields(concepts, style, api_key, sprint_id=None):
     """Meta feed fields (headline/body/description + per-audience targeting_copy)
     must FIT their caps — Meta hard-truncates overflow mid-sentence. The model
@@ -1543,9 +1568,15 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     _is_both = (_tl == "both") or ("prospecting" in _tl and "retargeting" in _tl)
     _prosp_ex = context.get("prospecting_examples", "")
     _retarget_ex = context.get("retargeting_examples", "")
+    # Reference docs are injected UNTRUNCATED. The old fixed slices silently cut
+    # 40-91% of the load-bearing docs — Adrie's real examples lost 91%, the legal
+    # blocklist and her canonical bullet examples were amputated mid-sentence from
+    # copy_instructions (found 2026-07-30, same class as the chat 2048-token cap).
+    # The whole pack sits in the CACHED system block, so full docs cost ~0.1x on
+    # reads; tests/copy_regression.py fails if a slice ever reappears on these.
     if _is_both:
-        examples = (f"--- PROSPECTING EXAMPLES ---\n{_prosp_ex[:1900]}\n\n"
-                    f"--- RETARGETING EXAMPLES ---\n{_retarget_ex[:1900]}")
+        examples = (f"--- PROSPECTING EXAMPLES ---\n{_prosp_ex}\n\n"
+                    f"--- RETARGETING EXAMPLES ---\n{_retarget_ex}")
         targeting_rules = (
             "This order is BOTH Prospecting AND Retargeting. Provide the feed copy TWICE per\n"
             "concept — one version per audience (see targeting_copy below). The two must be\n"
@@ -1831,7 +1862,7 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             f'No Style Guide entry cleanly matched "{style}". Apply the closest-matching\n'
             "ad type below and note the mismatch — do NOT default to a generic\n"
             "single-headline spec.\n\n"
-            f"{copy_style_rules[:8000]}"
+            f"{copy_style_rules}"
         )
 
     prompt = f"""You are writing paid acquisition ad copy for Upwork. Follow every brand rule below exactly.
@@ -1844,48 +1875,48 @@ field. The LEGAL "Terms to Avoid" blocklist is ABSOLUTE — it overrides the ord
 brief itself. If the brief asks for a banned idea (e.g. "vetted", "pre-screened",
 "guaranteed"), express it with the approved alternative; NEVER output a banned term,
 no matter what the brief says.
-{copy_instructions[:6000]}
+{copy_instructions}
 
 ===== ORDER BRIEF / OPERATOR DIRECTION (HIGH PRIORITY — but never above Legal) =====
 {brief_block}
 
 ===== BRAND VOICE =====
-{brand_voice[:3000]}
+{brand_voice}
 
 ===== WRITING STYLE =====
-{writing_style[:4000]}
+{writing_style}
 
 ===== COMPLIANCE AND LEGAL RULES =====
-{compliance[:20000]}
+{compliance}
 
 ===== COPY PLAYBOOK =====
-{playbook[:2000]}
+{playbook}
 
 ===== APPROVED CLAIMS AND STATS =====
 Use only these verified claims. Do not invent statistics.
-{claims[:2000]}
+{claims}
 
 ===== COPY BANK (approved headlines and copy) =====
 Reference these for tone and structure. Match this quality.
-{copy_bank[:3000]}
+{copy_bank}
 
 ===== TARGETING RULES ({targeting_type}) =====
 {targeting_rules}
 
 ===== REAL AD EXAMPLES ({targeting_type}) =====
 Study these examples closely. Your output should match this quality and style.
-{examples[:4000]}
+{examples}
 
 ===== PERFORMANCE DATA — WHAT ACTUALLY WORKS =====
 The following shows real ad performance ranked by cost per job post.
 Use this to inform your creative decisions. Lean into patterns that perform well.
 Black backgrounds dominate the top performers. Quote-driven messaging outperforms
 other approaches. Specific freelancer categories outperform generic talent messaging.
-{context.get('performance_data', '')[:3000]}
-
-{style_rules_block}
+{context.get('performance_data', '')}
 
 ===== YOUR ASSIGNMENT =====
+{style_rules_block}
+
 Generate {qty} ad copy concepts. Each concept must be COMPLETE — never truncate or
 abbreviate later concepts to save space; every field must be fully written for all {qty}.{_angle_line}{_body_format_line}
 
@@ -1952,7 +1983,10 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                                                  "schema": _concept_schema(style, _is_both, qty)}},
                     **_thinking_params(),
                 },
-                timeout=120
+                # Full untruncated ref pack + up to 8000 output tokens: a cold
+                # cache-write call can legitimately run past 120s. A too-tight
+                # timeout kills healthy calls and rebills the retry (2026-07-30).
+                timeout=300
             )
 
             if response.status_code == 200:
@@ -2064,17 +2098,7 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                                     for _cf in _SENTENCE_CASE_FIELDS:
                                         if _aud.get(_cf):
                                             _aud[_cf] = _to_sentence_case(_aud[_cf])
-                        # Description must never SHOW its trim: strip a trailing ellipsis
-                        # (and any dangling stopword) so it reads as a complete fragment
-                        # ("Specialized talent…" -> "Specialized talent") — economy-bias
-                        # audit, 2026-07-29.
-                        _d = str(concept.get("description") or "")
-                        if _d.rstrip().endswith(("…", "...")):
-                            _d = _d.rstrip().rstrip(".").rstrip("…").rstrip()
-                            _dw = _d.split()
-                            while _dw and _dw[-1].lower() in _HL_STOP:
-                                _dw.pop()
-                            concept["description"] = " ".join(_dw)
+                        _deellipsis_descriptions(concept)
                         # Re-capitalize proper nouns (days of the week, Upwork) that
                         # _to_sentence_case just lowercased. Deterministic, runs LAST so it
                         # wins over sentence-casing. Fixes "friday" -> "Friday" (2026-07-27).
@@ -2106,6 +2130,10 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                     _fit_feed_fields(concepts, style, api_key, sprint_id)
                 except Exception as _fe:
                     print(f"    feed-fit skipped: {str(_fe)[:60]}")
+                # Feed-fit's _smart_trim fallback can re-ellipsize a description
+                # AFTER the first cleaning — always re-clean (2026-07-30).
+                for _c in concepts:
+                    _deellipsis_descriptions(_c)
                 # Combined on-image caps (Social Media 65, Sticky Note double 136) — final
                 # deterministic fit AFTER per-field, so the SUM respects the design's space.
                 for _c in concepts:
@@ -2173,7 +2201,7 @@ def _breakdown_brief(brief, order, api_key, sprint_id=None):
         "- resources: array of reference ideas, URLs, or assets mentioned. [] if none.\n"
         "- has_high_touch: true only if the brief has specific must-apply directives beyond a general "
         "theme; false if it's only theme/messaging.\n\n"
-        f'BRIEF:\n"""\n{brief[:6000]}\n"""\n\n'
+        f'BRIEF:\n"""\n{brief[:20000]}\n"""\n\n'
         "Return ONLY a JSON object with keys theme, copy_directives, design_directives, resources, "
         "has_high_touch. No prose."
     )
@@ -2384,20 +2412,25 @@ Concept {idx}:
   concept_tag: {c.get('concept_tag', '')}
 """
 
+        # The judge scores "style fit" — it needs THIS style's resolved guide entry,
+        # not the first 2000 chars of the whole guide (which usually didn't contain
+        # the style being judged — found in the 2026-07-30 truncation audit). Legal
+        # is deterministically enforced post-hoc, so compliance here stays a slice.
+        _judge_entry, _ = _style_guide_block(style, copy_style_rules)
         review_prompt = f"""You are a senior creative director reviewing ad copy concepts for Upwork paid acquisition.
 
 ===== BRAND VOICE RULES =====
-{brand_voice[:2000]}
+{brand_voice}
 
 ===== COMPLIANCE RULES =====
-{compliance[:2000]}
+{compliance[:4000]}
 
 ===== APPROVED CLAIMS =====
 Only these stats and claims are verified. Concepts using unverified numbers should be ranked lower.
-{claims[:1500]}
+{claims}
 
 ===== COPY RULES FOR {style.upper()} STYLE =====
-{copy_style_rules[:2000]}
+{_judge_entry or copy_style_rules[:4000]}
 
 ===== CONCEPTS TO REVIEW =====
 Visual Style: {style}

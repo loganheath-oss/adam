@@ -155,6 +155,38 @@ def offline_checks():
     check("refs: proper-noun day rule present",
           "days of the week" in refs.get("copy_instructions", "").lower())
 
+    # 11. NO SILENT REF TRUNCATION (2026-07-30 audit: fixed [:N] slices were cutting
+    # 40-91% of the reference docs — Adrie's examples lost 91%, the legal blocklist
+    # was amputated mid-sentence). Ratchet: any `var[:N]` slice in run_pipeline.py
+    # on a ref-doc variable must either cover the doc's full current length or be
+    # on the explicit allowlist of intentional context slices.
+    src = "\n".join(l for l in (REPO / "pipeline" / "run_pipeline.py")
+                    .read_text().splitlines() if not l.lstrip().startswith("#"))
+    ref_vars = {
+        "copy_instructions": "copy_instructions", "brand_voice": "brand_voice",
+        "writing_style": "writing_style", "compliance": "compliance",
+        "playbook": "playbook", "claims": "claims", "copy_bank": "copy_bank",
+        "copy_style_rules": "copy_style_rules",
+        "_prosp_ex": "prospecting_examples", "_retarget_ex": "retargeting_examples",
+        "examples": None,  # max of both example docs
+    }
+    allowed = {("compliance", 4000),        # judge context; legal is enforced post-hoc
+               ("copy_style_rules", 4000)}  # judge fallback when no entry matched
+    bad = []
+    for var, cap_s in re.findall(r"\b(\w+)\[:(\d+)\]", src):
+        if var not in ref_vars:
+            continue
+        cap = int(cap_s)
+        if (var, cap) in allowed:
+            continue
+        key = ref_vars[var]
+        n = (max(len(str(refs.get("prospecting_examples") or "")),
+                 len(str(refs.get("retargeting_examples") or "")))
+             if key is None else len(str(refs.get(key) or "")))
+        if n > cap:
+            bad.append(f"{var}[:{cap}] loses {n - cap} of {n} chars")
+    check("no ref doc silently truncated in prompts", not bad, "; ".join(bad))
+
 
 def live_checks(all_styles=False):
     print("\n== LIVE (real copy generation — costs API $) ==")
@@ -203,8 +235,12 @@ def live_checks(all_styles=False):
     # Bulleted bodies must OPEN with a lead-in sentence, never a bare bullet
     # (Adrie 2026-07-29: "just the bullet points with no copy before it").
     bare = [t for t in bl if re.match(r"\s*[^\w\s]", str(t).strip())]
-    ell = [c.get("description") for c in cs if c.get("selected")
-           and str(c.get("description") or "").rstrip().endswith(("…", "..."))]
+    def _descs(c):
+        tc = c.get("targeting_copy") or {}
+        return [c.get("description")] + [a.get("description") for a in tc.values()
+                                         if isinstance(a, dict)]
+    ell = [d for c in cs if c.get("selected") for d in _descs(c)
+           if str(d or "").rstrip().endswith(("…", "..."))]
     check("live: no ellipsis-trimmed descriptions", not ell, str(ell[:2]))
     check("live: bulleted bodies have a lead-in", not bare,
           f"{len(bare)} start with a bullet: {str(bare[0])[:60]!r}" if bare else "")

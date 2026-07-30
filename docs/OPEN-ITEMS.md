@@ -5,6 +5,21 @@ Claude copy instructions, provided 2026-07-14. Grouped by workstream; most-actio
 first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination · ⬜ not started.
 
 ## A. Copy engine
+- ✅ **2026-07-30 limits audit: silent truncation removed everywhere.** Trigger: the
+  chat agent's 2048-token output cap made the transparency law arithmetically impossible
+  (Adrie's trimmed lead-ins) → cap now 16000 + auto-continue on `max_tokens` (capped ×3).
+  Full-codebase sweep then found the same class in the copy prompt itself: fixed `[:N]`
+  slices were cutting **40–91% of the reference docs** — `copy_instructions[:6000]` cut
+  Adrie's canonical bullet examples MID-SENTENCE plus the legal blocklist/formatting/QA
+  sections; her prospecting/retargeting example docs lost 91%/90%; compliance lost 49%;
+  writing_style 79%. All ref docs now injected UNTRUNCATED (cached system block, ~0.1x
+  reads); style block moved below the cache marker so the pack is style-invariant (ONE
+  cache write per sprint instead of six). Judge call now gets the resolved style entry
+  (was first-2000-chars of the guide → usually judging style fit without the style's
+  rules). Brief slices raised (600→2000 CD / 6000→20000 breakdown); main-call timeout
+  120→300s; chat-history tool default 50→200 msgs; digest paste block flags "+N more"
+  issues. RATCHET: `tests/copy_regression.py` check #11 fails on ANY `[:N]` slice of a
+  ref-doc variable that loses content (allowlist for the two intentional judge slices).
 - ✅ **Wire the binding 24-entry Ad Type Style Guide into copy_gen.** Replaced the loose
   `refs/visual_style_copy_rules.txt` with the July guide; copy_gen now resolves the ONE
   matching entry per style and injects it **untruncated** (was `copy_style_rules[:5000]`,
