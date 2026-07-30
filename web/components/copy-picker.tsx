@@ -30,7 +30,49 @@ export type PickerConcept = {
   description?: string;
   review_notes?: string;
   targeting_copy?: { Prospecting?: AudienceCopy; Retargeting?: AudienceCopy };
+  // Style-specific on-creative fields (sticky single/left/right, poll, …)
+  [key: string]: unknown;
 };
+
+// The copy that is PRINTED ON the creative for styles with their own field set
+// (audit 2026-07-30: the picker showed only the auxiliary concept label, so the
+// operator judged sticky ads by a field the template never ships). Ordered;
+// only fields present on the concept render.
+const STYLE_FIELDS: [string, string][] = [
+  ["single_headline", "Sticky headline"],
+  ["single_bullets", "Sticky bullets"],
+  ["left_headline", "Left headline"],
+  ["left_bullets", "Left bullets"],
+  ["right_headline", "Right headline"],
+  ["right_bullets", "Right bullets"],
+  ["us_headline", "Us headline"],
+  ["us_bullets", "Us bullets"],
+  ["them_headline", "Them headline"],
+  ["them_bullets", "Them bullets"],
+  ["poll_question", "Poll question"],
+  ["poll_option_a", "Option A"],
+  ["poll_pct_a", "% A"],
+  ["poll_option_b", "Option B"],
+  ["poll_pct_b", "% B"],
+  ["testimonial_quote", "Quote"],
+  ["testimonial_author", "Attribution"],
+  ["chat_label", "Chat opener"],
+  ["chat_message", "Chat reply"],
+  ["button_text", "Button"],
+  ["pie_center", "Pie center"],
+  ["pie_labels", "Pie labels"],
+  ["profile_name", "Name"],
+  ["profile_title", "Title"],
+  ["profile_left", "Profile left"],
+  ["profile_right", "Profile right"],
+  ["search_results", "Search results"],
+];
+
+function fmtFieldValue(v: unknown): string {
+  if (Array.isArray(v)) return v.map((x) => (typeof x === "string" ? x : JSON.stringify(x))).join("\n");
+  if (typeof v === "string" || typeof v === "number") return String(v);
+  return JSON.stringify(v);
+}
 
 // Gate-3 winner picking. The rule: the top options are chosen HERE, while working
 // with ADAM — only selected concepts get images, manifest rows, and Figma boards.
@@ -163,6 +205,20 @@ export function CopyPicker({
                         {/* On-image (Text on Visual) */}
                         <div className="text-base font-semibold">{c.creative_headline || c.headline || "—"}</div>
                         {c.creative_subhead && <div className="text-sm text-muted-foreground">{c.creative_subhead}</div>}
+                        {/* Style-specific ON-CREATIVE fields — the copy actually printed
+                            on the template for sticky/poll/us-vs-them/etc. */}
+                        {STYLE_FIELDS.some(([k]) => c[k] != null && c[k] !== "") && (
+                          <div className="rounded-md border bg-muted/40 p-2 text-xs">
+                            <div className="mb-1 font-medium uppercase tracking-wide text-muted-foreground">On-creative</div>
+                            {STYLE_FIELDS.map(([k, label]) =>
+                              c[k] != null && c[k] !== "" ? (
+                                <div key={k} className="whitespace-pre-wrap">
+                                  <span className="font-medium">{label}:</span> {fmtFieldValue(c[k])}
+                                </div>
+                              ) : null
+                            )}
+                          </div>
+                        )}
                         {/* Feed headline — LONG and SHORT */}
                         {(c.headline || c.headline_short) && (
                           <div className="text-xs text-muted-foreground">
