@@ -386,9 +386,15 @@ def live_checks(all_styles=False):
     # (Adrie 2026-07-29: "just the bullet points with no copy before it").
     bare = [t for t in bl if re.match(r"\s*[^\w\s]", str(t).strip())]
     def _descs(c):
+        # Every displayed single-line field, base + per-audience — a visible
+        # trim on an ON-IMAGE line shipped live 2026-07-31 ('Skilled pros, right…').
         tc = c.get("targeting_copy") or {}
-        return [c.get("description")] + [a.get("description") for a in tc.values()
-                                         if isinstance(a, dict)]
+        fields = ("description", "creative_headline", "creative_subhead")
+        out = [c.get(f) for f in fields]
+        for a in tc.values():
+            if isinstance(a, dict):
+                out += [a.get(f) for f in fields]
+        return out
     ell = [d for c in cs if c.get("selected") for d in _descs(c)
            if str(d or "").rstrip().endswith(("…", "..."))]
     check("live: no ellipsis-trimmed descriptions", not ell, str(ell[:2]))

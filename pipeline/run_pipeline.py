@@ -1424,29 +1424,43 @@ def _smart_trim(text, cap):
     return (base + "…") if base else cut[:cap]
 
 
+def _clean_trimmed_line(v):
+    """A trimmed single-line field must read as a COMPLETE phrase — never show
+    its trim. Strips a trailing ellipsis, then dangling stopwords, then a
+    dangling comma-fragment ('Skilled pros, right…' -> 'Skilled pros' — found
+    printed ON-IMAGE in Adrie's 2026-07-31 sprint)."""
+    s = str(v or "")
+    if not s.rstrip().endswith(("…", "...")):
+        return s
+    s = s.rstrip().rstrip(".").rstrip("…").rstrip()
+    w = s.split()
+    while w and w[-1].lower().strip(",;:") in _HL_STOP:
+        w.pop()
+    s = " ".join(w).rstrip(",;:—–- ")
+    if "," in s:
+        head, _, tail = s.rpartition(",")
+        if head and len(tail.split()) <= 2:
+            s = head.rstrip(",;:—–- ")
+    return s
+
+
 def _deellipsis_descriptions(concept):
-    """Description must read as a COMPLETE fragment — a visible trim
-    ("Specialized talent…") is a spec failure (Adrie). Strips a trailing
-    ellipsis + dangling stopwords from the base AND per-audience description.
-    Must run after EVERY pass that can trim: the first cleaning ran before
-    feed-fit, whose _smart_trim fallback re-ellipsized descriptions — caught
-    live by the regression suite, 2026-07-30."""
-    def _clean(d):
-        d = str(d or "")
-        if not d.rstrip().endswith(("…", "...")):
-            return d
-        d = d.rstrip().rstrip(".").rstrip("…").rstrip()
-        w = d.split()
-        while w and w[-1].lower() in _HL_STOP:
-            w.pop()
-        return " ".join(w)
-    if concept.get("description"):
-        concept["description"] = _clean(concept["description"])
+    """Display fields must never SHOW their trim (Adrie: 'Specialized talent…'
+    is a spec failure). Covers description AND the single-line ON-IMAGE fields
+    (creative_headline/subhead — a visible '…' literally prints on the ad,
+    found live 2026-07-31), base and per-audience. Must run after EVERY pass
+    that can trim (generation post-processing, feed-fit, conditional caps)."""
+    _FIELDS = ("description", "creative_headline", "creative_subhead")
+    for f in _FIELDS:
+        if concept.get(f):
+            concept[f] = _clean_trimmed_line(concept[f])
     tc = concept.get("targeting_copy")
     if isinstance(tc, dict):
         for _aud in tc.values():
-            if isinstance(_aud, dict) and _aud.get("description"):
-                _aud["description"] = _clean(_aud["description"])
+            if isinstance(_aud, dict):
+                for f in _FIELDS:
+                    if _aud.get(f):
+                        _aud[f] = _clean_trimmed_line(_aud[f])
 
 
 def _fit_feed_fields(concepts, style, api_key, sprint_id=None):
@@ -2763,6 +2777,10 @@ Return ONLY the JSON array. No other text."""
         # final selection regardless of which path (ranked or fallback) produced it.
         _apply_cta_mix(reviewed, style)
         _enforce_conditional_caps(reviewed, style)
+        # Conditional caps can smart-trim AFTER the generation-stage cleanup ran —
+        # re-clean so no on-image line ships showing its trim (2026-07-31).
+        for _c in reviewed:
+            _deellipsis_descriptions(_c)
         return reviewed
 
     group_items = list(groups.items())

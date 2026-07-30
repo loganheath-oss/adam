@@ -984,8 +984,12 @@ assumption (Logan, 2026-07-29). This overrides brevity everywhere:
 - Copy fields are quoted VERBATIM — full text, lead-in sentences, line breaks, emoji —
   never shortened for display (2026-07-30: the assistant trimmed body_long lead-ins in
   chat while the data was complete; the operator noticed. Rendering IS the product here).
-- If output is too long for one message, continue in the next message — do NOT truncate
-  or summarize to fit.
+- Deliver the COMPLETE presentation in ONE turn — never truncate or summarize to fit,
+  and NEVER stop partway to announce "I'll continue in the next message" (2026-07-31:
+  the agent halted between ad types and the operator had to prod it per style — that
+  instruction predates auto-continuation and is obsolete). If you genuinely hit the
+  output limit mid-presentation, the system continues you automatically and seamlessly;
+  just keep writing until every concept is shown.
 
 # DIAGNOSTIC HONESTY — when output looks wrong or missing
 
