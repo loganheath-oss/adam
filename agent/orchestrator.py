@@ -165,11 +165,57 @@ def tool_get_sprint(sprint_id: str) -> dict:
     }
 
 
+# The copy PRINTED ON the creative, per style — ordered. Styles with their own
+# field set (sticky/poll/us-vs-them/…) print these, NOT creative_headline.
+_ON_CREATIVE_FIELDS = [
+    "single_headline", "single_bullets",
+    "left_headline", "left_bullets", "right_headline", "right_bullets",
+    "us_headline", "us_bullets", "them_headline", "them_bullets",
+    "poll_question", "poll_option_a", "poll_pct_a", "poll_option_b", "poll_pct_b",
+    "testimonial_quote", "testimonial_author",
+    "chat_label", "chat_message", "button_text",
+    "pie_center", "pie_labels",
+    "profile_name", "profile_title", "profile_left", "profile_right",
+    "search_results",
+]
+
+
+def _enrich_concept_view(c: dict) -> dict:
+    """Attach the AUTHORITATIVE presentation data the model must not compute
+    itself (audit 2026-07-30: the agent mislabeled fields and repeated an
+    invented violation from its own earlier chat message, calling it 'a
+    pipeline flag'). `on_creative` = exactly what prints on the template;
+    `pipeline_flags` = the ONLY reportable violations, with an explicit
+    none:true so 'no flags' is a positive fact, not an absence."""
+    c = dict(c)
+    on_creative = {f: c[f] for f in _ON_CREATIVE_FIELDS if c.get(f) not in (None, "")}
+    if not on_creative:
+        for f in ("creative_headline", "creative_subhead"):
+            if c.get(f) not in (None, ""):
+                on_creative[f] = c[f]
+        c["on_creative"] = on_creative
+    else:
+        c["on_creative"] = on_creative
+        c["on_creative_note"] = (
+            "This style prints ONLY these fields on the creative; they are shared "
+            "across audiences (targeting_copy varies FEED copy only). "
+            "creative_headline is an auxiliary concept label, not printed."
+        )
+    flags = {k: c.get(k) for k in ("legal_flags", "length_flags", "length_warnings")
+             if c.get(k)}
+    c["pipeline_flags"] = flags if flags else {"none": True}
+    return c
+
+
 def tool_get_copy_concepts(sprint_id: str) -> dict:
     path = RUNS_DIR / sprint_id
     if not path.exists():
         return {"error": f"Sprint not found: {sprint_id}"}
     outputs = _read_json(path / "copy_outputs.json")
+    if isinstance(outputs, dict) and isinstance(outputs.get("concepts"), list):
+        outputs = dict(outputs)
+        outputs["concepts"] = [_enrich_concept_view(c) if isinstance(c, dict) else c
+                               for c in outputs["concepts"]]
     review = _read_csv(path / "copy_review.csv")
     if not review and outputs:
         concepts = outputs.get("concepts") or []
@@ -894,14 +940,19 @@ assumption (Logan, 2026-07-29). This overrides brevity everywhere:
   labeled Sticky's auxiliary 12-char label "On-creative" and omitted the real sticky
   copy — the operator concluded ADAM produced two-word ads while the actual on-sticky
   fields were healthy and complete.)
-- NEVER invent a violation. Report a legal/length problem ONLY when the concept
-  carries it (legal_flags, length_flags, length_warnings, review_notes) — quote the
-  flag verbatim and name the field it is on. Do NOT do your own character-cap math
-  against the style guide; the pipeline enforces caps deterministically and its flags
-  are the single source of truth. (2026-07-30: the assistant announced a "Hard
-  violation: 39 vs 26-char limit" by comparing the FEED headline against an ON-IMAGE
-  cap; the concept had no flags. If something looks over-cap but has no flag, say
-  "no pipeline flag — flagging for engineering review", not "violation".)
+- NEVER invent a violation. Each concept from get_copy_concepts carries
+  `pipeline_flags` — the ONLY reportable violations. `pipeline_flags: {"none": true}`
+  is a POSITIVE fact: this concept has no violations and you may not mention any —
+  not even one asserted in an EARLIER chat message (earlier messages can contain
+  since-corrected mistakes; the tool data always supersedes chat history). Do NOT do
+  your own character-cap math. (2026-07-30, twice: the assistant announced a "Hard
+  violation: 39 vs 26" from its own math, and later repeated it from chat history
+  while claiming it was "a pipeline flag" — the concept had NO flags either time.)
+- Each concept also carries `on_creative` — the AUTHORITATIVE on-creative copy,
+  computed by the pipeline. Present exactly those field names and values; never
+  substitute another field's value into an on-creative label. When
+  `on_creative_note` says the fields are shared across audiences, say so — do not
+  invent per-audience on-creative versions.
 - Copy fields are quoted VERBATIM — full text, lead-in sentences, line breaks, emoji —
   never shortened for display (2026-07-30: the assistant trimmed body_long lead-ins in
   chat while the data was complete; the operator noticed. Rendering IS the product here).
