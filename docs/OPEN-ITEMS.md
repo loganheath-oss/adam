@@ -5,6 +5,30 @@ Claude copy instructions, provided 2026-07-14. Grouped by workstream; most-actio
 first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination · ⬜ not started.
 
 ## A. Copy engine
+- ✅ **2026-07-30 audit round 3 + live Sticky incident.** LIVE FIX (sprint
+  …4440f318e0ad): the stale template-registry slot cap (headline: 12) was being
+  pinned onto `creative_headline` — a field the Sticky template never prints —
+  producing "Hire it…" 12-char trims; AND the agent labeled that auxiliary field
+  "On-creative" while omitting the real sticky fields (single_headline/bullets,
+  left/right), AND invented a "Hard violation" via its own cap math (concept had
+  NO flags). Fixed: (a) `_style_caps` + the prompt's template-limit block skip
+  creative_headline/subhead when the guide entry defines its own on-image field
+  set (legit registry caps like Lifestyle 80/19 preserved — suite-checked);
+  (b) agent prompt: ON-CREATIVE = the style's own fields, creative_headline
+  labeled "concept label" for such styles; NEVER report a violation not carried
+  on the concept (flags are the single source of truth). ROUND 3 also: nightly
+  OFF-VOLUME BACKUP (gzipped tar of learnings/quotes/every sprint's copy+chat+
+  decisions → Postgres `volume_backups`, 7-day retention, /admin/backup +
+  /admin/backups + /admin/backup/latest restore path, self-check freshness
+  gauge); refs self-check now diffs source-vs-compiled CONTENT (mtime was
+  deploy-reset — it measured time-since-deploy); stuck detector widened to
+  dead-mid-run states (running/stage_*/resuming_* stale >90min → sprint.stuck
+  event; the ENOSPC class was invisible); spend events now log DELTAS (resume
+  double-counted whole-sprint cost in the digest); sync_log moved to the
+  volume; webhook deploys DRAIN (wait ≤30min for in-flight sprints) before
+  restarting. STILL OPEN: MCP tool gaps (per-audience columns, list totals),
+  stage-scaffold NON-CANONICAL stamps + CLAUDE.md §11 rewrite, .env.example
+  regen, interrupted→sprint.failed event, canonical style table (Elise).
 - ✅ **2026-07-30 audit round 2: the structural program's core.** (1) `sprint_state.py`
   — atomic cross-process state API (flock + temp/fsync/os.replace + CAS claims);
   ALL FOUR approval surfaces (HTTP button, chat tool, MCP connector, CLI --resume)

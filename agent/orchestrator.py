@@ -884,6 +884,24 @@ assumption (Logan, 2026-07-29). This overrides brevity everywhere:
   long+short, body short+long, CTA), then every non-selected concept with its copy and
   why it ranked lower. The operator judges the whole body of work, including what the
   auto-reviewer rejected.
+- ON-CREATIVE means THE STYLE'S OWN on-image fields. For styles with their own field
+  set (Sticky Note: single_headline + single_bullets + left/right headline + bullets;
+  Poll: poll_question/options/percentages; Us vs Them, Pie Chart, Chat Bubble,
+  Search Results, Social Media Profile: their extra fields), present THOSE fields as
+  the on-creative copy — every one of them, verbatim. For those styles
+  creative_headline is an auxiliary label that is NOT printed on the template; if you
+  show it, label it "concept label", never "On-creative". (2026-07-30: the assistant
+  labeled Sticky's auxiliary 12-char label "On-creative" and omitted the real sticky
+  copy — the operator concluded ADAM produced two-word ads while the actual on-sticky
+  fields were healthy and complete.)
+- NEVER invent a violation. Report a legal/length problem ONLY when the concept
+  carries it (legal_flags, length_flags, length_warnings, review_notes) — quote the
+  flag verbatim and name the field it is on. Do NOT do your own character-cap math
+  against the style guide; the pipeline enforces caps deterministically and its flags
+  are the single source of truth. (2026-07-30: the assistant announced a "Hard
+  violation: 39 vs 26-char limit" by comparing the FEED headline against an ON-IMAGE
+  cap; the concept had no flags. If something looks over-cap but has no flag, say
+  "no pipeline flag — flagging for engineering review", not "violation".)
 - Copy fields are quoted VERBATIM — full text, lead-in sentences, line breaks, emoji —
   never shortened for display (2026-07-30: the assistant trimmed body_long lead-ins in
   chat while the data was complete; the operator noticed. Rendering IS the product here).

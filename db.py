@@ -14,7 +14,7 @@ import os
 import datetime
 from sqlalchemy import (
     create_engine, Column, BigInteger, Text, DateTime, Index, func, select, insert,
-    cast, Float,
+    cast, Float, LargeBinary,
 )
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -74,6 +74,86 @@ class IssueReport(Base):
         Index("ix_issues_ts", "ts"),
         Index("ix_issues_status", "status"),
     )
+
+
+class VolumeBackup(Base):
+    """Nightly off-volume backup of the IRREPLACEABLE /data state (audit
+    2026-07-30 P0: the volume was the entire data plane with zero backups —
+    learnings, quotes, gate-decision audit trails, chat transcripts, and copy
+    all lived on one 500MB disk). Images are excluded (regenerable at a known
+    cost); knowledge is not. One gzipped tar per day, pruned to the last 7."""
+    __tablename__ = "volume_backups"
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    day = Column(Text, unique=True, nullable=False)   # YYYY-MM-DD (UTC)
+    ts = Column(DateTime(timezone=True), server_default=func.now())
+    size_bytes = Column(BigInteger, nullable=False)
+    file_count = Column(BigInteger, nullable=False)
+    content = Column(LargeBinary, nullable=False)     # gzipped tar
+
+
+def save_backup(day: str, content: bytes, file_count: int) -> bool:
+    """Upsert today's backup blob. Best-effort; True if stored."""
+    if not db_enabled():
+        return False
+    try:
+        with session() as s:
+            row = s.query(VolumeBackup).filter_by(day=day).one_or_none()
+            if row is None:
+                s.add(VolumeBackup(day=day, content=content,
+                                   size_bytes=len(content), file_count=file_count))
+            else:
+                row.content = content
+                row.size_bytes = len(content)
+                row.file_count = file_count
+            s.commit()
+        return True
+    except Exception as e:
+        print(f"[db] save_backup failed: {e}")
+        return False
+
+
+def prune_backups(keep: int = 7) -> None:
+    if not db_enabled():
+        return
+    try:
+        with session() as s:
+            days = [r.day for r in
+                    s.query(VolumeBackup.day).order_by(VolumeBackup.day.desc()).all()]
+            for d in days[keep:]:
+                s.query(VolumeBackup).filter_by(day=d).delete()
+            s.commit()
+    except Exception as e:
+        print(f"[db] prune_backups failed: {e}")
+
+
+def list_backups() -> list[dict]:
+    if not db_enabled():
+        return []
+    try:
+        with session() as s:
+            return [{"day": r.day, "ts": str(r.ts), "size_bytes": r.size_bytes,
+                     "file_count": r.file_count}
+                    for r in s.query(VolumeBackup.day, VolumeBackup.ts,
+                                     VolumeBackup.size_bytes, VolumeBackup.file_count)
+                    .order_by(VolumeBackup.day.desc()).all()]
+    except Exception as e:
+        print(f"[db] list_backups failed: {e}")
+        return []
+
+
+def get_backup(day: str | None = None) -> tuple[str, bytes] | None:
+    """Return (day, blob) for the requested or latest backup — the restore path."""
+    if not db_enabled():
+        return None
+    try:
+        with session() as s:
+            q = s.query(VolumeBackup)
+            row = (q.filter_by(day=day).one_or_none() if day
+                   else q.order_by(VolumeBackup.day.desc()).first())
+            return (row.day, bytes(row.content)) if row else None
+    except Exception as e:
+        print(f"[db] get_backup failed: {e}")
+        return None
 
 
 def report_issue(description: str, user_email: str | None = None,

@@ -920,7 +920,26 @@ def _template_limit_block(style):
         "any other named slot (Testimonial Copy, Chat Bubble, Column, Quadrant, Talent\n"
         "Tag, Credit, etc.) is the primary on-creative text for that slot — keep the\n"
         "creative_headline/creative_subhead you emit within the tightest applicable cap.\n"
+        + _own_fields_note(style)
         + "\n".join(lines) + "\n"
+    )
+
+
+def _own_fields_note(style):
+    """When the style's guide entry defines its OWN on-image fields (Sticky
+    single/left/right, Poll fields, …), the template's 'Headline' slot maps to
+    one of THOSE fields — creative_headline is auxiliary and is NOT printed on
+    this template, so the slot cap must not crush it (the 12-char Sticky
+    'Hire it…' incident, 2026-07-30)."""
+    _k, entry = _guide_entry_for_style(style)
+    cl = (entry or {}).get("char_limits") or {}
+    if not cl or "creative_headline" in cl:
+        return ""
+    return (
+        "EXCEPTION for THIS style: its on-image copy is fully specified by its own\n"
+        f"fields ({', '.join(sorted(cl))}) — the slot caps above belong to THOSE\n"
+        "fields. creative_headline is auxiliary here (NOT printed on the template):\n"
+        "write it as a natural short concept label and do NOT crush it to a slot cap.\n"
     )
 
 
@@ -1114,6 +1133,15 @@ def _style_caps(style):
     for slot, cap in _limits_for_style(style).items():
         f = _REG_SLOT_TO_FIELD.get(slot)
         if f and isinstance(cap, int):
+            # A style whose guide entry defines its OWN on-image field set
+            # (Sticky single/left/right, Poll fields, Us-vs-Them, …) does not
+            # print the generic creative_headline/subhead — the template's
+            # 'Headline' slot IS one of the entry's own fields, already capped
+            # by the guide. Pinning the slot cap onto creative_headline mangled
+            # copy the template never ships (Sticky's 12-char "Hire it…" trims,
+            # live incident 2026-07-30).
+            if f in ("creative_headline", "creative_subhead") and cl and f not in cl:
+                continue
             hard[f] = min(cap, hard.get(f, cap))
     # Guide caps: multi-image fields → hard (no template equivalent); core → soft.
     for f, cap in cl.items():

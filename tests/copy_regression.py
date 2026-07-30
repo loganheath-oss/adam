@@ -212,6 +212,17 @@ def offline_checks():
     check("photo policy: assertion marker present in stage 03",
           "blocked_ai_people_photo" in (REPO / "pipeline" / "run_pipeline.py").read_text())
 
+    # 11e. Registry slot caps must not crush auxiliary fields on styles that
+    # define their OWN on-image field set (Sticky's 12-char "Hire it…" trims,
+    # live incident 2026-07-30). Styles where creative_headline IS the printed
+    # field must KEEP their registry caps.
+    _sh, _ = rp._style_caps("Sticky Note")
+    check("sticky: creative_headline not slot-capped", "creative_headline" not in _sh,
+          f"hard caps: {_sh}")
+    _lh, _ = rp._style_caps("Lifestyle Photo")
+    check("lifestyle: registry cap still applies",
+          isinstance(_lh.get("creative_headline"), int), f"hard caps: {_lh}")
+
     # 11c. sprint_state: atomic CAS gate claims (audit 2026-07-30 — three
     # approval surfaces used to race; now exactly one claimer can win).
     import threading as _th

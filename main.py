@@ -40,7 +40,11 @@ ORDER_FORM_PATH = BASE_DIR / "order-form" / "order-form-ravi.html"
 FONTS_DIR = BASE_DIR / "order-form" / "fonts"
 RUNS_DIR = Path(os.environ.get("RUNS_DIR", str(BASE_DIR / "runs")))
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
-SYNC_LOG_PATH = BASE_DIR / "sync_log.jsonl"
+# Volume-resident when /data exists — on container FS every deploy reset the
+# sync history, blinding the "did a push break my run" forensic view (audit
+# 2026-07-30; same class as the learnings.md wipe).
+SYNC_LOG_PATH = (RUNS_DIR.parent / "sync_log.jsonl"
+                 if str(RUNS_DIR).startswith("/data") else BASE_DIR / "sync_log.jsonl")
 WIKI_DIR = BASE_DIR / "docs" / "wiki"
 
 sys.path.insert(0, str(BASE_DIR / "pipeline"))
@@ -659,14 +663,29 @@ def _log_pipeline_outcome(sprint_id: str) -> None:
         # the admin Usage view can show cost per user / per run. Sonnet 4.6 pricing:
         # $3 / 1M input, $15 / 1M output.
         try:
-            tu = _load_json(RUNS_DIR / sprint_id / "token_usage.json")
+            tu_path = RUNS_DIR / sprint_id / "token_usage.json"
+            tu = _load_json(tu_path)
             if tu:
                 it, ot = int(tu.get("input_tokens", 0)), int(tu.get("output_tokens", 0))
-                cost = round(it / 1_000_000 * 3 + ot / 1_000_000 * 15, 4)
-                db.log_event("copy.generated", user_email=user, sprint_id=sprint_id,
-                             meta={"input_tokens": it, "output_tokens": ot,
-                                   "calls": tu.get("calls", 0), "cost_usd": cost,
-                                   "by_model": tu.get("by_model") or {}})
+                # DELTA accounting (audit 2026-07-30): this used to emit the
+                # sprint's CUMULATIVE totals on every terminal settle — an
+                # error-then-resume sprint double-counted its whole spend in
+                # the digest. Emit only what's new since the last emission.
+                logged = tu.get("_spend_logged") or {}
+                d_it = max(0, it - int(logged.get("input_tokens", 0)))
+                d_ot = max(0, ot - int(logged.get("output_tokens", 0)))
+                if d_it or d_ot:
+                    cost = round(d_it / 1_000_000 * 3 + d_ot / 1_000_000 * 15, 4)
+                    db.log_event("copy.generated", user_email=user, sprint_id=sprint_id,
+                                 meta={"input_tokens": d_it, "output_tokens": d_ot,
+                                       "calls": tu.get("calls", 0), "cost_usd": cost,
+                                       "by_model": tu.get("by_model") or {}})
+                    tu["_spend_logged"] = {"input_tokens": it, "output_tokens": ot}
+                    try:
+                        sprint_state.write_state  # (import marker; write below is atomic-enough)
+                        tu_path.write_text(json.dumps(tu, indent=2))
+                    except Exception:
+                        pass
         except Exception:
             pass
     except Exception as e:
@@ -2538,15 +2557,28 @@ def _run_self_check() -> dict:
         checks["api_credit"] = {"ok": _r.status_code == 200, "detail": f"HTTP {_r.status_code}"}
     except Exception as e:
         checks["api_credit"] = {"ok": False, "detail": str(e)[:80]}
-    try:  # 2. Refs compiled + fresh (Adrie's docs update; stale refs = stale copy).
+    try:  # 2. Refs compiled + NOT DRIFTED. The old check compared the compiled
+        # file's age to 14 days — but mtimes reset on every deploy, so it
+        # measured time-since-deploy, not time-since-Adrie-edited-refs (audit
+        # 2026-07-30). Real check: build_refs.py copies each source verbatim
+        # into its key, so source-vs-compiled CONTENT must match exactly —
+        # a mismatch means someone edited refs/ and skipped the recompile.
         _rp = BASE_DIR / "configs" / "refs_context.json"
-        _age_d = (datetime.now(timezone.utc).timestamp() - _rp.stat().st_mtime) / 86400
         _refs = json.loads(_rp.read_text())
-        _ok = len(_refs.get("copy_instructions", "")) > 5000
-        checks["refs"] = {"ok": _ok, "detail": f"age {int(_age_d)}d; "
-                          f"{'fresh' if _age_d <= 14 else 'STALE >14d — re-ingest?'}"}
-        if _age_d > 14:
-            checks["refs"]["ok"] = False
+        import importlib.util as _ilu
+        _bs = _ilu.spec_from_file_location("build_refs", BASE_DIR / "pipeline" / "build_refs.py")
+        _bm = _ilu.module_from_spec(_bs)
+        _bs.loader.exec_module(_bm)
+        _drift = []
+        for _key, _fname in _bm.REF_FILES.items():
+            _src = BASE_DIR / "refs" / _fname
+            _src_text = _src.read_text() if _src.exists() else ""
+            if _src_text != _refs.get(_key, ""):
+                _drift.append(_key)
+        _ok = len(_refs.get("copy_instructions", "")) > 5000 and not _drift
+        checks["refs"] = {"ok": _ok,
+                          "detail": (f"DRIFT — recompile needed (pipeline/build_refs.py): {_drift}"
+                                     if _drift else "compiled refs match sources")}
     except Exception as e:
         checks["refs"] = {"ok": False, "detail": str(e)[:80]}
     try:  # 3. Style guide resolves for every order-form style (schema builder sanity).
@@ -2574,19 +2606,53 @@ def _run_self_check() -> dict:
         checks["volume"] = {"ok": _pct < 80, "detail": f"{_pct}% used"}
     except Exception as e:
         checks["volume"] = {"ok": False, "detail": str(e)[:80]}
-    try:  # 5. Stuck sprints (awaiting a gate > 7 days — someone forgot a review).
-        _stuck = 0
+    try:  # 5. Stuck sprints. Two distinct classes (audit 2026-07-30 — the old
+        # check watched only awaiting_gate*, which is exactly NOT the state a
+        # crashed stage leaves behind):
+        #   forgotten review — awaiting_gate_* older than 7 days
+        #   dead mid-run    — running/stage_*/resuming_*/queued whose state file
+        #                     hasn't moved in 90+ min (no stage runs that long;
+        #                     the ENOSPC incident class was invisible before)
+        _forgot, _dead = 0, []
         _now = datetime.now(timezone.utc).timestamp()
         for _d in RUNS_DIR.iterdir():
             _sp = _d / "pipeline_state.json"
-            if _d.is_dir() and _sp.exists():
-                _st = _load_json(_sp)
-                if str(_st.get("state", "")).startswith("awaiting_gate") and \
-                        (_now - _sp.stat().st_mtime) > 7 * 86400:
-                    _stuck += 1
-        checks["stuck_sprints"] = {"ok": _stuck == 0, "detail": f"{_stuck} waiting >7d"}
+            if not (_d.is_dir() and _sp.exists()):
+                continue
+            _state = str(sprint_state.read_state(_d).get("state", ""))
+            _age_s = _now - _sp.stat().st_mtime
+            if _state.startswith("awaiting_gate") and _age_s > 7 * 86400:
+                _forgot += 1
+            elif (_state in ("running", "queued") or _state.startswith(("stage_", "resuming_"))) \
+                    and _age_s > 90 * 60:
+                _dead.append(_d.name)
+        if _dead:
+            try:
+                db.log_event("sprint.stuck", user_email="selfcheck",
+                             meta={"sprints": _dead})
+            except Exception:
+                pass
+        checks["stuck_sprints"] = {"ok": _forgot == 0 and not _dead,
+                                   "detail": f"{_forgot} awaiting >7d; "
+                                             f"{len(_dead)} dead mid-run"
+                                             + (f" ({_dead})" if _dead else "")}
     except Exception as e:
         checks["stuck_sprints"] = {"ok": False, "detail": str(e)[:80]}
+    try:  # 6. Off-volume backup ran within the last 48h (audit 2026-07-30 P0:
+        # /data was the entire data plane with ZERO backups).
+        _bk = db.list_backups()
+        if not _bk:
+            checks["backup"] = {"ok": False, "detail": "no backups stored yet"}
+        else:
+            _latest = _bk[0]
+            _bage_h = (datetime.now(timezone.utc)
+                       - datetime.fromisoformat(str(_latest["ts"]))).total_seconds() / 3600
+            checks["backup"] = {"ok": _bage_h < 48,
+                                "detail": f"latest {_latest['day']} "
+                                          f"({_latest['size_bytes'] // 1_000_000}MB, "
+                                          f"{_latest['file_count']} files, {int(_bage_h)}h ago)"}
+    except Exception as e:
+        checks["backup"] = {"ok": False, "detail": str(e)[:80]}
     result = {"ts": datetime.now(timezone.utc).isoformat(),
               "ok": all(c.get("ok") for c in checks.values()), "checks": checks}
     _LAST_SELFCHECK.clear()
@@ -2604,8 +2670,58 @@ def _run_self_check() -> dict:
     return result
 
 
+def _run_backup() -> dict:
+    """Build + store the nightly off-volume backup of the irreplaceable /data
+    state (audit 2026-07-30 P0: the volume was the entire data plane — every
+    sprint, transcript, gate decision, and everything Adrie taught ADAM — with
+    ZERO backups). One gzipped tar per UTC day into Postgres (DATABASE_URL is
+    off-volume); images/exports excluded — regenerable at a known cost,
+    knowledge is not. Restore: GET /admin/backup/latest, untar into /data."""
+    import io
+    import tarfile
+    keep = {"order.json", "copy_outputs.json", "run_summary.json",
+            "gate_decisions.jsonl", "chat.jsonl", "copy_review.csv",
+            "image_prompts.csv", "asset_manifest.csv", "pipeline_state.json",
+            "token_usage.json"}
+    buf = io.BytesIO()
+    count = 0
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        for extra in (Path(LEARNINGS_PATH), RUNS_DIR.parent / "approved_quotes.md"):
+            try:
+                if extra.exists():
+                    tar.add(extra, arcname=f"root/{extra.name}")
+                    count += 1
+            except Exception:
+                pass
+        if RUNS_DIR.exists():
+            for d in sorted(RUNS_DIR.iterdir()):
+                if not d.is_dir():
+                    continue
+                for name in sorted(keep):
+                    p = d / name
+                    try:
+                        if p.exists():
+                            tar.add(p, arcname=f"runs/{d.name}/{name}")
+                            count += 1
+                    except Exception:
+                        pass
+    blob = buf.getvalue()
+    day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    ok = db.save_backup(day, blob, count)
+    if ok:
+        db.prune_backups(keep=7)
+    print(f"[backup] {'stored' if ok else 'FAILED'}: {day} "
+          f"({count} files, {len(blob) // 1000}KB gz)")
+    return {"ok": ok, "day": day, "files": count, "size_bytes": len(blob)}
+
+
 async def _self_check_loop():
     while True:
+        try:
+            # Backup FIRST so the self-check's backup-freshness gauge sees today's.
+            await asyncio.get_event_loop().run_in_executor(None, _run_backup)
+        except Exception:
+            pass
         try:
             await asyncio.get_event_loop().run_in_executor(None, _run_self_check)
         except Exception:
@@ -2618,6 +2734,33 @@ async def admin_selfcheck():
     """Run the self-check on demand."""
     loop = asyncio.get_event_loop()
     return JSONResponse(await loop.run_in_executor(None, _run_self_check))
+
+
+@app.post("/admin/backup", dependencies=[Depends(require_api_key)])
+async def admin_backup_now():
+    """Build + store an off-volume backup right now."""
+    loop = asyncio.get_event_loop()
+    return JSONResponse(await loop.run_in_executor(None, _run_backup))
+
+
+@app.get("/admin/backups", dependencies=[Depends(require_api_key)])
+async def admin_backups():
+    """List stored off-volume backups (newest first)."""
+    loop = asyncio.get_event_loop()
+    return JSONResponse({"backups": await loop.run_in_executor(None, db.list_backups)})
+
+
+@app.get("/admin/backup/latest", dependencies=[Depends(require_api_key)])
+async def admin_backup_download(day: str | None = None):
+    """Download a backup tarball — the restore path (untar into /data)."""
+    loop = asyncio.get_event_loop()
+    got = await loop.run_in_executor(None, db.get_backup, day)
+    if not got:
+        return JSONResponse({"ok": False, "error": "no backup stored"}, status_code=404)
+    bk_day, blob = got
+    return Response(content=blob, media_type="application/gzip",
+                    headers={"Content-Disposition":
+                             f'attachment; filename="adam-backup-{bk_day}.tar.gz"'})
 
 
 @app.get("/admin/health", dependencies=[Depends(require_api_key)])
@@ -3930,6 +4073,28 @@ async def github_webhook(request: Request):
 
 async def _do_sync_and_restart(pusher: str = "webhook", sha: str = ""):
     loop = asyncio.get_event_loop()
+    # DRAIN BEFORE RESTART (audit 2026-07-30): a push used to restart the
+    # container instantly, killing any running stage mid-write — the operator's
+    # sprint died to "Server restarted mid-stage" whenever anyone deployed.
+    # Wait for in-flight sprints to settle (bounded) before syncing+restarting.
+    _drain_max = int(os.environ.get("ADAM_DEPLOY_DRAIN_MAX_S", "1800") or "1800")
+    _waited = 0
+    while _waited < _drain_max:
+        _busy = []
+        try:
+            for _d in RUNS_DIR.iterdir():
+                if _d.is_dir():
+                    _st = str(sprint_state.read_state(_d).get("state", ""))
+                    if _st in ("running", "queued") or _st.startswith(("stage_", "resuming_")):
+                        _busy.append(_d.name)
+        except Exception:
+            _busy = []
+        if not _busy:
+            break
+        print(f"[webhook] Draining before restart — {len(_busy)} sprint(s) in flight "
+              f"({_busy[:3]}…); waited {_waited}s of max {_drain_max}s")
+        await asyncio.sleep(30)
+        _waited += 30
     try:
         result = await loop.run_in_executor(
             None,
