@@ -212,6 +212,32 @@ def offline_checks():
     check("photo policy: assertion marker present in stage 03",
           "blocked_ai_people_photo" in (REPO / "pipeline" / "run_pipeline.py").read_text())
 
+    # 11f. AUTHORITY REGISTRY (Logan's slider concept, 2026-07-30): every model
+    # task carries a declared authority level; the prompt section and the human
+    # doc are generated from authority.py and must not drift; every function a
+    # registry row names as source-of-truth or fence must actually exist.
+    import authority
+    _aerrs = authority.validate()
+    check("authority: registry invariants hold", not _aerrs, "; ".join(_aerrs))
+    _doc = (REPO / "docs" / "AUTHORITY.md")
+    check("authority: docs/AUTHORITY.md in sync (run python3 authority.py)",
+          _doc.exists() and _doc.read_text() == authority.render_markdown())
+    _orch_src = (REPO / "agent" / "orchestrator.py").read_text()
+    check("authority: prompt section wired into the agent",
+          "render_prompt_section" in _orch_src)
+    _rp_src = (REPO / "pipeline" / "run_pipeline.py").read_text()
+    _missing_refs = []
+    for _t in authority.TASKS:
+        for _txt in (_t.get("source") or "", _t.get("validators") or ""):
+            for _name in re.findall(r"\b(tool_[a-z_]+|_[a-z_]{3,})\b", _txt):
+                if _name not in _orch_src and _name not in _rp_src:
+                    _missing_refs.append(f"{_t['task'][:30]}→{_name}")
+    check("authority: every named source/fence exists in code", not _missing_refs,
+          str(_missing_refs))
+    _rendered = authority.render_prompt_section()
+    check("authority: all six surfaces render",
+          all(s in _rendered for s in ("Gate 2", "Gate 3", "Gate 4", "Gate 5", "Gate 6", "Chat")))
+
     # 11e. Registry slot caps must not crush auxiliary fields on styles that
     # define their OWN on-image field set (Sticky's 12-char "Hire it…" trims,
     # live incident 2026-07-30). Styles where creative_headline IS the printed

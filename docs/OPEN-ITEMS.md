@@ -5,6 +5,15 @@ Claude copy instructions, provided 2026-07-14. Grouped by workstream; most-actio
 first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination · ⬜ not started.
 
 ## A. Copy engine
+- ✅ **2026-07-30 AUTHORITY REGISTRY (Logan's slider concept).** `authority.py` =
+  single source of truth classifying all 28 model tasks across the 6 gates +
+  chat into 5 levels (PRESENT / EXPLAIN / JUDGE / CREATE / ACTION), each level
+  a contract citing its founding incident. Enforced 3 ways: the agent's
+  AUTHORITY MAP prompt section is GENERATED from it (unclassified tasks
+  default to PRESENT + log_issue); `docs/AUTHORITY.md` is generated + suite-
+  checked against drift; the suite verifies every named source/fence function
+  exists in code. This is also the InfoSec/handoff answer to "where does the
+  AI have autonomous authority."
 - ✅ **2026-07-30 audit round 3 + live Sticky incident.** LIVE FIX (sprint
   …4440f318e0ad): the stale template-registry slot cap (headline: 12) was being
   pinned onto `creative_headline` — a field the Sticky template never prints —

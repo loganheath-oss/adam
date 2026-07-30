@@ -1017,6 +1017,17 @@ You have a full project wiki covering how ADAM is built, where everything lives,
 Concise. Friendly. Plain English. Bold the things that matter (headlines, decisions). Use bullets and numbered lists generously — wall-of-text replies are a failure. Never use words like "intake", "payload", "manifest" without an inline plain-English explanation."""
 
 
+# ── AUTHORITY MAP (generated — authority.py is the single source of truth) ───
+# Every task the model performs carries a declared authority level (PRESENT /
+# EXPLAIN / JUDGE / CREATE / ACTION). Generated into the prompt so no task can
+# reach the agent unclassified; docs/AUTHORITY.md is the human twin and the
+# regression suite fails if either drifts (Logan's slider concept, 2026-07-30).
+try:
+    import authority as _authority
+    SYSTEM_PROMPT = SYSTEM_PROMPT + "\n\n" + _authority.render_prompt_section()
+except Exception as _ae:  # never let a registry bug take chat down
+    _LOG.warning("authority map not appended: %s", _ae)
+
 # ── "Ask ADAM" wiki helper: a separate, restricted, read-only assistant ───────
 # Used for the public standalone chat. It can ONLY read the wiki — no access to
 # orders, sprints, gates, or learnings — so it's safe to expose without a login.
