@@ -1346,6 +1346,16 @@ def _enforce_lengths(concept, style):
             if isinstance(obj, dict):
                 for f, cap in feed.items():
                     soft_flags += [f"{aud}.{m}" for m in _field_overflows(obj, f, cap)]
+                # PARITY (audit P1-11, 2026-07-31): the per-audience ON-IMAGE
+                # fields are what the manifest actually SHIPS for P&R sprints,
+                # yet only the top-level (Prospecting-mirroring) fields got the
+                # HARD template caps — a Retargeting headline could overflow
+                # the Figma slot with no flag. Every field that reaches the
+                # manifest now gets every guard.
+                for f in ("creative_headline", "creative_subhead"):
+                    cap = hard.get(f)
+                    if isinstance(cap, int):
+                        hard_flags += [f"{aud}.{m}" for m in _field_overflows(obj, f, cap)]
     if hard_flags:
         concept["length_flags"] = hard_flags
     if soft_flags:
@@ -3974,6 +3984,10 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
 
         base_row = {
             # Order form fields
+            # Contract, not regex archaeology: the plugin's dashboard health
+            # report reads sprint_id from the manifest row (audit P1-4c — the
+            # asset_id regex could never match real ids, so the report never fired).
+            "sprint_id": sprint_id,
             "Delivery_Date": order.get("delivery_date", ""),
             "Driver": order.get("driver", ""),
             "Targeting": order.get("targeting", ""),

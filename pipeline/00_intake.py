@@ -19,6 +19,7 @@ Version: 1.0
 import json
 import os
 import re
+from pathlib import Path
 import uuid
 import urllib.request
 import urllib.error
@@ -163,9 +164,46 @@ def validate_payload(payload: dict) -> list[str]:
                     try:
                         qty = int(v)
                     except (TypeError, ValueError):
-                        qty = 0
+                        # A typo used to coerce to 0 and later resurrect as 1-2 —
+                        # the operator's input was silently reinterpreted (audit
+                        # 2026-07-31). Reject instead.
+                        errors.append(f"{prefix}: style quantity for '{k}' is not a "
+                                      f"number: {v!r}")
+                        continue
+                    if qty < 1:
+                        errors.append(f"{prefix}: style quantity for '{k}' must be >= 1")
+                        continue
+                    if qty > 6:
+                        # The pipeline generates at most 6 concepts per style; the
+                        # form used to accept up to 99 and silently deliver 6.
+                        errors.append(f"{prefix}: style quantity for '{k}' is {qty} — "
+                                      "the maximum is 6 per style (order the style in a "
+                                      "second sprint for more)")
+                        continue
                     merged[canonical] = merged.get(canonical, 0) + qty
+                for _s, _q in merged.items():
+                    if _q > 6:
+                        errors.append(f"{prefix}: total quantity for '{_s}' is {_q} — "
+                                      "the maximum is 6 per style")
                 batch["style_quantities"] = merged
+
+        # ── Non-blocking warnings (surfaced at Gate 2, never silently dropped)
+        warnings = payload.setdefault("intake_warnings", [])
+        try:
+            _reg = json.loads((Path(__file__).parent.parent / "configs"
+                               / "template_registry.json").read_text())
+            _map = _reg.get("style_to_template_mapping", {}) or {}
+            for _s in batch.get("visual_styles", []):
+                _tpl = str((_map.get(_s) or {}).get("template", ""))
+                if _tpl in ("NEEDS_TEMPLATE", "MANUAL"):
+                    _w = (f"Style '{_s}' has no confirmed Figma template in the registry "
+                          f"({_tpl}) — copy will generate, but assembly may need design work.")
+                    if _w not in warnings:
+                        warnings.append(_w)
+        except Exception:
+            pass
+        if not str(payload.get("brief") or "").strip() and                 "No brief provided — copy will be generic. Confirm this is intentional at Gate 2." not in warnings:
+            warnings.append("No brief provided — copy will be generic. Confirm this is intentional at Gate 2.")
 
         # Resolutions
         resolutions = batch.get("resolutions", [])

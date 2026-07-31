@@ -5,6 +5,21 @@ Claude copy instructions, provided 2026-07-14. Grouped by workstream; most-actio
 first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination · ⬜ not started.
 
 ## A. Copy engine
+- ✅ **2026-07-31 backlog batches B+C — the audit's pure-code queue is EMPTY.**
+  Batch B: atomic writes for every load-bearing artifact; idempotent CTA mix
+  (survives Gate-3 swaps); generation-shortfall telemetry; /submit validates
+  BEFORE acknowledging + refuses existing sprint_ids; restart-killed sprints
+  emit sprint.failed; MCP recursive inventory. Batch C: per-audience ON-IMAGE
+  hard-cap parity (Retargeting overflow now flags); intake quantity honesty
+  (reject non-int/<1/>6 + summed guard; form max 99→6); unbuildable-style +
+  empty-brief warnings on the payload (surface at Gate 2); plugin per-board
+  try/catch + DEGRADED completion line + working dashboard health report
+  (manifest now carries sprint_id — the regex could never match); NON-CANONICAL
+  stamps on stages 02-06 + demo + CLAUDE.md §11 rewrite; .env.example
+  regenerated from real env reads (20 documented); /submit payload-hash
+  idempotency (10-min window). REMAINING = people only: Elise (background
+  assets, style table, registry regen, Search Results mapping), Logan (Fly
+  deletion, August auth policy).
 - ✅ **2026-07-31 backlog burn-down batch A + library-first backgrounds (Logan's
   decision).** (1) LIBRARY-FIRST BACKGROUNDS: background-capable styles now try
   the Figma library first (assets tagged background/backdrop/texture/surface/

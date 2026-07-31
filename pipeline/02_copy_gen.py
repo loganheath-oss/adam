@@ -1,3 +1,13 @@
+# =============================================================================
+# NON-CANONICAL — DO NOT PORT FROM, DO NOT RUN IN PRODUCTION (2026-07-31)
+# This is the dormant AWS-bound scaffold. It LAGS pipeline/run_pipeline.py by
+# months: old model IDs, old token caps, truncated ref slices, no legal
+# blocklist, no structured output, no P&R segmentation. The audit found it
+# would silently produce pre-July-spec copy if ever wired up. The ONLY port
+# source is pipeline/run_pipeline.py. (00_intake.py and 01_load_refs.py are
+# NOT part of this notice — intake is live and load-bearing.)
+# =============================================================================
+
 """
 02_copy_gen.py
 ==============

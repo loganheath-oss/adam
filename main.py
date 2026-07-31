@@ -968,6 +968,27 @@ async def submit_order(request: Request):
         print(f"[submit] validation unavailable ({_ve}) — accepting payload as before")
     if _verrs:
         return JSONResponse({"ok": False, "errors": _verrs}, status_code=400)
+    # IDEMPOTENCY (audit P2, 2026-07-31): a double-click or network retry used
+    # to mint two sprints from one order (the Hightouch path had this guard;
+    # the form path didn't). An identical payload within 10 minutes returns
+    # the existing sprint instead of creating a twin.
+    import hashlib as _hl
+    _ph = _hl.sha256(json.dumps(
+        {k: v for k, v in payload.items() if k != "sprint_id"},
+        sort_keys=True).encode()).hexdigest()
+    _idx_path = RUNS_DIR / ".submit_index.json"
+    _now_ts = datetime.now(timezone.utc).timestamp()
+    with sprint_state.sprint_lock(RUNS_DIR):
+        try:
+            _idx = json.loads(_idx_path.read_text()) if _idx_path.exists() else {}
+        except Exception:
+            _idx = {}
+        _hit = _idx.get(_ph)
+        if _hit and (_now_ts - float(_hit.get("ts", 0))) < 600                 and (RUNS_DIR / str(_hit.get("sprint_id", ""))).exists():
+            return JSONResponse({"ok": True, "sprint_id": _hit["sprint_id"],
+                                 "status_url": f"/sprints/{_hit['sprint_id']}",
+                                 "duplicate_of": _hit["sprint_id"],
+                                 "note": "Identical order submitted moments ago — returning the existing sprint."})
     sprint_id = payload.get("sprint_id") or _generate_sprint_id(payload)
     _validate_sprint_id(sprint_id)
     sprint_dir = RUNS_DIR / sprint_id
@@ -984,6 +1005,16 @@ async def submit_order(request: Request):
     (sprint_dir / "order.json").write_text(json.dumps(payload, indent=2))
     sprint_state.write_state(sprint_dir, {"sprint_id": sprint_id, "state": "queued"})
     _log_order_submitted(sprint_id, payload)
+    with sprint_state.sprint_lock(RUNS_DIR):
+        try:
+            _idx = json.loads(_idx_path.read_text()) if _idx_path.exists() else {}
+        except Exception:
+            _idx = {}
+        _idx[_ph] = {"sprint_id": sprint_id, "ts": _now_ts}
+        # keep the index small: drop entries older than an hour
+        _idx = {h: e for h, e in _idx.items()
+                if (_now_ts - float(e.get("ts", 0))) < 3600}
+        _idx_path.write_text(json.dumps(_idx))
     asyncio.create_task(_run_pipeline_task(payload))
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "status_url": f"/sprints/{sprint_id}"})
 

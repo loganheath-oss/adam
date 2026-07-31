@@ -234,7 +234,7 @@ The MCP server + pipeline can stay portable Python; the orchestration brain (Cla
 
 **Source of truth for current pipeline logic:** `pipeline/run_pipeline.py`. The numbered stage files (`00_intake.py` … `06_deliver.py`) are the AWS-bound production scaffold and currently lag the monolithic version.
 
-**When extending stages:** prefer updating `run_pipeline.py` first; port to the numbered modules once the change is stable. The MCP server loads `run_pipeline.py` directly via `importlib` (the leading-digit filenames forbid normal import).
+**When extending stages:** `run_pipeline.py` is the ONLY canonical implementation and the only port source. The numbered modules 02–06 are a stale, NON-CANONICAL scaffold (stamped as such, 2026-07-31) — do not port to or from them; a future AWS migration starts from `run_pipeline.py`. `00_intake.py` is live and load-bearing. The MCP server loads `run_pipeline.py` directly via `importlib` (the leading-digit filenames forbid normal import).
 
 **Reference data is compiled.** Edit raw refs in `refs/`, then run `python3 pipeline/build_refs.py` to regenerate `configs/refs_context.json`. Don't hand-edit the compiled file.
 

@@ -2341,19 +2341,28 @@ async function assemble(payload) {
     for (var g = 0; g < groups.length; g++) {
       var group = groups[g];
       log("\n[Concept " + (g + 1) + "/" + groups.length + "] " + group.tag);
-      var clone = template.clone();
-      clone.name = "ASSEMBLED_concept-" + (g + 1) + "_" + group.tag;
-      // Detach instances so the entire concept board (including its embedded
-      // copy/notes panels and pills) is fully editable for Brandon's polish.
-      detachAllInstances(clone);
-      if (container && "appendChild" in container) container.appendChild(clone);
-      else figma.currentPage.appendChild(clone);
-      if (sprintContainer) { clone.x = insetX; clone.y = insetY + (g * pitch); }   // relative to the container frame
-      else { clone.x = baseX; clone.y = baseY + (g * (template.height + 240)); }
-      var r = await fillConceptBoard(clone, group.rows, g, styledSearchRoot);
-      log("  Slots filled: " + r.imagesApplied + "/" + (r.boardSlots != null ? r.boardSlots : r.totalRows));
-      if (r.boardSlots != null && r.imagesApplied < r.boardSlots) _asmShortfall += (r.boardSlots - r.imagesApplied);
-      if (r.imagesApplied > 0) { assembled++; assembledIds.push(clone.id); }
+      // Per-board error isolation (audit 2026-07-30: one unanticipated throw
+      // became an unhandled rejection — the log just stopped mid-run, no
+      // completion report, partial boards left on canvas, and the operator
+      // re-ran into duplicates). A board that throws is counted failed (✗,
+      // which feeds _asmMiss) and the run continues.
+      try {
+        var clone = template.clone();
+        clone.name = "ASSEMBLED_concept-" + (g + 1) + "_" + group.tag;
+        // Detach instances so the entire concept board (including its embedded
+        // copy/notes panels and pills) is fully editable for Brandon's polish.
+        detachAllInstances(clone);
+        if (container && "appendChild" in container) container.appendChild(clone);
+        else figma.currentPage.appendChild(clone);
+        if (sprintContainer) { clone.x = insetX; clone.y = insetY + (g * pitch); }   // relative to the container frame
+        else { clone.x = baseX; clone.y = baseY + (g * (template.height + 240)); }
+        var r = await fillConceptBoard(clone, group.rows, g, styledSearchRoot);
+        log("  Slots filled: " + r.imagesApplied + "/" + (r.boardSlots != null ? r.boardSlots : r.totalRows));
+        if (r.boardSlots != null && r.imagesApplied < r.boardSlots) _asmShortfall += (r.boardSlots - r.imagesApplied);
+        if (r.imagesApplied > 0) { assembled++; assembledIds.push(clone.id); }
+      } catch (boardErr) {
+        log("  ✗ board failed for concept '" + group.tag + "': " + String(boardErr && boardErr.message || boardErr));
+      }
       await new Promise(function (r) { setTimeout(r, 50); });
     }
     log("\n✓ Assembly complete: " + assembled + "/" + groups.length + " boards" + (sprintContainer ? " (in '" + sprintContainer.name + "')" : ""));
@@ -2378,8 +2387,11 @@ async function assemble(payload) {
 
   var reportSprintId = "";
   try {
-    var m0 = String((manifest[0] || {}).asset_id || "").match(/^([0-9]{4}-[0-9]{2}-[a-z0-9]+-[0-9a-f]{6,})_/);
-    if (m0) reportSprintId = m0[1];
+    reportSprintId = String((manifest[0] || {}).sprint_id || "");
+    if (!reportSprintId) {
+      var m0 = String((manifest[0] || {}).asset_id || "").match(/^([0-9]{4}-[0-9]{2}-[a-z0-9]+_?)/);
+      if (m0) reportSprintId = m0[1].replace(/_$/, "");
+    }
   } catch (e) {}
   figma.ui.postMessage({
     type: "assembly-complete",

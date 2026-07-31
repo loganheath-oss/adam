@@ -230,7 +230,16 @@
       } else if (msg.type === "error") {
         appendLog("ERROR: " + msg.text, "error");
       } else if (msg.type === "assembly-complete") {
-        appendLog("Assembly complete: " + msg.assembled + " of " + msg.total + " " + (msg.unit || "assets") + " assembled.", "success");
+        var issues = (msg.warnings || 0) + (msg.misses || 0) + (msg.slotShortfall || 0);
+        if (issues > 0 || msg.failed > 0) {
+          // A green "complete" used to hide 13 warnings in the scrollback
+          // (audit 2026-07-30) — problems now headline the completion line.
+          appendLog("Assembly DEGRADED: " + msg.assembled + " of " + msg.total + " " + (msg.unit || "assets") +
+            " — " + (msg.failed || 0) + " failed, " + (msg.warnings || 0) + " warning(s), " +
+            (msg.misses || 0) + " miss(es), " + (msg.slotShortfall || 0) + " empty slot(s). Scroll up for ⚠/✗ lines.", "error");
+        } else {
+          appendLog("Assembly complete: " + msg.assembled + " of " + msg.total + " " + (msg.unit || "assets") + " assembled, no warnings.", "success");
+        }
         // Report the run to the ADAM dashboard (usage view). Best-effort — the
         // endpoint only accepts real sprint ids; offline just logs a note.
         if (msg.sprintId) {

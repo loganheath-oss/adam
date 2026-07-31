@@ -808,7 +808,7 @@ function buildStyleRowHTML(cid, rowIdx) {
         <input type="hidden" id="style-${cid}-${rowIdx}" value="">
         <div class="style-qty-wrap">
           <input type="number" class="style-qty-input" id="style-qty-${cid}-${rowIdx}"
-            min="1" max="99" value="1" oninput="clampVal(this,1,99)"
+            min="1" max="6" value="1" oninput="clampVal(this,1,6)"
             title="Quantity for this style">
           <div class="style-qty-label">qty</div>
         </div>
