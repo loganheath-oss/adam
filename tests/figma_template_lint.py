@@ -97,7 +97,9 @@ for style, prefixes in sorted(PREFIXES.items()):
     # which template prefix actually resolves for at least one size?
     tpl_hits = []
     for p in prefixes:
-        sizes_found = [s for s in SIZES if f"{p}_{s}" in all_names]
+        sizes_found = [s for s in SIZES
+                       if any(n == f"{p}_{s}" or (n.startswith(f"{p}_") and n.endswith(f"_{s}"))
+                              for n in all_names)]
         if sizes_found:
             tpl_hits.append((p, sizes_found))
     primary = prefixes[0] if prefixes else ""

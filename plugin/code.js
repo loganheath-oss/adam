@@ -70,7 +70,7 @@ var STYLE_TEMPLATE_PREFIXES = {
   "device ui":       ["Template_Device-UI", "Template_TestimonialC"],
   "hybrid":          ["Template_Adtype_Hybrid", "Template_PhotoWithTextB", "Template_PhotoWithText"],
   "pie chart":       ["Adtype_Pie-Chart", "Template_TestimonialC"],
-  "social media profile": ["Template_TestimonialC"],
+  "social media profile": ["Template_Social-Profile", "Template_TestimonialC"],
   "talent profile":  ["Template_Adtype_Talent-Profile", "Template_TestimonialC"],
   // Mockup is a multi-row notification mock on the Reminder base. Its 6 body
   // layers all share the name Notification_Headline_Text, so only the primary
@@ -95,11 +95,11 @@ var STYLE_ADTYPE_CONTAINERS = {
   "text only":       ["Adtype_Text-Only", "Adtype: Text Only"],
   "split screen":    ["Adtype_Split-Screen", "Adtype: Split Screen"],
   "reminder":        ["Adtype_Reminder", "Adtype: Reminder"],
-  "meme":            ["Adtype: Meme"],
+  "meme":            ["Adtype_Meme", "Adtype: Meme"],
   // New styles (2026-06-22) — container scoping is what isolates these, since
   // several share the Template_TestimonialC / Template_ChatBubble bases.
   "poll":            ["Adtype_Poll", "Adtype: Poll"],
-  "us vs them":      ["AdType: UsVsThem"],
+  "us vs them":      ["Adtype_Us-Vs-Them", "AdType: UsVsThem"],
   "platform ui":     ["Adtype_Platform-UI", "AdType_PlatformUI"],
   "search results":  ["Adtype_Search-Results", "AdType_SearchResults"],
   "device ui":       ["Adtype_Device-UI", "Upwork - Mobile Homepage"],

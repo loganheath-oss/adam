@@ -5,6 +5,18 @@ Claude copy instructions, provided 2026-07-14. Grouped by workstream; most-actio
 first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination · ⬜ not started.
 
 ## A. Copy engine
+- ✅ **2026-07-31 Figma template cleanup done PROGRAMMATICALLY (was 'blocked on
+  Elise').** Via the Figma MCP: 12 nested Image-Placeholder outers renamed to
+  Image-Group; Template_LifestylePhoto_1440x1800 → convention name; 2×
+  Adtype_Pie-Chart__1440x1800 double-underscore fixed; AdType_Us-Vs-Them +
+  2× "Adtype: Meme" containers → Adtype_ convention. Plugin maps updated
+  (Us-Vs-Them/Meme containers, Social-Profile template prefix — legacy names
+  kept as fallbacks). figma_template_lint existence check is now
+  VARIANT-AWARE (Dark/Light/Alt suffixed frames no longer read as missing).
+  LINT: 19 findings → CLEAN. Left for Elise (judgment): Bespoke container's
+  duplicate Template_Split-Screen names; whether Photo-with-Text needs a
+  non-Alt variant; + backgrounds (Item 1) and Search-Results field naming
+  (Item 3) from the ask doc.
 - ✅ **2026-07-31 backlog batches B+C — the audit's pure-code queue is EMPTY.**
   Batch B: atomic writes for every load-bearing artifact; idempotent CTA mix
   (survives Gate-3 swaps); generation-shortfall telemetry; /submit validates
