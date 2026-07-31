@@ -5,6 +5,28 @@ Claude copy instructions, provided 2026-07-14. Grouped by workstream; most-actio
 first. Status: ✅ done · 🔨 in progress · ⛔ blocked/needs coordination · ⬜ not started.
 
 ## A. Copy engine
+- ✅ **2026-07-31 backlog burn-down batch A + library-first backgrounds (Logan's
+  decision).** (1) LIBRARY-FIRST BACKGROUNDS: background-capable styles now try
+  the Figma library first (assets tagged background/backdrop/texture/surface/
+  gradient/pattern — Brandon/Elise to populate); generation only fires as the
+  FLAGGED fallback (`policy_flag=generated_no_library_background`, visible at
+  Gate 4). August measures the fallback rate; retire generation if it never
+  needs to fire. (2) Ranking ROSTER RECONCILE: duplicate original_index dropped,
+  omitted concepts appended flagged "UNRANKED" — a paid-for concept can no
+  longer vanish at review (trusted-roster class, fired live twice). (3) Stage-03
+  fallback no longer resurrects operator-REJECTED concepts or ships the
+  "Find talent fast" placeholder — a style with nothing selected is SKIPPED
+  loudly. (4) Concept-tag cross-style de-dup (the 11-boards-for-12-concepts
+  live incident). (5) Emoji validator ranges now include ⏱/⭐ (the emojifier's
+  own palette was invisible to the shape checks). (6) `record_usage` finally
+  CALLED — cross-sprint photo freshness runs for the first time.
+  REMAINING (pure code, next batches): atomic artifact writes in run_pipeline,
+  CTA-mix idempotence, per-audience cap enforcement parity, /submit
+  validate-before-ack + idempotency, generation-shortfall telemetry,
+  interrupted→sprint.failed event, MCP get_sprint recursive, scaffold stamps,
+  .env regen, plugin per-row try/catch + false-success logging. BLOCKED on
+  people: style table + registry regen + background asset set (Elise/Brandon),
+  auth-surface changes + Fly deletion (Logan).
 - ✅ **2026-07-30 AUTHORITY REGISTRY (Logan's slider concept).** `authority.py` =
   single source of truth classifying all 28 model tasks across the 6 gates +
   chat into 5 levels (PRESENT / EXPLAIN / JUDGE / CREATE / ACTION), each level

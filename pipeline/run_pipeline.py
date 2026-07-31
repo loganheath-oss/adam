@@ -536,6 +536,26 @@ def load_template_registry() -> dict:
 # Styles that need TWO distinct library photos (left + right placeholder).
 # Add new dual-image styles here and the row builder will pick two photos.
 DUAL_PHOTO_LIBRARY_STYLES = {"Split Screen"}
+# Background assets in the library are tagged with any of these (Brandon/Elise
+# add "background"-tagged frames the same way as people photos). Library-first
+# background routing (Logan's decision, 2026-07-31): generation is the FLAGGED
+# EXCEPTION, not the default — if August shows the fallback never needed, it
+# gets retired with evidence.
+_BG_TAG_HINTS = {"background", "backdrop", "texture", "surface", "gradient", "pattern"}
+
+
+def _pick_background(components, used_ids):
+    """Pick an approved background asset from the library, excluding ones
+    already used this sprint for variety. None when the library has no
+    background-tagged assets (the flagged-generation fallback fires)."""
+    cands = [c for c in (components or [])
+             if _BG_TAG_HINTS & {str(t).lower() for t in (c.get("tags") or [])}]
+    if not cands:
+        return None
+    fresh = [c for c in cands if c.get("node_id") not in (used_ids or [])]
+    return (fresh or cands)[0]
+
+
 # Photo-based styles — pull from the Figma brand library, not Gemini.
 # Per Brian's rule: no AI-generated photography; people photos come from
 # Brandon's curated 2026 library. Module-level (audit 2026-07-30) so the
@@ -1034,7 +1054,7 @@ def _pick_bullet_emoji(line, used):
     return _FALLBACK_BULLET_EMOJI[0]
 
 
-_EMOJI_RE = re.compile(r"[\U0001F300-\U0001FAFF☀-➿]")
+_EMOJI_RE = re.compile(r"[\U0001F300-\U0001FAFF☀-➿⏩-⏺⬀-⯿]")
 
 
 def _bullet_body_shape_ok(text):
@@ -1058,7 +1078,7 @@ def _normalize_bullet_newlines(text):
     t = str(text or "")
     if "\n" in t:
         return text
-    _em = list(re.finditer(r"[\U0001F300-\U0001FAFF☀-➿]", t))
+    _em = list(re.finditer(r"[\U0001F300-\U0001FAFF☀-➿⏩-⏺⬀-⯿]", t))
     if len(_em) < 3:
         return text
     out, last = [], 0
@@ -2727,8 +2747,19 @@ Return ONLY the JSON array. No other text."""
                     rankings = rankings["rankings"]
 
                 # Apply rankings back to the concepts
+                # ROSTER RECONCILE (audit P1, promoted 2026-07-31 after the
+                # trusted-roster class fired live twice): the model's rankings
+                # are NOT trusted to cover 1..N exactly once. A repeated
+                # original_index is dropped (first occurrence wins), and any
+                # concept the model omitted is appended afterward — a paid-for
+                # concept must never silently vanish at review.
+                _seen_idx = set()
                 for ranking in rankings:
                     orig_idx = ranking.get("original_index", 1) - 1  # Convert to 0-based
+                    if orig_idx in _seen_idx:
+                        print(f"    ⚠ {style}: reviewer repeated concept #{orig_idx + 1} — duplicate dropped")
+                        continue
+                    _seen_idx.add(orig_idx)
                     if 0 <= orig_idx < len(group_concepts):
                         concept = group_concepts[orig_idx].copy()
                         concept["rank"] = ranking.get("rank", 99)
@@ -2771,6 +2802,19 @@ Return ONLY the JSON array. No other text."""
                                 "add quotes to the Quotes page to replace invented ones. "
                                 + concept.get("review_notes", ""))
                         reviewed.append(concept)
+
+                # Append anything the reviewer omitted, flagged — never lost.
+                for _oi, _orig in enumerate(group_concepts):
+                    if _oi not in _seen_idx:
+                        _c = _orig.copy()
+                        _c["rank"] = 98
+                        _c["selected"] = False
+                        _c["score"] = 0
+                        _c["review_notes"] = ("⚠ UNRANKED — the auto-reviewer omitted this "
+                                              "concept from its rankings; kept for operator "
+                                              "review. " + _c.get("review_notes", ""))
+                        reviewed.append(_c)
+                        print(f"    ⚠ {style}: reviewer omitted concept #{_oi + 1} — appended unranked")
 
             else:
                 print(f"API error {response.status_code}, keeping all unranked")
@@ -3051,8 +3095,10 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
     # Pre-fetch the Figma library once if any photo-based style is in the order.
     # Cached for the duration of this stage.
     library_cache = None
+    # Fetch the library whenever ANY style fills an image slot — photo styles
+    # need people photos, and background styles now try the library FIRST.
     needs_library = any(
-        style in PHOTO_LIBRARY_STYLES
+        style not in SKIP_IMAGE
         for batch in order.get("batches", [])
         for style in batch.get("visual_styles", [])
     )
@@ -3090,11 +3136,19 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
         resolutions = batch.get("resolutions", [])
 
         for style in styles:
-            # Find matching concepts — only generate images for selected (top 3) concepts
+            # Find matching concepts — only generate images for SELECTED concepts.
+            # A style with no selected concepts is SKIPPED loudly (audit P1,
+            # 2026-07-31): the old fallback resurrected operator-REJECTED
+            # concepts (first 3 unselected) or shipped a "Find talent fast"
+            # placeholder with empty copy — a deselect-all at Gate 3 must mean
+            # "this style doesn't ship", never "ship what I rejected".
             all_matching = [c for c in concepts if c.get("batch_index") == i and c.get("visual_style") == style]
             matching = [c for c in all_matching if c.get("selected", True)]
             if not matching:
-                matching = all_matching[:3] if all_matching else [{"headline": "Find talent fast", "concept_tag": "default-v1"}]
+                print(f"  ⚠ SKIPPING style '{style}': "
+                      f"{'operator deselected all ' + str(len(all_matching)) + ' concepts' if all_matching else 'no concepts generated'}"
+                      " — no image rows will be built for it")
+                continue
 
             for concept in matching:
                 # Pin the library photo per concept: pick once on the first size and
@@ -3121,6 +3175,7 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                     figma_node_id = ""
                     figma_asset_name = ""
                     match_strength = ""
+                    _bg_fallback = ""  # set when generation fires as the library-first fallback
                     # Dual-image placeholders (currently used by Split Screen).
                     # Empty strings for every other style.
                     figma_node_id_left = ""
@@ -3246,18 +3301,42 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                         method = "skip"
                         prompt = ""
                     elif style in BACKGROUND_ONLY or style == "Text Based":
-                        method = "text_background"
-                        prompt = (
-                            f"Abstract gradient background for a {style} ad. "
-                            f"Upwork green (#14a800) to dark, clean, modern. "
-                            f"No text, no objects, no people. Pure background texture."
-                        )
+                        _bg = _pick_background(library_cache, used_photo_ids)
+                        if _bg:
+                            method = "figma_library"
+                            prompt = ""
+                            figma_node_id = _bg.get("node_id", "")
+                            figma_asset_name = _bg.get("name", "")
+                            match_strength = "background"
+                            if figma_node_id:
+                                used_photo_ids.append(figma_node_id)
+                            print(f"    {style} — library background: {figma_asset_name}")
+                        else:
+                            method = "text_background"
+                            _bg_fallback = "generated_no_library_background"
+                            prompt = (
+                                f"Abstract gradient background for a {style} ad. "
+                                f"Upwork green (#14a800) to dark, clean, modern. "
+                                f"No text, no objects, no people. Pure background texture."
+                            )
                     else:
-                        method = "gemini_generate"
-                        headline = concept.get("headline", "")
-                        prompt = _build_style_prompt(style, headline, platform)
-                        if _design_directives:
-                            prompt = f"{prompt} Art direction from the operator's brief: {'; '.join(_design_directives)}."
+                        _bg = _pick_background(library_cache, used_photo_ids)
+                        if _bg:
+                            method = "figma_library"
+                            prompt = ""
+                            figma_node_id = _bg.get("node_id", "")
+                            figma_asset_name = _bg.get("name", "")
+                            match_strength = "background"
+                            if figma_node_id:
+                                used_photo_ids.append(figma_node_id)
+                            print(f"    {style} — library background: {figma_asset_name}")
+                        else:
+                            method = "gemini_generate"
+                            _bg_fallback = "generated_no_library_background"
+                            headline = concept.get("headline", "")
+                            prompt = _build_style_prompt(style, headline, platform)
+                            if _design_directives:
+                                prompt = f"{prompt} Art direction from the operator's brief: {'; '.join(_design_directives)}."
 
                     # Cache this concept's library pick so its remaining sizes reuse
                     # the SAME photo (set once, on the first size). Only library-photo
@@ -3304,6 +3383,10 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                             "resolution": size,
                             "ratio": ratio,
                             "generation_method": method,
+                            # Library-first policy: non-empty when generation ran
+                            # because no background-tagged library asset existed —
+                            # the flagged exception Gate 4 surfaces (2026-07-31).
+                            "policy_flag": _bg_fallback,
                             "prompt": prompt,
                             "figma_node_id": figma_node_id,
                             "figma_asset_name": figma_asset_name,
@@ -3339,6 +3422,18 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
     if _policy_flips:
         print(f"  ⚠ POLICY: {_policy_flips} row(s) tried to Gemini-generate a "
               "people-photo style — flipped to human selection (no-AI-photo rule)")
+
+    # Cross-sprint photo freshness: record this sprint's used photos so the
+    # "don't reuse a photo for 3 sprints" mechanism actually runs — the
+    # write-side call had ZERO callers since it was built (audit P1-9: the
+    # history file was never written, so variety only existed within a sprint).
+    if used_photo_ids:
+        try:
+            from figma_library import record_usage
+            record_usage(sprint_id, used_photo_ids)
+            print(f"  Photo usage recorded: {len(used_photo_ids)} node(s) -> library history")
+        except Exception as _rue:
+            print(f"  ⚠ photo-usage record failed: {_rue}")
 
     csv_path = run_dir / "image_prompts.csv"
     if rows:
