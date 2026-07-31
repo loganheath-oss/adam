@@ -53,6 +53,43 @@ BASE_DIR = Path(__file__).parent.parent
 RUNS_DIR = Path(os.environ.get("RUNS_DIR", str(BASE_DIR / "runs")))
 RUNS_DIR.mkdir(parents=True, exist_ok=True)
 
+
+def _atomic_write_text(path, text):
+    """Temp file on the same volume + fsync + os.replace — a crash or ENOSPC
+    mid-write can never leave a torn artifact (audit 2026-07-30: the atomic
+    pattern was applied only to the small status files while every load-bearing
+    artifact used bare open("w"); a torn copy_outputs.json killed gate-3 resume
+    AND the MCP tools at once)."""
+    import tempfile as _tf
+    path = Path(path)
+    fd, tmp = _tf.mkstemp(dir=str(path.parent), prefix=".aw_", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def _atomic_write_json(path, data):
+    _atomic_write_text(path, json.dumps(data, indent=2))
+
+
+def _atomic_write_csv(path, fieldnames, rows_iter):
+    import io as _io
+    buf = _io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=fieldnames)
+    w.writeheader()
+    w.writerows(rows_iter)
+    _atomic_write_text(path, buf.getvalue())
+
+
 # Copy-generation model. Centralized + env-overridable so it can be swapped without a
 # code change (set ADAM_COPY_MODEL on the service). Default is Sonnet 5 (Logan 2026-07-27).
 _COPY_MODEL = os.environ.get("ADAM_COPY_MODEL", "claude-sonnet-5")
@@ -666,8 +703,7 @@ def stage_00_intake(payload):
     run_dir.mkdir(parents=True, exist_ok=True)
 
     order_path = run_dir / "order.json"
-    with open(order_path, "w") as f:
-        json.dump(order, f, indent=2)
+    _atomic_write_json(order_path, order)
 
     print(f"  Sprint ID: {sprint_id}")
     print(f"  Driver: {order['driver']}")
@@ -756,8 +792,7 @@ def stage_01_load_refs(sprint_id, order):
     }
 
     context_path = run_dir / "context.json"
-    with open(context_path, "w") as f:
-        json.dump(slim_context, f, indent=2)
+    _atomic_write_json(context_path, slim_context)
 
     print(f"\n  Loaded {loaded} reference documents")
     print(f"  Saved: {context_path}")
@@ -869,11 +904,21 @@ def stage_02_copy_gen(sprint_id, order, context):
                     _sel[i].get("creative_headline") or _sel[i].get("headline") or "",
                     _sel[j].get("creative_headline") or _sel[j].get("headline") or "")),
         }
+        # GENERATION SHORTFALL (2026-07-31: Hybrid quietly produced 5 of 6 —
+        # the count is prompt-enforced only, since the API rejects minItems;
+        # a shortfall must be VISIBLE, not discovered by counting boards).
+        _by_style = {}
+        for c in _cs:
+            _by_style[c.get("visual_style", "?")] = _by_style.get(c.get("visual_style", "?"), 0) + 1
+        _short = {s: f"{n}/{_CONCEPTS_PER_STYLE}" for s, n in _by_style.items()
+                  if n < _CONCEPTS_PER_STYLE}
+        copy_outputs["quality"]["generation_shortfall"] = _short
+        if _short:
+            print(f"  ⚠ GENERATION SHORTFALL: {_short} — fewer concepts than requested")
         print(f"  Quality: {copy_outputs['quality']}")
 
     copy_path = run_dir / "copy_outputs.json"
-    with open(copy_path, "w") as f:
-        json.dump(copy_outputs, f, indent=2)
+    _atomic_write_json(copy_path, copy_outputs)
 
     print(f"  Generated {len(copy_outputs.get('concepts', []))} concepts")
     print(f"  Saved: {copy_path}")
@@ -1315,6 +1360,21 @@ def _apply_cta_mix(reviewed, style):
     that shouldn't display one and set no_cta=True so the manifest/plugin pick the
     no-CTA template variant. Modes (entry.cta_mix): all/default = keep every CTA;
     none = blank all; one/two = keep on the top-1/top-2 ranked selected concepts."""
+    # IDEMPOTENT (audit P1-6, 2026-07-31): the mix used to DESTROY the original
+    # CTA/subhead, so any re-application over a changed selection (a Gate-3
+    # swap, an operator hand-pick) left the new top pick with a blanked CTA and
+    # a stale no_cta=True — a "must have one CTA" style could ship with ZERO.
+    # Originals are preserved on first touch and every application starts by
+    # restoring them, making the mix a pure re-derivation of the CURRENT
+    # selection.
+    for c in reviewed:
+        if "cta_original" not in c:
+            c["cta_original"] = c.get("cta", "")
+        if "creative_subhead_original" not in c:
+            c["creative_subhead_original"] = c.get("creative_subhead", "")
+        c["cta"] = c.get("cta_original", "")
+        c["creative_subhead"] = c.get("creative_subhead_original", "")
+        c["no_cta"] = False
     _, entry = _guide_entry_for_style(style)
     mix = (entry or {}).get("cta_mix", "default")
     if mix in ("all", "default"):
@@ -3437,11 +3497,7 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
 
     csv_path = run_dir / "image_prompts.csv"
     if rows:
-        fieldnames = list(rows[0].keys())
-        with open(csv_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(rows)
+        _atomic_write_csv(csv_path, list(rows[0].keys()), rows)
 
     print(f"  Total assets: {len(rows)}")
     methods = {}
@@ -3652,13 +3708,12 @@ def stage_04_generate_images(sprint_id, image_rows):
 
     # Save generation log
     log_path = run_dir / "generation_log.json"
-    with open(log_path, "w") as f:
-        json.dump({
-            "generated": generated,
-            "skipped": skipped,
-            "failed": failed,
-            "results": {k: str(v) for k, v in results.items()}
-        }, f, indent=2)
+    _atomic_write_json(log_path, {
+        "generated": generated,
+        "skipped": skipped,
+        "failed": failed,
+        "results": {k: str(v) for k, v in results.items()},
+    })
 
     return results
 
@@ -4046,11 +4101,7 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
     # Write manifest CSV (selected assets only — the deliverables grid)
     manifest_path = run_dir / "asset_manifest.csv"
     if manifest_rows:
-        fieldnames = list(manifest_rows[0].keys())
-        with open(manifest_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            writer.writerows(manifest_rows)
+        _atomic_write_csv(manifest_path, list(manifest_rows[0].keys()), manifest_rows)
 
     # Write FULL copy review CSV — ALL concepts including rejected
     # This is for human review: see everything Claude generated, what was selected, and why
@@ -4095,11 +4146,7 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
         })
 
     if review_rows:
-        review_fieldnames = list(review_rows[0].keys())
-        with open(review_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=review_fieldnames)
-            writer.writeheader()
-            writer.writerows(review_rows)
+        _atomic_write_csv(review_path, list(review_rows[0].keys()), review_rows)
 
     # Write run summary
     total_concepts = len(concepts)
@@ -4121,8 +4168,7 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
     }
 
     summary_path = run_dir / "run_summary.json"
-    with open(summary_path, "w") as f:
-        json.dump(summary, f, indent=2)
+    _atomic_write_json(summary_path, summary)
 
     print(f"  Copy concepts: {total_concepts} generated, {selected_concepts} selected, {total_concepts - selected_concepts} rejected")
     print(f"  Total assets: {summary['total_assets']} (images for selected concepts only)")
@@ -4708,8 +4754,7 @@ def _apply_copy_overrides(run_dir, copy_outputs):
 
     if changed:
         print(f"  Applied {changed} human override(s) from copy_review.csv")
-        with open(run_dir / "copy_outputs.json", "w") as f:
-            json.dump(copy_outputs, f, indent=2)
+        _atomic_write_json(run_dir / "copy_outputs.json", copy_outputs)
 
 
 # =============================================================================

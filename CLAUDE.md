@@ -161,7 +161,7 @@ These are hard rules. Treat them as guardrails when editing code or proposing ar
 |---|---|---|
 | Logan Heath | Tech lead (CM contractor) | Pipeline code, MCP server, plugin scaffold, end-to-end integration |
 | Adrie Etherington | Creative lead | Copy generation prompts, brand voice, Claude Project for copy curation |
-| Brandon Morayo | Motion/graphic designer | Figma templates, brand photo library tagging, plugin UX feedback |
+| Brandon Morayo (departed 2026-07) | — | Former owner of Figma templates + library tagging; items now with Elise |
 | Bree | Design producer | Production schedule, stakeholder coordination |
 | Brian | Upwork CD | Veto on AI photography. Source of the no-AI-photo rule |
 | Leon Zhao | Upwork architect / sponsor | Hosting platform decisions, InfoSec narrative, post-contract handoff support |

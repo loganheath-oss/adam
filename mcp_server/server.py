@@ -137,12 +137,24 @@ def list_sprints(limit: int = 20) -> dict[str, Any]:
 def get_sprint(sprint_id: str) -> dict[str, Any]:
     """Get the full state of a single sprint: order, pipeline state, and run summary."""
     path = _sprint_dir(sprint_id)
+    # Recursive inventory with explicit totals (audit 2026-07-30): top-level-only
+    # listing hid images/ and finals/, making "complete inventory" claims
+    # impossible — the model filled the gap by guessing.
+    files = sorted(str(p.relative_to(path)) for p in path.rglob("*")
+                   if p.is_file() and not p.name.startswith("."))
+    per_dir: dict[str, int] = {}
+    for f in files:
+        top = f.split("/", 1)[0] if "/" in f else "(root)"
+        per_dir[top] = per_dir.get(top, 0) + 1
     return {
         "sprint_id": sprint_id,
         "order": _read_json(path / "order.json"),
         "pipeline_state": _read_json(path / "pipeline_state.json"),
         "run_summary": _read_json(path / "run_summary.json"),
-        "available_files": sorted(p.name for p in path.iterdir() if p.is_file()),
+        "available_files": files[:400],
+        "file_total": len(files),
+        "files_truncated": len(files) > 400,
+        "files_per_dir": per_dir,
     }
 
 

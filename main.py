@@ -385,6 +385,17 @@ async def lifespan(app: FastAPI):
                     state_data["updated_at"] = datetime.now(timezone.utc).isoformat()
                     state_data["interrupted_reason"] = "Server restarted while pipeline was in progress"
                     sprint_state.write_state(d, state_data)
+                    # Reliability event (audit P1-7): restart-killed sprints never
+                    # emitted sprint.failed — the MOST COMMON failure was invisible
+                    # to the digest/clean-rate metrics.
+                    try:
+                        _o = _load_json(d / "order.json")
+                        db.log_event("sprint.failed",
+                                     user_email=(_o.get("email") or _o.get("driver")),
+                                     sprint_id=d.name,
+                                     meta={"state": "interrupted", "cause": "restart"})
+                    except Exception:
+                        pass
             except Exception:
                 pass
     # Daily self-check loop — ADAM verifies itself (credits, refs, styles, volume,
@@ -945,19 +956,50 @@ async def submit_order(request: Request):
     if _dg:
         return JSONResponse({"ok": False, "error": _dg}, status_code=507)
     payload = await request.json()
+    # VALIDATE BEFORE ACKNOWLEDGING (audit 2026-07-30): /submit used to return
+    # ok+sprint_id and only then run validation inside the async task — a bad
+    # payload got a success screen while its sprint silently flipped to error.
+    # "Acknowledged" now means "validated".
+    try:
+        _intake = _load_intake_for_validation()
+        _verrs = _intake.validate_payload(payload)
+    except Exception as _ve:
+        _verrs = None
+        print(f"[submit] validation unavailable ({_ve}) — accepting payload as before")
+    if _verrs:
+        return JSONResponse({"ok": False, "errors": _verrs}, status_code=400)
     sprint_id = payload.get("sprint_id") or _generate_sprint_id(payload)
     _validate_sprint_id(sprint_id)
-    payload["sprint_id"] = sprint_id
     sprint_dir = RUNS_DIR / sprint_id
+    # A client-supplied sprint_id that already exists must never clobber a live
+    # sprint (audit P1: overwrite reset state to queued and spawned a SECOND
+    # pipeline over the same directory).
+    if payload.get("sprint_id") and sprint_dir.exists():
+        return JSONResponse(
+            {"ok": False,
+             "error": f"Sprint '{sprint_id}' already exists — omit sprint_id to create a new sprint."},
+            status_code=409)
+    payload["sprint_id"] = sprint_id
     sprint_dir.mkdir(exist_ok=True)
     (sprint_dir / "order.json").write_text(json.dumps(payload, indent=2))
-    (sprint_dir / "pipeline_state.json").write_text(json.dumps({
-        "sprint_id": sprint_id, "state": "queued",
-        "updated_at": datetime.now(timezone.utc).isoformat(),
-    }, indent=2))
+    sprint_state.write_state(sprint_dir, {"sprint_id": sprint_id, "state": "queued"})
     _log_order_submitted(sprint_id, payload)
     asyncio.create_task(_run_pipeline_task(payload))
     return JSONResponse({"ok": True, "sprint_id": sprint_id, "status_url": f"/sprints/{sprint_id}"})
+
+
+_INTAKE_MOD = None
+
+
+def _load_intake_for_validation():
+    """pipeline/00_intake.py (leading digit forbids normal import), cached."""
+    global _INTAKE_MOD
+    if _INTAKE_MOD is None:
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location("intake", BASE_DIR / "pipeline" / "00_intake.py")
+        _INTAKE_MOD = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_INTAKE_MOD)
+    return _INTAKE_MOD
 
 
 # ── Hightouch inbound integration ────────────────────────────────────────────
