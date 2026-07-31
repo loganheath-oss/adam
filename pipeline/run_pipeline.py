@@ -1882,7 +1882,11 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "  2026-07-15): just a light hint of coming back, revisiting, or getting started —\n"
             "  NEVER 'we know you've been here' / 'we saw you looking' creeping language.\n"
             "  A gentle nudge toward the next step is the whole move. Acknowledge familiarity\n"
-            "  (e.g. \"still hiring for that role?\", \"ready to post that job?\") and drive the conversion."
+            "  (e.g. \"still hiring for that role?\", \"ready to post that job?\") and drive the conversion.\n"
+            "  PAIRING RULE (Tone of Voice lens): ANY return language — direct or subtle — must be\n"
+            "  PAIRED with a concrete benefit or proof point that answers 'what's in it for me if I\n"
+            "  go back now?' (5-star talent, contracts/NDAs/payments built in, speed to hire).\n"
+            "  Never 'come back' language alone."
         )
     elif "retargeting" in _tl:
         examples = _retarget_ex or _prosp_ex
@@ -1892,7 +1896,9 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "getting started (\"ready to post that job?\", \"pick up where you left off\") — the\n"
             "platform handles who sees it, so NEVER use 'we know you've been here' /\n"
             "'we saw you looking' creeping language. Gentle nudge toward the next step;\n"
-            "do NOT re-introduce Upwork from scratch."
+            "do NOT re-introduce Upwork from scratch.\n"
+            "PAIRING RULE (Tone of Voice lens): ANY return language must be PAIRED with a\n"
+            "concrete benefit or proof point — never 'come back' alone."
         )
     else:
         examples = _prosp_ex or _retarget_ex
@@ -2169,6 +2175,14 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
 
 {_CRAFT_BAR}
 
+===== TONE OF VOICE & CREATIVE STANDARD — THE LENS (read FIRST) =====
+This document sets the creative standard for the ENTIRE task and defines how to
+use every other document in this prompt: which are binding guidelines to follow
+exactly, and which are reference banks to pull from freely. Work through
+everything below THROUGH this lens (operator directive, 2026-07-31). The only
+thing that outranks it is the Legal blocklist, which is absolute.
+{brand_voice}
+
 ===== AUTHORITATIVE COPY INSTRUCTIONS (BINDING — Adrie's spec) =====
 These govern voice, field limits, formatting, legal, and QA. Apply them to every
 field. The LEGAL "Terms to Avoid" blocklist is ABSOLUTE — it overrides the order
@@ -2179,9 +2193,6 @@ no matter what the brief says.
 
 ===== ORDER BRIEF / OPERATOR DIRECTION (HIGH PRIORITY — but never above Legal) =====
 {brief_block}
-
-===== BRAND VOICE =====
-{brand_voice}
 
 ===== WRITING STYLE =====
 {writing_style}
