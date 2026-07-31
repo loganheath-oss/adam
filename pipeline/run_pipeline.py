@@ -3309,8 +3309,8 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
         _row.setdefault("policy_flag", "")
         if (_row.get("visual_style") in PHOTO_LIBRARY_STYLES
                 or _row.get("visual_style") in DUAL_PHOTO_LIBRARY_STYLES) \
-                and _row.get("method") == "gemini_generate":
-            _row["method"] = "needs_human_selection"
+                and _row.get("generation_method") == "gemini_generate":
+            _row["generation_method"] = "needs_human_selection"
             _row["prompt"] = ""
             _row["policy_flag"] = "blocked_ai_people_photo"
             _policy_flips += 1
@@ -3761,7 +3761,7 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
         # the gate, so an operator deleting a rejected image from images/ left
         # a surviving exports/ twin that shipped marked 'delivered'. If the
         # source image is gone, remove the export twins and mark the veto.
-        _src_generated = row.get("method") in ("gemini_generate", "text_background")
+        _src_generated = row.get("generation_method") in ("gemini_generate", "text_background")
         _src_missing = _src_generated and (not img_path or not Path(img_path).exists())
         if _src_missing and has_export:
             for _suffix in ("", "_final"):

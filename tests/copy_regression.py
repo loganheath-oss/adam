@@ -223,8 +223,14 @@ def offline_checks():
     check("photo policy: people styles in PHOTO_LIBRARY_STYLES",
           {"Lifestyle Photo", "Photo with Text", "Testimonial"} <= rp.PHOTO_LIBRARY_STYLES,
           str(rp.PHOTO_LIBRARY_STYLES))
+    _src_rp = (REPO / "pipeline" / "run_pipeline.py").read_text()
     check("photo policy: assertion marker present in stage 03",
-          "blocked_ai_people_photo" in (REPO / "pipeline" / "run_pipeline.py").read_text())
+          "blocked_ai_people_photo" in _src_rp)
+    # 2026-07-31: both post-hoc guards were DEAD CODE for a day — they read
+    # row["method"] while the real column is generation_method, and the unit
+    # test used the same wrong key. Guards must reference the real column.
+    check("photo policy + veto guards use the real column name",
+          'row.get("method")' not in _src_rp and '_row.get("method")' not in _src_rp)
 
     # 11f. AUTHORITY REGISTRY (Logan's slider concept, 2026-07-30): every model
     # task carries a declared authority level; the prompt section and the human
