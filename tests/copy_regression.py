@@ -258,6 +258,16 @@ def offline_checks():
     check("authority: all six surfaces render",
           all(s in _rendered for s in ("Gate 2", "Gate 3", "Gate 4", "Gate 5", "Gate 6", "Chat")))
 
+    # 11g. Cross-style concept-tag uniqueness (2026-07-31: two styles invented
+    # 'budget-control-v1' independently; the Figma plugin groups boards by tag
+    # and folded both concepts into one — 11 boards for 12 concepts).
+    _tc = [{"concept_tag": "a"}, {"concept_tag": "a"}, {"concept_tag": "a"}, {"concept_tag": "b"}]
+    rp._dedupe_concept_tags(_tc)
+    _tags = [c["concept_tag"] for c in _tc]
+    check("concept tags de-duped cross-style", len(_tags) == len(set(_tags)), str(_tags))
+    check("tag de-dup wired at collection point",
+          "_dedupe_concept_tags(reviewed_concepts)" in (REPO / "pipeline" / "run_pipeline.py").read_text())
+
     # 11e. Registry slot caps must not crush auxiliary fields on styles that
     # define their OWN on-image field set (Sticky's 12-char "Hire it…" trims,
     # live incident 2026-07-30). Styles where creative_headline IS the printed

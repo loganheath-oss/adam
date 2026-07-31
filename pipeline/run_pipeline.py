@@ -417,6 +417,27 @@ def _enforce_conditional_caps(concepts, style):
                   f"{'no-CTA' if c.get('no_cta') else 'with-CTA'} {len(v)}>{cap} — trimmed")
 
 
+def _dedupe_concept_tags(concepts):
+    """concept_tag is model-invented per style call, and the calls can't see
+    each other — two styles independently invented 'budget-control-v1' on
+    2026-07-31 and the Figma plugin (which GROUPS by tag) folded both concepts
+    into one board: 11 boards shipped for 12 selected concepts. Runs once at
+    the cross-style collection point, BEFORE copy_review.csv / image_prompts /
+    manifest are written, so every downstream tag-keyed join stays unique."""
+    seen = {}
+    for c in concepts:
+        t = str(c.get("concept_tag") or "").strip()
+        if not t:
+            continue
+        if t in seen:
+            seen[t] += 1
+            c["concept_tag"] = f"{t}-{seen[t]}"
+            print(f"    tag de-dup: {c.get('concept_id')} '{t}' -> '{c['concept_tag']}'")
+        else:
+            seen[t] = 1
+    return concepts
+
+
 def _deterministic_selection(reviewed, target, style):
     """FAIL-CLOSED enforcement pass — runs after review on EVERY path (ranked,
     API-error fallback, exception fallback). Review judges; this enforces.
@@ -2814,6 +2835,7 @@ Return ONLY the JSON array. No other text."""
 
     # Sort by style then rank
     reviewed_concepts.sort(key=lambda x: (x.get("visual_style", ""), x.get("rank", 99)))
+    _dedupe_concept_tags(reviewed_concepts)
 
     total_c = len(reviewed_concepts)
     selected = sum(1 for c in reviewed_concepts if c.get("selected"))
