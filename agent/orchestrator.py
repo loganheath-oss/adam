@@ -211,10 +211,18 @@ def _enrich_concept_view(c: dict) -> dict:
         c["on_creative"] = on_creative
     else:
         c["on_creative"] = on_creative
+        tc = c.get("targeting_copy")
+        _aud_has_extras = isinstance(tc, dict) and any(
+            isinstance(a, dict) and any(a.get(f) not in (None, "", []) for f in _ON_CREATIVE_FIELDS)
+            for a in tc.values())
         c["on_creative_note"] = (
-            "This style prints ONLY these fields on the creative; they are shared "
-            "across audiences (targeting_copy varies FEED copy only). "
-            "creative_headline is an auxiliary concept label, not printed."
+            "This style prints ONLY these fields on the creative. "
+            + ("Each audience has its OWN versions inside targeting_copy — present both "
+               "(per-audience boards ship separately as of 2026-07-31). "
+               if _aud_has_extras else
+               "They are shared across audiences in this sprint (generated before "
+               "per-audience on-creative landed 2026-07-31; targeting_copy varies feed copy only). ")
+            + "creative_headline is an auxiliary concept label, not printed."
         )
     flags = {k: c.get(k) for k in ("legal_flags", "length_flags", "length_warnings")
              if c.get(k)}

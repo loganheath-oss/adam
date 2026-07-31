@@ -1793,6 +1793,8 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
         if (btnLabel) {
           var conceptLabel = "Ad Concept " + (conceptIndex + 1);
           if (leadRow.concept_tag) conceptLabel += " · " + leadRow.concept_tag;
+          var tgt0 = leadRow.Targeting || leadRow.targeting || "";
+          if (tgt0) conceptLabel += " · " + tgt0.toUpperCase();
           await setTextLayer(btnLabel, conceptLabel);
         }
       }
@@ -2032,7 +2034,10 @@ function groupRowsByConcept(rows) {
     // differs. Strip the suffix so the pair lands on a SINGLE board (found
     // 2026-07-15: suffixed tags doubled the boards → 36 groups / ~239 clones).
     // The per-audience feed copy is delivered via the CSV, not extra boards.
-    key = key.replace(/-(pros|reta)$/, "");
+    // ONE BOARD PER AUDIENCE (Logan 2026-07-31): the -pros/-reta suffix now
+    // marks rows carrying genuinely distinct per-audience creative (on-image
+    // fields included), so audiences get their own boards instead of being
+    // merged. A 4-style x 3-size P&R order = 24 assets on 8 boards.
     if (!groups[key]) { groups[key] = []; order.push(key); }
     groups[key].push(rows[i]);
   }

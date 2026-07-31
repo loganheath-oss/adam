@@ -84,6 +84,14 @@ def offline_checks():
         got = rp._fix_proper_nouns(a)
         check(f"casing: {a[:34]!r}", got == e, f"got {got!r}")
 
+    # 1b. Proper-noun fixer covers per-audience bullet LISTS (2026-07-31: a
+    # lowercase 'friday' shipped in a per-audience sticky bullet — lists inside
+    # targeting_copy were skipped).
+    _pc = {"targeting_copy": {"Retargeting": {"single_bullets": ["hired by friday"]}}}
+    rp._fix_concept_proper_nouns(_pc)
+    check("casing: per-audience bullet lists covered",
+          _pc["targeting_copy"]["Retargeting"]["single_bullets"][0] == "hired by Friday")
+
     # 2. Smart trim: never dangles a comma/stopword, respects cap
     for text, cap in [("Hire the right expert today, and win", 20),
                       ("One sentence. Another sentence entirely.", 18)]:
@@ -194,6 +202,19 @@ def offline_checks():
           str(_schema_missing))
     check("schema REQUIRES every prompted style field", not _schema_optional,
           str(_schema_optional))
+    # Per-audience extras (Logan 2026-07-31): P&R audience blocks must REQUIRE
+    # the style's own on-image fields — they were generated once and shared,
+    # so Retargeting creatives printed Prospecting's copy.
+    _aud_missing = []
+    for _style in STYLES_24:
+        _fields = EXTRAS_BY_SL.get(_style.strip().lower().replace(" ", ""), [])
+        if not _fields:
+            continue
+        _aud = (rp._concept_schema(_style, True, 6)["properties"]["concepts"]["items"]
+                ["properties"]["targeting_copy"]["properties"]["Prospecting"])
+        _aud_missing += [f"{_style}:{f}" for f in _fields
+                         if f not in _aud["properties"] or f not in _aud["required"]]
+    check("schema REQUIRES style fields PER AUDIENCE", not _aud_missing, str(_aud_missing))
 
     # 11b. Fail-closed selection: _deterministic_selection enforces legal/caps
     # even when review never ranked (the API-failure fallback path).
@@ -381,6 +402,14 @@ def live_checks(all_styles=False):
             _missing_ex = [f"{c.get('concept_id')}:{f}" for c in sel for f in _extras
                            if c.get(f) in (None, "", [])]
             check(f"live extras present: {s}", not _missing_ex, str(_missing_ex[:4]))
+            _aud_missing_ex = []
+            for c in sel:
+                for _an, _ab in (c.get("targeting_copy") or {}).items():
+                    if isinstance(_ab, dict):
+                        _aud_missing_ex += [f"{c.get('concept_id')}.{_an}:{f}"
+                                            for f in _extras if _ab.get(f) in (None, "", [])]
+            check(f"live extras present PER AUDIENCE: {s}", not _aud_missing_ex,
+                  str(_aud_missing_ex[:4]))
         hl = sum(1 for c in sel if str(c.get("headline") or "").strip() and str(c.get("headline_short") or "").strip())
         check(f"live spec: {s}", len(sel) >= 2 and p >= 2 and r >= 2 and oc == len(sel) and hl == len(sel),
               f"sel={len(sel)} P={p} R={r} oc={oc} hl={hl}")

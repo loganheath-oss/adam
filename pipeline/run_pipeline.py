@@ -178,6 +178,18 @@ def _concept_schema(style, is_both, qty):
         aud_props = {f: {"type": "string"} for f in aud_fields}
         if _style_uses_subhead(style):
             aud_props["creative_subhead"] = {"type": "string"}
+        # Per-audience ON-CREATIVE for styles with their own field set (Logan,
+        # 2026-07-31): sticky columns, poll fields, etc. must differ per
+        # audience — they used to be generated once and shared, so Retargeting
+        # creatives printed Prospecting's copy. Required, same as top-level.
+        for f in ((entry or {}).get("char_limits") or {}):
+            if f not in aud_props and f not in ("creative_headline", "creative_subhead", "cta"):
+                aud_props[f] = _prop(f)
+                aud_fields.append(f)
+        for f, spec in (_SCHEMA_EXTRA_FIELDS.get(_k) or {}).items():
+            if f not in aud_props:
+                aud_props[f] = dict(spec)
+                aud_fields.append(f)
         aud = {"type": "object", "properties": aud_props,
                "required": aud_fields, "additionalProperties": False}
         props["targeting_copy"] = {"type": "object",
@@ -323,6 +335,12 @@ def _fix_concept_proper_nouns(concept):
             for _k, _v in _aud.items():
                 if isinstance(_v, str):
                     _aud[_k] = _fix_proper_nouns(_v)
+                elif isinstance(_v, list):
+                    # Per-audience BULLET lists (sticky/us-vs-them columns) —
+                    # added 2026-07-31 with per-audience extras; the fixer
+                    # skipped lists here and a lowercase 'friday' shipped in a
+                    # bullet on the first live run. Every guard, every surface.
+                    _aud[_k] = [_fix_proper_nouns(x) if isinstance(x, str) else x for x in _v]
                 elif isinstance(_v, dict):
                     for _k2, _v2 in _v.items():
                         if isinstance(_v2, str):
@@ -1352,9 +1370,8 @@ def _enforce_lengths(concept, style):
                 # HARD template caps — a Retargeting headline could overflow
                 # the Figma slot with no flag. Every field that reaches the
                 # manifest now gets every guard.
-                for f in ("creative_headline", "creative_subhead"):
-                    cap = hard.get(f)
-                    if isinstance(cap, int):
+                for f, cap in hard.items():
+                    if isinstance(cap, int) and obj.get(f) not in (None, "", []):
                         hard_flags += [f"{aud}.{m}" for m in _field_overflows(obj, f, cap)]
     if hard_flags:
         concept["length_flags"] = hard_flags
@@ -1892,6 +1909,11 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "STYLE is the same for both, but the on-image copy (Text_On_Visual) AND the feed copy\n"
             "must be UNIQUE per audience — provide EVERYTHING twice under a \"targeting_copy\" object.\n"
             "Do NOT give both audiences identical on-image copy.\n"
+            "THIS INCLUDES the style-specific on-image fields (sticky headlines/bullets/columns,\n"
+            "poll question/options/percentages, us-vs-them columns, chat lines, profile fields, …):\n"
+            "write them FRESH for each audience inside its targeting_copy block — Prospecting's\n"
+            "on-creative speaks to a cold reader, Retargeting's to a warm one. Never copy one\n"
+            "audience's on-image fields into the other.\n"
             "- targeting_copy: an object with EXACTLY two keys, \"Prospecting\" and \"Retargeting\".\n"
             "  Each maps to an object with BOTH the on-image and the feed copy for that audience:\n"
             "    ON-IMAGE (Text_On_Visual): creative_headline (follow the matched Style Guide caps),\n"
@@ -4105,6 +4127,28 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
                 _r["Headline"] = _v.get("headline") or _r["Headline"]
                 _r["Headline_Short"] = _v.get("headline_short") or _r["Headline_Short"]
                 _r["Description"] = _v.get("description") or _r["Description"]
+                # STYLE-EXTRA on-image fields — per audience (Logan 2026-07-31:
+                # "the copy that goes on the creative images should be different
+                # for both as well"). Legacy sprints without per-audience extras
+                # keep the base (shared) values.
+                for _col, _f, _is_list in (
+                        ("Us_Headline", "us_headline", False), ("Them_Headline", "them_headline", False),
+                        ("Us_Bullets", "us_bullets", True), ("Them_Bullets", "them_bullets", True),
+                        ("Left_Headline", "left_headline", False), ("Right_Headline", "right_headline", False),
+                        ("Left_Bullets", "left_bullets", True), ("Right_Bullets", "right_bullets", True),
+                        ("Single_Headline", "single_headline", False), ("Single_Bullets", "single_bullets", True),
+                        ("Poll_Question", "poll_question", False), ("Poll_Option_A", "poll_option_a", False),
+                        ("Poll_Pct_A", "poll_pct_a", False), ("Poll_Option_B", "poll_option_b", False),
+                        ("Poll_Pct_B", "poll_pct_b", False),
+                        ("Testimonial_Quote", "testimonial_quote", False),
+                        ("Testimonial_Author", "testimonial_author", False),
+                        ("Profile_Name", "profile_name", False), ("Profile_Title", "profile_title", False),
+                        ("Profile_Left", "profile_left", False), ("Profile_Right", "profile_right", False),
+                        ("Chat_Label", "chat_label", False), ("Chat_Message", "chat_message", False),
+                        ("Button_Text", "button_text", False)):
+                    _val = _v.get(_f)
+                    if _val not in (None, "", []):
+                        _r[_col] = _join_bullets(_val) if _is_list else _val
                 _sfx = _tgt[:4].lower()
                 _r["asset_id"] = f"{base_row['asset_id']}_{_sfx}"
                 _r["concept_tag"] = f"{base_row.get('concept_tag', '')}-{_sfx}"
