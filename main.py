@@ -2788,6 +2788,47 @@ def _run_backup() -> dict:
     return {"ok": ok, "day": day, "files": count, "size_bytes": len(blob)}
 
 
+def _post_daily_slack_digest():
+    """Daily activity digest to Slack (Logan's ask, 2026-07-31): sprints active
+    in the last 24h, open issues, self-check status. Best-effort; no-ops until
+    SLACK_WEBHOOK_URL is set (create an incoming webhook for the channel or a
+    DM and add the env var on Railway — nothing else needed)."""
+    hook = os.environ.get("SLACK_WEBHOOK_URL", "")
+    if not hook:
+        return
+    try:
+        from datetime import timedelta
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+        recent = []
+        for d in RUNS_DIR.iterdir():
+            if not d.is_dir():
+                continue
+            st = sprint_state.read_state(d)
+            ts = st.get("updated_at") or ""
+            try:
+                if datetime.fromisoformat(ts) >= cutoff:
+                    o = _load_json(d / "order.json") if (d / "order.json").exists() else {}
+                    recent.append((d.name, st.get("state", "?"), o.get("driver", "?")))
+            except (ValueError, TypeError):
+                continue
+        issues = db.list_issues(status="open").get("issues", []) or []
+        sc = dict(_LAST_SELFCHECK)
+        failing = [k for k, c in (sc.get("checks") or {}).items() if not c.get("ok")]
+        lines = [f"*ADAM daily* — {datetime.now(timezone.utc).strftime('%b %d')}",
+                 f"Sprints active (24h): {len(recent)}"]
+        for sid, state, driver in recent[:8]:
+            lines.append(f"  • `{sid}` {state} ({driver})")
+        lines.append(f"Open issues: {len(issues)}")
+        for i in issues[:4]:
+            lines.append(f"  • #{i.get('id')} {str(i.get('description'))[:80]}")
+        lines.append("Self-check: " + ("all OK" if sc.get("ok") else f"FAILING: {failing}"))
+        import httpx as _hx
+        _hx.post(hook, json={"text": "\n".join(lines)}, timeout=15)
+        print("[digest] posted daily Slack digest")
+    except Exception as e:
+        print(f"[digest] slack digest skipped: {e}")
+
+
 async def _self_check_loop():
     while True:
         try:
@@ -2797,6 +2838,10 @@ async def _self_check_loop():
             pass
         try:
             await asyncio.get_event_loop().run_in_executor(None, _run_self_check)
+        except Exception:
+            pass
+        try:
+            await asyncio.get_event_loop().run_in_executor(None, _post_daily_slack_digest)
         except Exception:
             pass
         await asyncio.sleep(24 * 3600)

@@ -1,116 +1,72 @@
-UPWORK 
-TONE OF VOICE  
-Upwork Tone of Voice for Paid Ads 
-1) Voice to embody in ads 
-●​ Clear & concise — plain words, specific, get to the point fast.​
- 
-●​ Supportive & perceptive — acknowledge needs, encourage with 
-practical language.​
- 
-●​ Calm, collected, guiding — steer without pressure, offer direction and 
-reassurance.​
- 
-●​ Professional — warm and human, never flippant or pushy.​
- 
-●​ Tone should feel: direct, supportive, considerate, grounded, truthful — 
-with an occasional wink.​
- Never: wordy, robotic, overpromising, irreverent.​
- 
- 
-2) Audience  
-●​ Clients (SMB): Direct, actionable, confident, clear, supportive; 
-sometimes light levity and fun. 
- 
-3) Funnel guidance 
-●​ Awareness (prospecting): Hook, clarity, connection.​
- 
-●​ Consideration (retargeting): Clarity + proof (ratings, verified history).  
- 
-4) Headlines & hooks 
-●​ 95/5 rule: 95% informative/helpful, 5% subtle personality (“wink”).​
- 
-●​ General: “Your shortcut to standout hires”​
- 
-●​ Copilot: “Work smart, not solo with Upwork”​
- 
-●​ AI × Talent: “Advanced AI. Human touch. Exceptional outcomes.”​
- 
-●​ Talent: “Finally, hiring that doesn’t feel like work”​
- 
-●​ Impact: “From ideas to outcomes — fast”​
- 
- 
-5) Offer framing & proof 
-●​ Emphasize ease & speed: post, review, hire fast.​
- 
-●​ Surface trust: ratings, verified history. 
-●​ Suggest cost effectiveness without sounding like we’re cheap or low 
-quality.​
- 
-●​ Clarity first, entertainment second.​
- 
- 
-6) Terminology & naming 
-●​ Use: client (hirer), freelancer/independent contractor/freelance 
-professional (doer). Talent is singular.​
- 
-●​ Uma, Upwork’s Mindful AI™ (first mention). Then “Uma™” or “Uma” if 
-context is clear.​
- 
-●​ AI always uppercase; “artificial intelligence” lowercase.​
- 
-●​ Avoid: click/tap/swipe/press, directional UI (above/below), escrow (say 
-project funds).​
- 
-●​ Follow spelling list: email, website, WiFi, homepage, etc.​
- 
- 
-7) Emojis & punctuation 
-●​ Use sparingly in on-image copy when they make it punchy or fun. Use 
-emojis in description copy in bulleted lists instead of bullet points. ​
-​
- 
-●​ Keep punctuation simple & consistent for scannability.​
- 
- 
-8) On-brand CTAs 
-●​ Always verb-led, device-agnostic: Learn more, Find talent, Post a job, 
-Start free.​
- 
-●​ Avoid “Click here.”​
- 
-●​ Focus on what the user can do.​
- 
- 
-9) Quick ad-copy checklist 
-●​ Clarity in line 1: payoff obvious, short, scannable.​
- 
-●​ Tone: supportive, confident, grounded; subtle wink optional.​
- 
-●​ Audience fit: speak to small businesses​
- 
-●​ Proof: include ratings/verified history when possible.​
- 
-●​ Terminology: correct brand naming, Uma™ handled properly.​
- 
-●​ CTA: single, clear, user-action-led.​
- 
-●​ Compliance: no overpromising; professional & respectful.​
- 
- 
-10) Starter ad-ready lines 
-●​ Prospecting:​
- 
-○​ “Finally, hiring that doesn’t feel like work”​
- 
-○​ “Work smart, not solo with Upwork”​
- 
-○​ “Advanced AI. Human touch. Exceptional outcomes”​
- 
-●​ Retargeting:​
- 
-○​ “Guiding you to go-to talent, fast”​
- 
-○​ “From ideas to outcomes — fast” 
- 
- 
+UPWORK TONE OF VOICE for Paid Ads
+In addition to the instructions you've already been given for writing these ads, apply the following creative standard: work at the level of a senior paid ad strategist and copywriter — the kind an agency would put on their top account. Don't just fill in the required format; develop a real creative concept behind each ad: a clear idea, a hook that earns attention in a crowded feed, and copy that makes someone stop scrolling and act. Every ad you write should have a point of view, not just a message.
+Treat the resource documents below as raw material and guardrails for craft and voice, drawing on each according to its role — some are binding rules, others are creative source material, as detailed below. Within those guardrails, push for original angles, sharp wording, and copy that feels like it was written by a human with a point of view, not generated. Avoid generic ad-speak, filler phrases, and safe, expected framing. If a concept feels like it could run for any brand, it's not done yet.
+When you write descriptor copy (headlines, body copy, CTAs, and their variants), in addition to following the format and version requirements:
+Anchor each version in a distinct angle or emotional entry point — don't just reword the same idea three ways
+Vary rhythm and sentence length so the copy has a pulse, not a monotone
+Favor concrete, specific detail over abstract benefit statements
+Don't be afraid of tension, wit, or a little friction before the resolution
+When you write on-creative copy (the words that live directly on the visual):
+Write for a sub-second read — it has to land before someone scrolls past
+Prioritize punch and clarity over completeness — cut anything that isn't pulling weight
+Some of the documents below are binding guidelines — legal, compliance, style, and format rules that must be followed exactly. Others are reference banks — collections of examples, quotes, and data you can pull from directly or use as a jumping-off point. For the banks, feel free to lift a strong line, headline, or proof point as-is when it fits — just don't let any single example's structure become the default shape you reach for every time. The goal is variety and originality across ads, not a rotating set of the same few lines.
+Guidelines — follow exactly:
+Ad Type Style Guide — format and structural requirements by ad type
+Upwork Writing Style Guide Audit 2025 — voice, tone, vocabulary, grammar conventions
+Revised Legal Guidance Content Guidelines — legal compliance, required disclaimers, restricted claims
+Copy of Marketing claims III Claims — approved/prohibited marketing claims
+Freelancer work categories — category names and terminology
+Reference banks — pull from freely, direct or as inspiration:
+Prospecting ad copy examples Updated 72026 1 — reference examples for prospecting ads
+Retargeting Ad copy examples Updated 72026 1 — reference examples for retargeting ads
+SMB Copy Bank_Phase 3_Final — approved copy bank for SMB-focused ads
+Client Testimonials 2026 — sourced testimonials for social proof (quote accurately when used)
+New & Trending Subcategory Keyword Research Mar 2026 — current keyword and subcategory trends
+1) Voice to embody in ads
+Clear & concise — plain words, specific, get to the point.
+Supportive & perceptive — acknowledge needs, encourage with practical language.
+Encouraging, guiding — steer without pressure.
+Tone should feel: direct, supportive, upbeat, encouraging, truthful, creative and fun — never sarcastic.
+ Never: wordy, robotic, overpromising.
+2) Audience
+ Clients (SMB): Direct, actionable, confident.
+3) Level of awareness
+ Prospecting: Hook, clarity, connection. Assume these readers are Upwork-unaware. Make Upwork's value props very clear. Include reasons to believe along with language that lets them know Upwork is a freelance marketplace, and what they can find and accomplish there.
+Retargeting: Clarity + proof (ratings, verified history). These readers already know Upwork, so every ad needs a reason to come back, not just a prompt to. Pair any return language — direct ("finish your job post") or subtle ("get work done," "complete your most important work") — with a concrete benefit or proof point that answers "what's in it for me if I go back now?" (e.g., 5-star talent, contracts/NDAs/payments built in, speed to hire). Never lead with "come back" language alone; it always needs supporting copy that reminds them why Upwork is worth returning to.
+4) Headlines & hooks
+ 90/10 rule: 90% informative/helpful, 10% subtle personality ("wink").
+Your shortcut to standout hires.
+Work smart, not solo with Upwork.
+Advanced AI. Human touch. Exceptional outcomes.
+Finally, hiring that doesn't feel like work.
+From ideas to outcomes — fast.
+5) Offer framing & proof
+Emphasize ease & speed: post, review, hire fast.
+Surface credibility: ratings, verified history.
+Clarity first, entertainment second.
+6) Terminology & naming
+Use: client (hirer), freelancer/independent contractor/freelance professional (doer). Talent is singular.
+AI always uppercase; "artificial intelligence" lowercase.
+Avoid: click/tap/swipe/press, directional UI (above/below), escrow (say project funds).
+Follow spelling list: email, website, WiFi, homepage, etc.
+7) On-brand CTAs
+Always verb-led, device-agnostic: Learn more, Find talent, Post a job, Start free, Get started.
+Avoid "Click here" and directional language (above/below).
+Focus on what the user can do, not the act of clicking.
+8) Tone & content snippets: reference for voice and substance only
+These are short samples of how Upwork sounds and what it emphasizes — not templates for structure, length, or format. They don't represent headlines, on-creative copy, or the full set of copy variants required for an ad (short/long body copy, short/long headlines, on-creative copy). Those requirements come from your format instructions and the dedicated Prospecting/Retargeting example docs. Use these only to calibrate tone and the kind of substance (value props, proof points, benefits) that belongs in Upwork copy.
+Prospecting:
+Spend less time searching. Find the right pro fast on Upwork and get work moving right away.
+Slacking on a deadline? There's a freelancer for that. Upwork helps you hire on the double, so your team delivers on time.
+When work ramps up, Upwork helps you stay on track with trusted pros you can plug in fast.
+Retargeting:
+You're this close to hiring the perfect pro. Come back to Upwork and pick up where you left off.
+Back where you left off. Finish posting your job on Upwork and let specialized pros come to you.
+Still considering Upwork? You're only a job post away from hiring the perfect 5-star freelancer.
+9) Quick ad-copy checklist
+Clarity in line 1: payoff obvious. Outcome-oriented — what the client wants or gets, not what Upwork does.
+Tone: clear, upbeat, creative and fun — never sarcastic.
+Audience: tailored to Prospecting or Retargeting.
+Proof: include ratings/verified history when possible.
+Retargeting only: return language is paired with a benefit or proof point, not left on its own.
+CTA: single, clear, verb-led, user-action-oriented.
