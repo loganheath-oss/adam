@@ -82,6 +82,9 @@ TASKS: list[dict] = [
      "level": "PRESENT", "source": "tool_get_sprint → order.json.brief"},
     {"surface": "gate_2", "task": "Show which reference docs loaded (names + sizes)",
      "level": "PRESENT", "source": "tool_get_references → context.json"},
+    {"surface": "gate_2", "task": "Surface every intake warning (unfilled/placeholder brief, style with no Figma template) BEFORE asking for approval",
+     "level": "PRESENT", "source": "tool_get_sprint → order.json.intake_warnings (computed by 00_intake.validate_payload)",
+     "notes": "Quote each warning; never soften or omit one. An empty list means the order passed intake cleanly and no warning may be invented."},
     {"surface": "gate_2", "task": "Brief breakdown (themes, angles, constraints extracted for copy gen)",
      "level": "EXPLAIN", "validators": "json_schema on the breakdown call; raw brief always shown beside it"},
     # ── Gate 3 — Copy Review ─────────────────────────────────────────────────

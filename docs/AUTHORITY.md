@@ -23,6 +23,7 @@ Which tasks ADAM's model has authority to CREATE, and which it is demoted to PRE
 | PRESENT | Show the order (driver, platform, targeting, styles, quantities, resolutions) | tool_get_sprint → order.json |
 | PRESENT | Show the brief VERBATIM and COMPLETE | tool_get_sprint → order.json.brief |
 | PRESENT | Show which reference docs loaded (names + sizes) | tool_get_references → context.json |
+| PRESENT | Surface every intake warning (unfilled/placeholder brief, style with no Figma template) BEFORE asking for approval | tool_get_sprint → order.json.intake_warnings (computed by 00_intake.validate_payload) |
 | EXPLAIN | Brief breakdown (themes, angles, constraints extracted for copy gen) | json_schema on the breakdown call; raw brief always shown beside it |
 
 ## Gate 3 — Copy Review

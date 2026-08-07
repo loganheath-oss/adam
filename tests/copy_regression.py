@@ -191,6 +191,24 @@ def offline_checks():
     _pl_payload["brief"] = _tmpl_brief
     _pl_payload.pop("intake_warnings", None)
     intake.validate_payload(_pl_payload)
+    # 8c. Intake warnings must reach the ORDER. They were computed on the payload
+    # and dropped by build_order, so no warning ever reached a human at Gate 2 —
+    # including the placeholder-brief warning. The order is the agent's source.
+    _warn_payload = json.loads(json.dumps(payload))
+    _warn_payload["brief"] = _tmpl_brief
+    _warn_payload.pop("intake_warnings", None)
+    intake.validate_payload(_warn_payload)
+    _built = intake.build_order(_warn_payload, "2026-08-test-warnings")
+    check("build_order carries intake_warnings into the order",
+          any("UNFILLED" in w for w in _built.get("intake_warnings", [])),
+          str(_built.get("intake_warnings"))[:160])
+    _clean_payload = json.loads(json.dumps(payload))
+    _clean_payload["brief"] = _real_brief
+    _clean_payload.pop("intake_warnings", None)
+    intake.validate_payload(_clean_payload)
+    check("a clean order carries an intake_warnings key (empty, not missing)",
+          "intake_warnings" in intake.build_order(_clean_payload, "2026-08-test-clean"))
+
     check("placeholder brief surfaces as an intake warning",
           any("UNFILLED" in w for w in _pl_payload.get("intake_warnings", [])),
           str(_pl_payload.get("intake_warnings"))[:160])

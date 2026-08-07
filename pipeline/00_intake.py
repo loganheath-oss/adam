@@ -370,6 +370,13 @@ def build_order(payload: dict, sprint_id: str) -> dict:
         "platform":        primary_platform,
         "batches":         batches,
         "brief":           payload.get("brief", ""),
+        # Carry the non-blocking intake warnings INTO the order. They were being
+        # computed in validate_payload, written onto the payload, and then
+        # dropped here — so no warning ever reached a human at Gate 2: not the
+        # missing-template warning, not the empty-brief warning, and not the
+        # placeholder-brief warning added 2026-08-07. The order is what the Gate
+        # 2 agent reads, so this is the only channel that surfaces them.
+        "intake_warnings": list(payload.get("intake_warnings") or []),
         "output_path":     f"Upwork/Sprints/{sprint_id}/Review-Queue",
         "pipeline_state": {
             "stage_00_intake":          "complete",
