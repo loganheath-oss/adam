@@ -80,6 +80,57 @@ def normalize_style(raw: str) -> str | None:
     return _STYLE_LOOKUP.get(base.lower())
 
 
+# Brief scaffolding that means "nobody filled this in". A submitted brief made
+# ONLY of the order form's own template text is worse than an empty one: it
+# looks like direction, so it reads as intentional at Gate 2 while carrying zero
+# information. Live incident 2026-08-04 (Sarah's first solo sprint) — the gate
+# caught it because the agent read the text, not because intake flagged it.
+# Non-blocking by design: this warns loudly, the human still decides.
+_BRIEF_SECTION_HEADERS = ("theme", "copy must-dos", "design direction", "resources")
+_BRIEF_PLACEHOLDER_RE = re.compile(
+    r"(\(\s*(one or two sentences|a required phrase|a visual|a reference)[^)]*\))"
+    r"|(\{\{[^}]*\}\})"                      # {{slot}}
+    r"|(\[\s*(fill|insert|todo|tbd)[^\]]*\])"  # [fill this in], [TBD ...]
+    r"|(\bremove this line if none\b)"
+    r"|(\bxxx+\b)"
+    r"|(\blorem ipsum\b)",
+    re.IGNORECASE,
+)
+
+
+def _placeholder_brief_report(brief: str) -> str | None:
+    """Return a warning string if the brief is (mostly) unfilled template text.
+
+    Returns None when the brief carries real content. Deliberately conservative:
+    a brief with genuine direction alongside one leftover placeholder line still
+    passes with a lighter note only when placeholders dominate.
+    """
+    if not isinstance(brief, str) or not brief.strip():
+        return None
+    lines = [ln.strip() for ln in brief.splitlines() if ln.strip()]
+    if not lines:
+        return None
+
+    substantive = []
+    for ln in lines:
+        bare = ln.lstrip("-*# ").strip()
+        low = bare.lower().rstrip(":")
+        if low in _BRIEF_SECTION_HEADERS:      # a section header carries no direction
+            continue
+        if _BRIEF_PLACEHOLDER_RE.search(bare):  # unfilled scaffolding
+            continue
+        if len(bare) < 3:
+            continue
+        substantive.append(bare)
+
+    if substantive:
+        return None
+    return ("Brief looks UNFILLED — it contains only the order form's template "
+            "text (section headers and example placeholders), no actual direction. "
+            "Copy generation would be guessing. Replace the brief before approving "
+            "Gate 2, or confirm explicitly that generic copy is intended.")
+
+
 def validate_payload(payload: dict) -> list[str]:
     """
     Validate the incoming order form payload.
@@ -202,8 +253,13 @@ def validate_payload(payload: dict) -> list[str]:
                         warnings.append(_w)
         except Exception:
             pass
-        if not str(payload.get("brief") or "").strip() and                 "No brief provided — copy will be generic. Confirm this is intentional at Gate 2." not in warnings:
+        _brief_raw = str(payload.get("brief") or "")
+        if not _brief_raw.strip() and                 "No brief provided — copy will be generic. Confirm this is intentional at Gate 2." not in warnings:
             warnings.append("No brief provided — copy will be generic. Confirm this is intentional at Gate 2.")
+        else:
+            _ph = _placeholder_brief_report(_brief_raw)
+            if _ph and _ph not in warnings:
+                warnings.append(_ph)
 
         # Resolutions
         resolutions = batch.get("resolutions", [])

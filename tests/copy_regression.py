@@ -164,6 +164,37 @@ def offline_checks():
     errs = intake.validate_payload(payload)
     check("intake accepts 24-style payload", not errs, str(errs)[:120])
 
+    # 8b. Placeholder-brief detection (live incident 2026-08-04: Sarah submitted
+    # the order form's own template text as the brief; intake was blind to it).
+    _tmpl_brief = (
+        "THEME\n(One or two sentences — the single core message or angle every ad "
+        "should lead with.)\n\nCOPY MUST-DOs\n- (A required phrase, claim to feature, "
+        "tone note, or do/don't. Remove this line if none.)\n\nDESIGN DIRECTION\n- "
+        "(A visual, style, or ad-format cue for the image stage. Remove this line if "
+        "none.)\n\nRESOURCES\n- (A reference link, doc, or example asset. Remove this "
+        "line if none.)"
+    )
+    _real_brief = (
+        "THEME\nHiring shouldn't feel like a second job — show post-to-hired speed.\n\n"
+        "COPY MUST-DOs\n- Use \"5-star talent\" at least once\n- No \"escrow\", say "
+        "project funds\n\nDESIGN DIRECTION\n- Warm office lifestyle, not stock-y"
+    )
+    check("intake flags a placeholder-only brief",
+          bool(intake._placeholder_brief_report(_tmpl_brief)))
+    check("intake does NOT flag a real brief",
+          not intake._placeholder_brief_report(_real_brief))
+    check("intake does NOT flag a brief with one leftover placeholder line",
+          not intake._placeholder_brief_report(
+              "THEME\nSpeed to hire is the whole story.\n\nCOPY MUST-DOs\n"
+              "- (A required phrase. Remove this line if none.)"))
+    _pl_payload = json.loads(json.dumps(payload))
+    _pl_payload["brief"] = _tmpl_brief
+    _pl_payload.pop("intake_warnings", None)
+    intake.validate_payload(_pl_payload)
+    check("placeholder brief surfaces as an intake warning",
+          any("UNFILLED" in w for w in _pl_payload.get("intake_warnings", [])),
+          str(_pl_payload.get("intake_warnings"))[:160])
+
     # 9. Craft bar contains no banned/restricted terms (the "resumes" incident)
     banned = ["resume", "vetted", "staffing", "guarantee", "manage talent", "salary"]
     bar = rp._CRAFT_BAR.lower()
