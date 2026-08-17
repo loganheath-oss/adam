@@ -1533,6 +1533,7 @@ async def sprint_download_zip(sprint_id: str):
     the access token, same as the chat UI. Built into a spooled temp file
     so we don't hold the whole archive in memory."""
     _validate_sprint_id(sprint_id)
+    _log_access("sprint.downloaded", sprint_id)
     sprint_dir = _safe_sprint_dir(sprint_id)
     if not sprint_dir.exists():
         raise HTTPException(status_code=404, detail="Sprint not found")
@@ -2082,12 +2083,52 @@ async def sprint_chat_history(sprint_id: str):
     return JSONResponse({"sprint_id": sprint_id, "messages": messages, "count": len(messages)})
 
 
+# ── Access logging ───────────────────────────────────────────────────────────
+# Logan 2026-08-17: "I want to be able to monitor all activity no matter how
+# small." Until now only ACTIONS were logged (submit, approve, chat, generate),
+# so someone opening a sprint, reading the brief and closing the tab left no
+# trace at all — "nobody looked" and "four people looked" produced identical
+# logs. These helpers record passive access too.
+_VIEW_DEDUP: dict[tuple, float] = {}
+_VIEW_WINDOW_S = 60.0  # a refresh or a second tab inside a minute is one view
+
+
+def _sprint_actor(sprint_id: str) -> str | None:
+    """Who is associated with this sprint (driver/email from the order)."""
+    try:
+        order = _load_json(RUNS_DIR / sprint_id / "order.json") or {}
+        return order.get("email") or order.get("driver") or None
+    except Exception:
+        return None
+
+
+def _log_access(action: str, sprint_id: str, meta: dict | None = None) -> None:
+    """Record a passive access event, deduped inside a short window."""
+    try:
+        import time as _t
+        key = (action, sprint_id)
+        now = _t.time()
+        last = _VIEW_DEDUP.get(key, 0.0)
+        if now - last < _VIEW_WINDOW_S:
+            return
+        _VIEW_DEDUP[key] = now
+        if len(_VIEW_DEDUP) > 2000:  # bound memory
+            for k, v in list(_VIEW_DEDUP.items()):
+                if now - v > 3600:
+                    _VIEW_DEDUP.pop(k, None)
+        db.log_event(action, user_email=_sprint_actor(sprint_id),
+                     sprint_id=sprint_id, meta=meta or {})
+    except Exception:
+        pass
+
+
 @app.get("/sprints/{sprint_id}/handoff", response_class=HTMLResponse)
 async def sprint_handoff(sprint_id: str):
     """Post-submit confirmation page. Shown to whoever submitted the order so
     they know the creative team has been notified, and so they can grab the
     chat link if they ARE the creative team."""
     _validate_sprint_id(sprint_id)
+    _log_access("sprint.handoff_viewed", sprint_id)
     sprint_dir = _safe_sprint_dir(sprint_id)
     if not sprint_dir.exists():
         return HTMLResponse("<h1>Sprint not found</h1>", status_code=404)
@@ -3277,7 +3318,12 @@ async def sprint_chat_stream(sprint_id: str, request: Request):
                 "text": text,
             })
             try:
-                db.log_event("chat.asked", sprint_id=sprint_id, meta={"question_len": len(text)})
+                db.log_event("chat.asked", user_email=_sprint_actor(sprint_id),
+                             sprint_id=sprint_id,
+                             # Flag the canned "show me what's in it" button so a
+                             # button press is not mistaken for a typed question.
+                             meta={"question_len": len(text),
+                                   "preset": text.strip().lower().startswith(("show me", "what's in", "whats in"))})
             except Exception:
                 pass
 
@@ -3370,6 +3416,8 @@ button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border
   </form>
 </div></body></html>""")
 
+    # Passive view: someone opened this sprint and is authenticated.
+    _log_access("sprint.viewed", sprint_id)
     s = _sprint_data(sprint_id)
 
     def _badge(state):
