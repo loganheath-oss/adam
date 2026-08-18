@@ -22,7 +22,7 @@ import sys
 import threading
 import uuid
 import sprint_state
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from contextlib import asynccontextmanager
@@ -2829,6 +2829,124 @@ def _run_backup() -> dict:
     return {"ok": ok, "day": day, "files": count, "size_bytes": len(blob)}
 
 
+# Sprint size is dominated by generated imagery. A completed sprint runs about
+# 60MB, and the Railway volume is capped at 500MB on the current plan (the CLI
+# cannot resize it; larger volumes are a paid-plan feature). So roughly seven
+# finished sprints fill the disk, at which point the disk guard refuses new work
+# — which is exactly what blocked Adrie on 2026-08-18.
+#
+# Archiving deletes the imagery of sprints that are DONE and old enough to be
+# safely cold. Their knowledge (order, copy, manifest, chat, gate decisions) is
+# untouched on the volume AND already in the nightly Postgres backup, so nothing
+# irreplaceable is lost. Note `exports/` is hard-linked to `images/`, so both
+# must go together or nothing is actually reclaimed.
+ARCHIVE_AFTER_DAYS = int(os.environ.get("ADAM_ARCHIVE_AFTER_DAYS", "10") or 10)
+ARCHIVE_HEAVY_DIRS = ("images", "exports", "finals")
+
+
+def _sprint_heavy_bytes(d: Path) -> int:
+    """On-disk bytes of a sprint's image folders, counting hard-linked files once."""
+    seen: set = set()
+    total = 0
+    for sub in ARCHIVE_HEAVY_DIRS:
+        p = d / sub
+        if not p.is_dir():
+            continue
+        for f in p.rglob("*"):
+            try:
+                if not f.is_file():
+                    continue
+                st = f.stat()
+                if st.st_ino in seen:   # hard link to a file already counted
+                    continue
+                seen.add(st.st_ino)
+                total += st.st_size
+            except Exception:
+                pass
+    return total
+
+
+def _archive_sprint(d: Path) -> dict:
+    """Remove the heavy image folders from one sprint, leaving a marker."""
+    import shutil
+    freed = _sprint_heavy_bytes(d)
+    removed = []
+    for sub in ARCHIVE_HEAVY_DIRS:
+        p = d / sub
+        if p.is_dir():
+            try:
+                shutil.rmtree(p)
+                removed.append(sub)
+            except Exception as e:
+                print(f"[archive] {d.name}/{sub} failed: {e}")
+    if removed:
+        try:
+            _atomic_write_json(d / "archived.json", {
+                "archived_at": datetime.now(timezone.utc).isoformat(),
+                "removed": removed,
+                "freed_mb": round(freed / 1e6, 1),
+                "note": ("Imagery removed to reclaim volume space. Copy, manifest, "
+                         "chat and gate decisions are intact here and in the nightly "
+                         "backup. Images are regenerable from the recorded prompts."),
+            })
+        except Exception:
+            pass
+    return {"sprint_id": d.name, "freed_mb": round(freed / 1e6, 1), "removed": removed}
+
+
+def _run_archive(force: bool = False) -> dict:
+    """Archive completed sprints older than ARCHIVE_AFTER_DAYS. Safe by design:
+    only touches state == complete, never a sprint still in flight."""
+    out = {"archived": [], "freed_mb": 0.0, "skipped": 0}
+    if not RUNS_DIR.exists():
+        return out
+    cutoff = datetime.now(timezone.utc) - timedelta(days=ARCHIVE_AFTER_DAYS)
+    for d in sorted(RUNS_DIR.iterdir()):
+        if not d.is_dir():
+            continue
+        if (d / "archived.json").exists():
+            continue
+        try:
+            st = sprint_state.read_state(d)
+        except Exception:
+            continue
+        if str(st.get("state")) != "complete":
+            out["skipped"] += 1
+            continue
+        if not force:
+            try:
+                updated = datetime.fromisoformat(str(st.get("updated_at")))
+                if updated > cutoff:
+                    out["skipped"] += 1
+                    continue
+            except Exception:
+                out["skipped"] += 1
+                continue
+        if not any((d / sub).is_dir() for sub in ARCHIVE_HEAVY_DIRS):
+            continue
+        r = _archive_sprint(d)
+        if r["removed"]:
+            out["archived"].append(r)
+            out["freed_mb"] += r["freed_mb"]
+            try:
+                db.log_event("sprint.archived", sprint_id=d.name,
+                             meta={"freed_mb": r["freed_mb"], "removed": r["removed"]})
+            except Exception:
+                pass
+    out["freed_mb"] = round(out["freed_mb"], 1)
+    if out["archived"]:
+        print(f"[archive] reclaimed {out['freed_mb']}MB from {len(out['archived'])} sprint(s)")
+    return out
+
+
+@app.post("/admin/archive", dependencies=[Depends(require_api_key)])
+async def admin_archive(force: bool = False):
+    """Run archiving on demand. ?force=1 archives every completed sprint
+    regardless of age (used when the volume is already tight)."""
+    loop = asyncio.get_event_loop()
+    return JSONResponse(await loop.run_in_executor(None, _run_archive, force))
+
+
 def _post_daily_slack_digest():
     """Daily activity digest to Slack (Logan's ask, 2026-07-31): sprints active
     in the last 24h, open issues, self-check status. Best-effort; no-ops until
@@ -2875,6 +2993,12 @@ async def _self_check_loop():
         try:
             # Backup FIRST so the self-check's backup-freshness gauge sees today's.
             await asyncio.get_event_loop().run_in_executor(None, _run_backup)
+        except Exception:
+            pass
+        try:
+            # Only after the backup succeeds — never delete imagery on a day the
+            # knowledge did not make it off the volume.
+            await asyncio.get_event_loop().run_in_executor(None, _run_archive)
         except Exception:
             pass
         try:
