@@ -2536,6 +2536,201 @@ def _compute_health() -> dict:
     return health
 
 
+_DASHBOARD_HTML = """<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>ADAM</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+ *{box-sizing:border-box;margin:0;padding:0}
+ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f6f7f8;color:#111;padding:20px 16px 60px}
+ .wrap{max-width:1100px;margin:0 auto}
+ h1{font-size:18px;font-weight:700;margin-bottom:2px}
+ .sub{font-size:12px;color:#6b7280;margin-bottom:18px}
+ .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px}
+ .card{background:#fff;border:1px solid #e5e7eb;border-radius:9px;padding:12px 14px}
+ .card .l{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em}
+ .card .v{font-size:21px;font-weight:700;margin-top:3px}
+ .ok{color:#15803d}.warn{color:#b45309}.bad{color:#b91c1c}
+ h2{font-size:13px;font-weight:700;margin:22px 0 8px;text-transform:uppercase;letter-spacing:.05em;color:#374151}
+ table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:9px;overflow:hidden;font-size:13px}
+ th{text-align:left;padding:8px 11px;background:#f9fafb;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#6b7280;border-bottom:1px solid #e5e7eb}
+ td{padding:8px 11px;border-bottom:1px solid #f3f4f6;vertical-align:top}
+ tr:last-child td{border-bottom:none}
+ a{color:#0b7285;text-decoration:none}a:hover{text-decoration:underline}
+ .pill{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600}
+ .g2{background:#fef3c7;color:#92400e}.g3,.g4,.g5,.g6{background:#dbeafe;color:#1e40af}
+ .done{background:#dcfce7;color:#166534}.run{background:#ede9fe;color:#5b21b6}
+ .mut{color:#6b7280}
+ .issue{background:#fff;border:1px solid #e5e7eb;border-left:3px solid #f59e0b;border-radius:7px;padding:9px 12px;margin-bottom:7px;font-size:13px}
+ .stale{color:#b91c1c;font-weight:600}
+ #err{background:#fee2e2;color:#991b1b;padding:9px 12px;border-radius:7px;margin-bottom:14px;display:none;font-size:13px}
+</style></head><body><div class="wrap">
+<h1>ADAM</h1><div class="sub" id="stamp">loading…</div>
+<div id="err"></div>
+<div class="cards" id="cards"></div>
+<h2>Sprints</h2><div id="sprints"></div>
+<h2>Open issues <span id="ic" class="mut"></span></h2><div id="issues"></div>
+<h2>Recent activity</h2><div id="events"></div>
+</div>
+<script>
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ago = h => h==null?'':(h<1?Math.round(h*60)+'m':(h<48?h.toFixed(1)+'h':Math.round(h/24)+'d'));
+function pill(st){
+  st = st||'';
+  let c = st==='complete'?'done':(st.startsWith('resuming')||st.startsWith('running')?'run':
+          (st==='awaiting_gate_2'?'g2':'g3'));
+  return '<span class="pill '+c+'">'+esc(st.replace('awaiting_gate_','gate '))+'</span>';
+}
+async function load(){
+  let d;
+  try { const r = await fetch('/admin/dashboard.json'); if(!r.ok) throw new Error(r.status===401?'Session expired — reload to sign in':('HTTP '+r.status)); d = await r.json(); }
+  catch(e){ const el=document.getElementById('err'); el.style.display='block'; el.textContent=e.message; return; }
+  document.getElementById('err').style.display='none';
+  document.getElementById('stamp').textContent = 'updated ' + new Date(d.generated_at).toLocaleString() + ' · refreshes every 60s';
+
+  const v = (d.health&&d.health.volume)||{}, sc = d.selfcheck||{};
+  const bk = ((sc.checks||{}).backup)||{};
+  const waiting = d.sprints.filter(s=>String(s.state||'').startsWith('awaiting')).length;
+  const stale = d.sprints.filter(s=>String(s.state||'').startsWith('awaiting') && (s.age_hours||0) > 168).length;
+  const vc = v.pct==null?'':(v.pct>85?'bad':(v.pct>70?'warn':'ok'));
+  document.getElementById('cards').innerHTML = [
+    ['Sprints', d.sprints.length, ''],
+    ['Waiting on a person', waiting, stale? 'warn':''],
+    ['Parked over 7 days', stale, stale? 'bad':'ok'],
+    ['Open issues', d.issues.length, d.issues.length? 'warn':'ok'],
+    ['Volume', (v.pct==null?'—':v.pct+'%'), vc],
+    ['Backup', bk.ok===false?'FAIL':'OK', bk.ok===false?'bad':'ok'],
+  ].map(([l,val,c]) => '<div class="card"><div class="l">'+l+'</div><div class="v '+c+'">'+esc(val)+'</div></div>').join('');
+
+  document.getElementById('sprints').innerHTML =
+    '<table><tr><th>Sprint</th><th>State</th><th>Driver</th><th>Last touched</th><th>Size</th></tr>' +
+    (d.sprints.length? d.sprints.map(s=>'<tr><td><a href="/sprints/'+esc(s.sprint_id)+'">'+esc(s.sprint_id.slice(-12))+'</a>'+(s.archived?' <span class="mut">archived</span>':'')+'</td><td>'+pill(s.state)+
+      '</td><td>'+esc(s.driver||'')+'</td><td'+((s.age_hours||0)>168&&String(s.state||'').startsWith('awaiting')?' class="stale"':'')+'>'+ago(s.age_hours)+
+      ' ago</td><td>'+(s.size_mb?s.size_mb+' MB':'—')+'</td></tr>').join('') : '<tr><td colspan=5 class="mut">none</td></tr>') + '</table>';
+
+  document.getElementById('ic').textContent = d.issues.length? '('+d.issues.length+')':'';
+  document.getElementById('issues').innerHTML = d.issues.length? d.issues.map(i=>
+    '<div class="issue"><b>#'+esc(i.id)+'</b> <span class="mut">'+esc(i.category||'')+
+    (i.sprint_id?' · '+esc(String(i.sprint_id).slice(-12)):'')+'</span><br>'+esc(String(i.description||'').slice(0,300))+'</div>').join('')
+    : '<div class="mut" style="font-size:13px">none</div>';
+
+  document.getElementById('events').innerHTML =
+    '<table><tr><th>When</th><th>Event</th><th>Who</th><th>Sprint</th></tr>' +
+    (d.events.length? d.events.map(e=>'<tr><td class="mut">'+esc(String(e.ts||'').slice(0,16).replace('T',' '))+
+      '</td><td>'+esc(e.action)+'</td><td>'+esc(e.user||e.user_email||'')+'</td><td>'+
+      (e.sprint_id?'<a href="/sprints/'+esc(e.sprint_id)+'">'+esc(String(e.sprint_id).slice(-12))+'</a>':'')+'</td></tr>').join('')
+      : '<tr><td colspan=4 class="mut">no activity</td></tr>') + '</table>';
+}
+load(); setInterval(load, 60000);
+</script></body></html>"""
+
+
+@app.get("/admin/dashboard.json")
+async def admin_dashboard_json(request: Request):
+    """Everything the ops dashboard shows, in one payload. Session-gated so the
+    page can fetch it without an API key ever reaching the browser."""
+    if not _valid_session(request.cookies.get(_SESSION_COOKIE)):
+        return JSONResponse({"error": "not authenticated"}, status_code=401)
+    now = datetime.now(timezone.utc)
+
+    sprints = []
+    if RUNS_DIR.exists():
+        for d in sorted(RUNS_DIR.iterdir()):
+            if not d.is_dir():
+                continue
+            try:
+                st = sprint_state.read_state(d)
+                order = _load_json(d / "order.json") or {}
+                size = 0
+                seen = set()
+                for f in d.rglob("*"):
+                    try:
+                        if f.is_file():
+                            stt = f.stat()
+                            if stt.st_ino in seen:
+                                continue
+                            seen.add(stt.st_ino)
+                            size += stt.st_size
+                    except Exception:
+                        pass
+                updated = str(st.get("updated_at") or "")
+                age_h = None
+                try:
+                    age_h = round((now - datetime.fromisoformat(updated)).total_seconds() / 3600, 1)
+                except Exception:
+                    pass
+                sprints.append({
+                    "sprint_id": d.name,
+                    "state": st.get("state"),
+                    "driver": order.get("driver"),
+                    "updated_at": updated,
+                    "age_hours": age_h,
+                    "size_mb": round(size / 1e6, 1),
+                    "archived": (d / "archived.json").exists(),
+                })
+            except Exception:
+                pass
+    sprints.sort(key=lambda x: x.get("updated_at") or "", reverse=True)
+
+    try:
+        events = (db.activity_feed(since_days=14, limit=40) or {}).get("events", [])
+    except Exception:
+        events = []
+    try:
+        issues = (db.list_issues("open") or {}).get("issues", [])
+    except Exception:
+        issues = []
+    try:
+        health = _compute_health()
+    except Exception:
+        health = {}
+    sc = dict(_LAST_SELFCHECK) if _LAST_SELFCHECK else {}
+    return JSONResponse({
+        "generated_at": now.isoformat(),
+        "sprints": sprints,
+        "events": events,
+        "issues": issues,
+        "health": health,
+        "selfcheck": sc,
+        "archive_after_days": ARCHIVE_AFTER_DAYS,
+    })
+
+
+@app.post("/admin/auth")
+async def admin_auth(request: Request):
+    """Browser login for the dashboard. Same session cookie as the sprint pages."""
+    form = await request.form()
+    api_key = (form.get("api_key") or "").strip()
+    configured = _configured_key()
+    if not configured:
+        return HTMLResponse("PIPELINE_API_KEY is not configured.", status_code=503)
+    if not hmac.compare_digest(configured, api_key):
+        return RedirectResponse(url="/admin/dashboard?auth_error=1", status_code=303)
+    r = RedirectResponse(url="/admin/dashboard", status_code=303)
+    r.set_cookie(key=_SESSION_COOKIE, value=_session_token(configured),
+                 httponly=True, samesite="lax", max_age=86400 * 7)
+    return r
+
+
+@app.get("/admin/dashboard", response_class=HTMLResponse)
+async def admin_dashboard(request: Request, auth_error: str = ""):
+    """Ops dashboard. Logan 2026-08-19: "I need all of this logged onto a
+    dashboard I can check without having to prompt you." One page, everything
+    the daily digest reports, auto-refreshing. Bookmark it."""
+    if not _valid_session(request.cookies.get(_SESSION_COOKIE)):
+        err = '<p style="color:#dc2626;font-size:13px">Incorrect key.</p>' if auth_error else ""
+        return HTMLResponse(f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>ADAM dashboard</title><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;
+display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}}
+.b{{background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.1);padding:32px;width:340px}}
+input{{width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:6px;margin-bottom:12px;font-size:14px}}
+button{{width:100%;padding:10px;background:#14a800;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer}}
+</style></head><body><div class="b"><h2 style="margin:0 0 16px;font-size:16px">ADAM dashboard</h2>{err}
+<form method="post" action="/admin/auth"><input type="password" name="api_key" placeholder="API key" autofocus required>
+<button type="submit">Continue</button></form></div></body></html>""")
+
+    return HTMLResponse(_DASHBOARD_HTML)
+
+
 @app.get("/admin/digest", dependencies=[Depends(require_api_key)])
 async def admin_digest(days: int = 7):
     """Period summary for async catch-up (Bree's change log / Logan's Sept review),
