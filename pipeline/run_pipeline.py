@@ -3437,7 +3437,13 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                             print(f"    {style} — library lookup failed: {e}")
                     elif style in SKIP_IMAGE:
                         method = "skip"
-                        prompt = ""
+                        # Not empty: operators read blank prompt+photo fields as
+                        # "no visual direction was generated" and filed it as a
+                        # defect (issue #8, Aug 2026). Say WHY the row is skipped.
+                        prompt = ("(by design: this style's template is "
+                                  "self-contained — the pipeline generates no "
+                                  "image and the plugin keeps the template's "
+                                  "built-in imagery)")
                     elif style in BACKGROUND_ONLY or style == "Text Based":
                         _bg = _pick_background(library_cache, used_photo_ids)
                         if _bg:
