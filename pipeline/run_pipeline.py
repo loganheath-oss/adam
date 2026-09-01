@@ -493,6 +493,26 @@ def _dedupe_concept_tags(concepts):
     return concepts
 
 
+def _concept_has_placeholder_copy(concept):
+    """True if any copy field is a literal 'placeholder' stand-in. Shipped twice
+    in August (Adrie's changelog item 3; issues 9/10/11): a concept whose every
+    field read \"Placeholder\" was selected at rank 6 / score 1 and went out in
+    delivered files. Deterministic guard — never ship, never select."""
+    _pat = re.compile(r"^\s*\[?\s*placeholder\s*\]?\s*$", re.I)
+
+    def _scan(v):
+        if isinstance(v, str):
+            return bool(_pat.match(v))
+        if isinstance(v, list):
+            return any(_scan(x) for x in v)
+        if isinstance(v, dict):
+            return any(_scan(x) for x in v.values())
+        return False
+
+    return any(k not in ("review_notes", "concept_tag") and _scan(v)
+               for k, v in concept.items())
+
+
 def _deterministic_selection(reviewed, target, style):
     """FAIL-CLOSED enforcement pass — runs after review on EVERY path (ranked,
     API-error fallback, exception fallback). Review judges; this enforces.
@@ -507,6 +527,14 @@ def _deterministic_selection(reviewed, target, style):
        skipped if the diverse pool runs short. Legal-flagged NEVER selected.
     """
     for concept in reviewed:
+        if _concept_has_placeholder_copy(concept):
+            concept["placeholder_flag"] = True
+            concept["selected"] = False
+            concept["rank"] = 99
+            if "⚠ PLACEHOLDER" not in concept.get("review_notes", ""):
+                concept["review_notes"] = ("⚠ PLACEHOLDER — literal stand-in copy, "
+                                           "auto-rejected (never shippable). "
+                                           + concept.get("review_notes", ""))
         if concept.get("legal_flags") or concept.get("length_flags"):
             concept["selected"] = False
             concept["rank"] = 99
@@ -530,7 +558,8 @@ def _deterministic_selection(reviewed, target, style):
                     + ", ".join(concept["length_warnings"]) + ". "
                     + concept.get("review_notes", ""))
 
-    eligible = [c for c in reviewed if not c.get("legal_flags")]
+    eligible = [c for c in reviewed
+                if not c.get("legal_flags") and not c.get("placeholder_flag")]
     eligible.sort(key=lambda c: (not c.get("brief_quote_used"),
                                  bool(c.get("length_flags")),
                                  bool(c.get("length_warnings")),
@@ -2295,6 +2324,12 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                     # response is guaranteed-valid JSON in the declared shape (2026-07-28).
                     "output_config": {"format": {"type": "json_schema",
                                                  "schema": _concept_schema(style, _is_both, qty)}},
+                    # CREATIVITY DIAL (Adrie 2026-08: "dial up the weird / outside of
+                    # the box thinking" for concepts). Applies ONLY to concept
+                    # generation — review/judging stays at the API default so scoring
+                    # doesn't get noisier. Unset = API default.
+                    **({"temperature": float(os.environ["ADAM_COPY_TEMPERATURE"])}
+                       if os.environ.get("ADAM_COPY_TEMPERATURE") else {}),
                     **_thinking_params(),
                 },
                 # Full untruncated ref pack + up to 8000 output tokens: a cold
@@ -3951,8 +3986,15 @@ def stage_05_figma_assembly(sprint_id, image_rows, image_results):
 # STAGE 06: DELIVER (local version)
 # =============================================================================
 
-def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
-    """Package everything into a manifest CSV and summary."""
+def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results,
+                     preliminary=False):
+    """Package everything into a manifest CSV and summary.
+
+    preliminary=True (called at the end of resume_gate_4) writes the manifest
+    and summary BEFORE Gate 5 so the reviewer has real rows to look at, but
+    skips the gate-5 veto reconcile (no veto has happened yet) and marks the
+    summary preliminary with no completed_at. The final call on Gate 5
+    approval rebuilds both with vetoes honored."""
     print("\n" + "="*60)
     print("  STAGE 06: DELIVER")
     print("="*60)
@@ -3978,7 +4020,7 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
         # source image is gone, remove the export twins and mark the veto.
         _src_generated = row.get("generation_method") in ("gemini_generate", "text_background")
         _src_missing = _src_generated and (not img_path or not Path(img_path).exists())
-        if _src_missing and has_export:
+        if not preliminary and _src_missing and has_export:
             for _suffix in ("", "_final"):
                 _twin = exports_dir / f"{asset_id}{_suffix}.png"
                 try:
@@ -4114,8 +4156,21 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
             "template_frame_id": row.get("template_frame_id", ""),
             "image_file": str(img_path) if img_path else "",
             "export_file": str(export_path) if has_export else "",
+            # Status semantics (2026-09-01): library-photo rows never get a
+            # server-side export BY DESIGN — the plugin pulls the photo inside
+            # Figma via figma_node_id. Calling them "pending_assembly" made
+            # every photo style read as a failure (0 delivered) while the
+            # boards rendered fine in Figma (Adrie's changelog). They are now
+            # "ready_for_figma"; "pending_assembly" is reserved for rows that
+            # genuinely should have a file and don't.
             "status": ("removed_at_gate_5" if asset_id in _vetoed_assets
-                       else "delivered" if has_export else "pending_assembly")
+                       else "delivered" if has_export
+                       else "ready_for_figma" if (
+                           str(row.get("generation_method", "")).startswith("figma_library")
+                           and row.get("figma_node_id"))
+                       else "needs_human_selection" if row.get("generation_method") == "needs_human_selection"
+                       else "skipped" if row.get("generation_method") == "skip"
+                       else "pending_assembly")
         }
         # "Prospecting and Retargeting": each audience gets its OWN creative now (Adrie
         # 2026-07-23) — emit a Prospecting row AND a Retargeting row, same image/style but
@@ -4222,11 +4277,18 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
     selected_concepts = sum(1 for c in concepts if c.get("selected"))
     summary = {
         "sprint_id": sprint_id,
-        "completed_at": datetime.now(timezone.utc).isoformat(),
+        "preliminary": bool(preliminary),
+        "completed_at": None if preliminary else datetime.now(timezone.utc).isoformat(),
         "driver": order.get("driver", ""),
         "platform": order.get("platform", ""),
         "total_assets": len(manifest_rows),
         "delivered": sum(1 for r in manifest_rows if r["status"] == "delivered"),
+        # ready_for_figma = library-photo rows the plugin assembles inside Figma
+        # (no server file by design); pending_assembly = rows that should have a
+        # file and don't — the only bucket that signals a real gap now.
+        "ready_for_figma": sum(1 for r in manifest_rows if r["status"] == "ready_for_figma"),
+        "needs_human_selection": sum(1 for r in manifest_rows if r["status"] == "needs_human_selection"),
+        "skipped": sum(1 for r in manifest_rows if r["status"] == "skipped"),
         "pending_assembly": sum(1 for r in manifest_rows if r["status"] == "pending_assembly"),
         # Gate-5 vetoes honored at delivery (exports/ twins removed) — persisted
         # so the veto is auditable, not just a console line (audit 2026-07-30).
@@ -4237,12 +4299,20 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results):
     }
 
     summary_path = run_dir / "run_summary.json"
+    # Never let a preliminary rewrite clobber Figma-assembly results that the
+    # plugin already reported back (assembly write-back, 2026-09-01).
+    try:
+        _prev = _load_json(summary_path) or {}
+        if _prev.get("figma_assembly"):
+            summary["figma_assembly"] = _prev["figma_assembly"]
+    except Exception:
+        pass
     _atomic_write_json(summary_path, summary)
 
     print(f"  Copy concepts: {total_concepts} generated, {selected_concepts} selected, {total_concepts - selected_concepts} rejected")
     print(f"  Total assets: {summary['total_assets']} (images for selected concepts only)")
-    print(f"  Delivered: {summary['delivered']}")
-    print(f"  Pending assembly: {summary['pending_assembly']}")
+    print(f"  Delivered (server files): {summary['delivered']} | Ready for Figma assembly: {summary['ready_for_figma']}")
+    print(f"  Pending assembly (true gaps): {summary['pending_assembly']}")
     print(f"  Manifest: {manifest_path}")
     print(f"  Copy review: {review_path}")
     print(f"  Summary: {summary_path}")
@@ -4374,6 +4444,7 @@ def run_full_pipeline(payload):
 
     # Stage 01: Load Refs
     context = stage_01_load_refs(sprint_id, order)
+    _mark_stage(sprint_id, "stage_01_load_refs")
 
     # ── GATE 2: ORDER + REFS CONFIRMATION ──────────────────────
     _save_pipeline_state(sprint_id, "awaiting_gate_2")
@@ -4445,28 +4516,34 @@ def run_pipeline_auto(payload):
 
     # Stage 01: Load Refs
     context = stage_01_load_refs(sprint_id, order)
+    _mark_stage(sprint_id, "stage_01_load_refs")
     _save_pipeline_state(sprint_id, "stage_02_copy_gen")
 
     # Stage 02: Copy Generation
     copy_outputs = stage_02_copy_gen(sprint_id, order, context)
+    _mark_stage(sprint_id, "stage_02_copy_gen")
     _save_pipeline_state(sprint_id, "stage_03_image_prompts")
 
     # Stage 03: Image Prompts (uses copy_review.csv if present, else copy_outputs)
     run_dir = RUNS_DIR / sprint_id
     _apply_copy_overrides(run_dir, copy_outputs or {})
     image_rows = stage_03_image_prompts(sprint_id, order, copy_outputs)
+    _mark_stage(sprint_id, "stage_03_img_prompts")
     _save_pipeline_state(sprint_id, "stage_04_generate_images")
 
     # Stage 04: Image Generation
     image_results = stage_04_generate_images(sprint_id, image_rows or [])
+    _mark_stage(sprint_id, "stage_04_generate_images")
     _save_pipeline_state(sprint_id, "stage_05_figma_assembly")
 
     # Stage 05: Figma Assembly
     stage_05_figma_assembly(sprint_id, image_rows or [], image_results or {})
+    _mark_stage(sprint_id, "stage_05_assemble")
     _save_pipeline_state(sprint_id, "stage_06_deliver")
 
     # Stage 06: Deliver
     summary = stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results or {})
+    _mark_stage(sprint_id, "stage_06_deliver")
     _save_pipeline_state(sprint_id, "complete")
 
     print("\n" + "#"*60)
@@ -4487,6 +4564,7 @@ def resume_gate_2(sprint_id):
 
     # Stage 02: Copy Generation (6x + self-review)
     copy_outputs = stage_02_copy_gen(sprint_id, order, context)
+    _mark_stage(sprint_id, "stage_02_copy_gen")
 
     # ── GATE 3: COPY APPROVAL ──────────────────────────────────
     _save_pipeline_state(sprint_id, "awaiting_gate_3")
@@ -4517,6 +4595,7 @@ def resume_gate_3(sprint_id):
 
     # Stage 03: Image Prompts (only for selected concepts)
     image_rows = stage_03_image_prompts(sprint_id, order, copy_outputs)
+    _mark_stage(sprint_id, "stage_03_img_prompts")
 
     # ── GATE 4: IMAGE PROMPT SCAN ──────────────────────────────
     _save_pipeline_state(sprint_id, "awaiting_gate_4")
@@ -4542,15 +4621,29 @@ def resume_gate_4(sprint_id):
 
     # Stage 04: Image Generation
     image_results = stage_04_generate_images(sprint_id, image_rows)
+    _mark_stage(sprint_id, "stage_04_generate_images")
 
     # Stage 05: Figma Assembly
     stage_05_figma_assembly(sprint_id, image_rows, image_results)
+    _mark_stage(sprint_id, "stage_05_assemble")
+
+    # PRELIMINARY manifest so Gate 5 has something real to review. The manifest
+    # used to be written only by stage 06 — which runs AFTER Gate 5 approval —
+    # so every Gate 5 reviewer saw "manifest empty (0 rows)" and the chat
+    # advised waiting for a completion that could never come without approving
+    # (Adrie's changelog item 4; issues 12/14). Vetoes are honored later: the
+    # final manifest is rebuilt by stage 06 on approval.
+    order = _load_json(run_dir / "order.json")
+    copy_outputs = _load_json(run_dir / "copy_outputs.json")
+    stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results,
+                     preliminary=True)
 
     # ── GATE 5: ASSEMBLY REVIEW ────────────────────────────────
     _save_pipeline_state(sprint_id, "awaiting_gate_5")
     _print_gate(5, "ASSEMBLY REVIEW", sprint_id, [
         f"Review images: {run_dir / 'images'}",
         f"Review exports: {run_dir / 'exports'}",
+        f"Preliminary manifest: {run_dir / 'asset_manifest.csv'}",
         f"{len(image_results)} images generated",
         f"Delete any images you don't want in the final delivery",
         f"Run the Figma plugin if you haven't already",
@@ -4573,6 +4666,7 @@ def resume_gate_5(sprint_id):
 
     # Stage 06: Deliver
     summary = stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results)
+    _mark_stage(sprint_id, "stage_06_deliver")
 
     # ── GATE 6: FINAL QA ──────────────────────────────────────
     _save_pipeline_state(sprint_id, "awaiting_gate_6")
@@ -4725,6 +4819,25 @@ def _save_pipeline_state(sprint_id, state):
         "updated_at": datetime.now(timezone.utc).isoformat()
     }, indent=2))
     os.replace(tmp, state_path)
+
+
+def _mark_stage(sprint_id, stage_key, status="complete"):
+    """Update the per-stage tracker inside order.json.
+
+    That map was written once at intake and never touched again on the gated
+    path, so operators saw stages 01-06 'pending' while finished work sat on
+    disk (Adrie's changelog + issues 11/14/15: 'the stage tracker is not
+    reflecting real progress'). Best-effort: tracking must never kill a run."""
+    try:
+        order_path = RUNS_DIR / sprint_id / "order.json"
+        order = json.loads(order_path.read_text())
+        stages = order.get("pipeline_state")
+        if isinstance(stages, dict) and stage_key in stages:
+            if stages[stage_key] != status:
+                stages[stage_key] = status
+                _atomic_write_json(order_path, order)
+    except Exception as exc:
+        print(f"  ⚠ stage tracker update failed ({stage_key}): {exc}")
 
 
 def _save_progress(sprint_id, stage, item_index, item_total, item_label):

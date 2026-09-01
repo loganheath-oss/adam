@@ -247,8 +247,14 @@ def validate_payload(payload: dict) -> list[str]:
             for _s in batch.get("visual_styles", []):
                 _tpl = str((_map.get(_s) or {}).get("template", ""))
                 if _tpl in ("NEEDS_TEMPLATE", "MANUAL"):
+                    # August testing showed these styles usually STILL assemble in
+                    # Figma — the registry is often stale rather than the template
+                    # missing (Adrie's changelog, punchlist item 1). Warn without
+                    # implying failure.
                     _w = (f"Style '{_s}' has no confirmed Figma template in the registry "
-                          f"({_tpl}) — copy will generate, but assembly may need design work.")
+                          f"({_tpl}) — copy will generate, and in August testing these "
+                          f"styles usually still assembled in Figma; the registry may "
+                          f"simply be stale. Not a blocker.")
                     if _w not in warnings:
                         warnings.append(_w)
         except Exception:
