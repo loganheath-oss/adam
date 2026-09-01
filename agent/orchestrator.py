@@ -320,6 +320,24 @@ def tool_log_issue(description: str, sprint_id: str = "", category: str = "") ->
         return {"ok": False, "error": "A description is required."}
     try:
         import db as _db
+        # DEDUP GUARD (2026-09-01): issues #9/#10 were the same Gate-3 report
+        # filed twice in one minute in different words. Skip filing when an
+        # OPEN issue on the same sprint is near-identical.
+        try:
+            import difflib
+            existing = (_db.list_issues(status="open", limit=100) or {}).get("issues", [])
+            for _iss in existing:
+                if (_iss.get("sprint_id") or "") != (sprint_id or ""):
+                    continue
+                _sim = difflib.SequenceMatcher(
+                    None, d[:400].lower(), (_iss.get("description") or "")[:400].lower()).ratio()
+                if _sim > 0.82:
+                    return {"ok": True, "duplicate_of": _iss.get("id"),
+                            "note": (f"Not re-filed — near-duplicate of open issue "
+                                     f"#{_iss.get('id')} on this sprint. Tell the user "
+                                     "it's already logged.")}
+        except Exception:
+            pass
         ok = _db.report_issue(description=d[:4000],
                               user_email="chat-operator",
                               sprint_id=(sprint_id or None),
@@ -459,6 +477,195 @@ def tool_edit_order(sprint_id: str, updates: dict) -> dict:
         "refs_error": refs_error,
         "note": "Order updated. Show the user the new order summary and ask if they'd like to approve Gate 2 now, edit further, or cancel.",
     }
+
+
+# ── GATE-3 COPY CONTROL (2026-09-01) ─────────────────────────────────────────
+# August's top operator ask (Adrie's changelog): "Can't edit the copy at all …
+# we are stuck with the copy that is generated." The chat also had NO selection
+# tool, so spoken selections ("keep one per style") never reached
+# copy_outputs.json and the image stage queued BOTH concepts (issue #7).
+# These two ACTION tools close both gaps. They work ONLY at awaiting_gate_3 —
+# after Gate 3 approval the image prompts are built from this copy and edits
+# would silently desync them.
+
+_EDIT_COPY_STATE = "awaiting_gate_3"
+# Whitelisted editable fields. Strings unless the existing value is a list
+# (bullets), in which case a list or newline-separated string is accepted.
+_EDITABLE_COPY_FIELDS = (
+    "headline", "headline_short", "creative_headline", "creative_subhead",
+    "body_short", "body_long", "description", "cta",
+    "profile_name", "profile_title", "profile_left", "profile_right",
+    "chat_label", "chat_message", "button_text", "pie_center",
+    "testimonial_quote", "testimonial_attribution",
+    "us_bullets", "them_bullets", "pie_labels", "sticky_lines",
+)
+_MAX_COPY_FIELD_CHARS = 400
+
+
+def _copy_gate3_guard(sprint_id: str):
+    """Common validation: sprint exists, is at Gate 3, copy_outputs loads.
+    Returns (sprint_dir, copy_outputs) or a dict error."""
+    sprint_dir = RUNS_DIR / sprint_id
+    if not sprint_dir.exists():
+        return {"error": f"Sprint not found: {sprint_id}"}
+    state = (_read_json(sprint_dir / "pipeline_state.json") or {}).get("state", "unknown")
+    if state != _EDIT_COPY_STATE:
+        return {"error": (
+            f"Copy can only be changed at Gate 3 (state is '{state}'). "
+            "Before Gate 3: copy doesn't exist yet. After Gate 3: image prompts "
+            "are already built from this copy, so changing it would desync them — "
+            "the operator would need engineering help or a new run.")}
+    copy_outputs = _read_json(sprint_dir / "copy_outputs.json")
+    if not copy_outputs or not copy_outputs.get("concepts"):
+        return {"error": "copy_outputs.json not found or has no concepts"}
+    return sprint_dir, copy_outputs
+
+
+def _sync_review_csv_selected(sprint_dir, concepts) -> None:
+    """Mirror selected flags into copy_review.csv (best-effort — the JSON is
+    authoritative; resume_gate_3 re-reads the CSV's selected column, so both
+    must agree or the CSV would silently override a chat selection)."""
+    path = sprint_dir / "copy_review.csv"
+    if not path.exists():
+        return
+    try:
+        import csv as _csv
+        with open(path, newline="") as f:
+            rd = _csv.DictReader(f)
+            rows = list(rd)
+            fields = rd.fieldnames or []
+        by_tag = {c.get("concept_tag"): bool(c.get("selected")) for c in concepts}
+        for r in rows:
+            if r.get("concept_tag") in by_tag:
+                r["selected"] = "YES" if by_tag[r["concept_tag"]] else "NO"
+        tmp = path.with_suffix(".csv.tmp")
+        with open(tmp, "w", newline="") as f:
+            w = _csv.DictWriter(f, fieldnames=fields)
+            w.writeheader()
+            w.writerows(rows)
+        import os as _os
+        _os.replace(tmp, path)
+    except Exception as exc:
+        print(f"[gate3-tools] copy_review.csv sync failed: {exc}")
+
+
+def tool_select_copy_concepts(sprint_id: str, keep: list = None, drop: list = None) -> dict:
+    """Select/deselect concepts at Gate 3 by concept_tag. `keep` marks concepts
+    selected, `drop` deselects. Unlisted concepts are untouched."""
+    keep = [str(t) for t in (keep or [])]
+    drop = [str(t) for t in (drop or [])]
+    if not keep and not drop:
+        return {"error": "Provide keep and/or drop lists of concept_tags."}
+    guard = _copy_gate3_guard(sprint_id)
+    if isinstance(guard, dict):
+        return guard
+    sprint_dir, copy_outputs = guard
+    concepts = copy_outputs["concepts"]
+    known = {c.get("concept_tag") for c in concepts}
+    unknown = [t for t in keep + drop if t not in known]
+    if unknown:
+        return {"error": f"Unknown concept_tag(s): {unknown}. Use get_copy_concepts for the list."}
+    changed = 0
+    for c in concepts:
+        tag = c.get("concept_tag")
+        want = True if tag in keep else False if tag in drop else None
+        if want is not None and bool(c.get("selected", False)) != want:
+            c["selected"] = want
+            changed += 1
+    if not any(c.get("selected") for c in concepts):
+        return {"error": "That would leave ZERO selected concepts — at least one must stay selected."}
+    (sprint_dir / "copy_outputs.json").write_text(json.dumps(copy_outputs, indent=2))
+    _sync_review_csv_selected(sprint_dir, concepts)
+    # Styles left with no selected concept are SKIPPED at the image stage —
+    # surface that consequence now, not as a surprise at Gate 4.
+    empty_styles = sorted({
+        c.get("visual_style") for c in concepts
+        if c.get("visual_style") and not any(
+            x.get("selected") for x in concepts
+            if x.get("visual_style") == c.get("visual_style"))})
+    _append_jsonl(sprint_dir / "gate_decisions.jsonl", {
+        "ts": _now(), "sprint_id": sprint_id, "gate": 3,
+        "decision": "copy_selection_edited", "keep": keep, "drop": drop,
+        "changed": changed, "source": "agent"})
+    selected = sum(1 for c in concepts if c.get("selected"))
+    return {"ok": True, "changed": changed, "selected": selected,
+            "total": len(concepts),
+            "styles_with_no_selection": empty_styles,
+            "note": ("Selection saved to copy_outputs.json and copy_review.csv — the image "
+                     "stage will honor it. "
+                     + (f"WARNING: these styles now have NO selected concept and will be "
+                        f"skipped: {', '.join(empty_styles)}. " if empty_styles else "")
+                     + "Show the user the updated selection.")}
+
+
+def tool_edit_copy(sprint_id: str, concept_tag: str, updates: dict, audience: str = "") -> dict:
+    """Edit copy fields of ONE concept at Gate 3. `updates` maps field → new
+    value. Pass audience='Prospecting'|'Retargeting' to edit that audience's
+    version on a P&R order; empty edits the base fields."""
+    if not isinstance(updates, dict) or not updates:
+        return {"error": "updates must be a non-empty dict of field → new value"}
+    guard = _copy_gate3_guard(sprint_id)
+    if isinstance(guard, dict):
+        return guard
+    sprint_dir, copy_outputs = guard
+    concept = next((c for c in copy_outputs["concepts"]
+                    if c.get("concept_tag") == concept_tag), None)
+    if concept is None:
+        return {"error": f"No concept with concept_tag '{concept_tag}'. Use get_copy_concepts."}
+    target = concept
+    audience = (audience or "").strip().title()
+    if audience:
+        if audience not in ("Prospecting", "Retargeting"):
+            return {"error": "audience must be 'Prospecting', 'Retargeting', or omitted"}
+        tc = concept.get("targeting_copy")
+        if not isinstance(tc, dict) or not isinstance(tc.get(audience), dict):
+            return {"error": f"This concept has no targeting_copy for {audience} — "
+                             "edit the base fields instead (omit audience)."}
+        target = tc[audience]
+    applied, rejected = {}, {}
+    for field, value in updates.items():
+        if field not in _EDITABLE_COPY_FIELDS:
+            rejected[field] = f"not editable (allowed: {', '.join(_EDITABLE_COPY_FIELDS)})"
+            continue
+        existing = target.get(field)
+        if isinstance(existing, list):
+            if isinstance(value, str):
+                value = [ln.strip() for ln in value.splitlines() if ln.strip()]
+            if not isinstance(value, list) or not all(isinstance(x, str) for x in value):
+                rejected[field] = "this field is a list — pass a list of strings or newline-separated text"
+                continue
+            if any(len(x) > _MAX_COPY_FIELD_CHARS for x in value):
+                rejected[field] = f"an item exceeds {_MAX_COPY_FIELD_CHARS} chars"
+                continue
+        else:
+            if not isinstance(value, str):
+                rejected[field] = f"must be a string, got {type(value).__name__}"
+                continue
+            if len(value) > _MAX_COPY_FIELD_CHARS:
+                rejected[field] = f"exceeds {_MAX_COPY_FIELD_CHARS} chars"
+                continue
+            value = value.strip()
+        target[field] = value
+        applied[field] = value
+    if applied:
+        concept["human_edited"] = True
+        note = "✎ operator-edited via chat: " + ", ".join(sorted(applied))
+        if note not in concept.get("review_notes", ""):
+            concept["review_notes"] = (note + ". " + concept.get("review_notes", "")).strip()
+        (sprint_dir / "copy_outputs.json").write_text(json.dumps(copy_outputs, indent=2))
+        _append_jsonl(sprint_dir / "gate_decisions.jsonl", {
+            "ts": _now(), "sprint_id": sprint_id, "gate": 3,
+            "decision": "copy_edited", "concept_tag": concept_tag,
+            "audience": audience or "base", "fields": sorted(applied),
+            "source": "agent"})
+    return {"ok": bool(applied), "concept_tag": concept_tag,
+            "audience": audience or "base",
+            "applied": applied, "rejected": rejected,
+            "note": ("Copy updated in copy_outputs.json — image prompts will be built "
+                     "from this text after Gate 3 approval. Template character caps "
+                     "are NOT re-checked on manual edits; keep on-image copy short. "
+                     "Show the user the updated concept."
+                     if applied else "Nothing applied — see rejected.")}
 
 
 # Set by main.py at startup: schedules the SAME background _run_gate_task the
@@ -838,12 +1045,44 @@ TOOLS = [
         "description": ("Log an issue the operator reports to the running admin Issues list "
                         "(visible at /admin/issues and counted in the digest). Use whenever the "
                         "user describes a problem, bug, or quality complaint and confirms logging "
-                        "— or says 'log this'. Include sprint_id when it relates to this sprint."),
+                        "— or says 'log this'. Include sprint_id when it relates to this sprint. "
+                        "File ONE issue per distinct problem — never re-file the same problem "
+                        "in different words."),
         "input_schema": {"type": "object", "properties": {
             "description": {"type": "string"},
             "sprint_id": {"type": "string"},
             "category": {"type": "string"}},
             "required": ["description"]},
+    },
+    {
+        "name": "select_copy_concepts",
+        "description": ("Gate 3 ONLY: select or deselect copy concepts by concept_tag. "
+                        "`keep` marks concepts selected, `drop` deselects; unlisted concepts "
+                        "are untouched. USE THIS whenever the operator says which concepts to "
+                        "ship (e.g. 'keep one per style', 'cut the duplicates') — a spoken "
+                        "selection that isn't saved with this tool is IGNORED by the image "
+                        "stage. Warns when a style is left with no selected concept."),
+        "input_schema": {"type": "object", "properties": {
+            "sprint_id": {"type": "string"},
+            "keep": {"type": "array", "items": {"type": "string"}},
+            "drop": {"type": "array", "items": {"type": "string"}}},
+            "required": ["sprint_id"]},
+    },
+    {
+        "name": "edit_copy",
+        "description": ("Gate 3 ONLY: edit the copy fields of one concept (headline, body, "
+                        "CTA, on-creative text, bullets…). Pass audience='Prospecting' or "
+                        "'Retargeting' to edit that audience's version on a P&R order. USE THIS "
+                        "when the operator asks for copy changes — you CAN now apply copy fixes "
+                        "yourself at Gate 3 (shorten a headline, replace placeholder text, "
+                        "reword a CTA). After Gate 3 approval copy is frozen for the run."),
+        "input_schema": {"type": "object", "properties": {
+            "sprint_id": {"type": "string"},
+            "concept_tag": {"type": "string"},
+            "updates": {"type": "object",
+                        "description": "field → new value (string, or list/newline-text for bullet fields)"},
+            "audience": {"type": "string", "enum": ["", "Prospecting", "Retargeting"]}},
+            "required": ["sprint_id", "concept_tag", "updates"]},
     },
     {
         "name": "append_learning",
@@ -910,6 +1149,8 @@ TOOL_DISPATCH = {
     "search_past_sprints": lambda args: tool_search_past_sprints(**args),
     "get_learnings": lambda args: tool_get_learnings(),
     "log_issue": lambda args: tool_log_issue(**args),
+    "select_copy_concepts": lambda args: tool_select_copy_concepts(**args),
+    "edit_copy": lambda args: tool_edit_copy(**args),
     "append_learning": lambda args: tool_append_learning(**args),
     "search_wiki": lambda args: tool_search_wiki(**args),
     "get_wiki": lambda args: tool_get_wiki(**args),
@@ -940,9 +1181,9 @@ When a sprint is in `awaiting_gate_N`, you must:
 | Gate | Name | Tool to call FIRST | What to show |
 |------|------|--------------------|--------------|
 | 2 | Order + Refs | `get_sprint` + `get_references` | EVERY order field (driver, platform, format, quantity, styles, audience, due date) AND the BRIEF **VERBATIM AND COMPLETE — never paraphrased, never truncated** (it is the creative contract being approved) AND the reference context (refs loaded, brand voice, targeting examples). **If the order has NO brief, lead with a prominent warning and offer `edit_order`.** If the user asks to change anything, apply via `edit_order` and re-show. |
-| 3 | Copy Review | `get_copy_concepts` | Every concept with FULL field detail on the FIRST presentation — NEVER a summary view (real operator complaint 2026-07-29: summarizing forced a second ask). For EACH selected concept show: on-creative headline (per audience on P&R orders), Headline long AND short, Body/Primary short AND long, CTA. Mark which ones the auto-reviewer selected/scored highest. **If a concept has `targeting_copy` (a Prospecting+Retargeting order), show BOTH audience versions — a **Prospecting** block and a **Retargeting** block, each with its OWN on-creative headline AND feed copy (headline + short/long body) — clearly labeled. Every audience gets distinct on-creative copy now; if an audience block appears to be missing its on-creative or feed fields, that is a defect to flag, not a variation to gloss over.** Frame it: "Here are the ad copy concepts. Tell me which you want to ship, or approve all and we'll move to images." |
+| 3 | Copy Review | `get_copy_concepts` | Every concept with FULL field detail on the FIRST presentation — NEVER a summary view (real operator complaint 2026-07-29: summarizing forced a second ask). For EACH selected concept show: on-creative headline (per audience on P&R orders), Headline long AND short, Body/Primary short AND long, CTA. Mark which ones the auto-reviewer selected/scored highest. **If a concept has `targeting_copy` (a Prospecting+Retargeting order), show BOTH audience versions — a **Prospecting** block and a **Retargeting** block, each with its OWN on-creative headline AND feed copy (headline + short/long body) — clearly labeled. Every audience gets distinct on-creative copy now; if an audience block appears to be missing its on-creative or feed fields, that is a defect to flag, not a variation to gloss over.** Frame it: "Here are the ad copy concepts. Tell me which you want to ship, or approve all and we'll move to images." **You CAN change copy at this gate: when the operator picks concepts (\"keep one per style\", \"cut the duplicate\"), SAVE it with `select_copy_concepts` — a spoken selection that is not saved is ignored by the image stage. When they ask for wording changes (shorten a headline, fix a CTA, replace placeholder text), APPLY them with `edit_copy` and show the result. Never say the copy can't be changed; after Gate 3 approval it IS frozen — say that instead.** |
 | 4 | Image Prompts | `get_image_prompts` | EVERY ad slot with its visual prompt **IN FULL — never shortened or paraphrased** (the operator is approving these exact words going to the image model). Continue across messages if long. |
-| 5 | Assembly | `get_manifest` | EVERY manifest row's copy+image pairing — style, audience, size, on-creative copy, photo/asset per row. **Do not sample or summarize rows**; group by style and continue across messages if long. |
+| 5 | Assembly | `get_manifest` | EVERY manifest row's copy+image pairing — style, audience, size, on-creative copy, photo/asset per row. **Do not sample or summarize rows**; group by style and continue across messages if long. **Manifest semantics: a preliminary manifest now EXISTS at Gate 5. Rows with status `ready_for_figma` are NORMAL — library-photo styles are assembled inside Figma by the plugin and never get a server file; they are not failures. If the manifest is EMPTY (0 rows) at Gate 5, that is a DEFECT: offer `log_issue`. NEVER tell the user to \"wait and check back later\" — no such background completion exists.** |
 | 6 | Final QA | `get_sprint` (run_summary + available_files) | The COMPLETE list of what was produced (every file, every flag, counts) — nothing elided. |
 
 # OTHER BEHAVIORS
