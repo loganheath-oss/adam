@@ -201,6 +201,12 @@ export default function NewOrderPage() {
   }
 
   async function submit() {
+    // Empty-brief guard BEFORE the busy flag: with the confirm inside the busy
+    // section, pressing Cancel returned early with busy=true and the form sat
+    // on "Submitting…" forever (Adrie's changelog item 5, Aug 2026).
+    if (!brief.trim() && !window.confirm(
+      "No brief provided.\n\nADAM will write copy from the standing reference docs only — no sprint theme, no key messaging.\n\nSubmit without a brief?"
+    )) return;
     setError(""); setBusy(true);
     const orderBatches = needsImages
       ? Object.entries(batches).map(([fmt, b]) => {
@@ -215,12 +221,6 @@ export default function NewOrderPage() {
           };
         }).filter((b) => b.visual_styles.length)
       : [];
-    // Empty-brief guard: a silently-missing brief caused the 7/27 "(empty — no custom
-    // brief)" confusion — copy ran on standing refs only and the requester didn't know.
-    // Make it a conscious choice, never an accident.
-    if (!brief.trim() && !window.confirm(
-      "No brief provided.\n\nADAM will write copy from the standing reference docs only — no sprint theme, no key messaging.\n\nSubmit without a brief?"
-    )) return;
     const order = { delivery_date: deliveryDate, driver, targeting, deliverable, platform: platform || null, batches: orderBatches, brief };
     try {
       const res = await fetch("/api/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(order) });
@@ -511,6 +511,15 @@ export default function NewOrderPage() {
                   <span className="text-sm text-[#5b6660]">Total assets to produce</span>
                   <span className="text-xl font-semibold tabular-nums">{totalAssets}</span>
                 </div>
+                {creativeCount > 6 && (
+                  /* August testing (Adrie): runs are better and more consistent at
+                     ~5 ads per order; quality suffered at 12. Guidance, not a cap. */
+                  <div className="mt-2 rounded-xl bg-[#FEF9C3] px-4 py-3 text-sm text-[#854d0e]">
+                    Heads-up: runs are most consistent at about 5 ads per order. Larger
+                    orders work, but copy quality has dipped past ~6 styles — consider
+                    splitting this into two smaller sprints.
+                  </div>
+                )}
               </>
             )}
             {deliverable === "copy-only" && <div className="mt-4 rounded-xl bg-[#F7F8F6] px-4 py-3 text-sm text-[#5b6660]">Copy only — no image batches.</div>}
