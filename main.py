@@ -533,6 +533,14 @@ def _load_json(path: Path) -> dict:
     return json.loads(path.read_text()) if path.exists() else {}
 
 
+def _atomic_write_json(path: Path, data) -> None:
+    """temp + os.replace so a concurrent reader never sees a torn file
+    (same pattern as run_pipeline's writer)."""
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, indent=2))
+    os.replace(tmp, path)
+
+
 def _disk_guard(min_free_mb: int | None = None) -> str | None:
     """Refuse to START write-heavy work when the volume is nearly full (audit
     2026-07-30: ENOSPC mid-stage strands sprints in a state even the error
@@ -3376,6 +3384,61 @@ async def assembly_report(request: Request):
                            "degraded": bool(_asm_miss or _asm_short)})
     except Exception:
         pass
+    # WRITE-BACK (2026-09-01): the report used to be telemetry-only, so the
+    # backend stayed blind to Figma assembly — run summaries said "0 delivered"
+    # for sprints whose boards were fully assembled, and August's monthly review
+    # needed Adrie's hand-kept changelog to learn the truth. Persist the result
+    # into the sprint so delivery numbers include the Figma half.
+    try:
+        _report = {
+            "at": datetime.now(timezone.utc).isoformat(),
+            "boards": int(body.get("boards") or 0),
+            "total": int(body.get("total") or 0),
+            "warnings": _asm_warn, "misses": _asm_miss,
+            "slot_shortfall": _asm_short,
+        }
+        _rep_path = sprint_dir / "assembly_report.json"
+        _prev = _load_json(_rep_path) or {"reports": []}
+        _prev.setdefault("reports", []).append(_report)
+        _prev["latest"] = _report
+        _atomic_write_json(_rep_path, _prev)
+        _sum_path = sprint_dir / "run_summary.json"
+        _summary = _load_json(_sum_path)
+        if isinstance(_summary, dict):
+            _summary["figma_assembly"] = _report
+            _atomic_write_json(_sum_path, _summary)
+        # Optional per-row detail: if the plugin sends the manifest asset_ids it
+        # assembled, flip those rows to assembled_in_figma. Sent as a capped
+        # list; unknown ids are ignored.
+        _ids = body.get("asset_ids")
+        if isinstance(_ids, list) and _ids:
+            _ids = {str(i)[:120] for i in _ids[:2000]}
+            _man_path = sprint_dir / "asset_manifest.csv"
+            if _man_path.exists():
+                import csv as _csv
+                with open(_man_path, newline="") as _f:
+                    _rd = _csv.DictReader(_f)
+                    _rows = list(_rd)
+                    _fields = _rd.fieldnames or []
+                _hit = 0
+                for _r in _rows:
+                    if _r.get("asset_id") in _ids and _r.get("status") in (
+                            "ready_for_figma", "pending_assembly"):
+                        _r["status"] = "assembled_in_figma"
+                        _hit += 1
+                if _hit and _fields:
+                    _tmp = _man_path.with_suffix(".csv.tmp")
+                    with open(_tmp, "w", newline="") as _f:
+                        _w = _csv.DictWriter(_f, fieldnames=_fields)
+                        _w.writeheader()
+                        _w.writerows(_rows)
+                    os.replace(_tmp, _man_path)
+                    if isinstance(_summary, dict):
+                        _summary["assembled_in_figma"] = sum(
+                            1 for _r in _rows if _r.get("status") == "assembled_in_figma")
+                        _atomic_write_json(_sum_path, _summary)
+    except Exception as _wb_exc:
+        print(f"[assembly-report] write-back failed for {sid}: {_wb_exc}")
     return JSONResponse({"ok": True})
 
 

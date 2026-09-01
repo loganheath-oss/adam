@@ -1405,6 +1405,10 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
   var assembled = 0;
   var failed = 0;
   var assembledIds = [];
+  // Manifest asset_ids of successfully assembled rows — reported back to the
+  // backend so run summaries stop reading "0 delivered" on sprints whose
+  // boards were fully assembled in Figma (write-back, 2026-09-01).
+  var assembledAssetIds = [];
   var rowGap = 200;
   var maxHeight = 0;
   var currentX = baseX;
@@ -1662,10 +1666,11 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
 
     assembled++;
     assembledIds.push(clone.id);
+    assembledAssetIds.push(assetId);
     await new Promise(function (r) { setTimeout(r, 50); });
   }
 
-  return { assembled: assembled, failed: failed, ids: assembledIds };
+  return { assembled: assembled, failed: failed, ids: assembledIds, assetIds: assembledAssetIds };
 }
 
 // ── Concept-board mode (existing v3 behavior, retained) ─────────────────────
@@ -2262,6 +2267,7 @@ async function assemble(payload) {
 
   var assembled = 0;
   var assembledIds = [];
+  var assembledAssetIds = [];
   // What the final count is OUT OF. In concept_board mode we build one board per
   // CONCEPT, so the denominator is the concept count — NOT manifest.length (rows),
   // which was making "9 of 54 assets" look like a failure when it was 9/9 boards.
@@ -2288,6 +2294,7 @@ async function assemble(payload) {
     var result = await assembleStyledPerRow(searchRoot, manifest, destination, baseX, baseY);
     assembled = result.assembled;
     assembledIds = result.ids;
+    assembledAssetIds = result.assetIds || [];
     log("\n✓ Assembly complete: " + assembled + " assembled, " + result.failed + " failed");
   } else if (mode === "concept_board") {
     var groups = groupRowsByConcept(manifest);
@@ -2405,6 +2412,7 @@ async function assemble(payload) {
     total: outputTotal,
     unit: outputUnit,
     frameIds: assembledIds,
+    assetIds: assembledAssetIds || [],
     sprintId: reportSprintId,
     warnings: _asmWarn,
     misses: _asmMiss,
