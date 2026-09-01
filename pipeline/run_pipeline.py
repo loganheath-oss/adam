@@ -2325,11 +2325,15 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                     "output_config": {"format": {"type": "json_schema",
                                                  "schema": _concept_schema(style, _is_both, qty)}},
                     # CREATIVITY DIAL (Adrie 2026-08: "dial up the weird / outside of
-                    # the box thinking" for concepts). Applies ONLY to concept
-                    # generation — review/judging stays at the API default so scoring
-                    # doesn't get noisier. Unset = API default.
-                    **({"temperature": float(os.environ["ADAM_COPY_TEMPERATURE"])}
-                       if os.environ.get("ADAM_COPY_TEMPERATURE") else {}),
+                    # the box thinking" for concepts). Two constraints keep this
+                    # honest: (1) the API's temperature default is already the 1.0
+                    # maximum, so this knob can only REDUCE randomness — raising
+                    # creativity is a prompt-side lever (craft-bar rules), not a
+                    # sampling one; (2) temperature≠1 is INCOMPATIBLE with extended
+                    # thinking, so the param is sent only when copy-thinking is
+                    # explicitly off — otherwise every copy call would 400.
+                    **({"temperature": max(0.0, min(1.0, float(os.environ["ADAM_COPY_TEMPERATURE"])))}
+                       if os.environ.get("ADAM_COPY_TEMPERATURE") and _COPY_THINKING == "off" else {}),
                     **_thinking_params(),
                 },
                 # Full untruncated ref pack + up to 8000 output tokens: a cold
