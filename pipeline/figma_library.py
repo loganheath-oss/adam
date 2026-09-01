@@ -73,7 +73,19 @@ FIGMA_FILE_ID       = os.environ.get("FIGMA_FILE_ID", "DoDwumxELkuAuKKSP5p00e")
 # Must live on the RUNS_DIR volume — using BASE_DIR/runs put it on the ephemeral
 # disk, so the "don't reuse" memory reset every deploy and photos repeated.
 HISTORY_FILE        = Path(os.environ.get("RUNS_DIR", str(Path(__file__).parent.parent / "runs"))) / "_library_history.json"
-RECENT_SPRINT_COUNT = 3
+# How many past sprints count as "recent" for the anti-repeat memory. Raised
+# from 3 after the 2026-08-29/30 weekend ran 7 sprints inside the old window.
+RECENT_SPRINT_COUNT = int(os.environ.get("ADAM_PHOTO_RECENT_SPRINTS", "6") or 6)
+
+# Photo-pick sampling temperature (Ravi, 2026-09-01: "the tool picks the same
+# image every time"). The old picker kept ONLY the photos tied for the top
+# relevance score — with sparse tag overlap that pool was often a single photo,
+# and relevance outranked freshness, so the same image repeated every sprint.
+# τ = 0 reproduces the old argmax; higher trades relevance for variety.
+PHOTO_TEMPERATURE   = float(os.environ.get("ADAM_PHOTO_TEMPERATURE", "0.6") or 0.6)
+# Weight multiplier for photos used within the recent-sprint window. They stay
+# pickable (a tiny library must be reusable) but are strongly disfavored.
+RECENT_PHOTO_WEIGHT = float(os.environ.get("ADAM_PHOTO_RECENT_WEIGHT", "0.2") or 0.2)
 
 # Human-audited photo tags (the source of truth for tag ACCURACY — see
 # refs/photo_tag_standard.md). Every photo was viewed and its tags checked
@@ -779,12 +791,32 @@ def select_photo(
     eligible = [c for c in candidates if c.get("node_id") not in excluded]
     if not eligible:
         return None
-    # Narrow to the most concept-relevant candidates when we have keyword signal.
+    # Relevance-weighted sampling (τ = PHOTO_TEMPERATURE). The old hard argmax
+    # (`keep only s == best`) collapsed the pool to one photo whenever a single
+    # candidate out-scored the rest, and the freshness filter — applied AFTER
+    # that narrowing — fell back to the same photo when the sole winner was
+    # recently used. Both defeated the anti-repeat memory. Now every candidate
+    # keeps a weight: exp(score/τ) shaped by relevance, multiplied down by
+    # RECENT_PHOTO_WEIGHT if used in the recent-sprint window, so freshness
+    # bends the choice inside the relevant band instead of losing to it.
     if concept_keywords:
         scored = [(_relevance(c, concept_keywords), c) for c in eligible]
         best = max(s for s, _ in scored)
         if best > 0:
-            eligible = [c for s, c in scored if s == best]
+            if PHOTO_TEMPERATURE <= 0:
+                # τ=0 → the pre-2026-09 behavior: top scorers only, prefer fresh.
+                top = [c for s, c in scored if s == best]
+                fresh = [c for c in top if c.get("node_id") not in recent]
+                return random.choice(fresh if fresh else top)
+            import math
+            weights = []
+            for s, c in scored:
+                w = math.exp((s - best) / PHOTO_TEMPERATURE)
+                if c.get("node_id") in recent:
+                    w *= RECENT_PHOTO_WEIGHT
+                weights.append(w)
+            return random.choices([c for _, c in scored], weights=weights, k=1)[0]
+    # No keyword signal — freshness-then-random, with the same soft penalty.
     fresh = [c for c in eligible if c.get("node_id") not in recent]
     pool = fresh if fresh else eligible
     return random.choice(pool)
