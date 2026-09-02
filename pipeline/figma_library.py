@@ -772,6 +772,7 @@ def select_photo(
     history: Optional[dict] = None,
     exclude_ids: Optional[list[str]] = None,
     concept_keywords: Optional[set[str]] = None,
+    temperature: Optional[float] = None,
 ) -> Optional[dict]:
     """Pick one photo, preferring candidates not used in the last 3 sprints.
 
@@ -799,11 +800,12 @@ def select_photo(
     # keeps a weight: exp(score/τ) shaped by relevance, multiplied down by
     # RECENT_PHOTO_WEIGHT if used in the recent-sprint window, so freshness
     # bends the choice inside the relevant band instead of losing to it.
+    tau = PHOTO_TEMPERATURE if temperature is None else temperature
     if concept_keywords:
         scored = [(_relevance(c, concept_keywords), c) for c in eligible]
         best = max(s for s, _ in scored)
         if best > 0:
-            if PHOTO_TEMPERATURE <= 0:
+            if tau <= 0:
                 # τ=0 → the pre-2026-09 behavior: top scorers only, prefer fresh.
                 top = [c for s, c in scored if s == best]
                 fresh = [c for c in top if c.get("node_id") not in recent]
@@ -811,7 +813,7 @@ def select_photo(
             import math
             weights = []
             for s, c in scored:
-                w = math.exp((s - best) / PHOTO_TEMPERATURE)
+                w = math.exp((s - best) / tau)
                 if c.get("node_id") in recent:
                     w *= RECENT_PHOTO_WEIGHT
                 weights.append(w)
@@ -863,6 +865,7 @@ def pick_photo_for_asset(
     components: Optional[list[dict]] = None,
     exclude_ids: Optional[list[str]] = None,
     concept: Optional[dict] = None,
+    temperature: Optional[float] = None,
 ) -> dict:
     """Main entry point for Stage 03.
 
@@ -899,7 +902,8 @@ def pick_photo_for_asset(
         }
 
     keywords = _concept_keywords(concept, order)
-    chosen = select_photo(candidates, exclude_ids=exclude_ids, concept_keywords=keywords)
+    chosen = select_photo(candidates, exclude_ids=exclude_ids, concept_keywords=keywords,
+                          temperature=temperature)
     if not chosen:
         return {"is_photo_based": True, "needs_human_selection": True}
 

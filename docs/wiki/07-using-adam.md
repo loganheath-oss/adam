@@ -13,7 +13,10 @@ flowchart LR
 
 ## A) The normal flow (web app)
 1. **Submit an order** in the order form: platform, format, quantity, **visual styles**, **resolutions**,
-   and a **brief** (the brief is the highest-priority instruction — it overrides standing refs).
+   a **brief** (the brief is the highest-priority instruction — it overrides standing refs), and optionally
+   a **Creativity level** (2026-09-02): Standard = the proven formula; **Bold** = at least 2 concepts per
+   style take an unconventional angle and photo picks range wider; **Wild** = half the concepts take real
+   swings and photo variety is maximized. Brand voice, compliance, and template caps apply at every level.
 2. **Gate 2 — confirm order + refs.** Last checkpoint before any API spend.
 3. **Gate 3 — review copy — PICK YOUR WINNERS.** Claude generated 6 concepts/style and pre-picked its top picks (min 2 per style, quantity-driven, diversity-filtered), but the human chooses what ships: open the sprint's **Copy review** page, toggle concepts on/off, **Save picks**, then approve the gate. **Only selected concepts get images, manifest rows, and Figma boards** — nothing reaches Figma that wasn't chosen here. **You can also do this in chat** (2026-09-01): tell it which concepts to keep/drop (it saves via `select_copy_concepts`) and ask for copy changes — shorten a headline, fix a CTA — which it applies via `edit_copy`. **After Gate 3 approval, copy is frozen** for the run (image prompts are built from it).
 4. **Gate 4 — scan image prompts** (thin for library-fed and skip-image styles: `figma_library` rows show a photo pick instead of a prompt, and `skip` rows say outright that the style's template imagery is used by design).

@@ -1863,6 +1863,30 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
         "is REQUIRED (do NOT make them all the same format):\n" + "\n".join(_fmt_lines) + "\n"
     )
 
+    # CREATIVITY LEVEL (Lee's "weirdness knob", 2026-09-01 session). The API's
+    # sampling temperature is already at its ceiling, so creative range is a
+    # PROMPT lever: bold/wild assign a quota of concepts explicit permission to
+    # break convention. Compliance, legal, and template caps ALWAYS still apply.
+    _creativity = str(order.get("creativity", "standard") or "standard").lower()
+    if _creativity == "wild":
+        _n_wild = max(1, qty // 2)
+        _creativity_block = (
+            f"\nCREATIVITY LEVEL: WILD — the team explicitly wants you to push. "
+            f"The FIRST {qty - _n_wild} concept(s) stay proven and on-formula. The LAST "
+            f"{_n_wild} concept(s) MUST take genuinely unconventional swings: unexpected "
+            "metaphors, unusual framings, formats no Upwork ad has tried, humor that "
+            "risks something. A wild concept that merely rephrases a safe one is a "
+            "failure. Stay on-brand and compliant; be weird INSIDE those walls. "
+            "Tag each swing's concept_tag with a '-wild' suffix.\n")
+    elif _creativity == "bold":
+        _creativity_block = (
+            f"\nCREATIVITY LEVEL: BOLD — at least 2 of the {qty} concepts must take a "
+            "clearly unconventional angle (an unexpected metaphor, format, or voice) "
+            "rather than the proven formula. Compliance and template caps still apply. "
+            "Tag those concepts' concept_tag with a '-bold' suffix.\n")
+    else:
+        _creativity_block = ""
+
     # Build rich prompt with all reference context
     brand_voice = context.get("brand_voice", "Professional, clear, human")
     writing_style = context.get("writing_style", "")
@@ -2261,7 +2285,7 @@ other approaches. Specific freelancer categories outperform generic talent messa
 {style_rules_block}
 
 Generate {qty} ad copy concepts. Each concept must be COMPLETE — never truncate or
-abbreviate later concepts to save space; every field must be fully written for all {qty}.{_angle_line}{_body_format_line}
+abbreviate later concepts to save space; every field must be fully written for all {qty}.{_angle_line}{_body_format_line}{_creativity_block}
 
 Platform: {batch.get('platform', 'Meta')}
 Format: {batch.get('format', 'Static Feed')}
@@ -3271,6 +3295,11 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
     # every photo row re-picks from the same small pool → the same photo repeats.
     used_photo_ids = []
 
+    # CREATIVITY LEVEL → photo-pick temperature (None = module default 0.6).
+    # bold widens the sample; wild strongly favors variety over top relevance.
+    _photo_tau = {"bold": 1.0, "wild": 1.8}.get(
+        str(order.get("creativity", "standard") or "standard").lower())
+
     for i, batch in enumerate(order.get("batches", [])):
         platform = batch.get("platform", "Meta")
         fmt = batch.get("format", "Static Feed")
@@ -3356,6 +3385,7 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                 components=library_cache,
                                 exclude_ids=used_photo_ids or None,
                                 concept=concept,
+                                temperature=_photo_tau,
                             )
                             _rt_excl = list(used_photo_ids)
                             if picked_left.get("figma_asset_id"):
@@ -3367,6 +3397,7 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                 components=library_cache,
                                 exclude_ids=_rt_excl or None,
                                 concept=concept,
+                                temperature=_photo_tau,
                             )
                             left_ok = picked_left.get("is_photo_based") and not picked_left.get("needs_human_selection")
                             right_ok = picked_right.get("is_photo_based") and not picked_right.get("needs_human_selection")
@@ -3410,6 +3441,7 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                 components=library_cache,
                                 exclude_ids=used_photo_ids or None,
                                 concept=concept,
+                                temperature=_photo_tau,
                             )
                             # If excluding used photos emptied the pool, retry
                             # allowing repeats (variety is best-effort, never fail).
@@ -3420,6 +3452,7 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                     sprint_id=sprint_id,
                                     components=library_cache,
                                     concept=concept,
+                                    temperature=_photo_tau,
                                 )
                             if picked.get("is_photo_based") and not picked.get("needs_human_selection"):
                                 method = "figma_library"
@@ -3483,6 +3516,11 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                             _bg_fallback = "generated_no_library_background"
                             headline = concept.get("headline", "")
                             prompt = _build_style_prompt(style, headline, platform)
+                            if _photo_tau is not None and _photo_tau >= 1.5:
+                                prompt += (" Push the visual concept beyond the safe "
+                                           "interpretation: unexpected composition or "
+                                           "metaphor welcome, while staying on-brand "
+                                           "and free of text and people.")
                             if _design_directives:
                                 prompt = f"{prompt} Art direction from the operator's brief: {'; '.join(_design_directives)}."
 
@@ -3646,6 +3684,7 @@ def stage_04_generate_images(sprint_id, image_rows):
     generated = 0
     skipped = 0
     failed = 0
+    failures = {}
 
     # Group by prompt to avoid generating the same image multiple times
     # Then resize for each resolution.
@@ -3696,6 +3735,7 @@ def stage_04_generate_images(sprint_id, image_rows):
         print(f"\n  Generating: {style} — \"{headline[:40]}\"")
 
         master_image = None
+        _last_gen_error = ""
         attempt = 0
         current_prompt = prompt
 
@@ -3758,6 +3798,7 @@ def stage_04_generate_images(sprint_id, image_rows):
 
             except Exception as e:
                 print(f"error: {str(e)[:60]}")
+                _last_gen_error = str(e)[:300]
                 time.sleep(2)
 
         # Clean up temp
@@ -3768,6 +3809,11 @@ def stage_04_generate_images(sprint_id, image_rows):
         if not master_image:
             print(f"    Failed after {max_attempts} attempts")
             failed += len(rows)
+            # Persist WHY (2026-09-02): the 8/17 run's six Graphic-with-Text
+            # failures were undiagnosable because only the count survived.
+            for row in rows:
+                failures[row.get("asset_id", f"unknown_{failed}")] = (
+                    _last_gen_error or "no image produced (no exception captured)")
             continue
 
         # Resize and crop for each resolution
@@ -3780,6 +3826,7 @@ def stage_04_generate_images(sprint_id, image_rows):
             if not m:
                 print(f"    Skipping {row.get('asset_id', '?')}: bad resolution {size!r}")
                 failed += 1
+                failures[row.get("asset_id", "?")] = f"bad resolution {size!r}"
                 continue
             w, h = int(m.group(1)), int(m.group(2))
             resized = _resize_and_crop(master_image, w, h)
@@ -3794,12 +3841,14 @@ def stage_04_generate_images(sprint_id, image_rows):
 
     print(f"\n  Generated: {generated} | Skipped (library): {skipped} | Failed: {failed}")
 
-    # Save generation log
+    # Save generation log — failures carry their last error string so a failed
+    # generation is diagnosable after the fact, not just countable.
     log_path = run_dir / "generation_log.json"
     _atomic_write_json(log_path, {
         "generated": generated,
         "skipped": skipped,
         "failed": failed,
+        "failures": failures,
         "results": {k: str(v) for k, v in results.items()},
     })
 
@@ -4487,6 +4536,7 @@ def run_full_pipeline(payload):
         f"  Styles: {', '.join(f'{s} x{style_qtys.get(s, 1)}' for s in styles)}",
         f"  Resolutions: {', '.join(resolutions)}",
         f"  Brief: {brief[:80]}{'...' if len(brief) > 80 else '' if brief else '(none)'}",
+        f"  Creativity: {str(order.get('creativity', 'standard')).title()}",
         f"",
         f"  REFERENCE DOCUMENTS",
         f"  Loaded: {refs_loaded} documents from refs_context.json ({refs_size:.0f} KB)" if refs_loaded else "  refs_context.json not found — run: python3 pipeline/build_refs.py",

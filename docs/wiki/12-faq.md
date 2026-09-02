@@ -39,6 +39,13 @@ Gate 3 approval, copy is frozen for the run.
 A: Yes. `learnings.md` lives on the persistent `/data` volume and survives every deploy (since 2026-07-29).
 The chat reads it every session.
 
+**Q: How do I make the output more creative / less predictable?**
+A: Set the **Creativity level** on the order form (2026-09-02). Bold assigns a couple of concepts per
+style an unconventional angle; Wild gives half the concepts explicit license to break convention and
+maximizes photo variety. It works through prompting plus photo-pick sampling — model temperature is
+already at its ceiling by default, so the prompt is the real lever. Compliance and legal rules apply
+at every level.
+
 **Q: Why does ADAM keep picking the same library photo?**
 A: It shouldn't anymore (2026-09-01): photo picks are sampled with a temperature
 (`ADAM_PHOTO_TEMPERATURE`, default 0.6) and photos used in the last 6 sprints are strongly disfavored.

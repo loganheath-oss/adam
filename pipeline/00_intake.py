@@ -376,6 +376,12 @@ def build_order(payload: dict, sprint_id: str) -> dict:
         "platform":        primary_platform,
         "batches":         batches,
         "brief":           payload.get("brief", ""),
+        # CREATIVITY LEVEL (Lee's "weirdness knob", working session 2026-09-01).
+        # standard = today's behavior; bold/wild license format-breaking concepts
+        # and raise photo-pick variety. Anything unrecognized falls back safe.
+        "creativity":      (str(payload.get("creativity", "") or "standard").strip().lower()
+                            if str(payload.get("creativity", "") or "standard").strip().lower()
+                            in ("standard", "bold", "wild") else "standard"),
         # Carry the non-blocking intake warnings INTO the order. They were being
         # computed in validate_payload, written onto the payload, and then
         # dropped here — so no warning ever reached a human at Gate 2: not the
