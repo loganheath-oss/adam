@@ -416,9 +416,30 @@ export function SprintWorkspace({
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) {
-        // 409 = state already moved on (double-click / already approved) — not fatal.
-        const msg = r.status === 409 ? `Gate ${gate} already approved — continuing…` : `⚠ ${d.error || "Approve failed"}`;
-        setItems((p) => [...p, { kind: "msg", role: "system", content: msg }]);
+        if (r.status === 409 && d.requires_ack) {
+          // Flag-to-fix loop: open issues pause the approval until the operator
+          // explicitly proceeds; the acknowledgment is recorded server-side.
+          const issues: { id?: number; category?: string; description?: string }[] = d.open_issues || [];
+          const list = issues.map((i) => `#${i.id} [${i.category || "issue"}] ${i.description || ""}`).join("\n\n");
+          const go = window.confirm(`This sprint has ${issues.length} OPEN issue(s):\n\n${list}\n\nApprove anyway? (The acknowledgment is recorded.)`);
+          if (go) {
+            const r2 = await fetch("/api/approve", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ sprintId, gateNum: gate, acknowledgeOpenIssues: true }),
+            });
+            const d2 = await r2.json().catch(() => ({}));
+            setItems((p) => [...p, { kind: "msg", role: "system", content: r2.ok
+              ? `✓ Gate ${gate} approved past ${issues.length} open issue(s) — acknowledgment recorded.`
+              : `⚠ ${d2.error || "Approve failed"}` }]);
+          } else {
+            setItems((p) => [...p, { kind: "msg", role: "system", content: `Approval paused — ${issues.length} open issue(s) left unacknowledged.` }]);
+          }
+        } else {
+          // 409 without requires_ack = state already moved on (double-click) — not fatal.
+          const msg = r.status === 409 ? `Gate ${gate} already approved — continuing…` : `⚠ ${d.error || "Approve failed"}`;
+          setItems((p) => [...p, { kind: "msg", role: "system", content: msg }]);
+        }
       } else {
         setItems((p) => [...p, { kind: "msg", role: "system", content: `✓ Gate ${gate} approved — ADAM is working on the next step…` }]);
       }

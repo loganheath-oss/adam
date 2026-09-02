@@ -69,7 +69,7 @@ Which tasks ADAM's model has authority to CREATE, and which it is demoted to PRE
 | Level | Task | Source of truth / fences |
 |---|---|---|
 | EXPLAIN | Answer 'why did X happen' / diagnostics | diagnostic honesty: cite a file/flag/event or say 'I need to check'; log_issue for anything unresolved |
-| ACTION | Approve a gate | sprint_state.claim_gate (cross-process CAS; losers refused) → background task |
+| ACTION | Approve a gate | sprint_state.claim_gate (cross-process CAS; losers refused) → background task; db.open_issues_for blocks a silent approval past open issues (explicit acknowledgment required + recorded) |
 | ACTION | Edit the order | tool_edit_order (Python-validated fields + bounds) |
 | ACTION | Log an operator issue | tool_log_issue → db.report_issue (visible in admin + Digest; near-duplicate guard) |
 | ACTION | Save the operator's Gate-3 concept selection | tool_select_copy_concepts (state-gated to awaiting_gate_3; ≥1 selected enforced; JSON+CSV kept in sync) |

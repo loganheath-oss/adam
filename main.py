@@ -2266,12 +2266,29 @@ async def approve_gate(sprint_id: str, gate_num: int, request: Request):
     # Capture optional rationale note from request body (JSON or form) BEFORE
     # the claim (no state dependency, and it's an await point).
     note = ""
+    ack_issues = False
     try:
         body = await request.json()
         if isinstance(body, dict):
             note = str(body.get("note", "") or "").strip()
+            ack_issues = bool(body.get("acknowledge_open_issues"))
     except Exception:
         note = ""
+
+    # FLAG-TO-FIX LOOP (2026-09-01): a defect flagged into the issues log no
+    # longer ships silently — approving a gate while this sprint has OPEN
+    # issues requires explicit acknowledgment. Checked BEFORE the claim so a
+    # refused approval leaves the gate claimable. Fail-open when the DB is
+    # down (open_issues_for returns []).
+    _open_issues = db.open_issues_for(sprint_id)
+    if _open_issues and not ack_issues:
+        return JSONResponse({
+            "ok": False, "requires_ack": True,
+            "error": (f"{len(_open_issues)} open issue(s) are filed against this "
+                      "sprint. Resolve them, or approve again with "
+                      "acknowledge_open_issues=true to proceed anyway."),
+            "open_issues": _open_issues,
+        }, status_code=409)
 
     expected_state = f"awaiting_gate_{gate_num}"
     GATE_NAMES_LOCAL = {2: "Order + Refs Review", 3: "Copy Review", 4: "Image Prompt Scan", 5: "Assembly Review", 6: "Final QA"}
@@ -2293,6 +2310,8 @@ async def approve_gate(sprint_id: str, gate_num: int, request: Request):
         "gate_name": GATE_NAMES_LOCAL.get(gate_num, ""),
         "decision": "approved",
         "note": note,
+        # Auditable trail when someone proceeds past open issues (flag-to-fix).
+        "approved_with_open_issues": [i["id"] for i in _open_issues] if _open_issues else [],
         "source": "http",
     })
     try:
@@ -4110,8 +4129,23 @@ async function approveGate(num) {{
   const msg = document.getElementById('gate-msg');
   if (btn) {{ btn.disabled = true; btn.textContent = 'Approving…'; }}
   try {{
-    const r = await fetch('/sprints/{sprint_id}/approve/' + num, {{method:'POST', credentials:'same-origin'}});
-    const d = await r.json();
+    let r = await fetch('/sprints/{sprint_id}/approve/' + num, {{method:'POST', credentials:'same-origin'}});
+    let d = await r.json();
+    // Flag-to-fix loop: open issues on the sprint pause the approval until the
+    // operator explicitly chooses to proceed (recorded in gate_decisions).
+    if (!d.ok && d.requires_ack) {{
+      const lines = (d.open_issues || []).map(i => '#' + i.id + ' [' + (i.category || 'issue') + '] ' + (i.description || '')).join('\\n\\n');
+      const go = window.confirm('This sprint has ' + (d.open_issues || []).length + ' OPEN issue(s):\\n\\n' + lines + '\\n\\nApprove anyway? (The acknowledgment is recorded.)');
+      if (!go) {{
+        if (msg) msg.textContent = 'Approval paused — open issues left unacknowledged.';
+        if (btn) {{ btn.disabled = false; btn.textContent = 'Approve'; }}
+        return;
+      }}
+      r = await fetch('/sprints/{sprint_id}/approve/' + num, {{method:'POST', credentials:'same-origin',
+        headers: {{'Content-Type':'application/json'}},
+        body: JSON.stringify({{acknowledge_open_issues: true}})}});
+      d = await r.json();
+    }}
     if (d.ok) {{
       if (msg) msg.textContent = 'Pipeline resumed — refreshing…';
       setTimeout(() => location.reload(), 2000);

@@ -234,7 +234,8 @@ def get_generation_log(sprint_id: str) -> Any:
 
 
 @mcp.tool()
-def approve_gate(sprint_id: str, gate: int, timeout_seconds: int = 600) -> dict[str, Any]:
+def approve_gate(sprint_id: str, gate: int, timeout_seconds: int = 600,
+                 acknowledge_open_issues: bool = False) -> dict[str, Any]:
     """Approve a pipeline gate and resume the run.
 
     Shells out to `pipeline/run_pipeline.py --resume <sprint_id> --gate <gate>`.
@@ -245,12 +246,37 @@ def approve_gate(sprint_id: str, gate: int, timeout_seconds: int = 600) -> dict[
         sprint_id: e.g. "2026-04-meta-6677".
         gate: 2 (order+refs), 3 (copy), 4 (prompts), 5 (images), 6 (final QA).
         timeout_seconds: max wait before killing the subprocess.
+        acknowledge_open_issues: sprints with OPEN issue tickets refuse a silent
+            approval; pass True only after the human has seen the issues and
+            explicitly chosen to proceed.
 
     Returns: {success, gate, gate_name, exit_code, stdout_tail, stderr_tail, new_state}
     """
     if gate not in GATE_NAMES:
         raise ValueError(f"gate must be one of {sorted(GATE_NAMES)}; got {gate}")
     sprint_dir = _sprint_dir(sprint_id)  # validate sprint exists
+
+    # FLAG-TO-FIX LOOP (2026-09-01), same contract as the HTTP route and chat
+    # tool. Fail-open: if the issues DB is unreachable from this process the
+    # check returns [] and approval proceeds.
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    try:
+        import db as _db
+        _open_issues = _db.open_issues_for(sprint_id)
+    except Exception:
+        _open_issues = []
+    if _open_issues and not acknowledge_open_issues:
+        return {
+            "success": False,
+            "requires_ack": True,
+            "gate": gate,
+            "gate_name": GATE_NAMES[gate],
+            "open_issues": _open_issues,
+            "error": (f"{len(_open_issues)} open issue(s) are filed against this sprint. "
+                      "Surface them to the human; re-call with "
+                      "acknowledge_open_issues=True only on their explicit go-ahead."),
+        }
 
     # Cross-process CAS shared with the HTTP route and chat tool (audit
     # 2026-07-30): this path used to have NO state check at all — a retried

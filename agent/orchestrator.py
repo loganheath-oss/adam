@@ -675,12 +675,31 @@ def tool_edit_copy(sprint_id: str, concept_tag: str, updates: dict, audience: st
 APPROVE_HOOK = None
 
 
-def tool_approve_gate(sprint_id: str, gate: int, note: str = "") -> dict:
+def tool_approve_gate(sprint_id: str, gate: int, note: str = "",
+                      acknowledge_open_issues: bool = False) -> dict:
     if gate not in GATE_NAMES:
         return {"error": f"gate must be one of {sorted(GATE_NAMES)}; got {gate}"}
     path = RUNS_DIR / sprint_id
     if not path.exists():
         return {"error": f"Sprint not found: {sprint_id}"}
+
+    # FLAG-TO-FIX LOOP (2026-09-01): open issues on this sprint block a silent
+    # approval. The agent must SHOW the operator the open issues and get an
+    # explicit go-ahead before re-calling with acknowledge_open_issues=true.
+    # Fail-open when the DB is down.
+    _open_issues = []
+    try:
+        import db as _db
+        _open_issues = _db.open_issues_for(sprint_id)
+    except Exception:
+        _open_issues = []
+    if _open_issues and not acknowledge_open_issues:
+        return {"ok": False, "requires_ack": True, "open_issues": _open_issues,
+                "note": ("APPROVAL PAUSED — this sprint has open issue(s). Show the "
+                         "user each issue (id, category, description) and ask "
+                         "whether to resolve first or proceed anyway. Only if they "
+                         "explicitly say to proceed, call approve_gate again with "
+                         "acknowledge_open_issues=true. Never acknowledge on your own.")}
 
     # Cross-process CAS — the same claim the HTTP route and MCP connector use,
     # so simultaneous approvals on different surfaces can't run a stage twice.
@@ -695,6 +714,7 @@ def tool_approve_gate(sprint_id: str, gate: int, note: str = "") -> dict:
         "gate_name": GATE_NAMES[gate],
         "decision": "approved",
         "note": (note or "").strip(),
+        "approved_with_open_issues": [i["id"] for i in _open_issues] if _open_issues else [],
         "source": "agent",
     })
     try:
@@ -983,13 +1003,21 @@ TOOLS = [
             "Always pass `note` capturing the user's rationale (one or two sentences "
             "explaining what they liked, what they changed, or any caveat) — this is "
             "persisted to gate_decisions.jsonl and becomes training memory for "
-            "future sprints."
+            "future sprints. If the call returns requires_ack with open_issues, the "
+            "sprint has OPEN issue tickets: show the user every listed issue and ask "
+            "whether to resolve first or proceed anyway; only after an explicit "
+            "go-ahead call again with acknowledge_open_issues=true. NEVER set that "
+            "flag on your own initiative."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "sprint_id": {"type": "string"},
                 "gate": {"type": "integer", "enum": [2, 3, 4, 5, 6]},
+                "acknowledge_open_issues": {
+                    "type": "boolean",
+                    "description": "Set true ONLY after the user has seen this sprint's open issues and explicitly said to proceed anyway.",
+                },
                 "note": {
                     "type": "string",
                     "description": "User's rationale for approving (1–2 sentences). Required for institutional memory.",

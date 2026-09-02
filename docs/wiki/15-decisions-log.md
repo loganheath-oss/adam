@@ -11,6 +11,14 @@ flowchart LR
 ```
 
 ## This build (2026-06)
+- **2026-09-01 — August-testing response shipped** (from Adrie's changelog + issues 6-15): honest manifest
+  statuses (`ready_for_figma` / `skipped` are by-design, `pending_assembly` = real gap); preliminary manifest
+  at Gate 5; truthful per-stage tracker; **flag-to-fix loop** (open issues pause gate approvals until
+  explicitly acknowledged — recorded in `gate_decisions.jsonl`); **Gate-3 copy control in chat**
+  (`select_copy_concepts` + `edit_copy`; copy freezes after Gate 3); plugin **assembly write-back**
+  (`assembled_in_figma` + `figma_assembly` in run summaries); photo-pick sampling temperature
+  (`ADAM_PHOTO_TEMPERATURE`, anti-repeat window 6 sprints); placeholder-copy hard guard; duplicate-issue
+  guard; blank-brief cancel fix; ~5-ads-per-order guidance.
 - **Hosting moved to Railway** (from Fly/Replit). Auto-deploys from GitHub `loganheath-oss/adam`; local repo
   kept in sync. Replit retired (`replit-poc/`).
 - **Plugin/template work brought in-house** — ship live, no branch-for-review. Plugin made fully

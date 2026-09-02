@@ -15,10 +15,12 @@ flowchart LR
 1. **Submit an order** in the order form: platform, format, quantity, **visual styles**, **resolutions**,
    and a **brief** (the brief is the highest-priority instruction — it overrides standing refs).
 2. **Gate 2 — confirm order + refs.** Last checkpoint before any API spend.
-3. **Gate 3 — review copy — PICK YOUR WINNERS.** Claude generated 6 concepts/style and pre-picked its top picks (min 2 per style, quantity-driven, diversity-filtered), but the human chooses what ships: open the sprint's **Copy review** page, toggle concepts on/off, **Save picks**, then approve the gate. **Only selected concepts get images, manifest rows, and Figma boards** — nothing reaches Figma that wasn't chosen here.
-4. **Gate 4 — scan image prompts** (skipped/thin for library-fed and skip-image styles).
-5. **Gate 5 — review images + manifest.**
-6. **Gate 6 — final QA**, then deliver.
+3. **Gate 3 — review copy — PICK YOUR WINNERS.** Claude generated 6 concepts/style and pre-picked its top picks (min 2 per style, quantity-driven, diversity-filtered), but the human chooses what ships: open the sprint's **Copy review** page, toggle concepts on/off, **Save picks**, then approve the gate. **Only selected concepts get images, manifest rows, and Figma boards** — nothing reaches Figma that wasn't chosen here. **You can also do this in chat** (2026-09-01): tell it which concepts to keep/drop (it saves via `select_copy_concepts`) and ask for copy changes — shorten a headline, fix a CTA — which it applies via `edit_copy`. **After Gate 3 approval, copy is frozen** for the run (image prompts are built from it).
+4. **Gate 4 — scan image prompts** (thin for library-fed and skip-image styles: `figma_library` rows show a photo pick instead of a prompt, and `skip` rows say outright that the style's template imagery is used by design).
+5. **Gate 5 — review images + the preliminary manifest.** The manifest now exists AT the gate (before 2026-09-01 it was only written after approval, so it always looked empty here). Row statuses: `delivered` = server-rendered file; `ready_for_figma` = normal for library-photo styles (the plugin places the photo inside Figma — not a failure); `skipped` = by design; `pending_assembly` = a REAL gap worth flagging.
+6. **Gate 6 — final QA**, then deliver. After the Figma plugin runs, it reports its assembled boards back and they show up as `assembled_in_figma` + a `figma_assembly` block in the run summary.
+
+**Flag-to-fix:** if a sprint has OPEN issues in the issues log, gate approvals pause and list them — resolve them or explicitly acknowledge to proceed (recorded in `gate_decisions.jsonl`). Nothing flagged ships silently anymore.
 7. **Assemble in Figma** (see below) and hand finals to the Paid Acq team.
 
 You can do gate approvals and questions through the **chat** (`/chat`) — e.g. *"approve gate 3 for

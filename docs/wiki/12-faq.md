@@ -18,6 +18,32 @@ resolved. See [Troubleshooting](11-troubleshooting.md).
 **Q: Where is it deployed?**
 A: **Railway**, auto-deploying from GitHub `loganheath-oss/adam`. (Older docs say Fly/Replit — that's stale.)
 
+**Q: The run summary says only part of my assets were "delivered" — did the run fail?**
+A: Probably not. `delivered` counts only **server-rendered files**. Library-photo styles are finished
+**inside Figma** by the plugin and show as `ready_for_figma` (then `assembled_in_figma` once the plugin
+reports back); self-contained styles show as `skipped` by design. The only bucket that means "something
+is actually missing" is `pending_assembly`. (Before 2026-09-01 everything non-delivered was labeled
+`pending_assembly`, which made healthy runs look half-failed — that's fixed.)
+
+**Q: Gate 5 says the manifest is empty and to check back later?**
+A: That can no longer happen: a preliminary manifest is written **before** Gate 5. If you ever see an
+empty manifest at Gate 5, it's a defect — file it with `log_issue`, don't wait (there is no background
+process to wait for).
+
+**Q: Can I change the copy ADAM wrote?**
+A: Yes — **at Gate 3**, in chat: tell it which concepts to keep or drop, and ask for wording changes
+("shorten that headline", "replace the CTA") — it applies them and they flow into image prompts. After
+Gate 3 approval, copy is frozen for the run.
+
+**Q: Are learnings I add in chat actually permanent?**
+A: Yes. `learnings.md` lives on the persistent `/data` volume and survives every deploy (since 2026-07-29).
+The chat reads it every session.
+
+**Q: Why does ADAM keep picking the same library photo?**
+A: It shouldn't anymore (2026-09-01): photo picks are sampled with a temperature
+(`ADAM_PHOTO_TEMPERATURE`, default 0.6) and photos used in the last 6 sprints are strongly disfavored.
+Variety is still bounded by the library — more tagged photos in Figma = more variety.
+
 **Q: How do I run a batch?**
 A: Web app order form → approve gates, **or** CLI `run_pipeline.py --json/--csv/--test` then `--resume --gate N`.
 Then assemble in Figma. Full steps: [Using ADAM](07-using-adam.md).

@@ -175,6 +175,31 @@ def report_issue(description: str, user_email: str | None = None,
         return False
 
 
+def open_issues_for(sprint_id: str) -> list[dict]:
+    """Open issues filed against ONE sprint — the flag-to-fix gate check
+    (2026-09-01). August shipped a flagged 'Placeholder' concept and flagged
+    truncated CTAs because a gate flag carried no enforcement; approvals now
+    surface these and require explicit acknowledgment. FAIL-OPEN: if the DB is
+    unreachable this returns [] — issue enforcement must never strand a sprint
+    the way ENOSPC once did."""
+    if not sprint_id or _Session is None:
+        return []
+    try:
+        with _Session() as s:
+            rows = s.execute(
+                select(IssueReport)
+                .where(IssueReport.status == "open",
+                       IssueReport.sprint_id == sprint_id)
+                .order_by(IssueReport.ts.desc()).limit(20)
+            ).scalars().all()
+            return [{"id": r.id,
+                     "category": r.category,
+                     "description": (r.description or "")[:240]} for r in rows]
+    except Exception as e:
+        print(f"[db] open_issues_for failed: {e}")
+        return []
+
+
 def list_issues(status: str | None = None, limit: int = 200) -> dict:
     """The triage queue + counts by status. The scoreboard is 'this shrinks over
     time' — fewer reports = ADAM improving. Best-effort."""

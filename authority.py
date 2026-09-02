@@ -140,7 +140,7 @@ TASKS: list[dict] = [
      "validators": "diagnostic honesty: cite a file/flag/event or say 'I need to check'; "
                    "log_issue for anything unresolved"},
     {"surface": "chat", "task": "Approve a gate",
-     "level": "ACTION", "source": "sprint_state.claim_gate (cross-process CAS; losers refused) → background task"},
+     "level": "ACTION", "source": "sprint_state.claim_gate (cross-process CAS; losers refused) → background task; db.open_issues_for blocks a silent approval past open issues (explicit acknowledgment required + recorded)"},
     {"surface": "chat", "task": "Edit the order",
      "level": "ACTION", "source": "tool_edit_order (Python-validated fields + bounds)"},
     {"surface": "chat", "task": "Log an operator issue",
