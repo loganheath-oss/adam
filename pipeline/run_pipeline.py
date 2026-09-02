@@ -4536,7 +4536,6 @@ def run_full_pipeline(payload):
         f"  Styles: {', '.join(f'{s} x{style_qtys.get(s, 1)}' for s in styles)}",
         f"  Resolutions: {', '.join(resolutions)}",
         f"  Brief: {brief[:80]}{'...' if len(brief) > 80 else '' if brief else '(none)'}",
-        f"  Creativity: {str(order.get('creativity', 'standard')).title()}",
         f"",
         f"  REFERENCE DOCUMENTS",
         f"  Loaded: {refs_loaded} documents from refs_context.json ({refs_size:.0f} KB)" if refs_loaded else "  refs_context.json not found — run: python3 pipeline/build_refs.py",

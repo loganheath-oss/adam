@@ -86,6 +86,11 @@ PHOTO_TEMPERATURE   = float(os.environ.get("ADAM_PHOTO_TEMPERATURE", "0.6") or 0
 # Weight multiplier for photos used within the recent-sprint window. They stay
 # pickable (a tiny library must be reusable) but are strongly disfavored.
 RECENT_PHOTO_WEIGHT = float(os.environ.get("ADAM_PHOTO_RECENT_WEIGHT", "0.2") or 0.2)
+# HARD no-back-to-back rule (Logan 2026-09-02: "the same image being used twice
+# in a row is probably too often"). Photos used in the immediately-previous
+# sprint(s) are EXCLUDED from selection outright — not just down-weighted —
+# falling back to the full pool only when nothing else matches the tags.
+NO_REPEAT_SPRINTS   = int(os.environ.get("ADAM_PHOTO_NO_REPEAT_SPRINTS", "1") or 1)
 
 # Human-audited photo tags (the source of truth for tag ACCURACY — see
 # refs/photo_tag_standard.md). Every photo was viewed and its tags checked
@@ -800,6 +805,14 @@ def select_photo(
     # keeps a weight: exp(score/τ) shaped by relevance, multiplied down by
     # RECENT_PHOTO_WEIGHT if used in the recent-sprint window, so freshness
     # bends the choice inside the relevant band instead of losing to it.
+    # Hard rule first: never repeat a photo from the previous sprint when any
+    # alternative exists. Adrie watched the same photo lead three consecutive
+    # runs; soft down-weighting alone still repeated a dominant scorer ~1 in 3.
+    if NO_REPEAT_SPRINTS > 0:
+        last_used = recent_node_ids(history, count=NO_REPEAT_SPRINTS)
+        non_repeat = [c for c in eligible if c.get("node_id") not in last_used]
+        if non_repeat:
+            eligible = non_repeat
     tau = PHOTO_TEMPERATURE if temperature is None else temperature
     if concept_keywords:
         scored = [(_relevance(c, concept_keywords), c) for c in eligible]

@@ -175,7 +175,6 @@ export default function NewOrderPage() {
   const [picker, setPicker] = useState<{ fmt: string; row: number } | null>(null);
   const [search, setSearch] = useState("");
   const [brief, setBrief] = useState("");
-  const [creativity, setCreativity] = useState("standard");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -222,7 +221,7 @@ export default function NewOrderPage() {
           };
         }).filter((b) => b.visual_styles.length)
       : [];
-    const order = { delivery_date: deliveryDate, driver, targeting, deliverable, platform: platform || null, batches: orderBatches, brief, creativity };
+    const order = { delivery_date: deliveryDate, driver, targeting, deliverable, platform: platform || null, batches: orderBatches, brief };
     try {
       const res = await fetch("/api/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(order) });
       const data = await res.json();
@@ -426,41 +425,6 @@ export default function NewOrderPage() {
               <span className="text-xs text-[#9aa0a6]">Theme · Copy must-dos · Design direction · Resources — the four things ADAM reads.</span>
             </div>
 
-            {/* Creativity level — Lee's "weirdness knob" (working session 2026-09-01).
-                Standard = the proven formula; Bold/Wild license a quota of concepts
-                to break convention and widen photo variety. Compliance always applies. */}
-            <div className="mt-4">
-              <div className="mb-1 flex items-center gap-2">
-                <h3 className="text-[15px] font-semibold">Creativity</h3>
-                <span className="rounded-full bg-[#F0F0F0] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#9aa0a6]">New</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {[
-                  ["standard", "Standard", "The proven formula — today's default"],
-                  ["bold", "Bold", "At least 2 concepts per style take an unconventional angle; wider photo variety"],
-                  ["wild", "Wild", "Half the concepts take real swings; maximum photo variety. Brand + legal rules still apply"],
-                ].map(([val, label, hint]) => (
-                  <button
-                    key={val}
-                    type="button"
-                    title={hint}
-                    onClick={() => setCreativity(val)}
-                    className={`rounded-full border px-4 py-1.5 text-xs transition-colors ${
-                      creativity === val
-                        ? "border-[#14A800] bg-[#14A800]/10 font-semibold text-[#108A00]"
-                        : "border-[#E0E0E0] bg-white hover:border-[#14A800] hover:text-[#108A00]"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-                <span className="text-xs text-[#9aa0a6]">
-                  {creativity === "wild" ? "Half the concepts take real swings; photos range widest. Brand and legal rules still apply."
-                    : creativity === "bold" ? "A couple of concepts per style go unconventional; photo picks range wider."
-                    : "The proven formula and image matching — what every run used before September."}
-                </span>
-              </div>
-            </div>
 
             {KEY_MESSAGING_THEMES.length > 0 && (
               <div className="mt-3 rounded-lg border border-[#ECECEC] bg-[#FAFBFA] p-3.5">
