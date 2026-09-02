@@ -48,7 +48,11 @@ VALID_STYLES = {
     "Graphic with Text", "Split Screen", "Us vs Them",
     "Photo with Text", "Lifestyle Photo", "Testimonial",
     "Social Media Profile", "Pie Chart", "Hybrid",
-    "Search Results", "Search Bar with Talent Badge", "Text Only",
+    "Search Results", "Text Only",
+    # RETIRED 2026-09-02 (working session): no Figma template exists and none is
+    # planned; removed from the order form. Still accepted here so historical
+    # sprints and re-runs never break.
+    "Search Bar with Talent Badge",
     "Chat Bubble", "Notification", "Reminder",
     "Device UI", "Platform UI", "Meme",
     "Sticky Note", "Poll", "Tweet / Post Mockup",

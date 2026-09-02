@@ -1,20 +1,24 @@
 {
   "_meta": {
     "purpose": "Single source of truth for every template + style + size combination in the pipeline",
-    "status": "UPDATED with Brandon's rules + transcript answers. CRITICAL: Brian says NO AI photos — use brand library only.",
+    "status": "UPDATED with Brandon's rules + transcript answers. CRITICAL: Brian says NO AI photos — use brand library only. | 2026-09-02: mapping verified against live Figma (tests/figma_template_lint.py); the May-era NEEDS_TEMPLATE flags were stale — Elise built these months ago.",
     "last_updated": "2026-05-11",
     "schema_notes": "Multi-variant templates (Text Only, Reminder) use a `variants` array because Brandon ships several frame variants under one template_name. Single-variant templates keep their flat shape."
   },
-
   "templates": [
     {
       "template_name": "LifestylePhoto_1440x1440",
       "figma_frame_id": "4783:780",
       "frame_size": "1440x1440",
-
-      "styles": ["Lifestyle Photo"],
-      "styles_brandon_to_confirm": ["Hybrid", "Split Screen", "Us vs Them", "Meme"],
-
+      "styles": [
+        "Lifestyle Photo"
+      ],
+      "styles_brandon_to_confirm": [
+        "Hybrid",
+        "Split Screen",
+        "Us vs Them",
+        "Meme"
+      ],
       "brandon_rules": {
         "hierarchy": "Clear visual hierarchy with top-down reading order",
         "imagery": "Human-centered or lifestyle imagery that reflects target users and use cases. Framed at center. Image bleeds to the edge of design.",
@@ -25,7 +29,6 @@
         "copy_position": "Headline + CTA must be positioned in the bottom lower left of the design. Headline size can vary depending on character count. More text = smaller font.",
         "copy_coverage": "Copy must not cover more than 40% of the design"
       },
-
       "image": {
         "type": "photo_with_person",
         "placeholder_layer": "image_placeholder",
@@ -33,7 +36,6 @@
         "placeholder_size": "1918x1439",
         "what_pipeline_provides": "Full bleed human-centered or lifestyle photo, framed at center, bleeding to edges",
         "what_template_provides": "Text overlay (headline + CTA) in bottom lower left, logo at bottom right, auto-adjusting layout",
-
         "composition_rules": {
           "subject_position": "Center of frame — Brandon says 'framed at center'",
           "subject_framing": "Person is the clear focal point, large and prominent",
@@ -43,7 +45,6 @@
           "avoid": "No text, no logos, no elements in the bottom 40% that compete with copy overlay. Person's face must be in the upper 60%."
         }
       },
-
       "text_layers": {
         "headline": {
           "layer_name": "headline_text",
@@ -61,7 +62,6 @@
           "inside_button": true
         }
       },
-
       "brand_elements": {
         "logo_layer": "upwork_logo",
         "logo_position": "Bottom right corner, aligned to bottom of CTA pill",
@@ -69,15 +69,17 @@
         "gradient_layer": "Gradient"
       }
     },
-
     {
       "template_name": "PhotowithText_1440x1440",
       "figma_frame_id": "4779:742",
       "frame_size": "1440x1440",
-
-      "styles": ["Photo with Text"],
-      "styles_brandon_to_confirm": ["Graphic with Text", "Sticky Note"],
-
+      "styles": [
+        "Photo with Text"
+      ],
+      "styles_brandon_to_confirm": [
+        "Graphic with Text",
+        "Sticky Note"
+      ],
       "brandon_rules": {
         "hierarchy": "Clear visual hierarchy with top-down reading order",
         "imagery": "Human-centered imagery that reflects target users and use cases. Framed at center. Image bleeds to the edge of the internal border.",
@@ -87,7 +89,6 @@
         "logo": "Top right corner. Positioned at edge of corner. Padding around logo must match border thickness.",
         "copy_position": "Headline + CTA must be positioned in the bottom lower left of the design."
       },
-
       "image": {
         "type": "photo_with_person",
         "placeholder_layer": "image_placeholder",
@@ -95,7 +96,6 @@
         "placeholder_size": "1756x1317",
         "what_pipeline_provides": "Human-centered photo, person framed at center, image bleeds to internal border edge",
         "what_template_provides": "White border frame (Upwork shell), black headline + CTA in bottom left, logo at top right, rounded corners 37.33%",
-
         "composition_rules": {
           "subject_position": "Center of frame — Brandon says 'framed at center, image bleeds to edge of internal border'",
           "subject_framing": "Person centered, clear focal point. Image will be inside a white-bordered frame with rounded corners.",
@@ -105,7 +105,6 @@
           "avoid": "No subject in bottom left corner where copy sits. No text or logos in the image."
         }
       },
-
       "text_layers": {
         "headline": {
           "layer_name": "headline_text",
@@ -122,26 +121,26 @@
           "inside_button": true
         }
       },
-
       "brand_elements": {
         "logo_position": "Top right corner, at edge of corner",
         "logo_padding": "Must match border thickness",
         "border_style": "White borders, rounded corners 37.33%"
       }
     },
-
     {
       "template_name": "Quote_1080x1080",
       "figma_frame_id": "4784:804",
       "frame_size": "1440x1440",
-
-      "styles": ["Testimonial"],
-      "styles_brandon_to_confirm": ["Social Media Profile", "Talent Profile"],
-
+      "styles": [
+        "Testimonial"
+      ],
+      "styles_brandon_to_confirm": [
+        "Social Media Profile",
+        "Talent Profile"
+      ],
       "brandon_rules": {
         "_note": "No rules from Brandon yet — these are still assumptions"
       },
-
       "image": {
         "type": "headshot_portrait",
         "placeholder_layer": "image_placeholder",
@@ -149,7 +148,6 @@
         "placeholder_size": "397x397",
         "what_pipeline_provides": "Professional headshot, face centered, clean background",
         "what_template_provides": "Circular crop, star rating, quote layout, name field, Upwork logo, branded background",
-
         "composition_rules": {
           "subject_position": "Face perfectly centered in frame",
           "subject_framing": "Head and shoulders only — image will be cropped to a small 397px circle",
@@ -157,7 +155,6 @@
           "avoid": "No busy backgrounds, no body below shoulders, face must fill most of the frame"
         }
       },
-
       "text_layers": {
         "headline_label": {
           "layer_name": "#Headline",
@@ -172,27 +169,24 @@
           "max_characters": 120
         }
       },
-
       "brand_elements": {
         "stars": "4 star shapes for rating display",
         "logo": "Upwork logo group at top"
       }
     },
-
     {
       "template_name": "TextOnly_1440x1440",
       "frame_size": "1440x1440",
       "_added": "2026-05-11 — Brandon shipped 3 frame variants under Adtype: Text Only",
-
-      "styles": ["Text Only"],
+      "styles": [
+        "Text Only"
+      ],
       "_naming_quirk": "Frames are named Template_TestimonialC_1440x1440 (re-uses TestimonialC base). Plugin disambiguates via STYLE_ADTYPE_CONTAINERS = 'Adtype: Text Only'. Do NOT rename the frame — it will break other consumers.",
-
       "brandon_rules": {
         "imagery": "No photography. Background is a gradient handled inside the template.",
         "copy_position": "Headline + subhead + CTA pill stacked in the lower-left content block.",
         "logo": "Upwork logo top-left."
       },
-
       "variants": [
         {
           "variant_name": "WhiteBorder_GreenBg",
@@ -270,28 +264,25 @@
           }
         }
       ],
-
       "image": {
         "type": "none",
         "what_pipeline_provides": "Nothing. Template owns the gradient/background and the layout. Pipeline writes copy only.",
         "skip_image_fill": true
       }
     },
-
     {
       "template_name": "SplitScreen_1440x1440",
       "figma_frame_id": "5369:762",
       "frame_size": "1440x1440",
       "_added": "2026-05-11 — Brandon shipped SplitScreen as a clean, uniquely-named template",
-
-      "styles": ["Split Screen"],
-
+      "styles": [
+        "Split Screen"
+      ],
       "brandon_rules": {
         "layout": "Two photo placeholders, one left and one right, with a copy block stacked above.",
         "copy_position": "Headline + CTA pill in the top Copy Top frame.",
         "logo": "Upwork logo embedded in background."
       },
-
       "image": {
         "type": "photo_with_person",
         "_dual_placeholder": "This template has TWO image targets. Pipeline currently produces ONE combined dual-scene Split Screen image (see run_pipeline.py STYLE_PROMPT_TEMPLATES['Split Screen']). Until pipeline is updated to produce two separate photos, fill BOTH placeholders with the same image OR have plugin/manifest specify left/right by tag.",
@@ -310,7 +301,6 @@
           }
         ]
       },
-
       "text_layers": {
         "headline": {
           "layer_name": "SplitScreen_Headline_Text",
@@ -326,19 +316,17 @@
         }
       }
     },
-
     {
       "template_name": "SplitScreen_1440x1800",
       "figma_frame_id": "5369:783",
       "frame_size": "1440x1800",
       "_added": "2026-05-11 — 4:5 (Meta-friendly) variant of SplitScreen",
-
-      "styles": ["Split Screen"],
-
+      "styles": [
+        "Split Screen"
+      ],
       "brandon_rules": {
         "layout": "Same as 1440x1440 with taller aspect for 4:5 placements."
       },
-
       "image": {
         "type": "photo_with_person",
         "_dual_placeholder": "See SplitScreen_1440x1440 — same dual-image story.",
@@ -357,7 +345,6 @@
           }
         ]
       },
-
       "text_layers": {
         "headline": {
           "layer_name": "SplitScreen_Headline_Text",
@@ -373,21 +360,19 @@
         }
       }
     },
-
     {
       "template_name": "Reminder_1440x1440",
       "frame_size": "1440x1440",
       "_added": "2026-05-11 — Brandon shipped 2 frame variants under Adtype: Reminder",
-
-      "styles": ["Reminder"],
+      "styles": [
+        "Reminder"
+      ],
       "_naming_quirk": "Brandon ships two frame variants both named Template_Reminder_1440x1440. The size is 1440x1805 (taller than the frame name suggests). The two TEXT layers inside each variant share the name Notification_Headline_Text — one is the label ('Reminder'), one is the body — disambiguate by layer_id.",
-
       "brandon_rules": {
         "format": "Mobile-notification visual: rounded bubble with a Upwork logo, a 'Reminder' label, a body message, and a CTA pill.",
         "imagery": "No photography. Decorative gradient handled by template.",
         "logo": "Upwork glyph inside the notification bubble."
       },
-
       "variants": [
         {
           "variant_name": "Variant_A",
@@ -443,31 +428,28 @@
           }
         }
       ],
-
       "image": {
         "type": "none",
         "what_pipeline_provides": "Nothing. Template owns the gradient + bubble.",
         "skip_image_fill": true
       }
     },
-
     {
       "template_name": "Meme_ThisIsFine_1440x1440",
       "frame_size": "1440x1440",
       "_added": "2026-05-18 — Brandon shipped first Meme template (this-is-fine dog). 3 frame variants.",
       "_meme_handle": "this-is-fine",
-
-      "styles": ["Meme"],
+      "styles": [
+        "Meme"
+      ],
       "_naming_quirk": "Frames are named Template_SplitScreen_1440x1440 (Brandon reused the SplitScreen skeleton). Plugin disambiguates via STYLE_ADTYPE_CONTAINERS = 'Adtype: Meme'. Headline layer is 'SplitScreen_Headline_Text' (same reason). CTA pill exists but is HIDDEN in the design — do not write to it.",
       "_meme_image_baked_in": "Each meme template ships with its specific meme image baked into a layer named after the meme (e.g. 'this-is-fine 1'). There is NO swappable meme library — adding a new meme (Drake, Distracted Boyfriend, etc.) requires Brandon to ship a new template family. Pipeline does NOT provide an image for Meme.",
-
       "brandon_rules": {
         "imagery": "Baked-in meme image. Pipeline supplies caption only.",
         "copy_position": "Caption at the top of the card, above the meme image.",
         "cta": "Hidden — memes do not carry a CTA pill.",
         "logo": "Upwork wordmark bottom-right corner of the meme image."
       },
-
       "variants": [
         {
           "variant_name": "WhiteBorder_Cream",
@@ -543,7 +525,6 @@
           }
         }
       ],
-
       "image": {
         "type": "none",
         "what_pipeline_provides": "Nothing. Meme is part of the template.",
@@ -551,39 +532,129 @@
       }
     }
   ],
-
   "style_to_template_mapping": {
     "_note": "Updated with Brandon's rules. He will create variable layout templates that auto-adjust to content.",
-
-    "Lifestyle Photo":        {"template": "LifestylePhoto_1440x1440", "image_type": "photo_with_person", "status": "CONFIRMED — Brandon rules received"},
-    "Photo with Text":        {"template": "PhotowithText_1440x1440", "image_type": "photo_with_person", "status": "CONFIRMED — Brandon rules received"},
-    "Testimonial":            {"template": "Quote_1080x1080", "image_type": "headshot_portrait", "status": "READY — awaiting Brandon rules"},
-
-    "Hybrid":                 {"template": "LifestylePhoto_1440x1440", "image_type": "photo_with_person", "status": "ASSUMED — reusing Lifestyle template"},
-    "Split Screen":           {"template": "SplitScreen_1440x1440", "image_type": "photo_with_person", "status": "CONFIRMED — Brandon shipped 2026-05-11 with dual placeholders (left + right). Also available: SplitScreen_1440x1800 for 4:5."},
-    "Us vs Them":             {"template": "LifestylePhoto_1440x1440", "image_type": "photo_with_person", "status": "ASSUMED — reusing Lifestyle template"},
-    "Meme":                   {"template": "Meme_ThisIsFine_1440x1440", "image_type": "none", "status": "CONFIRMED — Brandon shipped this-is-fine Meme template 2026-05-18 with 3 variants (white-border, no-border, black-border). Meme image baked into template; pipeline supplies caption only. Additional memes require new template families."},
-    "Graphic with Text":      {"template": "PhotowithText_1440x1440", "image_type": "illustration", "status": "ASSUMED — reusing PhotowithText template"},
-    "Sticky Note":            {"template": "PhotowithText_1440x1440", "image_type": "environment_photo", "status": "ASSUMED — reusing PhotowithText template"},
-    "Social Media Profile":   {"template": "Quote_1080x1080", "image_type": "headshot_portrait", "status": "ASSUMED — reusing Quote template"},
-    "Talent Profile":         {"template": "Quote_1080x1080", "image_type": "headshot_portrait", "status": "ASSUMED — reusing Quote template"},
-
-    "Text Only":              {"template": "TextOnly_1440x1440", "image_type": "none", "status": "CONFIRMED — Brandon shipped 3 frame variants 2026-05-11"},
-    "Chat Bubble":            {"template": "NEEDS_TEMPLATE", "image_type": "background_gradient", "status": "NO TEMPLATE — Brandon to build. #4 performing style."},
-    "Text with Button and Cursor": {"template": "NEEDS_TEMPLATE", "image_type": "background_gradient", "status": "NO TEMPLATE — Brandon to build. #3 performing style."},
-    "Top Freelancer Profile": {"template": "NEEDS_TEMPLATE", "image_type": "headshot_portrait", "status": "NO TEMPLATE — Brandon to build. #5 performing style."},
-    "Notification":           {"template": "NEEDS_TEMPLATE", "image_type": "background_gradient", "status": "NO TEMPLATE — Brandon to build"},
-    "Reminder":               {"template": "Reminder_1440x1440", "image_type": "none", "status": "CONFIRMED — Brandon shipped 2 frame variants 2026-05-11"},
-    "Pie Chart":              {"template": "NEEDS_TEMPLATE", "image_type": "none", "status": "NO TEMPLATE — Brandon to build"},
-    "Search Results":         {"template": "NEEDS_TEMPLATE", "image_type": "background_gradient", "status": "NO TEMPLATE — Brandon to build"},
-    "Search Bar with Talent Badge": {"template": "NEEDS_TEMPLATE", "image_type": "background_gradient", "status": "NO TEMPLATE — Brandon to build"},
-    "Poll":                   {"template": "NEEDS_TEMPLATE", "image_type": "background_gradient", "status": "NO TEMPLATE — Brandon to build"},
-    "Tweet / Post Mockup":    {"template": "NEEDS_TEMPLATE", "image_type": "background_gradient", "status": "NO TEMPLATE — Brandon to build"},
-    "Device UI":              {"template": "NEEDS_TEMPLATE", "image_type": "environment_photo", "status": "NO TEMPLATE — Brandon to build"},
-    "Platform UI":            {"template": "NEEDS_TEMPLATE", "image_type": "screenshot", "status": "NO TEMPLATE — design provides everything"},
-    "Bespoke":                {"template": "MANUAL", "image_type": "varies", "status": "Always manual — no automation"}
+    "Lifestyle Photo": {
+      "template": "LifestylePhoto_1440x1440",
+      "image_type": "photo_with_person",
+      "status": "CONFIRMED — Brandon rules received"
+    },
+    "Photo with Text": {
+      "template": "PhotowithText_1440x1440",
+      "image_type": "photo_with_person",
+      "status": "CONFIRMED — Brandon rules received"
+    },
+    "Testimonial": {
+      "template": "Template_Testimonial-Photo",
+      "image_type": "headshot_portrait",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Hybrid": {
+      "template": "Template_Adtype_Hybrid",
+      "image_type": "photo_with_person",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Split Screen": {
+      "template": "SplitScreen_1440x1440",
+      "image_type": "photo_with_person",
+      "status": "CONFIRMED — Brandon shipped 2026-05-11 with dual placeholders (left + right). Also available: SplitScreen_1440x1800 for 4:5."
+    },
+    "Us vs Them": {
+      "template": "Template_Us-Vs-Them",
+      "image_type": "photo_with_person",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Meme": {
+      "template": "Meme_ThisIsFine_1440x1440",
+      "image_type": "none",
+      "status": "CONFIRMED — Brandon shipped this-is-fine Meme template 2026-05-18 with 3 variants (white-border, no-border, black-border). Meme image baked into template; pipeline supplies caption only. Additional memes require new template families."
+    },
+    "Graphic with Text": {
+      "template": "Template_Graphic-With-Text",
+      "image_type": "illustration",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Sticky Note": {
+      "template": "Adtype_Sticky-Note_Single",
+      "image_type": "environment_photo",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Social Media Profile": {
+      "template": "Template_Social-Profile",
+      "image_type": "headshot_portrait",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Talent Profile": {
+      "template": "Template_Adtype_Talent-Profile",
+      "image_type": "headshot_portrait",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Text Only": {
+      "template": "TextOnly_1440x1440",
+      "image_type": "none",
+      "status": "CONFIRMED — Brandon shipped 3 frame variants 2026-05-11"
+    },
+    "Chat Bubble": {
+      "template": "Template_Chat-Bubble",
+      "image_type": "background_gradient",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Text with Button and Cursor": {
+      "template": "Template_Text-with-Button",
+      "image_type": "background_gradient",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Notification": {
+      "template": "Template_Notification",
+      "image_type": "background_gradient",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Reminder": {
+      "template": "Reminder_1440x1440",
+      "image_type": "none",
+      "status": "CONFIRMED — Brandon shipped 2 frame variants 2026-05-11"
+    },
+    "Pie Chart": {
+      "template": "Adtype_Pie-Chart",
+      "image_type": "none",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Search Results": {
+      "template": "Adtype_Search-Results",
+      "image_type": "background_gradient",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Search Bar with Talent Badge": {
+      "template": "REMOVED",
+      "image_type": "background_gradient",
+      "status": "REMOVED from ADAM 2026-09-02 (working-session decision: no template exists and none planned; style retired from the order form)"
+    },
+    "Poll": {
+      "template": "Template_Poll",
+      "image_type": "background_gradient",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Tweet / Post Mockup": {
+      "template": "Template_Mockup",
+      "image_type": "background_gradient",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Device UI": {
+      "template": "Template_Device-UI",
+      "image_type": "environment_photo",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Platform UI": {
+      "template": "Template_Platform-UI",
+      "image_type": "screenshot",
+      "status": "CONFIRMED — verified against live Figma via template lint, 2026-09-02"
+    },
+    "Bespoke": {
+      "template": "MANUAL",
+      "image_type": "varies",
+      "status": "Always manual — no automation"
+    }
   },
-
   "image_prompt_rules": {
     "LifestylePhoto_1440x1440": {
       "brandon_rule": "Human-centered or lifestyle imagery. Framed at center. Image bleeds to edge. Copy covers max 40% of bottom.",
@@ -594,7 +665,6 @@
       "lighting": "Warm natural window light, shallow depth of field on background",
       "avoid": "No text, no logos, no watermarks. Person's face must NOT be in the bottom 40% of the frame. No important subjects in lower portion."
     },
-
     "PhotowithText_1440x1440": {
       "brandon_rule": "Human-centered imagery. Framed at center. Image bleeds to internal border edge. White borders, rounded corners 37.33%.",
       "prompt_focus": "Person centered in frame. Will be inside a white-bordered frame with rounded corners. Copy sits in bottom left.",
@@ -604,7 +674,6 @@
       "lighting": "Warm natural light",
       "avoid": "No subject in bottom left corner where headline and CTA sit. No text or logos in the image."
     },
-
     "Quote_1080x1080": {
       "prompt_focus": "Tight headshot portrait. Face fills the frame. Will be cropped to tiny 397px circle.",
       "person_required": true,
@@ -613,7 +682,6 @@
       "lighting": "Soft even studio lighting, sharp focus on eyes",
       "avoid": "No busy backgrounds, no body below shoulders, face must be centered"
     },
-
     "background_only": {
       "prompt_focus": "Abstract gradient or texture. No people, no objects.",
       "person_required": false,

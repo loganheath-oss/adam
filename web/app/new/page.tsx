@@ -16,7 +16,6 @@ const STYLES: [string, string][] = [
   ["Pie Chart", "Round graph element sliced into segments to show data."],
   ["Hybrid", "Lifestyle photography combined with branded UI elements."],
   ["Search Results", "Search bar UI showing desired results."],
-  ["Search Bar with Talent Badge", "Search bar UI with branded badge elements."],
   ["Text Only", "Mostly text to convey message. May include branded background."],
   ["Chat Bubble", "Rounded chat bubble features key messaging with branded background."],
   ["Reminder", "Mobile app reminder features key messaging with branded background."],

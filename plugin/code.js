@@ -37,6 +37,10 @@ var LEGACY_LAYER_NAMES = {
 // Visual style → template name prefix(es). First match wins; subsequent
 // entries are fallbacks for styles whose primary template doesn't exist yet.
 var STYLE_TEMPLATE_PREFIXES = {
+  // Graphic with Text was missing from this map entirely — the style never
+  // assembled (found 2026-09-02; Elise renamed the illustration family to
+  // Template_Graphic-With-Text in the working session).
+  "graphic with text": ["Template_Graphic-With-Text", "Template_GraphicWithText"],
   "lifestyle photo": ["Template_Lifestyle-Photo-Full-Bleed", "Template_LifestylePhoto"],
   "photo with text": ["Template_Photo-With-Text", "Template_PhotoWithText"],
   "testimonial":     ["Template_Testimonial-Photo", "Template_TestimonialC", "Template_TestimonialB", "Template_TestimonialA"],
@@ -76,7 +80,7 @@ var STYLE_TEMPLATE_PREFIXES = {
   // layers all share the name Notification_Headline_Text, so only the primary
   // one fills (via the reminder branch); per-row copy needs distinct layer
   // names in Figma.
-  "tweet / post mockup":          ["Template_Reminder"],
+  "tweet / post mockup":          ["Template_Mockup", "Template_Reminder"],
   // Aliases handled by normalize()
 };
 
@@ -85,6 +89,8 @@ var STYLE_TEMPLATE_PREFIXES = {
 // (e.g., Brandon's Sticky Note template is named "Template_TestimonialA"
 // internally but lives inside "Adtype: Sticky Note").
 var STYLE_ADTYPE_CONTAINERS = {
+  // Adtype_Illustration is the pre-2026-09 name still present on some pages.
+  "graphic with text": ["Adtype_Graphic-With-Text", "Adtype_Illustration", "Adtype: Illustration"],
   "lifestyle photo": ["Adtype_Lifestyle-Photo-Full-Bleed", "Adtype: Lifestyle Photo (Full Bleed)", "Adtype: Lifestyle Photo"],
   "photo with text": ["Adtype_Photo-with-Text", "Adtype: Photo with Text"],
   "testimonial":     ["Adtype_Testimonial", "Adtype: Testimonial Variants", "Adtype: Testimonial"],
@@ -266,6 +272,25 @@ function walkChildren(node, cb) {
     cb(node.children[i]);
     walkChildren(node.children[i], cb);
   }
+}
+
+function _normContainerName(s) {
+  return String(s || "").trim().replace(/\/+$/, "").replace(/\s+/g, " ").toLowerCase();
+}
+
+// Container lookup tolerates cosmetic naming drift (trailing "/", stray or
+// doubled spaces) — "Adtype_Graphic-With-Text/" must match
+// "Adtype_Graphic-With-Text" (2026-09-02). Layer fills keep exact matching.
+function findContainerByName(node, name) {
+  var want = _normContainerName(name);
+  if (_normContainerName(node.name) === want) return node;
+  if ("children" in node) {
+    for (var i = 0; i < node.children.length; i++) {
+      var found = findContainerByName(node.children[i], name);
+      if (found) return found;
+    }
+  }
+  return null;
 }
 
 function findLayerByName(node, name) {
@@ -1346,7 +1371,7 @@ function findStyledTemplate(searchRoot, visualStyle, w, h, hint) {
   // "Template_TestimonialA" but lives inside "Adtype: Sticky Note").
   var preferredContainerNames = STYLE_ADTYPE_CONTAINERS[key] || [];
   for (var ci = 0; ci < preferredContainerNames.length; ci++) {
-    var container = findLayerByName(searchRoot, preferredContainerNames[ci]);
+    var container = findContainerByName(searchRoot, preferredContainerNames[ci]);
     if (!container) continue;
     var hit = matchInside(container, prefixes, w, h, variantPrefs);
     if (hit) {
