@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.03";
+var PLUGIN_VERSION = "2026.09.03b";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -2244,16 +2244,20 @@ async function fillLegacyTemplate(clone, row) {
 // there's no "Capture Template" click.
 var BOARD_MASTER_NAME = "Meta - Static Grouped";
 function findBoardMaster() {
-  var match = null;
-  function walk(n) {
-    if (match) return;
-    if (n.name === BOARD_MASTER_NAME && n.type === "FRAME") { match = n; return; }
-    if ("children" in n) {
-      for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
-    }
+  // Current page first, then the rest of the file. Same "local wins" rule the
+  // template lookup uses: a copy on the page you are working from is an explicit
+  // choice and must beat whichever copy the file-wide walk happens to reach
+  // first (ADAM 2026 holds four "Meta - Static Grouped" frames).
+  function search(root) {
+    var match = null;
+    (function walk(n) {
+      if (match) return;
+      if (n.name === BOARD_MASTER_NAME && n.type === "FRAME") { match = n; return; }
+      if ("children" in n) for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
+    })(root);
+    return match;
   }
-  walk(figma.root);
-  return match;
+  return search(figma.currentPage) || search(figma.root);
 }
 
 // ── Normalize layer names (one-time Figma cleanup) ───────────────────────────
@@ -2339,12 +2343,20 @@ async function normalizeLayerNames() {
 // container template. The plugin clones that frame each run, so the destination is
 // fully controlled — no capture needed. Returns {park, template} (either may be null).
 function findGeneratedArea() {
-  var park = null;
-  (function walk(n) {
-    if (park) return;
-    if (n.type === "SECTION" && /generated tests/i.test(n.name || "")) { park = n; return; }
-    if ("children" in n) for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
-  })(figma.root);
+  // Current page first (2026-09-03). Working from a scratch page while templates
+  // live on the library pages is now the recommended setup — so a "Generated
+  // Tests" section on YOUR page must win over the one on the Template Library
+  // page, which a file-wide walk would otherwise reach first and dump output into.
+  function search(root) {
+    var found = null;
+    (function walk(n) {
+      if (found) return;
+      if (n.type === "SECTION" && /generated tests/i.test(n.name || "")) { found = n; return; }
+      if ("children" in n) for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
+    })(root);
+    return found;
+  }
+  var park = search(figma.currentPage) || search(figma.root);
   var tmpl = null;
   if (park && park.children) {
     for (var i = 0; i < park.children.length; i++) {

@@ -75,3 +75,26 @@ quota — the fastest way to exercise copy-gen end to end.
 ## Before you can get *unique* output
 On the **live (Railway)** tool, copy-gen is verified live (2026-06-29; full gate flow incl. Figma manifest verified 2026-07-27). For **local** runs you need your *own* funded Anthropic key; with an empty key every ad assembles with
 template placeholder text. See [Troubleshooting](11-troubleshooting.md).
+
+## Recommended Figma setup: run from a scratch page (2026-09-03)
+
+**Work inside the template file, on your own page.** Do not keep a copied set of templates in a
+separate working file — those copies rot silently (the 2026-08-31 test file was missing Lifestyle
+Photo's 4:5 size and the Us-vs-Them container entirely, which produced "1 failed, 25 misses").
+
+Setup, once:
+
+1. In the **ADAM 2026** file (the one holding the template pages), add a new page — call it
+   anything, e.g. `Assembly` or `Sept sprints`.
+2. Optional but recommended: put a **`Generated Tests`** SECTION on that page with one FRAME
+   inside it as the container template. The plugin clones that frame per run, so output stacks
+   neatly on your page instead of landing in the section on the Template Library page.
+3. Run the plugin from that page. Nothing else needs to be on it.
+
+The plugin finds what it needs across the file: templates from the library / platform pages, the
+board master, and the output area. In every case **a copy on your current page wins**, so you can
+still override any of them locally by putting one on your page.
+
+Why this is better than a separate working file: the plugin cannot reach into a *different file*
+(that would need the templates published as a Figma library — a bigger change), so a separate file
+always means a hand-copied template set that drifts out of date.
