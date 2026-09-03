@@ -3409,12 +3409,18 @@ async def assembly_report(request: Request):
     # needed Adrie's hand-kept changelog to learn the truth. Persist the result
     # into the sprint so delivery numbers include the Figma half.
     try:
+        _drift_names = body.get("drift_names")
         _report = {
             "at": datetime.now(timezone.utc).isoformat(),
             "boards": int(body.get("boards") or 0),
             "total": int(body.get("total") or 0),
             "warnings": _asm_warn, "misses": _asm_miss,
             "slot_shortfall": _asm_short,
+            # Cosmetic Figma name drift the plugin auto-corrected (2026-09-03).
+            # Not a failure — a maintenance signal, so template naming can be
+            # tidied before something un-normalizable breaks.
+            "name_drift": int(body.get("name_drift") or 0),
+            "drift_names": [str(x)[:160] for x in _drift_names[:40]] if isinstance(_drift_names, list) else [],
         }
         _rep_path = sprint_dir / "assembly_report.json"
         _prev = _load_json(_rep_path) or {"reports": []}

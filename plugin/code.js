@@ -274,42 +274,99 @@ function walkChildren(node, cb) {
   }
 }
 
-function _normContainerName(s) {
-  return String(s || "").trim().replace(/\/+$/, "").replace(/\s+/g, " ").toLowerCase();
+// ── NAME TOLERANCE (2026-09-03) ─────────────────────────────────────────────
+// Figma names drift cosmetically as designers work: a trailing "/", a stray or
+// doubled space, a capitalization change. None of it carries meaning, but exact
+// matching read it as "this template/layer does not exist" and silently
+// degraded a whole style (Graphic with Text). Every lookup here is EXACT FIRST,
+// NORMALIZED SECOND — a correct file behaves identically to before, a drifted
+// one still assembles.
+//
+// Tolerance alone is not enough: absorbing drift silently would let the file rot
+// until something un-normalizable broke. So every normalized match is COUNTED
+// and REPORTED (log line + drift count in the completion message + backend
+// report). Tolerate, then tell someone.
+//
+// Deliberately NOT normalized away: anything meaning-bearing. Sizes
+// (1440x1800), variant words (Dark/Light), and prefix boundaries still matter,
+// and container scoping still disambiguates styles that share a base template
+// name — so this can never make Sticky Note grab the Testimonial template.
+var _asmDrift = 0, _driftNames = [];
+
+function _normName(s) {
+  return String(s || "").replace(/\/+$/, "").replace(/\s+/g, " ").trim().toLowerCase();
 }
 
-// Container lookup tolerates cosmetic naming drift (trailing "/", stray or
-// doubled spaces) — "Adtype_Graphic-With-Text/" must match
-// "Adtype_Graphic-With-Text" (2026-09-02). Layer fills keep exact matching.
-function findContainerByName(node, name) {
-  var want = _normContainerName(name);
-  if (_normContainerName(node.name) === want) return node;
-  if ("children" in node) {
-    for (var i = 0; i < node.children.length; i++) {
-      var found = findContainerByName(node.children[i], name);
-      if (found) return found;
-    }
-  }
-  return null;
+function _noteDrift(found, wanted) {
+  _asmDrift++;
+  var pair = String(found) + "  ->  " + String(wanted);
+  if (_driftNames.indexOf(pair) === -1 && _driftNames.length < 40) _driftNames.push(pair);
+  // No warning glyph: this self-healed, so it must not inflate the warning
+  // count that drives the DEGRADED headline. It is reported on its own line.
+  log("    \u21ba name drift: matched '" + found + "' (expected '" + wanted + "') \u2014 worth fixing in Figma");
 }
 
-function findLayerByName(node, name) {
+function _findExactByName(node, name) {
   if (node.name === name) return node;
   if ("children" in node) {
     for (var i = 0; i < node.children.length; i++) {
-      var found = findLayerByName(node.children[i], name);
+      var found = _findExactByName(node.children[i], name);
       if (found) return found;
     }
   }
   return null;
 }
 
+function _findNormByName(node, want) {
+  if (_normName(node.name) === want) return node;
+  if ("children" in node) {
+    for (var i = 0; i < node.children.length; i++) {
+      var found = _findNormByName(node.children[i], want);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function findContainerByName(node, name) {
+  return findLayerByName(node, name);
+}
+
+function findLayerByName(node, name) {
+  var exact = _findExactByName(node, name);
+  if (exact) return exact;
+  var loose = _findNormByName(node, _normName(name));
+  if (loose) _noteDrift(loose.name, name);
+  return loose;
+}
+
 function findAllLayersByName(node, name) {
+  var results = _findAllExactByName(node, name);
+  if (results.length === 0) {
+    results = _findAllNormByName(node, _normName(name));
+    if (results.length > 0) _noteDrift(results[0].name, name);
+  }
+  return results;
+}
+
+function _findAllNormByName(node, want) {
+  var results = [];
+  if (_normName(node.name) === want) results.push(node);
+  if ("children" in node) {
+    for (var i = 0; i < node.children.length; i++) {
+      var sub = _findAllNormByName(node.children[i], want);
+      for (var j = 0; j < sub.length; j++) results.push(sub[j]);
+    }
+  }
+  return results;
+}
+
+function _findAllExactByName(node, name) {
   var results = [];
   if (node.name === name) results.push(node);
   if ("children" in node) {
     for (var i = 0; i < node.children.length; i++) {
-      var sub = findAllLayersByName(node.children[i], name);
+      var sub = _findAllExactByName(node.children[i], name);
       for (var j = 0; j < sub.length; j++) results.push(sub[j]);
     }
   }
@@ -317,11 +374,32 @@ function findAllLayersByName(node, name) {
 }
 
 function findAllByPrefix(node, prefix) {
+  var results = _findAllByPrefixExact(node, prefix);
+  if (results.length === 0) {
+    results = _findAllByPrefixNorm(node, _normName(prefix));
+    if (results.length > 0) _noteDrift(results[0].name, prefix + "*");
+  }
+  return results;
+}
+
+function _findAllByPrefixExact(node, prefix) {
   var results = [];
   if (node.name && node.name.indexOf(prefix) === 0) results.push(node);
   if ("children" in node) {
     for (var i = 0; i < node.children.length; i++) {
-      var sub = findAllByPrefix(node.children[i], prefix);
+      var sub = _findAllByPrefixExact(node.children[i], prefix);
+      for (var j = 0; j < sub.length; j++) results.push(sub[j]);
+    }
+  }
+  return results;
+}
+
+function _findAllByPrefixNorm(node, wantPrefix) {
+  var results = [];
+  if (node.name && _normName(node.name).indexOf(wantPrefix) === 0) results.push(node);
+  if ("children" in node) {
+    for (var i = 0; i < node.children.length; i++) {
+      var sub = _findAllByPrefixNorm(node.children[i], wantPrefix);
       for (var j = 0; j < sub.length; j++) results.push(sub[j]);
     }
   }
@@ -2258,7 +2336,7 @@ async function assemble(payload) {
   catch (e) { err("CSV parse error: " + e.message); return; }
 
   var mode = forcedMode || detectTemplateMode(template);
-  _asmWarn = 0; _asmMiss = 0; _asmShortfall = 0;
+  _asmWarn = 0; _asmMiss = 0; _asmShortfall = 0; _asmDrift = 0; _driftNames = [];
   log("\n=== Assembly start: mode=" + mode + ", " + manifest.length + " rows ===");
 
   var destination = null;
@@ -2440,6 +2518,8 @@ async function assemble(payload) {
     assetIds: assembledAssetIds || [],
     sprintId: reportSprintId,
     warnings: _asmWarn,
+    nameDrift: _asmDrift,
+    driftNames: _driftNames,
     misses: _asmMiss,
     slotShortfall: _asmShortfall,
   });
