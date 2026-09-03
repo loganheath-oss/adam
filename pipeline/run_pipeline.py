@@ -1930,17 +1930,33 @@ _COPY_ANGLES = [
 
 
 def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id=None,
-                             count=None, angle=None, seq=0):
+                             count=None, angle=None, seq=0, sibling_headlines=None):
     """Generate a small batch of copy concepts for one visual style (one Claude call).
 
     `count` concepts per call (default _CONCEPTS_PER_STYLE); `angle` seeds a distinct
     creative direction; `seq` disambiguates concept_ids across a style's sub-batches.
-    Styles/sub-batches run concurrently — each call is independent and ~120s I/O-bound."""
+    STYLES run concurrently; a style's own sub-batches run in SEQUENCE so each one can
+    receive `sibling_headlines` — what the earlier batches of this same style already
+    wrote. Without that they generate blind to each other, which is the root cause of
+    within-style repetition (2026-09-03: three blind batches produced the same headline
+    three times)."""
     import httpx
 
     concepts = []
     qty = count or _CONCEPTS_PER_STYLE
     _angle_line = f"\nCREATIVE ANGLE FOR THIS SET (make these concepts distinct): {angle}\n" if angle else ""
+
+    # What this style already produced. Same mechanism ADAM uses across sprints to
+    # write away from recently shipped headlines, applied one level down.
+    _sibling_line = ""
+    if sibling_headlines:
+        _sib = "\n".join(f"  - {h}" for h in list(sibling_headlines)[:12] if h)
+        if _sib:
+            _sibling_line = (
+                "\nALREADY WRITTEN FOR THIS STYLE — these concepts exist; yours must be "
+                "DIFFERENT IDEAS in DIFFERENT SENTENCE SHAPES. Do not restate them, do not "
+                "swap one noun, do not reuse their opening or closing words:\n"
+                + _sib + "\n")
 
     # LONG-BODY FORMAT — deterministic 50/50 bullet-vs-paragraph across a style's concepts
     # (Logan 2026-07-24: the model defaulted to 100% bulleted). Assign each concept a format
@@ -2387,7 +2403,7 @@ other approaches. Specific freelancer categories outperform generic talent messa
 {style_rules_block}
 
 Generate {qty} ad copy concepts. Each concept must be COMPLETE — never truncate or
-abbreviate later concepts to save space; every field must be fully written for all {qty}.{_angle_line}{_body_format_line}{_creativity_block}
+abbreviate later concepts to save space; every field must be fully written for all {qty}.{_angle_line}{_sibling_line}{_body_format_line}{_creativity_block}
 
 Platform: {batch.get('platform', 'Meta')}
 Format: {batch.get('format', 'Static Feed')}
@@ -2750,16 +2766,21 @@ def _generate_real_copy(order, context, api_key, sprint_id=None):
     # Sub-batch each style into small angle-seeded calls: _CONCEPTS_PER_STYLE concepts split
     # into groups of _COPY_BATCH_SIZE, each its own call with a distinct creative angle. Keeps
     # every call well under the output ceiling (no truncation/"fatigue") and diversifies output.
-    tasks = []  # each: (i, batch, style, count, angle, seq)
+    # Grouped by STYLE: each group's sub-batches run in sequence so batch 2 can see
+    # what batch 1 wrote (see sibling_headlines). Groups still run concurrently, so
+    # wall-clock stays close to the old all-parallel scheduling on wide orders.
+    groups = []  # each: (i, batch, style, [(count, angle, seq), ...])
     for i, batch in enumerate(order.get("batches", [])):
         for style in batch.get("visual_styles", ["default"]):
             pos = seq = 0
+            subs = []
             while pos < _CONCEPTS_PER_STYLE:
                 cnt = min(_COPY_BATCH_SIZE, _CONCEPTS_PER_STYLE - pos)
-                tasks.append((i, batch, style, cnt, _COPY_ANGLES[seq % len(_COPY_ANGLES)], seq))
+                subs.append((cnt, _COPY_ANGLES[seq % len(_COPY_ANGLES)], seq))
                 pos += cnt
                 seq += 1
-    total = len(tasks)
+            groups.append((i, batch, style, subs))
+    total = sum(len(g[3]) for g in groups)
     if total == 0:
         return {"concepts": [], "generated_at": datetime.now(timezone.utc).isoformat()}
 
@@ -2785,31 +2806,47 @@ def _generate_real_copy(order, context, api_key, sprint_id=None):
     done = 0
     lock = threading.Lock()
 
-    def _run(idx, i, batch, style, cnt, angle, seq):
-        nonlocal done
-        res = _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id,
-                                       count=cnt, angle=angle, seq=seq)
-        with lock:
-            done += 1
-            _save_progress(sprint_id, "stage_02_copy_gen", done, total, f"Copy: {style}")
-        return idx, res
+    _sequential = (os.environ.get("ADAM_SEQUENTIAL_BATCHES", "1") or "1") != "0"
 
-    with ThreadPoolExecutor(max_workers=workers) as ex:
-        futures = [ex.submit(_run, idx, *t) for idx, t in enumerate(tasks)]
+    def _run_group(gidx, i, batch, style, subs):
+        """One style, its sub-batches in order, each seeing the ones before it."""
+        nonlocal done
+        out, seen = [], []
+        for (cnt, angle, seq) in subs:
+            try:
+                res = _generate_copy_for_style(
+                    i, batch, style, order, context, api_key, sprint_id,
+                    count=cnt, angle=angle, seq=seq,
+                    sibling_headlines=(seen if _sequential else None))
+            except Exception as e:
+                print(f"    copy task error [{style} batch {seq}]: {str(e)[:60]}")
+                res = []
+            out.extend(res or [])
+            for c in (res or []):
+                h = c.get("creative_headline") or c.get("headline") or ""
+                if h:
+                    seen.append(h)
+            with lock:
+                done += 1
+                _save_progress(sprint_id, "stage_02_copy_gen", done, total, f"Copy: {style}")
+        return gidx, out
+
+    with ThreadPoolExecutor(max_workers=max(1, min(workers, len(groups)))) as ex:
+        futures = [ex.submit(_run_group, gi, *g) for gi, g in enumerate(groups)]
         for fut in as_completed(futures):
             try:
-                idx, res = fut.result()
-                results[idx] = res
+                gi, res = fut.result()
+                results[gi] = res
             except Exception as e:
-                print(f"    copy task error: {str(e)[:60]}")
+                print(f"    copy group error: {str(e)[:60]}")
 
     concepts = []
     # A style "failed" only if EVERY one of its sub-batches produced nothing.
     style_got = {}
-    for idx in range(total):
-        res = results.get(idx, [])
+    for gi in range(len(groups)):
+        res = results.get(gi, [])
         concepts.extend(res)
-        _st = tasks[idx][2]
+        _st = groups[gi][2]
         style_got[_st] = style_got.get(_st, False) or bool(res)
     failed_styles = [s for s, got in style_got.items() if not got]
     out = {"concepts": concepts, "generated_at": datetime.now(timezone.utc).isoformat()}
