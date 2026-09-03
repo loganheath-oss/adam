@@ -252,9 +252,20 @@
           fetch("https://adam-production-9618.up.railway.app/assembly-report", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sprint_id: msg.sprintId, boards: msg.assembled, total: msg.total, warnings: msg.warnings || 0, misses: msg.misses || 0, slot_shortfall: msg.slotShortfall || 0, name_drift: msg.nameDrift || 0, drift_names: msg.driftNames || [], asset_ids: msg.assetIds || [] })
+            body: JSON.stringify({ sprint_id: msg.sprintId, boards: msg.assembled, total: msg.total, warnings: msg.warnings || 0, misses: msg.misses || 0, slot_shortfall: msg.slotShortfall || 0, plugin_version: msg.pluginVersion || "", name_drift: msg.nameDrift || 0, drift_names: msg.driftNames || [], asset_ids: msg.assetIds || [] })
           }).then(function (r) {
-            appendLog(r.ok ? "Run reported to the ADAM dashboard." : "Dashboard report failed (HTTP " + r.status + ").");
+            if (!r.ok) { appendLog("Dashboard report failed (HTTP " + r.status + ")."); return; }
+            appendLog("Run reported to the ADAM dashboard.");
+            // The backend answers with the version it expects. A copy that is
+            // behind says so here instead of failing mysteriously weeks later.
+            return r.json().then(function (d) {
+              if (d && d.plugin_current && msg.pluginVersion && d.plugin_current !== msg.pluginVersion) {
+                appendLog("\u26a0 THIS PLUGIN IS OUT OF DATE — you are running v" + msg.pluginVersion +
+                  ", current is v" + d.plugin_current + ". Download the latest at " +
+                  "https://adam-production-9618.up.railway.app/plugin and re-import it in Figma " +
+                  "(Plugins \u2192 Development \u2192 Import plugin from manifest).", "error");
+              }
+            }).catch(function () {});
           }).catch(function () {
             appendLog("Dashboard report skipped (network blocked/offline).");
           });

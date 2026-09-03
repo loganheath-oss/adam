@@ -1,4 +1,14 @@
 // Upwork Pipeline Assembly — Figma Plugin (v4)
+// ---------------------------------------------------------------------------
+// PLUGIN_VERSION: bump this whenever plugin/ changes. Every assembly logs it and
+// reports it to the backend, which compares it against the version in the repo
+// and tells the UI when a copy is behind.
+//
+// Why this exists (2026-09-03): plugin copies drift silently. Three different
+// builds were running at once — one with no DEGRADED logic at all — and the
+// only way to find out was diffing files by hand. A build that cannot say what
+// it is cannot be supported.
+var PLUGIN_VERSION = "2026.09.03";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -2408,7 +2418,7 @@ async function assemble(payload) {
   } catch (e) {
     log("    (could not preload all pages: " + e.message + " — cross-page lookup may be limited)");
   }
-  log("\n=== Assembly start: mode=" + mode + ", " + manifest.length + " rows ===");
+  log("\n=== Assembly start: plugin v" + PLUGIN_VERSION + ", mode=" + mode + ", " + manifest.length + " rows ===");
 
   var destination = null;
   if (capturedDestinationId) {
@@ -2592,6 +2602,7 @@ async function assemble(payload) {
     assetIds: assembledAssetIds || [],
     sprintId: reportSprintId,
     warnings: _asmWarn,
+    pluginVersion: PLUGIN_VERSION,
     nameDrift: _asmDrift,
     driftNames: _driftNames,
     misses: _asmMiss,

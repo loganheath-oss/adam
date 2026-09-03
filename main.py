@@ -3342,6 +3342,73 @@ async def client_error(request: Request):
     return JSONResponse({"ok": True})
 
 
+PLUGIN_DIR = BASE_DIR / "plugin"
+
+
+def _plugin_version() -> str:
+    """Read PLUGIN_VERSION straight out of plugin/code.js — the plugin file is the
+    single source of truth, so the backend can never disagree with what ships."""
+    try:
+        m = re.search(r'var\s+PLUGIN_VERSION\s*=\s*"([^"]+)"',
+                      (PLUGIN_DIR / "code.js").read_text())
+        return m.group(1) if m else ""
+    except Exception:
+        return ""
+
+
+@app.get("/plugin/version")
+async def plugin_version():
+    return JSONResponse({"version": _plugin_version()})
+
+
+@app.get("/plugin/download")
+async def plugin_download():
+    """Zip of the current plugin files. This is the canonical distribution point:
+    three divergent copies were running in the wild on 2026-09-03 (one missing a
+    July fix entirely) because updates travelled by hand."""
+    import io
+    import zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for name in ("manifest.json", "code.js", "ui.html"):
+            f = PLUGIN_DIR / name
+            if f.exists():
+                z.writestr(f"upwork-pipeline-assembly/{name}", f.read_text())
+    data = buf.getvalue()
+    ver = _plugin_version() or "unknown"
+    return Response(content=data, media_type="application/zip", headers={
+        "Content-Disposition": f'attachment; filename="upwork-pipeline-assembly-{ver}.zip"'})
+
+
+@app.get("/plugin", response_class=HTMLResponse)
+async def plugin_page():
+    ver = _plugin_version() or "unknown"
+    return HTMLResponse(f"""<!doctype html><html><head><meta charset="utf-8">
+<title>ADAM Figma plugin</title><style>
+body{{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:660px;
+margin:60px auto;padding:0 24px;color:#1a2420;line-height:1.6}}
+h1{{font-size:26px;margin:0 0 6px}} .v{{font-family:ui-monospace,Menlo,monospace;
+background:#f2f5f1;padding:2px 8px;border-radius:4px}}
+a.btn{{display:inline-block;background:#14A800;color:#fff;text-decoration:none;
+padding:11px 20px;border-radius:8px;font-weight:600;margin:18px 0}}
+ol{{padding-left:20px}} li{{margin:7px 0}} .muted{{color:#5c6b62;font-size:14px}}
+</style></head><body>
+<h1>ADAM Figma plugin</h1>
+<p>Current version <span class="v">{ver}</span></p>
+<a class="btn" href="/plugin/download">Download the plugin</a>
+<h3>Installing or updating</h3>
+<ol>
+  <li>Download and unzip the folder.</li>
+  <li>In the Figma desktop app: <b>Plugins &rarr; Development &rarr; Import plugin from manifest…</b></li>
+  <li>Choose <span class="v">manifest.json</span> from the unzipped folder.</li>
+  <li>Updating? Import over the old one, or delete the previous entry first so you
+      do not end up with two.</li>
+</ol>
+<p class="muted">Every assembly logs its plugin version and checks it against this page.
+If your copy is out of date the plugin log will tell you so at the end of a run.</p>
+</body></html>""")
+
+
 @app.post("/issues")
 async def report_issue_endpoint(request: Request):
     """Public: capture a user-reported issue — the feedback→learning loop. Admins
@@ -3464,7 +3531,9 @@ async def assembly_report(request: Request):
                         _atomic_write_json(_sum_path, _summary)
     except Exception as _wb_exc:
         print(f"[assembly-report] write-back failed for {sid}: {_wb_exc}")
-    return JSONResponse({"ok": True})
+    # Answer with the version the repo ships, so an out-of-date copy can say so
+    # in its own log instead of failing mysteriously weeks later (2026-09-03).
+    return JSONResponse({"ok": True, "plugin_current": _plugin_version()})
 
 
 @app.get("/admin/issues", dependencies=[Depends(require_api_key)])

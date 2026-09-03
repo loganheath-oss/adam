@@ -101,3 +101,22 @@ break a run.
 **Still open (Elise's "dream scenario"):** pointing at a different *file* rather than a different
 page. That needs the templates published as a Figma **library** and `importComponentByKeyAsync`,
 which is a bigger change and a team-plan dependency.
+
+## Updating the plugin (do this before reporting an assembly bug)
+
+The plugin runs from files on each person's machine, so copies drift. On 2026-09-03 three
+different builds were in use at once — one missing a July fix entirely — and the only way to
+find out was diffing files by hand.
+
+**Get the current build:** <https://adam-production-9618.up.railway.app/plugin> — download, unzip,
+then in the Figma desktop app choose **Plugins → Development → Import plugin from manifest…** and
+pick `manifest.json`. Importing over an old copy is fine; delete the previous entry if you end up
+with two.
+
+**How you know you are behind:** every assembly logs `plugin v<version>` on its first line and
+reports that version to the backend, which answers with the version the repo ships. If they differ,
+the plugin log ends with a loud "THIS PLUGIN IS OUT OF DATE" line naming both versions.
+
+**For engineers:** `PLUGIN_VERSION` at the top of `plugin/code.js` is the single source of truth —
+the backend parses it out of that file, so there is no second place to update. Bump it in the same
+commit as any `plugin/` change.
