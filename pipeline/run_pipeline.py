@@ -4354,6 +4354,11 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results,
                 _r["Headline"] = _v.get("headline") or _r["Headline"]
                 _r["Headline_Short"] = _v.get("headline_short") or _r["Headline_Short"]
                 _r["Description"] = _v.get("description") or _r["Description"]
+                # CTA was missing from this list — a per-audience CTA was written
+                # into targeting_copy but the manifest kept reading only the base
+                # value, so an operator's Gate-3 CTA edit never reached assembly or
+                # the exports (issue #17, 2026-09-03).
+                _r["CTA"] = _v.get("cta") or _r["CTA"]
                 # STYLE-EXTRA on-image fields — per audience (Logan 2026-07-31:
                 # "the copy that goes on the creative images should be different
                 # for both as well"). Legacy sprints without per-audience extras

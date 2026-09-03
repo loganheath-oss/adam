@@ -612,16 +612,31 @@ def tool_edit_copy(sprint_id: str, concept_tag: str, updates: dict, audience: st
                     if c.get("concept_tag") == concept_tag), None)
     if concept is None:
         return {"error": f"No concept with concept_tag '{concept_tag}'. Use get_copy_concepts."}
-    target = concept
+    # WHERE THE EDIT MUST LAND (fixed 2026-09-03, issue #17).
+    # On a Prospecting-and-Retargeting order the manifest reads most on-creative
+    # and feed fields from the per-audience `targeting_copy` block, falling back to
+    # the base concept only when the audience value is empty. So editing ONLY the
+    # base silently does nothing for those fields — the operator sees the edit
+    # confirmed and the old text still ships.
+    # Rule: naming an audience edits exactly that audience; omitting it means
+    # "change this everywhere", so the base AND every audience block that carries
+    # the field are updated together.
+    targets = []
     audience = (audience or "").strip().title()
+    tc = concept.get("targeting_copy") if isinstance(concept.get("targeting_copy"), dict) else {}
     if audience:
         if audience not in ("Prospecting", "Retargeting"):
             return {"error": "audience must be 'Prospecting', 'Retargeting', or omitted"}
-        tc = concept.get("targeting_copy")
-        if not isinstance(tc, dict) or not isinstance(tc.get(audience), dict):
+        if not isinstance(tc.get(audience), dict):
             return {"error": f"This concept has no targeting_copy for {audience} — "
                              "edit the base fields instead (omit audience)."}
-        target = tc[audience]
+        targets = [(audience, tc[audience])]
+    else:
+        targets = [("base", concept)]
+        for _aud in ("Prospecting", "Retargeting"):
+            if isinstance(tc.get(_aud), dict):
+                targets.append((_aud, tc[_aud]))
+    target = targets[0][1]
     applied, rejected = {}, {}
     for field, value in updates.items():
         if field not in _EDITABLE_COPY_FIELDS:
@@ -645,7 +660,11 @@ def tool_edit_copy(sprint_id: str, concept_tag: str, updates: dict, audience: st
                 rejected[field] = f"exceeds {_MAX_COPY_FIELD_CHARS} chars"
                 continue
             value = value.strip()
-        target[field] = value
+        for _name, _t in targets:
+            # Only add a field to an audience block that already carries it, or
+            # when it is the base — never invent a field the block never had.
+            if _name == "base" or field in _t:
+                _t[field] = value
         applied[field] = value
     if applied:
         concept["human_edited"] = True
@@ -660,11 +679,15 @@ def tool_edit_copy(sprint_id: str, concept_tag: str, updates: dict, audience: st
             "source": "agent"})
     return {"ok": bool(applied), "concept_tag": concept_tag,
             "audience": audience or "base",
+            "written_to": [n for n, _ in targets],
             "applied": applied, "rejected": rejected,
             "note": ("Copy updated in copy_outputs.json — image prompts will be built "
-                     "from this text after Gate 3 approval. Template character caps "
-                     "are NOT re-checked on manual edits; keep on-image copy short. "
-                     "Show the user the updated concept."
+                     "from this text after Gate 3 approval. `written_to` lists every "
+                     "place the value landed: omitting `audience` updates the base AND "
+                     "both audience versions, which is what an operator means by "
+                     "'change the CTA'. Name an audience only to change ONE of them. "
+                     "Template character caps are NOT re-checked on manual edits; keep "
+                     "on-image copy short. Show the user the updated concept."
                      if applied else "Nothing applied — see rejected.")}
 
 
