@@ -253,6 +253,7 @@ var STYLES_THAT_SKIP_CTA = {
 // drift after a layer rename) instead of only reporting the board count. One
 // assembly runs at a time, so module-level is safe. Reset at each assembly start.
 var _asmWarn = 0, _asmMiss = 0, _asmShortfall = 0;
+var _sprRootsRef = null;  // ordered template roots for the current run
 function log(text) {
   try {
     if (typeof text === "string") {
@@ -542,6 +543,69 @@ function detectTemplateMode(t) {
 // pick which templates to use. Prefers the page named like a template library;
 // otherwise the single page that has Template_* frames; otherwise the whole
 // document (figma.root) so the finder can scope by Adtype container across pages.
+// ── WHERE TEMPLATES MAY LIVE (2026-09-03) ───────────────────────────────────
+// Adrie/Elise, working session: "if all the templated materials aren't
+// available on the page the plugin is run, it won't generate what we need" —
+// so a working page had to carry a full copy of the template library, which
+// rots (the 8/31 test file was missing Lifestyle 4:5 and the Us-vs-Them
+// container entirely) and is easy to break by moving one frame.
+//
+// Templates may now live on ANOTHER PAGE. Lookups walk an ordered list of
+// roots and take the first hit:
+//   1. the current page      — a local copy still wins, so nothing regresses
+//                              and a designer can still override in place
+//   2. the platform's own template page ("-> Meta Templates", "-> Reddit
+//      Templates" …) — REQUIRED, because five pages carry containers with
+//      IDENTICAL names; a blind document-wide search would happily assemble a
+//      LinkedIn frame into a Meta run
+//   3. the generic template library page (name matches /template/i)
+//   4. the whole document    — last resort
+function templateSearchRoots(manifest) {
+  var roots = [], seen = {};
+  function push(n, why) {
+    if (!n || seen[n.id]) return;
+    seen[n.id] = true;
+    roots.push({ node: n, why: why });
+  }
+  push(figma.currentPage, "current page");
+
+  // Platform token from the manifest (Meta / Reddit / LinkedIn / YouTube …).
+  var platform = "";
+  for (var i = 0; i < (manifest || []).length && !platform; i++) {
+    platform = String(manifest[i].Platform || manifest[i].platform || "");
+  }
+  var token = _normName(platform).replace(/[^a-z0-9]/g, "");
+  if (token === "3rdpartyaffiliate") token = "thirdparty";
+  if (token.indexOf("google") === 0) token = "google";
+
+  var pages = figma.root.children;
+  if (token) {
+    for (var j = 0; j < pages.length; j++) {
+      var pn = _normName(pages[j].name).replace(/[^a-z0-9]/g, "");
+      if (pn.indexOf(token) !== -1 && pn.indexOf("template") !== -1) {
+        push(pages[j], "platform page '" + pages[j].name.trim() + "'");
+      }
+    }
+  }
+  for (var k = 0; k < pages.length; k++) {
+    if (/template/i.test(pages[k].name)) push(pages[k], "template library page '" + pages[k].name.trim() + "'");
+  }
+  push(figma.root, "entire document");
+  return roots;
+}
+
+// Try each root in order; the first template found wins.
+function findStyledTemplateAcross(roots, visualStyle, w, h, hint) {
+  for (var i = 0; i < roots.length; i++) {
+    var hit = findStyledTemplate(roots[i].node, visualStyle, w, h, hint);
+    if (hit) {
+      if (i > 0) log("      (found on " + roots[i].why + " — not the working page)");
+      return hit;
+    }
+  }
+  return null;
+}
+
 function findTemplatesRoot() {
   var pages = figma.root.children;
   var withTemplates = [];
@@ -1546,7 +1610,7 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
       }
     }
     if (!found) {
-      found = findStyledTemplate(searchRoot, visualStyle, dims[0], dims[1]);
+      found = findStyledTemplateAcross(_sprRootsRef || [{ node: searchRoot, why: "search root" }], visualStyle, dims[0], dims[1]);
     }
     if (!found) {
       log("  ✗ No styled template found for " + visualStyle + " at " + dims[0] + "x" + dims[1]);
@@ -1965,7 +2029,7 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
     // correctly-sized styled template.
 
     if (styledSearchRoot) {
-      var found = findStyledTemplate(styledSearchRoot, visualStyle, w, h, variantHint);
+      var found = findStyledTemplateAcross(styledSearchRoot, visualStyle, w, h, variantHint);
       if (found) {
         var styledClone = found.node.clone();
         styledClone.name = "STYLED_concept-" + (conceptIndex + 1) + "_" + w + "x" + h;
@@ -2337,6 +2401,13 @@ async function assemble(payload) {
 
   var mode = forcedMode || detectTemplateMode(template);
   _asmWarn = 0; _asmMiss = 0; _asmShortfall = 0; _asmDrift = 0; _driftNames = [];
+  // Cross-page template lookup needs every page loaded when the document is in
+  // dynamic-page mode. Guarded: the API is absent on older Figma builds.
+  try {
+    if (typeof figma.loadAllPagesAsync === "function") await figma.loadAllPagesAsync();
+  } catch (e) {
+    log("    (could not preload all pages: " + e.message + " — cross-page lookup may be limited)");
+  }
   log("\n=== Assembly start: mode=" + mode + ", " + manifest.length + " rows ===");
 
   var destination = null;
@@ -2394,6 +2465,9 @@ async function assemble(payload) {
       var srLabel = (searchRoot === figma.root) ? "entire document" : ("page '" + searchRoot.name + "'");
       log("Manifest has " + styleCount + " distinct styles — auto-searching the " + srLabel + " for templates");
     }
+    var _sprRoots = templateSearchRoots(manifest);
+    log("Template search order: " + _sprRoots.map(function (r) { return r.why; }).join(" \u2192 "));
+    _sprRootsRef = _sprRoots;
     var result = await assembleStyledPerRow(searchRoot, manifest, destination, baseX, baseY);
     assembled = result.assembled;
     assembledIds = result.ids;
@@ -2405,8 +2479,8 @@ async function assemble(payload) {
     log("Grouped " + manifest.length + " rows into " + groups.length + " concepts");
     // For concept_board mode, look for styled templates on the entire page so we can
     // place them inside each concept board's image frame slots.
-    var styledSearchRoot = figma.currentPage;
-    log("Styled-template search root: current page (will place styled clones inside image slots)");
+    var styledSearchRoot = templateSearchRoots(manifest);
+    log("Styled-template search order: " + styledSearchRoot.map(function (r) { return r.why; }).join(" \u2192 "));
 
     // Output goes into a CLONE of the 'Generated Tests' container (the frame
     // inside the 'Generated Tests' section). Each run = one cloned container,
