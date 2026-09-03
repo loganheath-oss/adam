@@ -39,6 +39,16 @@ Gate 3 approval, copy is frozen for the run.
 A: Yes. `learnings.md` lives on the persistent `/data` volume and survives every deploy (since 2026-07-29).
 The chat reads it every session.
 
+**Q: The on-ad copy echoes itself — same sentence with a different word swapped in. Why?**
+A: Six concepts per style, generated in one call, tend to rhyme. As of 2026-09-03 two things
+push back: a craft-bar rule telling the model that two headlines sharing an opening AND closing
+pair are one idea in three hats (vary the grammar, not just the noun), and a deterministic pass
+that walks every concept in a style best-first and labels any that reuses an earlier one's idea
+or frame with **⚠ ECHO** in review notes. If an echoing concept was auto-selected, a distinct
+alternate is swapped in when one exists. Measured on 12 past sprints, ~7% of concepts would carry
+the label — concentrated in small runs (17-25% at 1-3 styles, ~4% at 12), which is also where the
+problem was worst.
+
 **Q: Why does ADAM keep picking the same library photo?**
 A: It can't repeat back-to-back anymore (2026-09-02): a photo used in the previous sprint is **excluded
 outright** from the next one (unless it's the only photo matching the style's tags), photos from the

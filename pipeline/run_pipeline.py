@@ -259,6 +259,17 @@ speak (word choices, sentence shapes, how they name outcomes) and write NEW idea
 voice. Do not copy their headlines — echo their DNA. An ad that sounds like those examples
 but says something fresh is exactly the target.
 
+RULE 9 — Every concept needs its OWN SENTENCE SHAPE. Within a style, do not write the
+same frame with a different noun dropped in. "Find the designer you need today" /
+"Find the creative person you need today" / "Find the developer you need today" is ONE
+idea wearing three hats, and the operator reads the set and sees filler (real complaint,
+2026-09-02; measured at 14% of on-creative headlines in small runs). Two concepts that
+open with the same two words AND close with the same two words are the same concept.
+Vary the GRAMMAR, not just the noun: a question, a fragment, a customer's line, a
+number-led claim, a before/after, an imperative, a reframe. Punctuation variants of one
+line ("Idea to app store in four months" / "Idea to app store, four months") are not two
+concepts — they are one concept and a typo.
+
 FLAT — never write like this (literal, generic, interchangeable):
   "Hire in 48h" | "Hire AI-skilled talent fast" | "Hired in 48 hours" | "Find talent today" | "AI talent, fast"
   — and never fear-generic: "Don't fall behind" | "Your project can't wait" | "Hire somebody right now"
@@ -357,6 +368,33 @@ _HL_STOP = {"your", "the", "a", "an", "is", "are", "was", "be", "being",
 
 def _headline_tokens(text):
     return set(re.findall(r"[a-z0-9']+", str(text or "").lower())) - _HL_STOP
+
+
+def _headline_skeleton(s):
+    """The sentence FRAME of a headline: first two + last two words, lowercased.
+
+    Adrie's complaint (2026-09-02) is not repeated words, it is a repeated shape:
+    "find the designer you need today" / "find the creative person you need today".
+    Content-word Jaccard scores that pair at 0.50 — under _headlines_near_dup's
+    0.6 bar — so word-overlap alone can never catch it. Measured across 12 real
+    sprints: 14% of on-creative headlines in small runs share a frame.
+    """
+    w = re.findall(r"[a-z0-9']+", str(s or "").lower())
+    if len(w) < 4:
+        return ""
+    return " ".join(w[:2]) + "|" + " ".join(w[-2:])
+
+
+def _headlines_same_shape(a, b):
+    """True when two headlines are built on the same frame (see _headline_skeleton).
+    Requires >=4 words on both sides so short titles never collide."""
+    sa, sb = _headline_skeleton(a), _headline_skeleton(b)
+    return bool(sa) and sa == sb
+
+
+def _headlines_echo(a, b):
+    """Either kind of repetition: same idea (word overlap) OR same frame (shape)."""
+    return _headlines_near_dup(a, b) or _headlines_same_shape(a, b)
 
 
 def _headlines_near_dup(a, b):
@@ -881,6 +919,63 @@ def stage_02_copy_gen(sprint_id, order, context):
     # converge on one construction ("Post today, hire Friday" x7 — Adrie, 2026-07-28).
     # Walk selected concepts across styles; when one near-dups an already-accepted headline
     # from ANOTHER style, swap it for that style's best non-dup, legal-clean alternate.
+    # WITHIN-STYLE variety (2026-09-03). The cross-style pass below only compares
+    # against OTHER styles, so a single style's selected concepts could repeat each
+    # other — measured at 14% of on-creative headlines in small runs, with real
+    # cases like "Your website, finally done" three times, and punctuation-only
+    # variants ("Idea to app store in four months" / ", four months" / " — four
+    # months") presented as distinct concepts. Same swap strategy as cross-style:
+    # prefer a non-echoing alternate from the style's own pool; if none exists,
+    # keep the pick but SAY SO in review_notes rather than shipping it silently.
+    _ws_all = copy_outputs.get("concepts", [])
+    if _ws_all:
+        _ws_by_style = {}
+        for c in _ws_all:
+            _ws_by_style.setdefault(c.get("visual_style"), []).append(c)
+        _ws_swaps = _ws_flags = 0
+        for _style, _pool in _ws_by_style.items():
+            _kept = []
+            # Walk BEST-RANKED FIRST and judge EVERY concept, not just the selected
+            # ones. The operator reads all 6 per style at Gate 3 — that review list is
+            # where the repetition actually shows ("it kind of echoes itself among the
+            # ads"), and selected picks measured clean already. An echoing concept is
+            # labeled so the reader can see it is a variant, not a fresh idea.
+            for c in sorted(_pool, key=lambda x: (not x.get("selected"), x.get("rank", 99))):
+                _hl = c.get("creative_headline") or c.get("headline") or ""
+                if not any(_headlines_echo(_hl, k) for k in _kept):
+                    _kept.append(_hl)
+                    continue
+                # This concept repeats an earlier one's idea or frame. Label it either
+                # way — the operator should never have to spot the repetition unaided.
+                c["echo_flag"] = True
+                if "⚠ ECHO" not in str(c.get("review_notes", "")):
+                    c["review_notes"] = ("⚠ ECHO — reuses another concept's idea or sentence "
+                                         "frame in this style. " + str(c.get("review_notes", "")))
+                _ws_flags += 1
+                # If it was SELECTED, try to ship something genuinely different instead.
+                if c.get("selected"):
+                    _alt = next((a for a in _pool
+                                 if not a.get("selected")
+                                 and not a.get("legal_flags")
+                                 and not a.get("placeholder_flag")
+                                 and not a.get("echo_flag")
+                                 and not any(_headlines_echo(
+                                     a.get("creative_headline") or a.get("headline") or "", k)
+                                     for k in _kept)), None)
+                    if _alt is not None:
+                        c["selected"] = False
+                        _alt["selected"] = True
+                        _alt["review_notes"] = ("↔ swapped in for within-style variety — the prior "
+                                                "pick reused another concept's sentence frame. "
+                                                + str(_alt.get("review_notes", "")))
+                        _apply_cta_mix(_pool, _style)
+                        _kept.append(_alt.get("creative_headline") or _alt.get("headline") or "")
+                        _ws_swaps += 1
+                        continue
+                _kept.append(_hl)
+        if _ws_swaps or _ws_flags:
+            print(f"  Within-style variety: {_ws_swaps} pick(s) swapped, {_ws_flags} flagged as echo")
+
     _cs_all = copy_outputs.get("concepts", [])
     if _cs_all:
         _accepted = []   # (style, headline) accepted so far across the batch
@@ -944,6 +1039,13 @@ def stage_02_copy_gen(sprint_id, order, context):
                 1 for c in _sel for h in _rh
                 if _headlines_near_dup(c.get("creative_headline") or c.get("headline") or "", h))
                 )(_recent_shipped_headlines(sprint_id, max_sprints=8, cap=50)),
+            "within_style_echo_pairs": sum(
+                1 for i in range(len(_sel)) for j in range(i + 1, len(_sel))
+                if _sel[i].get("visual_style") == _sel[j].get("visual_style")
+                and _headlines_echo(
+                    _sel[i].get("creative_headline") or _sel[i].get("headline") or "",
+                    _sel[j].get("creative_headline") or _sel[j].get("headline") or "")),
+            "echo_flagged": sum(1 for c in _cs if c.get("echo_flag")),
             "cross_style_dup_pairs": sum(
                 1 for i in range(len(_sel)) for j in range(i + 1, len(_sel))
                 if _sel[i].get("visual_style") != _sel[j].get("visual_style")
