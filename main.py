@@ -3486,6 +3486,10 @@ async def assembly_report(request: Request):
             # Cosmetic Figma name drift the plugin auto-corrected (2026-09-03).
             # Not a failure — a maintenance signal, so template naming can be
             # tidied before something un-normalizable breaks.
+            # Which build ran this assembly — makes divergence visible in the
+            # data instead of requiring a hand diff of everyone's files.
+            "plugin_version": str(body.get("plugin_version") or "")[:32],
+            "plugin_current": _plugin_version(),
             "name_drift": int(body.get("name_drift") or 0),
             "drift_names": [str(x)[:160] for x in _drift_names[:40]] if isinstance(_drift_names, list) else [],
         }
