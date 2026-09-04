@@ -51,8 +51,17 @@ flowchart LR
 2. [Architecture](02-architecture.md) — how the pieces fit, end to end
 3. [Repo map](03-repo-map.md) — where every file lives (and what's historical)
 
-**Want to run it / operate it:**
-4. [Using ADAM](07-using-adam.md) — operator runbook: order → gates → Figma → delivery
+**Want to run it / operate it — start with YOUR role:**
+- 🧾 [Paid Acquisition](17-role-paid-acquisition.md) — requesting ads. You fill out the order form; that's the whole job.
+- ✍️ [Copywriter](18-role-copywriter.md) — running a sprint through the gates. Gate 3 is where your craft enters.
+- 🎨 [Designer](19-role-designer.md) — Figma assembly, the plugin, and owning the templates.
+
+The three roles are genuinely separate jobs — Paid Acquisition never runs the tool, and the Figma
+half is different work from driving the pipeline. Read your own; skim the others to know who to
+hand off to.
+
+**Then the depth, in this order:**
+4. [Using ADAM](07-using-adam.md) — the full runbook across all roles (order → gates → Figma → delivery)
 5. [The pipeline](04-the-pipeline.md) — stages 00–06 and the gate model
 6. [The Figma plugin](05-figma-plugin.md) — assembling creatives from a manifest
 7. [The web app & chat](06-the-web-app-and-chat.md) — order form, dashboard, "ask ADAM anything"

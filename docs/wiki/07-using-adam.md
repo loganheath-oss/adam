@@ -1,5 +1,11 @@
 # Using ADAM (operator runbook)
 
+> **Looking for just your part?** Three people share this workflow and each needs a different
+> slice: [Paid Acquisition](17-role-paid-acquisition.md) (order form only) ·
+> [Copywriter](18-role-copywriter.md) (running the gates) ·
+> [Designer](19-role-designer.md) (Figma assembly + templates).
+> This page is the complete end-to-end runbook behind all three.
+
 End-to-end: from a brief to finished creatives. Two ways to drive it — the **web app** (normal) or the
 **CLI** (power users / debugging).
 
