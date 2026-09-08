@@ -143,9 +143,19 @@ def _concept_schema(style, is_both, qty):
     of shape bugs impossible at the source: nested {feed:{…}} audiences, missing
     headline fields, truncated JSON, empty-string-vs-missing drift, thinking-block
     parses. additionalProperties=false everywhere is the teeth."""
+    # Fields that are useless empty. "required" only forces the KEY to exist —
+    # an empty string satisfies {"type":"string"}, which is exactly how ~20% of
+    # concepts shipped with no CTA at all (measured 14/71 on the 2026-09-04 run,
+    # 60/392 historically). Invisible downstream because the Figma template's
+    # default button fills the gap, so every such ad carried the same CTA.
+    # A minLength makes the API itself refuse to return one.
+    _NONEMPTY = {"cta", "creative_headline", "headline", "headline_short"}
+
     def _prop(f):
         if f in _LIST_FIELDS:
             return {"type": "array", "items": {"type": "string"}}
+        if f in _NONEMPTY:
+            return {"type": "string", "minLength": 2}
         return {"type": "string"}
 
     props = {f: _prop(f) for f in _BASE_FIELDS}
@@ -565,6 +575,19 @@ def _deterministic_selection(reviewed, target, style):
        skipped if the diverse pool runs short. Legal-flagged NEVER selected.
     """
     for concept in reviewed:
+        # MISSING CTA (2026-09-08). The schema minimum above stops these being
+        # generated; this catches anything arriving through a fallback path or
+        # as whitespace. Deliberately a SOFT demote, not a hard reject like
+        # placeholder: a strong concept missing only its CTA is still a good
+        # concept, and at the historical ~20% rate hard-rejecting could leave a
+        # style short of shippable options. Prefer complete ones, make the gap
+        # visible, never ship it unnoticed.
+        if not str(concept.get("cta") or "").strip():
+            concept["missing_cta_flag"] = True
+            if "⚠ NO CTA" not in str(concept.get("review_notes", "")):
+                concept["review_notes"] = ("⚠ NO CTA — this concept has no call-to-action; "
+                                           "the template's default button would be used. "
+                                           + str(concept.get("review_notes", "")))
         if _concept_has_placeholder_copy(concept):
             concept["placeholder_flag"] = True
             concept["selected"] = False
@@ -599,6 +622,7 @@ def _deterministic_selection(reviewed, target, style):
     eligible = [c for c in reviewed
                 if not c.get("legal_flags") and not c.get("placeholder_flag")]
     eligible.sort(key=lambda c: (not c.get("brief_quote_used"),
+                                 bool(c.get("missing_cta_flag")),
                                  bool(c.get("length_flags")),
                                  bool(c.get("length_warnings")),
                                  len(c.get("length_flags", [])),
@@ -1046,6 +1070,8 @@ def stage_02_copy_gen(sprint_id, order, context):
                     _sel[i].get("creative_headline") or _sel[i].get("headline") or "",
                     _sel[j].get("creative_headline") or _sel[j].get("headline") or "")),
             "echo_flagged": sum(1 for c in _cs if c.get("echo_flag")),
+            "missing_cta": sum(1 for c in _cs if c.get("missing_cta_flag")),
+            "missing_cta_selected": sum(1 for c in _sel if c.get("missing_cta_flag")),
             "cross_style_dup_pairs": sum(
                 1 for i in range(len(_sel)) for j in range(i + 1, len(_sel))
                 if _sel[i].get("visual_style") != _sel[j].get("visual_style")
