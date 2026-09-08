@@ -924,6 +924,7 @@ def stage_01_load_refs(sprint_id, order):
 # =============================================================================
 
 def stage_02_copy_gen(sprint_id, order, context):
+    _set_active_platform(order)
     """Generate ad copy using Anthropic API directly."""
     print("\n" + "="*60)
     print("  STAGE 02: COPY GENERATION")
@@ -1367,14 +1368,39 @@ def _load_style_guide():
     return _STYLE_GUIDE
 
 
-def _guide_entry_for_style(style):
+# Platform for the run in progress. Several ad types exist on BOTH Meta and
+# Reddit with DIFFERENT character limits (Testimonial, Split Screen, Text Only,
+# Meme, Pie Chart, Us vs Them, Graphic with Text), so the guide lookup has to
+# know which platform it is resolving for. Set once from the order at the start
+# of stage 02/03; constant for the run, so the concurrent per-style workers only
+# ever read it.
+_ACTIVE_PLATFORM = ""
+
+
+def _set_active_platform(order):
+    global _ACTIVE_PLATFORM
+    try:
+        _ACTIVE_PLATFORM = str((order or {}).get("platform") or "").strip()
+    except Exception:
+        _ACTIVE_PLATFORM = ""
+
+
+def _guide_entry_for_style(style, platform=None):
     """(key, entry_dict) for this style, or (None, None). Lookup order matches the
-    registry: exact norm → alias → bidirectional prefix."""
+    registry: platform-specific → exact norm → alias → bidirectional prefix.
+
+    A platform-specific entry (key 'reddit-testimonial') always wins over the
+    generic one so Reddit's limits never get applied to a Meta ad or vice versa."""
     g = _load_style_guide()
     entries = g.get("entries", {})
     if not entries:
         return None, None
     norm = _norm_style(style)
+    plat = _norm_style(platform if platform is not None else _ACTIVE_PLATFORM)
+    if plat:
+        pkey = f"{plat}-{norm}"
+        if pkey in entries:
+            return pkey, entries[pkey]
     if norm in entries:
         return norm, entries[norm]
     alias = (g.get("aliases") or {}).get(norm)
@@ -3434,6 +3460,7 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
     # image baked into the template (e.g. "this-is-fine 1"); pipeline supplies
     # caption only. Adding a new meme requires a new template family from
     # Brandon, not a new pipeline-generated image.
+    _set_active_platform(order)
     SKIP_IMAGE = {"Platform UI", "Meme",
                   # New graphic/UI-only styles (2026-06-22) — no photo slot; the
                   # plugin keeps their built imagery (STYLES_THAT_SKIP_IMAGE).

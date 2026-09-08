@@ -58,6 +58,14 @@ VALID_STYLES = {
     "Sticky Note", "Poll", "Tweet / Post Mockup",
     "Text with Button", "Text with Button and Cursor",  # latter is legacy alias
     "Talent Profile", "Bespoke",
+    # Reddit-only ad types (2026-09-08). Reddit's template page carries 20 ad
+    # types; these 12 have no Meta equivalent. The 8 shared names (Testimonial,
+    # Split Screen, Text Only, Meme, Pie Chart, Us vs Them, Graphic with Text,
+    # Notification) resolve to DIFFERENT character limits via the platform-aware
+    # style-guide lookup, so they need no separate entry here.
+    "Venn Diagram", "Person Only", "Person with Text", "Button", "Search",
+    "Icon", "Note", "Text with Icons", "Twitter", "Logo", "App Notification",
+    "Search and Checkbox",
     # Pipeline routing aliases
     "Image Library", "Illustration", "Text Based",
     # Legacy names
