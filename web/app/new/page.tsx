@@ -5,6 +5,33 @@ import { useRouter } from "next/navigation";
 import { STYLE_THUMBS } from "@/lib/style-thumbs";
 
 // ── data (verbatim from the live order form) ─────────────────────────────────
+// Reddit runs its own ad-type set — 20 types on the Reddit Templates page in
+// Figma, only 8 of which share a name with Meta (and those carry DIFFERENT
+// character limits, resolved per-platform in the copy rules). Showing Meta's
+// list for a Reddit order offered styles that have no Reddit template at all.
+const REDDIT_STYLES: [string, string][] = [
+  ["Graphic with Text", "Illustrated graphic paired with text."],
+  ["Split Screen", "Two or more photos on opposite sides paired with copy."],
+  ["Us vs Them", "Opposing views on opposite sides of layout."],
+  ["Person with Text", "Person photo paired with headline copy."],
+  ["Person Only", "Person photo with no copy overlay."],
+  ["Testimonial", "Customer quote with credit line."],
+  ["Text Only", "Mostly text to convey message."],
+  ["Text with Icons", "Short list items paired with icons."],
+  ["Meme", "Viral meme format carrying the message."],
+  ["Pie Chart", "Round graph sliced into segments to show data."],
+  ["Venn Diagram", "Two overlapping circles with a centre message."],
+  ["Notification", "In-feed notification styling."],
+  ["App Notification", "Mobile app notification carrying the headline."],
+  ["Note", "Written note styling."],
+  ["Button", "Headline paired with a prominent button."],
+  ["Search", "Search bar UI showing a query."],
+  ["Search and Checkbox", "Search bar with a short checklist."],
+  ["Icon", "Single icon paired with a headline."],
+  ["Twitter", "Mocked-up social post."],
+  ["Logo", "Logo-led layout."],
+];
+
 const STYLES: [string, string][] = [
   ["Graphic with Text", "Illustrated graphic paired with text."],
   ["Split Screen", "Two or more photos on opposite sides paired with copy."],
@@ -230,7 +257,8 @@ export default function NewOrderPage() {
   }
 
   const stepTabs: [number, string][] = [[1, "Details"], [2, "Creative"], [3, "Review"]];
-  const filtered = STYLES.filter(([n, d]) => !search || (n + d).toLowerCase().includes(search.toLowerCase()));
+  const styleSet = platform === "Reddit" ? REDDIT_STYLES : STYLES;
+  const filtered = styleSet.filter(([n, d]) => !search || (n + d).toLowerCase().includes(search.toLowerCase()));
 
   const totalAssets = needsImages
     ? Object.entries(batches).reduce((sum, [fmt, b]) => {

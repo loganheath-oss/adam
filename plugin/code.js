@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.03b";
+var PLUGIN_VERSION = "2026.09.08";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -1471,13 +1471,27 @@ function findTemplateByConvention(searchRoot, visualStyle, w, h, hint) {
   // this style and take its size-matched child frames (name-agnostic).
   if (!matches.length) {
     var wantSect = "adtype" + an;
-    var sects = findAllByPrefix(searchRoot, "Adtype");
+    // Reddit's containers are named Reddit_Adtype_<Style>, so a prefix search for
+    // "Adtype" alone never sees them, and the adtype token sits mid-name rather
+    // than at index 0 (2026-09-08). Search both prefixes and match anywhere.
+    var sects = findAllByPrefix(searchRoot, "Adtype")
+                  .concat(findAllByPrefix(searchRoot, "Reddit_Adtype"));
     var container = null;
     for (var si = 0; si < sects.length; si++) {
-      if (normAlnum(sects[si].name).indexOf(wantSect) === 0) { container = sects[si]; break; }
+      if (normAlnum(sects[si].name).indexOf(wantSect) !== -1) { container = sects[si]; break; }
     }
     if (container) {
       var kids = findAllByPrefix(container, "Template");
+      // Reddit's size frames are named for their DIMENSIONS ("1080x1350"), not
+      // Template_*. When the container holds no Template_-named children, fall
+      // back to its direct frame children and match on size — which is what the
+      // convention encodes anyway.
+      if (!kids.length && container.children) {
+        for (var rk = 0; rk < container.children.length; rk++) {
+          var rc = container.children[rk];
+          if (rc.type === "FRAME" || rc.type === "COMPONENT" || rc.type === "COMPONENT_SET") kids.push(rc);
+        }
+      }
       for (var ki = 0; ki < kids.length; ki++) {
         var kc = kids[ki], kw, kh;
         var km = String(kc.name).match(/(\d{3,5})\s*[x×]\s*(\d{3,5})/i);
