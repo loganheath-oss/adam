@@ -546,7 +546,17 @@ def _concept_has_placeholder_copy(concept):
     in August (Adrie's changelog item 3; issues 9/10/11): a concept whose every
     field read \"Placeholder\" was selected at rank 6 / score 1 and went out in
     delivered files. Deterministic guard — never ship, never select."""
-    _pat = re.compile(r"^\s*\[?\s*placeholder\s*\]?\s*$", re.I)
+    # Widened 2026-09-08: the original only matched a field that was EXACTLY
+    # "placeholder", so the thing operators actually kept seeing ship —
+    # "Placeholder text" — slipped straight through. Patterns are anchored so
+    # real copy that merely mentions a word cannot trip them.
+    _pat = re.compile(
+        r"^\s*\[?\s*placeholder\b[\s\w]*\]?\s*$"      # Placeholder / Placeholder text / [Placeholder copy]
+        r"|^\s*lorem\s+ipsum\b"                           # lorem ipsum ...
+        r"|^\s*\[[^\]]{0,60}\]\s*$"                       # a whole field that is just [a slot marker]
+        r"|^\s*(tbd|todo|n/?a|xxx+|text here|copy here)\s*[.!]?\s*$"
+        r"|^\s*your\s+\w+(\s+\w+)?\s+here\s*[.!]?\s*$",  # Your headline here
+        re.I)
 
     def _scan(v):
         if isinstance(v, str):
@@ -1012,8 +1022,18 @@ def stage_02_copy_gen(sprint_id, order, context):
                 _hl = c.get("creative_headline") or c.get("headline") or ""
                 _clash = any(_headlines_near_dup(_hl, h) for st, h in _accepted if st != _style)
                 if _clash:
+                    # An "alternate" must be SHIPPABLE. This previously excluded
+                    # only legal_flags, so a concept the deterministic pass had
+                    # already rejected could be promoted straight back into
+                    # selection — which is exactly how a concept whose entire
+                    # Retargeting block read "Placeholder" shipped as selected on
+                    # 2026-09-04 despite carrying placeholder_flag and rank 99.
                     _alt = next((a for a in _pool
-                                 if not a.get("selected") and not a.get("legal_flags")
+                                 if not a.get("selected")
+                                 and not a.get("legal_flags")
+                                 and not a.get("placeholder_flag")
+                                 and not a.get("length_flags")
+                                 and not a.get("missing_cta_flag")
                                  and not any(_headlines_near_dup(
                                      a.get("creative_headline") or a.get("headline") or "", h)
                                      for _st2, h in _accepted)), None)
