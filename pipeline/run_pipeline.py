@@ -1480,10 +1480,16 @@ def _style_caps(style):
                 continue
             hard[f] = min(cap, hard.get(f, cap))
     # Guide caps: multi-image fields → hard (no template equivalent); core → soft.
+    # EXCEPTION (2026-09-08): an entry flagged caps_are_physical got its limits
+    # from the template's own Figma spec card, so those numbers ARE the slot
+    # sizes and must enforce hard. Reddit works this way — it has no template
+    # registry entries, so without this its caps were advisory only and a
+    # 34-char subhead shipped against a 30-char slot.
+    _physical = bool((entry or {}).get("caps_are_physical"))
     for f, cap in cl.items():
         if not isinstance(cap, int):
             continue
-        if f in multi:
+        if _physical or f in multi:
             hard[f] = min(cap, hard.get(f, cap))
         else:
             soft[f] = min(cap, soft.get(f, cap))
