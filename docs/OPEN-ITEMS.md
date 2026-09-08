@@ -1091,3 +1091,47 @@ FLAGGED (identified, deferred — need coordination or are risky to rush):
 - (3) Quality vs her examples doc: her canonical examples are already embedded in the
   refs (canonical bulleted shape) + craft bar; Friday's updated docs get ingested on
   arrival.
+
+## 2026-09-08 — Reddit ad-type rules harvested from the Figma spec cards (CORRECTED)
+
+Source: the 20 `Reddit_Adtype_*` spec cards in the ADAM 2026 Figma file, read in full
+(full extraction: every line of every card, not just the character-limit line).
+
+**A correction to an earlier claim.** My first pass tested completion status with a
+substring match on "Copy Rules V1 Complete", which matches the string whether the card
+prefixes it with ✅ or ❌. That produced a wrong count. Re-derived off the glyph:
+
+- **17 ad types are genuinely ✅ Copy Rules V1 Complete** with usable caps.
+- **2 are ✅ Copy Rules N/A because they carry no copy** — Person-Only ("No copy on
+  Asset.") and Logo ("Headline Max: N/A / CTA Max: N/A"). These are image-only and were
+  wrongly on my questions-for-Adrie list; the cards already answer them. `char_limits`
+  is now empty and `no_copy: true` for both.
+- **1 is an unfilled stub** — **Split-Screen**: description "XXX", "Headline Max: x",
+  "CTA Max: x", and ❌ on BOTH flags. This ad type cannot run until Adrie/Elise fill the
+  card. Marked `blocked: true`. (Note the pre-existing related item in §A: the Bespoke
+  container also has duplicate `Template_Split-Screen` names left for Elise.)
+- All 20 labeling flags are ✅ **except Split-Screen**, which is ❌. So labeling is
+  19/20, not 20/20.
+
+**Two real questions for Adrie (down from five):**
+1. **Split-Screen** — the card is empty. What are the fields and caps?
+2. **Us-vs-Them** — the card carries CONFLICTING bullet caps: "Total Bullet Text Max: 60"
+   AND "Total Bullet Text: 22", plus duplicated status lines (both "Copy Rules N/A" and
+   "Copy Rules V1 Complete"). Looks like two pastes merged. Using 60 until told otherwise.
+3. **Venn-Diagram** (confirmation, not a blocker) — three distinct fields on the card:
+   "Copy Left/Right: 7 (one word)", "Body Center Max: 38", "Subhead Max: 50". Mapped
+   left/right → 7 each, body centre → `creative_subhead` 38, subhead → `single_headline`
+   50. Confirm the field split is what she intends.
+
+**Also newly captured into `configs/ad_type_style_guide.json`:** each ad type's
+description text, now written to the `layout` field so it actually reaches the copy
+prompt (the renderer reads `layout`, not `description` — the descriptions would have been
+inert otherwise). Several descriptions explicitly map Reddit types to their Meta
+equivalents, which is useful context for the model: Person-With-Text = "Similar to Talent
+Profile in Meta"; Pie-Chart, Text-Only and Testimonial each "mirror" their Meta twin "but
+with less copy due to reduced size"; Notification = "Mirror to 'Reminder' Meta ad type".
+Text-Only also carries "CTA optional (hidden but built-in)".
+
+**One thing NOT worth encoding:** every one of the 20 cards lists the identical image
+call-outs (`Right-Image-Placeholder`, `Left-Image-Placeholder`). That is card-template
+boilerplate, not per-type data. Recorded on the entries but not used for anything.

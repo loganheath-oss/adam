@@ -4,7 +4,7 @@ import Link from "next/link";
 const PREVIEWS = [
   "graphic-with-text", "split-screen", "us-vs-them", "photo-with-text-upwork-shell",
   "lifestyle-photo-full-bleed", "testimonial", "social-media-profile", "pie-chart",
-  "hybrid", "search-results", "search-bar-with-talent-badge", "text-only",
+  "hybrid", "search-results", "bespoke-cost-of-a-bad-hire", "text-only",
   "chat-bubble", "reminder", "device-ui-photo", "platform-ui", "meme",
   "sticky-note", "poll", "tweet-post-mockup", "text-with-button-and-cursor", "talent-profile",
 ];

@@ -574,7 +574,13 @@
       },
       "rules_v1_complete": true,
       "spec_card_caps": "Headline Max: 45",
-      "caps_are_physical": true
+      "caps_are_physical": true,
+      "description": "Memes or nods to viral images paired with brand messaging in a recognizable format.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Memes or nods to viral images paired with brand messaging in a recognizable format."
     },
     "reddit-graphic-with-text": {
       "name": "Reddit — Graphic With Text",
@@ -589,8 +595,14 @@
         "creative_subhead": 12
       },
       "rules_v1_complete": true,
-      "spec_card_caps": "Headline 1 Max: 12 Headline 2 Max: 12",
-      "caps_are_physical": true
+      "spec_card_caps": "Headline 1 Max: 12 · Headline 2 Max: 12",
+      "caps_are_physical": true,
+      "description": "A ‘cut through’ maze illustrating the easy path of hiring with Upwork.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "A ‘cut through’ maze illustrating the easy path of hiring with Upwork."
     },
     "reddit-split-screen": {
       "name": "Reddit — Split Screen",
@@ -601,9 +613,16 @@
         "1440x1080"
       ],
       "char_limits": {},
-      "rules_v1_complete": true,
-      "spec_card_caps": "",
-      "needs_review": "Spec card marks rules complete but lists no character limits."
+      "rules_v1_complete": false,
+      "spec_card_caps": "Headline Max: x · CTA Max: x",
+      "description": "XXX",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "blocked": true,
+      "needs_review": "Card is an UNFILLED STUB: description 'XXX', 'Headline Max: x', 'CTA Max: x', and BOTH flags are ❌. Genuinely needs Adrie/Elise before this ad type can run.",
+      "layout": "XXX"
     },
     "reddit-pie-chart": {
       "name": "Reddit — Pie Chart",
@@ -618,8 +637,14 @@
         "pie_center": 28
       },
       "rules_v1_complete": true,
-      "spec_card_caps": "Quadrant Copy Max: 20 (each) Center Callout Max: 28",
-      "caps_are_physical": true
+      "spec_card_caps": "Quadrant Copy Max: 20 (each) · Center Callout Max: 28",
+      "caps_are_physical": true,
+      "description": "Round graph element sliced into segments to show data. Mirrors Meta Pie-Chart but with less copy, due to reduced size.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Round graph element sliced into segments to show data. Mirrors Meta Pie-Chart but with less copy, due to reduced size."
     },
     "reddit-app-notification": {
       "name": "Reddit — App Notification",
@@ -634,7 +659,13 @@
       },
       "rules_v1_complete": true,
       "spec_card_caps": "Headline Max: 45",
-      "caps_are_physical": true
+      "caps_are_physical": true,
+      "description": "Inbox icon paired with a headline call to action.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Inbox icon paired with a headline call to action."
     },
     "reddit-text-only": {
       "name": "Reddit — Text Only",
@@ -650,8 +681,14 @@
         "cta": 18
       },
       "rules_v1_complete": true,
-      "spec_card_caps": "Headline Max: 20 Subhead Max: 30 CTA Max: 18",
-      "caps_are_physical": true
+      "spec_card_caps": "Headline Max: 20 · Subhead Max: 30 · CTA Max: 18",
+      "caps_are_physical": true,
+      "description": "Design that utilizes mostly text to convey message. CTA optional (hidden but built-in). Mirrors Meta Text-Only but with less copy due to reduced size.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Design that utilizes mostly text to convey message. CTA optional (hidden but built-in). Mirrors Meta Text-Only but with less copy due to reduced size."
     },
     "reddit-person-with-text": {
       "name": "Reddit — Person With Text",
@@ -666,8 +703,14 @@
         "cta": 15
       },
       "rules_v1_complete": true,
-      "spec_card_caps": "Headline Max: 30 CTA Max: 15",
-      "caps_are_physical": true
+      "spec_card_caps": "Headline Max: 30 · CTA Max: 15",
+      "caps_are_physical": true,
+      "description": "Text and person profile. Similar to Talent Profile in Meta.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Text and person profile. Similar to Talent Profile in Meta."
     },
     "reddit-venn-diagram": {
       "name": "Reddit — Venn Diagram",
@@ -678,13 +721,21 @@
         "1440x1080"
       ],
       "char_limits": {
+        "left_headline": 7,
+        "right_headline": 7,
         "creative_subhead": 38,
-        "left_headline": 7
+        "single_headline": 50
       },
       "rules_v1_complete": true,
-      "spec_card_caps": "Copy Left/Right: 7 (one word) Body Center Max: 38 Subhead Max: 50",
-      "needs_review": "Spec card has 'Copy Left/Right: 7 (one word)', 'Body Center Max: 38' and 'Subhead Max: 50'. Mapped left/right to one field and Body Center to subhead — confirm the intended field split.",
-      "caps_are_physical": true
+      "spec_card_caps": "Copy Left/Right: 7 (one word) · Body Center Max: 38 · Subhead Max: 50",
+      "caps_are_physical": true,
+      "description": "Diagram with limited text capacity.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "needs_review": "Card lists three distinct fields: Copy Left/Right 7 (one word each), Body Center Max 38, Subhead Max 50. Mapped left/right→7 each, body centre→creative_subhead 38, subhead→single_headline 50. Confirm the intended field split with Adrie.",
+      "layout": "Diagram with limited text capacity."
     },
     "reddit-person-only": {
       "name": "Reddit — Person Only",
@@ -697,7 +748,15 @@
       "char_limits": {},
       "rules_v1_complete": true,
       "spec_card_caps": "",
-      "needs_review": "No copy limits on the spec card — assumed image-only. Confirm."
+      "description": "Single person ad, full bleed or profile avatar style. No copy on asset. No copy on Asset.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "no_copy": true,
+      "caps_are_physical": false,
+      "layout": "Single person ad, full bleed or profile avatar style. No copy on asset. No copy on Asset.",
+      "resolved_note": "Card states 'No copy on Asset.' — image only. Resolved from the spec card; no question for Adrie."
     },
     "reddit-us-vs-them": {
       "name": "Reddit — Us vs Them",
@@ -712,9 +771,17 @@
         "them_bullets": 60,
         "right_headline": 18
       },
-      "rules_v1_complete": false,
-      "spec_card_caps": "Left Headline Max: 22 Total Bullet Text Max: 60 Right Headline Max: 18 Total Bullet Text: 22",
-      "caps_are_physical": true
+      "rules_v1_complete": true,
+      "spec_card_caps": "Left Headline Max: 22 · Total Bullet Text Max: 60 · Right Headline Max: 18",
+      "caps_are_physical": true,
+      "description": "Opposing views on opposite sides of layout. Total Bullet Text: 22",
+      "rules_na": true,
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "needs_review": "Card carries CONFLICTING bullet caps — 'Total Bullet Text Max: 60' and 'Total Bullet Text: 22' — and duplicated status lines (both 'Copy Rules N/A' and 'Copy Rules V1 Complete'). Using 60. Confirm with Adrie.",
+      "layout": "Opposing views on opposite sides of layout. Total Bullet Text: 22"
     },
     "reddit-testimonial": {
       "name": "Reddit — Testimonial",
@@ -729,8 +796,14 @@
         "testimonial_author": 46
       },
       "rules_v1_complete": true,
-      "spec_card_caps": "Testimonial Copy Max: 60 Credit Name/Title Max: 46",
-      "caps_are_physical": true
+      "spec_card_caps": "Testimonial Copy Max: 60 · Credit Name/Title Max: 46",
+      "caps_are_physical": true,
+      "description": "User testimonial with option to feature brand elements such as stars or badges. Mirrors Meta Testimonial but with less copy due to reduced size.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "User testimonial with option to feature brand elements such as stars or badges. Mirrors Meta Testimonial but with less copy due to reduced size."
     },
     "reddit-button": {
       "name": "Reddit — Button",
@@ -745,7 +818,13 @@
       },
       "rules_v1_complete": true,
       "spec_card_caps": "Headline Max: 16",
-      "caps_are_physical": true
+      "caps_are_physical": true,
+      "description": "Branded Graphic approach with a Button/CTA and a cursor.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Branded Graphic approach with a Button/CTA and a cursor."
     },
     "reddit-search": {
       "name": "Reddit — Search",
@@ -760,7 +839,13 @@
       },
       "rules_v1_complete": true,
       "spec_card_caps": "Headline Max: 26",
-      "caps_are_physical": true
+      "caps_are_physical": true,
+      "description": "Search bar with variable job title copy.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Search bar with variable job title copy."
     },
     "reddit-icon": {
       "name": "Reddit — Icon",
@@ -775,7 +860,13 @@
       },
       "rules_v1_complete": true,
       "spec_card_caps": "Headline Max: 26",
-      "caps_are_physical": true
+      "caps_are_physical": true,
+      "description": "Icon + Tagline, ideally calling out a type of feature or freelancer status or tag.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Icon + Tagline, ideally calling out a type of feature or freelancer status or tag."
     },
     "reddit-note": {
       "name": "Reddit — Note",
@@ -790,7 +881,13 @@
       },
       "rules_v1_complete": true,
       "spec_card_caps": "Headline Max: 60",
-      "caps_are_physical": true
+      "caps_are_physical": true,
+      "description": "A reminder note format in Upwork Brand colors.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "A reminder note format in Upwork Brand colors."
     },
     "reddit-notification": {
       "name": "Reddit — Notification",
@@ -805,8 +902,14 @@
         "cta": 20
       },
       "rules_v1_complete": true,
-      "spec_card_caps": "Copy Max: 52 CTA Max: 20",
-      "caps_are_physical": true
+      "spec_card_caps": "Copy Max: 52 · CTA Max: 20",
+      "caps_are_physical": true,
+      "description": "Mobile app reminder features key messaging with branded background layer. Mirror to ‘Reminder’ Meta ad type.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Mobile app reminder features key messaging with branded background layer. Mirror to ‘Reminder’ Meta ad type."
     },
     "reddit-search-and-checkbox": {
       "name": "Reddit — Search and Checkbox",
@@ -822,8 +925,14 @@
         "search_results": 15
       },
       "rules_v1_complete": true,
-      "spec_card_caps": "Headline Max: 45 Search Max: 15 List Items (1-3) Max: 12",
-      "caps_are_physical": true
+      "spec_card_caps": "Headline Max: 45 · Search Max: 15 · List Items (1-3) Max: 12",
+      "caps_are_physical": true,
+      "description": "Checkbox UI search format, with or without a headline.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Checkbox UI search format, with or without a headline."
     },
     "reddit-text-with-icons": {
       "name": "Reddit — Text with Icons",
@@ -838,8 +947,14 @@
         "creative_headline": 20
       },
       "rules_v1_complete": true,
-      "spec_card_caps": "List Item 1-3 Max: 8 Headline Max: 20",
-      "caps_are_physical": true
+      "spec_card_caps": "List Item 1-3 Max: 8 · Headline Max: 20",
+      "caps_are_physical": true,
+      "description": "Text with icons, left aligned.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Text with icons, left aligned."
     },
     "reddit-twitter": {
       "name": "Reddit — Twitter",
@@ -854,7 +969,13 @@
       },
       "rules_v1_complete": true,
       "spec_card_caps": "Copy Max: 115",
-      "caps_are_physical": true
+      "caps_are_physical": true,
+      "description": "Tweet Mockup on Glimmer BG.",
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "layout": "Tweet Mockup on Glimmer BG."
     },
     "reddit-logo": {
       "name": "Reddit — Logo",
@@ -866,8 +987,17 @@
       ],
       "char_limits": {},
       "rules_v1_complete": false,
-      "spec_card_caps": "",
-      "needs_review": "No copy limits and rules NOT marked complete. Confirm whether copy is used."
+      "spec_card_caps": "Headline Max: N/A · CTA Max: N/A",
+      "description": "Logo w/Brand Glimmer Gradient.",
+      "rules_na": true,
+      "image_placeholders": [
+        "Left-Image-Placeholder",
+        "Right-Image-Placeholder"
+      ],
+      "no_copy": true,
+      "caps_are_physical": false,
+      "layout": "Logo w/Brand Glimmer Gradient.",
+      "resolved_note": "Card states Headline Max: N/A, CTA Max: N/A and 'Copy Rules N/A' — image only. Resolved."
     }
   },
   "field_caps_reddit_feed": {
