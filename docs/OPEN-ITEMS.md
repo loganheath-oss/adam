@@ -1135,3 +1135,30 @@ Text-Only also carries "CTA optional (hidden but built-in)".
 **One thing NOT worth encoding:** every one of the 20 cards lists the identical image
 call-outs (`Right-Image-Placeholder`, `Left-Image-Placeholder`). That is card-template
 boilerplate, not per-type data. Recorded on the entries but not used for anything.
+
+## 2026-09-08 — Natelise's three Sept 2 Figma threads: CLOSED
+
+All three of Natelise Loeb's unresolved @Logan threads in `ADAM 2026`
+(`DoDwumxELkuAuKKSP5p00e`) are now marked resolved. Verified via
+`GET /v1/files/{key}/comments` — every one carries a `resolved_at`:
+
+| order | comment id | ask | resolved_at |
+| --- | --- | --- | --- |
+| 219 | 1910849431 | "Incorrectly named Lifestyle Photo Full Bleed in ADAM, please change Photo with Text" | 2026-09-08T21:17:36Z |
+| 220 | 1910850030 | "Template missing from ADAM interface/dropdown, please add to drop down with correct name (Lifestyle-Photo-Full-Bleed)" | 2026-09-08T21:17:29Z |
+| 221 | 1910852350 | "please remove name 'Search Bar With Talent Badge' that is associated with this image" | 2026-09-08T21:17:18Z |
+
+The underlying fixes had already shipped before the threads were closed: commits
+`32ce41b` (Sept 2) and `f298ca7` (Sept 3) on `gh/main` handled the order-form dropdown
+names, and `02ecf22` (Sept 8) replaced the two stale homepage marquee previews and
+renamed `search-bar-with-talent-badge.jpg` → `bespoke-cost-of-a-bad-hire.jpg`. So these
+were stale-open threads, not outstanding work.
+
+**Method note for next time — there is no API route for this.** Figma's REST API exposes
+only `GET`/`POST`/`DELETE` on comments plus three reaction endpoints; `resolved_at` is
+read-only. Resolving has to happen in the Figma UI. The Chrome profile that carries a
+live Figma session connects as **"Testing ADAM"**, not "Main Chrome Window".
+
+**Still open (not done):** no reply was posted on any of the three threads, so Natelise
+sees them closed without seeing why. A one-line reply on each pointing at the shipping
+commits is still worth doing.
