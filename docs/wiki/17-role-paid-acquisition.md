@@ -148,7 +148,7 @@ Reddit version to say less.
 
 - **Meme.** Viral formats with brand messaging. Headline 45.
 - **Graphic With Text.** A maze graphic showing the easy path to hiring. Two headlines at 12 each. Very tight.
-- **Split Screen.** **Not yet defined.** The spec card for this one is still blank, so caps and fields are unconfirmed. Ask Adrie before ordering it.
+- **Split Screen.** Two or more photos on opposite sides paired with copy. Headline 49, CTA 14. Mirrors the Meta Split Screen type.
 - **Pie Chart.** A segmented round graph. Labels 20, center 28. Mirrors Meta Pie Chart with less copy.
 - **App Notification.** An inbox icon with a headline call to action. Headline 45.
 - **Text Only.** Mostly text. Headline 20, subhead 30, CTA 18. CTA is optional and built in but hidden. Mirrors Meta Text Only with less room.

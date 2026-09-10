@@ -135,6 +135,30 @@ Sizes and variant words are meaning-bearing and must be exact. Cosmetic drift, s
 slash, doubled spaces, or different capitalization, is now tolerated and reported rather than
 silently breaking a style, but it should still be cleaned up.
 
+### Reddit templates use a different convention
+
+Everything above describes the Meta convention. **The Reddit Templates page does not follow it**, and
+the plugin was taught both (September 2026). If you are working on Reddit, this is the shape:
+
+- **Containers are named `Reddit_Adtype_Style-Name`**, for example `Reddit_Adtype_Venn-Diagram`. Note
+  the `Reddit_` prefix, which means a search for containers starting with `Adtype` never finds them.
+- **Size frames are named for their dimensions**, `1080x1350` and `1440x1080`, rather than
+  `Template_Style_WxH`. The plugin falls back to matching on the frame's actual size when a container
+  holds no `Template_`-named children, which is what this convention relies on.
+- **Two sizes per style**, portrait `1080x1350` and landscape `1440x1080`.
+- **Each container also holds a `Rules` frame.** That is the spec card, meaning documentation for the
+  copy team. It is not a template and is not assembled.
+
+Two things to keep clean here:
+
+**Never leave two `Rules` cards in one container.** `Reddit_Adtype_Split-Screen` currently holds a
+stale unfilled stub alongside the completed card. Whichever is read first wins, and in September 2026
+a harvest read the stub and recorded the whole ad type as blocked when it was not.
+
+**Do not leave duplicate size frames.** Several Reddit containers hold two frames with the same name
+and the same size. The plugin takes the first match, so if the two differ, which one ships is
+arbitrary.
+
 ### Text layer names
 
 **This is the part that decides whether copy lands.** Text layers follow `Copy_<Role>`:

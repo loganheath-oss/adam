@@ -607,22 +607,24 @@
     "reddit-split-screen": {
       "name": "Reddit — Split Screen",
       "platform": "Reddit",
-      "source": "Figma spec card on the Reddit Templates page, harvested 2026-09-08",
+      "source": "Figma spec card on the Reddit Templates page, harvested 2026-09-08; CORRECTED 2026-09-10 from the completed duplicate card in the same container",
       "sizes": [
         "1080x1350",
         "1440x1080"
       ],
-      "char_limits": {},
-      "rules_v1_complete": false,
-      "spec_card_caps": "Headline Max: x · CTA Max: x",
-      "description": "XXX",
+      "char_limits": {
+        "creative_headline": 49,
+        "cta": 14
+      },
+      "rules_v1_complete": true,
+      "spec_card_caps": "Headline Max: 49 · CTA Max: 14",
+      "description": "Two or more photos on opposite sides paired with copy. Mirrors Meta ads type Split-Screen.",
       "image_placeholders": [
         "Left-Image-Placeholder",
         "Right-Image-Placeholder"
       ],
-      "blocked": true,
-      "needs_review": "Card is an UNFILLED STUB: description 'XXX', 'Headline Max: x', 'CTA Max: x', and BOTH flags are ❌. Genuinely needs Adrie/Elise before this ad type can run.",
-      "layout": "XXX"
+      "layout": "Two or more photos on opposite sides paired with copy. Mirrors Meta ads type Split-Screen.",
+      "resolved_note": "The container holds TWO Rules cards: a stale unfilled stub (1546x1286, \"XXX\", \"Headline Max: x\", both flags red) and a COMPLETED card (1546x1883, both flags green) carrying the real caps. The 2026-09-08 harvest read the stub. Caps below are from the completed card."
     },
     "reddit-pie-chart": {
       "name": "Reddit — Pie Chart",

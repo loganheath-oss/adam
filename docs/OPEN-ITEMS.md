@@ -1162,3 +1162,42 @@ live Figma session connects as **"Testing ADAM"**, not "Main Chrome Window".
 **Still open (not done):** no reply was posted on any of the three threads, so Natelise
 sees them closed without seeing why. A one-line reply on each pointing at the shipping
 commits is still worth doing.
+
+## 2026-09-10 — Reddit templates audited in Figma; Split-Screen UNBLOCKED
+
+Walked all 20 `Reddit_Adtype_*` containers on the Reddit Templates page via the Figma API
+(`GET /v1/files/{key}/nodes`), reading every TEXT layer at any depth.
+
+**The good news:** Elise has built all 20, both sizes each (`1080x1350` portrait and
+`1440x1080` landscape), with `Copy_*` layers. `Person-Only` and `Logo` correctly carry no
+text layers, which matches their spec cards. This is real, largely complete work.
+
+**Split-Screen is NOT blocked — the 09-08 harvest was wrong.** The container holds TWO
+`Rules` cards: a stale unfilled stub (1546x1286: "XXX", "Headline Max: x", both flags ❌)
+and a COMPLETED card (1546x1883, both flags ✅) reading *"Two or more photos on opposite
+sides paired with copy. Mirrors Meta ads type Split-Screen. Headline Max: 49 · CTA Max:
+14."* The harvest read the stub. `configs/ad_type_style_guide.json` corrected: caps
+49/14, `rules_v1_complete: true`, `blocked` removed. **This closes one of the three
+questions for Adrie.** Generalizable lesson, same shape as the ✅/❌ glyph bug: when a
+container can hold more than one spec card, read them all and prefer the completed one.
+
+**Defects found, for Elise (all are Figma-side, no code needed):**
+
+| Container | Problem |
+| --- | --- |
+| `Graphic-With-Text` | The `1440x1080` holds only `Copy_Subhead`. The `1080x1350` holds `Copy_Headline1`, `Copy_Headline2`, `Copy_CTA`, and the spec card says "Headline 1 Max: 12 / Headline 2 Max: 12". The landscape size will not fill. |
+| `Text-with-Icons` | The `1440x1080` holds only `Copy_Headline`. The `1080x1350` also has `Copy_List1/2/3`, and the spec says "List Item 1-3 Max: 8". Three list items will not fill on landscape. |
+| `Us-vs-Them` | Only ONE `Copy_Headline` and one set of `Copy_Bullet1/2/3`, but the spec card calls for a Left Headline (22) AND a Right Headline (18) with bullets both sides. One side is missing. |
+| `Testimonial` | The avatar slot is named `Image_Placeholder` (underscore) on an ELLIPSE. The documented standard is `Image-Placeholder` (hyphen). Worth confirming the plugin's normalization covers underscore-vs-hyphen; if not, the avatar will not fill. |
+| `Person-Only` | Carries only `Right-Image-Placeholder`. Its spec card lists both Right and Left. |
+| `Person-With-Text` | Profile content is baked in as plain text layers (`Kenji M.`, `Chatbot Developer`, `Top Rated`, `Completed 18 Mobile App jobs on Upwork`, `Has 7 relevant skills to your job`). These are not `Copy_*` layers, so every ad of this type ships that same mock profile. Confirm that is intended. |
+| Duplicate size frames | `Meme`, `Graphic-With-Text`, `Person-With-Text`, `Person-Only`, `Search-and-Checkbox` each hold TWO frames with the same name and size. The plugin takes the first match, so if they differ, which one ships is arbitrary. |
+| Legacy Meta layer names | `App-Notification` and `Pie-Chart` carry `TextOnly_Subhead_Text`; `Twitter` carries `Notification_Headline_Text`. These look like paste-overs from Meta templates rather than the `Copy_*` convention. |
+
+**Doc gap closed:** the Designer role guide documented only the Meta naming convention
+(`Adtype_Style` / `Template_Style_WxH`). Reddit uses `Reddit_Adtype_Style` with size frames
+named for their dimensions. A Reddit section was added to `docs/wiki/19-role-designer.md`.
+
+**Still open:** none of this has been run end-to-end. The plugin's Reddit support landed
+2026-09-08 (`effdc1b`) and the containers resolve by name, but no assembly has been executed
+against a real Reddit manifest. Elise's test CSVs are the next step.
