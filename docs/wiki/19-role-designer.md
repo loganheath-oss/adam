@@ -218,7 +218,7 @@ Tracked, cosmetic, not recognition failures. Listed so you don't go chasing them
 4. Run a test sprint with just that style and check the log for misses.
 
 **A style can't be ordered before its template exists.** The order form and the template library are
-kept in step on purpose, so a new style is a two person job and not a same day request.
+kept in step on purpose, so adding one is a two person job between you and the engineer.
 
 ---
 

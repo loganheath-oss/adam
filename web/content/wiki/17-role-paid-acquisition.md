@@ -65,38 +65,16 @@ go back and write one, that's fine. Add it and submit again.
 
 ## Writing a brief that works
 
-This is where a good batch and a generic one part ways. A good brief names a theme, says what you're
-testing, and hands over the proof points you want used. A weak one names a topic and stops.
+A good brief names a theme, says what you're testing, and hands over the actual proof points and
+example copy you want mined. A weak one names a topic and stops.
 
-**Too thin.** You'll get evergreen copy off this:
+**The KOTH briefs are the model.** Go pull one of those and match that level of detail. That's a
+better guide than anything this page could describe.
 
-- **THEME:** Hiring on Upwork.
-- **COPY MUST-DOs:** Mention speed.
-- **DESIGN DIRECTION:** N/A
-- **RESOURCES:** N/A
-
-**Enough to work with:**
-
-**THEME:** Hiring a specialist shouldn't take six weeks. Lead every ad with the gap between how long
-a traditional hire takes and how fast a client can have someone working on Upwork.
-
-**COPY MUST-DOs:** Lead with time, not cost. Use "in days, not months" at least once across the set.
-Talk to a hiring manager who's already tried and failed to fill a role. Don't claim a specific hire
-time we haven't approved. Stay away from "talent pool" and "solutions". No exclamation points.
-
-**DESIGN DIRECTION:** Lean on the UI and notification styles over lifestyle photography for this
-batch. We want it to feel like the product, not a stock photo.
-
-**RESOURCES:** Link to the Q3 performance deck, link to the approved stat sheet, and the two KOTH
-ads that beat control in July.
-
-The second one gives ADAM an angle, a person to talk to, a phrase to hit, words to avoid, a format
-preference, and real source material. All of that changes what comes out.
-
-A couple of things that help. Put claims and stats in RESOURCES instead of writing them from memory, because
-ADAM will use what you give it and the legal screening runs against the approved docs. And if the
-batch is a test, say what the test is. "We're testing whether urgency beats cost" gets you a sharper
-set than "write urgency ads".
+A couple of things that help. Put claims and stats in RESOURCES rather than writing them from
+memory, because ADAM uses what you give it and the legal screening runs against the approved docs.
+And if the batch is a test, say what the test is. Naming the hypothesis gets you a sharper set than
+naming the topic.
 
 ---
 
@@ -194,15 +172,11 @@ designer assembles the ads in Figma.
 If you want to follow along, the sprint page shows you where it is. You don't have to approve
 anything.
 
-### What the five days are for
+### Why there's a minimum
 
-The minimum is five business days because the work is gated and the gates are people. Roughly:
-
-1. **Same day.** The copywriter checks your brief came through in one piece and kicks off copy.
-2. **Day one to two.** Copy review. This is the slow human step and the one that decides quality.
-   Once it's approved the copy is frozen.
-3. **Day two to three.** Image direction and image generation. Generation is the slow machine step.
-4. **Day three to five.** Assembly in Figma and final QA.
+The work is gated and the gates are people, so the lead time isn't machine time. Copy review is the
+slow human step and it's the one that decides whether the batch is any good. Image generation is the
+slow machine step.
 
 Asking for a faster turnaround mostly squeezes the copy review, which is the step you least want
 squeezed.
@@ -227,7 +201,7 @@ squeezed.
 - **Templates, layouts, how an ad looks in Figma.** Elise.
 - **A sprint that's stuck or errored.** The copywriter running it.
 - **A style you want that doesn't exist yet.** Elise builds the template first, then it can go on the
-  form. It's not a same week request.
+  form. Ask her for timing.
 
 ---
 
