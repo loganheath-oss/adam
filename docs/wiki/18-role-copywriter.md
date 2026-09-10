@@ -59,7 +59,7 @@ Read for the things a machine cannot judge: is this on-brief, is it interesting,
 - **Placeholder copy.** Concepts where the model emitted literal stand-in text are auto-rejected
   and can never ship.
 - **Legal and length problems.** Banned terms and over-cap headlines are removed from selection.
-- **⚠ ECHO.** A concept reusing another's idea or sentence frame is labeled. It is still readable,
+- **ECHO.** A concept reusing another's idea or sentence frame is labeled. It is still readable,
   it is just marked so you can see it is a variant rather than a fresh idea.
 
 ### What you can do here
@@ -77,6 +77,12 @@ audience versions, which is normally what you want; name an audience to change o
 
 > **Copy freezes when you approve Gate 3.** Everything downstream is built from this text. If you
 > want it different, change it now.
+
+### Testimonial ads pull from an approved list
+
+Testimonial copy is not invented. It comes from the approved quotes held at the **`/quotes`** page,
+which is editable in the app. If a testimonial ad is drawing on a quote that is stale or wrong, fix
+it there rather than editing the concept, so the next sprint inherits the correction.
 
 ---
 
@@ -97,12 +103,11 @@ Three kinds of rows, all normal:
 
 The manifest is the row-by-row list pairing copy with imagery. **Statuses you will see:**
 
-| Status | Meaning |
-|---|---|
-| `delivered` | A finished file exists on the server. |
-| `ready_for_figma` | Normal for photo styles. The photo is placed inside Figma by the plugin, so no server file exists by design. |
-| `skipped` | The style uses its own template artwork. By design. |
-| `pending_assembly` | A real gap. Worth flagging. |
+- **`delivered`.** A finished file exists on the server.
+- **`ready_for_figma`.** Normal for photo styles. The photo is placed inside Figma by the plugin, so
+  no server file exists by design.
+- **`skipped`.** The style uses its own template artwork. By design.
+- **`pending_assembly`.** A real gap. Worth flagging.
 
 Only the last one is a problem. If the manifest is **completely empty**, that is a defect. File it
 rather than waiting. There is no background process to wait for.
@@ -123,17 +128,97 @@ you flagged cannot ship silently, which used to happen.
 
 ---
 
-## Teaching ADAM between sprints
+## When something goes wrong
 
-The **learnings** file is ADAM's memory across sprints. Ask it to remember something and it goes in
-permanently; you can also edit the file directly at the `/learnings` page.
+ADAM is built to fail loudly and recoverably. Almost every problem shows up in one of four places,
+and almost every fix is a button or a text edit rather than code.
 
-**Important limit:** learnings shape how the assistant *works with you*, meaning what it shows and
-how it behaves. They do **not** change the generated copy. Copy rules live in the reference docs,
-which need an engineer to recompile. If you want copy itself to change, that is a request, not a
-learning.
+### Where to look, in this order
+
+1. **`/admin`, the reliability dashboard.** The headline view. Percentage of runs completing clean,
+   plus an incident list carrying **the actual error message** for every failed run. At the top is a
+   health strip of three pills: volume percentage, API and models, errors in the last 24 hours. If a
+   pill is amber or red, that is your first clue. **Start here when someone says ADAM is broken.**
+2. **`/admin/activity`, the timeline.** Everything that happened, newest first: orders, gate
+   approvals, assemblies, edits, errors. Filter by type (there is an "Errors only" option), user, or
+   sprint. On any error row there is a **Diagnose** button, which analyzes that error against the
+   runbook and hands back the likely cause, the fix, and whether it needs an engineer. **This is the
+   fastest way to triage.** Use it before reading further.
+3. **The sprint's own page, `/sprints/<id>`.** Shows the exact state (`awaiting_gate_3`, `error`,
+   `interrupted`), the error text, and a **Resume** button.
+4. **`/admin/issues`, the issues queue.** Where anyone files "something looked wrong". Triage weekly.
+   Open issues older than a week get flagged so nothing rots.
+
+### The problems you are most likely to hit
+
+**A sprint failed or is stuck.** The most common situation by far. Open the sprint page, read the
+error, click **Resume**. It re-runs only the failed stage and keeps all prior work. If the state says
+`interrupted` or mentions a server restart, a redeploy happened mid-run and nothing is lost. Just
+resume. If the same stage fails twice with the same error, match it against the cases below.
+
+**"No space left on device" (ENOSPC).** The storage volume is 500 MB and fills up with sprint images,
+after which runs die mid-image-stage. This has bitten us in production. Check usage at
+**`/admin/storage`**, which lists per-sprint sizes largest first, then prune old and errored sprints
+via **`/admin/prune`** (needs the API key). Keep anything the team still needs, then re-run the failed
+sprint from its gate.
+
+**"Your credit balance is too low", as an HTTP 400.** Copy generation returns a 400, not a 401, so it
+looks like a bad request when it is actually billing. Fund the Anthropic account or set a funded key
+in Railway under the `adam` service variables, then resume from Gate 2.
+
+**"model not found", a 404 naming a model string.** Anthropic retires model IDs. This one genuinely
+is a code change, but a tiny one: a single string. File it in `/admin/issues` and the change log. Any
+engineer fixes it in two minutes.
+
+**Ads in Figma show placeholder text, or copy lands in the wrong slot.** The plugin fills copy into
+named layers, so if a template's text layers were renamed in Figma the plugin cannot find them and
+leaves the placeholder. This is a designer fix, not a copy fix. The plugin log names exactly which
+fields it could not place and on which style. Send that to Elise.
+
+**Copy quality is off in tone, format, or structure.** This is steering, not a bug, and neither lever
+needs code. See the next section.
+
+---
+
+## Steering the copy without an engineer
+
+Two things change how ADAM writes, and you control both.
+
+**Learnings, at `/learnings`.** Editable guidance ADAM reads on every run and every chat. "Stop doing
+X, prefer Y" belongs here. It takes effect on the next run. You can add one by asking the chat to
+remember something, or by editing the page directly.
+
+**The issue to learning loop.** When someone reports a copy problem in `/admin/issues`, use
+**"Distill into a learning"** on that issue. It appends your instruction to Learnings and marks the
+issue as learned. This is the intended self-serve fix for a recurring copy problem, and it is the
+mechanism that stops the same complaint coming back every month.
+
+**One important limit.** Learnings shape how the assistant works with you and how it writes in
+conversation. Per-ad-type structure, meaning character caps, CTA policy and the format rules for each
+ad type, lives in a configuration file that needs an engineer to change and redeploy. If you need a
+character cap or an ad type's structure changed, that is a request, not a learning. Log it.
 
 Write preferences, not facts. Preferences stay true; facts go stale and quietly mislead it.
+
+---
+
+## Two admin screens worth knowing
+
+- **`/admin/spend`.** Approximate tokens and cost by day, user and model, with month-to-date against
+  budget and an end-of-month projection. This is the screen to screenshot when someone asks what ADAM
+  costs.
+- **`/admin/digest`.** The whole period on one screen (runs, assemblies, issues, errors, spend,
+  deploys) with a plaintext block you can paste straight into Slack or the change log. Pull it weekly.
+
+---
+
+## When you cannot fix it
+
+1. **File it in `/admin/issues`** with the sprint ID and what you expected versus what you got. This
+   is the system of record.
+2. **Add it to the change log.**
+3. **Route it.** Template and visual problems go to Elise. Copy rules, tone and approved claims go to
+   Adrie. Infrastructure and hosting go to Haresh's team.
 
 ---
 
@@ -142,4 +227,6 @@ Write preferences, not facts. Preferences stay true; facts go stale and quietly 
 1. Gate 2, check the brief is real.
 2. **Gate 3, do your actual job.** Read all six per style, pick, edit, then approve knowing copy is now locked.
 3. Gates 4 and 5, confirm nothing looks wrong, and know that `ready_for_figma` and `skipped` are normal.
-4. Ask for about five ads per run. Quality drops past six.
+4. When something breaks, go to `/admin/activity` and hit **Diagnose** before anything else.
+5. Recurring copy complaints belong in Learnings, not in a re-brief.
+6. Ask for about five ads per run. Quality drops past six.
