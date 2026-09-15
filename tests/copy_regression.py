@@ -72,8 +72,87 @@ EXTRAS_BY_SL = {
 }
 
 
+def _audience_photo_checks():
+    """Prospecting and Retargeting must not share a photo inside one run.
+
+    Adrie, 2026-09-10. Two versions of the SAME audience may share, because only
+    one of them ships; the two audiences of one concept may not. The exclusion
+    tiering in _pick_retargeting_photo is where that rule actually lives, so it
+    is what gets tested here: the relaxed retry for a thin pool is allowed to
+    drop the sprint-wide exclusions but never the sibling.
+    """
+    import sys as _sys
+    import types as _types
+
+    calls = []
+
+    def _fake_module(pool):
+        """Stand-in library: returns the first pool photo not excluded."""
+        def pick_photo_for_asset(visual_style=None, order=None, sprint_id=None,
+                                 components=None, exclude_ids=None, concept=None,
+                                 temperature=None):
+            ex = set(exclude_ids or [])
+            calls.append(sorted(ex))
+            for pid, name in pool:
+                if pid not in ex:
+                    return {"is_photo_based": True, "needs_human_selection": False,
+                            "figma_asset_id": pid, "figma_asset_name": name}
+            return {"is_photo_based": False, "needs_human_selection": True}
+        m = _types.ModuleType("figma_library")
+        m.pick_photo_for_asset = pick_photo_for_asset
+        return m
+
+    def _run(pool, used, sibling):
+        calls.clear()
+        saved = _sys.modules.get("figma_library")
+        _sys.modules["figma_library"] = _fake_module(pool)
+        try:
+            return rp._pick_retargeting_photo(
+                "Testimonial", {}, "sprint_x", [{"id": "c"}], {}, 1.0, used, sibling)
+        finally:
+            if saved is not None:
+                _sys.modules["figma_library"] = saved
+            else:
+                del _sys.modules["figma_library"]
+
+    POOL = [("p1", "one"), ("p2", "two"), ("p3", "three")]
+
+    # Healthy pool: a distinct photo, and never the sibling.
+    nid, _ = _run(POOL, used=["p1"], sibling=["p1"])
+    check("audience photos: healthy pool returns a distinct photo", nid == "p2", f"got {nid!r}")
+
+    # Thin pool: everything is used, so the retry must relax the sprint-wide
+    # exclusions. It may repeat another concept's photo; it may NOT return p1.
+    nid, _ = _run(POOL, used=["p1", "p2", "p3"], sibling=["p1"])
+    check("audience photos: exhausted pool relaxes but still excludes the sibling",
+          nid == "p2", f"got {nid!r}")
+    check("audience photos: relaxed retry actually dropped the used-list",
+          len(calls) == 2 and calls[1] == ["p1"], f"exclusion calls {calls}")
+
+    # Only the sibling exists: refuse rather than duplicate across audiences.
+    nid, name = _run([("p1", "one")], used=[], sibling=["p1"])
+    check("audience photos: refuses to reuse the prospecting photo",
+          (nid, name) == ("", ""), f"got {(nid, name)!r}")
+
+    # Dual-photo styles chain the exclusion across all four picks.
+    nid, _ = _run(POOL, used=[], sibling=["p1", "p2"])
+    check("audience photos: dual-style chaining skips both siblings",
+          nid == "p3", f"got {nid!r}")
+
+    # The Both test the photo stage and the manifest writer share.
+    check("audience photos: Both concept detected",
+          rp._is_both_audience({"targeting_copy": {"Prospecting": {}}}) is True)
+    for neg in ({}, {"targeting_copy": None}, {"targeting_copy": {}}, {"targeting_copy": "x"}):
+        if rp._is_both_audience(neg):
+            check("audience photos: single-audience concepts are NOT Both", False, repr(neg))
+            break
+    else:
+        check("audience photos: single-audience concepts are NOT Both", True)
+
+
 def offline_checks():
     print("\n== OFFLINE (deterministic) ==")
+    _audience_photo_checks()
 
     # 1. Proper-noun / acronym casing backstop
     cases = [("Shipped by friday, hired monday on upwork", "Shipped by Friday, hired Monday on Upwork"),

@@ -29,9 +29,9 @@ Three steps.
 - **Deliverable.** Almost always "Images & Copy".
 - **Platform.** Meta, LinkedIn, Reddit, YouTube, Google/Bing, or 3rd Party.
 
-A note on "Both". You get two genuinely independent ads. They share a look, not a message.
-Prospecting talks to people who've never used Upwork. Retargeting talks to people who already
-visited. They don't have to be about the same thing.
+A note on "Both". You get two genuinely independent ads. Same style, but their own copy and their
+own photo. Prospecting talks to people who've never used Upwork. Retargeting talks to people who
+already visited. They don't have to be about the same thing, and they won't look the same.
 
 ### 2. Creative
 

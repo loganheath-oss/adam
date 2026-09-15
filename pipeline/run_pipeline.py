@@ -700,6 +700,48 @@ DUAL_PHOTO_LIBRARY_STYLES = {"Split Screen"}
 _BG_TAG_HINTS = {"background", "backdrop", "texture", "surface", "gradient", "pattern"}
 
 
+def _is_both_audience(concept) -> bool:
+    """True for a 'Prospecting and Retargeting' concept, i.e. one that fans out
+    into two manifest rows. Same test the manifest fan-out uses, so the photo
+    stage and the writer can never disagree about which concepts are Both."""
+    _tc = concept.get("targeting_copy") if isinstance(concept, dict) else None
+    return isinstance(_tc, dict) and bool(_tc)
+
+
+def _pick_retargeting_photo(style, order, sprint_id, library_cache, concept,
+                            temperature, used_photo_ids, sibling_ids):
+    """The Retargeting audience's own photo for a Both concept.
+
+    Adrie, 2026-09-10: Prospecting and Retargeting must not share an image inside
+    one run. Two versions of the SAME audience may share, because only one of them
+    ships. So the exclusion rules differ by tier:
+
+      - first attempt excludes everything used this sprint (best variety);
+      - the relaxed retry, for a thin pool, drops the sprint-wide exclusions but
+        NEVER the sibling, because sharing across audiences is the one hard rule.
+
+    Returns (node_id, asset_name), or ("", "") when the library cannot produce
+    anything distinct — the caller then flags the Retargeting row for human
+    selection rather than silently reusing the Prospecting photo.
+    """
+    from figma_library import pick_photo_for_asset
+
+    def _try(exclude):
+        exclude = [i for i in exclude if i]
+        picked = pick_photo_for_asset(
+            visual_style=style, order=order, sprint_id=sprint_id,
+            components=library_cache, exclude_ids=exclude or None,
+            concept=concept, temperature=temperature,
+        )
+        ok = picked.get("is_photo_based") and not picked.get("needs_human_selection")
+        return picked if ok else None
+
+    picked = _try(list(used_photo_ids) + list(sibling_ids)) or _try(list(sibling_ids))
+    if picked:
+        return picked.get("figma_asset_id", ""), picked.get("figma_asset_name", "")
+    return "", ""
+
+
 def _pick_background(components, used_ids):
     """Pick an approved background asset from the library, excluding ones
     already used this sprint for variety. None when the library has no
@@ -3571,6 +3613,16 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                     figma_asset_name_left = ""
                     figma_node_id_right = ""
                     figma_asset_name_right = ""
+                    # The Retargeting audience's own photo(s), for Both concepts.
+                    # Empty for single-audience orders, which keeps their manifest
+                    # rows byte-identical to before this change.
+                    reta_node_id = ""
+                    reta_asset_name = ""
+                    reta_node_id_left = ""
+                    reta_asset_name_left = ""
+                    reta_node_id_right = ""
+                    reta_asset_name_right = ""
+                    reta_needs_human = False
 
                     if _concept_photo is not None:
                         # Reuse the per-concept library pick for this concept's
@@ -3584,6 +3636,13 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                         figma_asset_name_right = _concept_photo["figma_asset_name_right"]
                         method = _concept_photo["method"]
                         prompt = _concept_photo["prompt"]
+                        reta_node_id = _concept_photo.get("reta_node_id", "")
+                        reta_asset_name = _concept_photo.get("reta_asset_name", "")
+                        reta_node_id_left = _concept_photo.get("reta_node_id_left", "")
+                        reta_asset_name_left = _concept_photo.get("reta_asset_name_left", "")
+                        reta_node_id_right = _concept_photo.get("reta_node_id_right", "")
+                        reta_asset_name_right = _concept_photo.get("reta_asset_name_right", "")
+                        reta_needs_human = _concept_photo.get("reta_needs_human", False)
                     elif style in DUAL_PHOTO_LIBRARY_STYLES and not library_cache:
                         # Library unavailable: NEVER fall through to Gemini for a
                         # people-photo style (no-AI-photography rule).
@@ -3635,6 +3694,29 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                 figma_asset_name = figma_asset_name_left
                                 match_strength = picked_left.get("match_strength", "")
                                 print(f"    {style} — picked LEFT: {figma_asset_name_left} ({figma_node_id_left}), RIGHT: {figma_asset_name_right} ({figma_node_id_right})")
+                                # Both-audience dual-photo styles need a SECOND
+                                # pair, with the exclusion chained across all four
+                                # so no photo appears twice anywhere on the concept.
+                                if _is_both_audience(concept):
+                                    _sib = [figma_node_id_left, figma_node_id_right]
+                                    _rl, _rln = _pick_retargeting_photo(
+                                        style, order, sprint_id, library_cache, concept,
+                                        _photo_tau, used_photo_ids, _sib)
+                                    _rr, _rrn = _pick_retargeting_photo(
+                                        style, order, sprint_id, library_cache, concept,
+                                        _photo_tau, used_photo_ids, _sib + [_rl])
+                                    if _rl and _rr:
+                                        reta_node_id_left, reta_asset_name_left = _rl, _rln
+                                        reta_node_id_right, reta_asset_name_right = _rr, _rrn
+                                        reta_node_id, reta_asset_name = _rl, _rln
+                                        for _p in (_rl, _rr):
+                                            if _p:
+                                                used_photo_ids.append(_p)
+                                        print(f"    {style} — retargeting pair: {_rln} / {_rrn}")
+                                    else:
+                                        reta_needs_human = True
+                                        print(f"    {style} — NO DISTINCT RETARGETING PAIR — "
+                                              f"retargeting row flagged for human selection")
                             else:
                                 method = "needs_human_selection"
                                 prompt = ""
@@ -3681,6 +3763,24 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                                 if figma_node_id:
                                     used_photo_ids.append(figma_node_id)
                                 print(f"    {style} — picked: {figma_asset_name} ({figma_node_id}, match={match_strength})")
+                                # Both-audience concepts fan out into a Prospecting
+                                # row AND a Retargeting row, and those must not
+                                # share a photo (Adrie 2026-09-10). Pick the
+                                # second one here, while the library cache and
+                                # exclusion list are in hand.
+                                if _is_both_audience(concept):
+                                    _rn, _ra = _pick_retargeting_photo(
+                                        style, order, sprint_id, library_cache, concept,
+                                        _photo_tau, used_photo_ids, [figma_node_id])
+                                    if _rn:
+                                        reta_node_id, reta_asset_name = _rn, _ra
+                                        used_photo_ids.append(_rn)
+                                        print(f"    {style} — retargeting photo: {_ra} ({_rn})")
+                                    else:
+                                        reta_needs_human = True
+                                        print(f"    {style} — NO DISTINCT RETARGETING PHOTO — "
+                                              f"retargeting row flagged for human selection "
+                                              f"(never silently reuses the prospecting image)")
                             else:
                                 # No match in library — flag for human, no Gemini fallback for photo styles
                                 method = "needs_human_selection"
@@ -3757,7 +3857,27 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                             "figma_asset_name_right": figma_asset_name_right,
                             "method": method,
                             "prompt": prompt,
+                            "reta_node_id": reta_node_id,
+                            "reta_asset_name": reta_asset_name,
+                            "reta_node_id_left": reta_node_id_left,
+                            "reta_asset_name_left": reta_asset_name_left,
+                            "reta_node_id_right": reta_node_id_right,
+                            "reta_asset_name_right": reta_asset_name_right,
+                            "reta_needs_human": reta_needs_human,
                         }
+                        # Carried on the concept so the manifest writer can put it
+                        # on the Retargeting row. The writer iterates concepts, not
+                        # this loop, so the dict is the handoff between the two.
+                        if _is_both_audience(concept) and (reta_node_id or reta_needs_human):
+                            concept["_reta_photo"] = {
+                                "figma_node_id": reta_node_id,
+                                "figma_asset_name": reta_asset_name,
+                                "figma_node_id_left": reta_node_id_left,
+                                "figma_asset_name_left": reta_asset_name_left,
+                                "figma_node_id_right": reta_node_id_right,
+                                "figma_asset_name_right": reta_asset_name_right,
+                                "needs_human": reta_needs_human,
+                            }
 
                     # Variant expansion: styles in MULTI_VARIANT_STYLES emit one
                     # row per registered variant. Brandon wants every variant as
@@ -4449,9 +4569,14 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results,
                        else "skipped" if row.get("generation_method") == "skip"
                        else "pending_assembly")
         }
-        # "Prospecting and Retargeting": each audience gets its OWN creative now (Adrie
-        # 2026-07-23) — emit a Prospecting row AND a Retargeting row, same image/style but
-        # UNIQUE on-image (Text_On_Visual) AND feed copy per audience. Otherwise a single row.
+        # "Prospecting and Retargeting": each audience gets its OWN creative — emit a
+        # Prospecting row AND a Retargeting row with unique on-image (Text_On_Visual)
+        # and feed copy per audience. Otherwise a single row.
+        #
+        # The two rows used to share one image. Adrie reversed that on 2026-09-10:
+        # prospecting and retargeting must not carry the same photo inside a run
+        # (two versions of the SAME audience may, since only one ships). Stage 04
+        # pins the second photo and leaves it on concept["_reta_photo"].
         _tc = concept.get("targeting_copy")
         if isinstance(_tc, dict) and _tc:
             for _tgt in ("Prospecting", "Retargeting"):
@@ -4497,6 +4622,29 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results,
                     _val = _v.get(_f)
                     if _val not in (None, "", []):
                         _r[_col] = _join_bullets(_val) if _is_list else _val
+                # Give the Retargeting row its own photo. Only this row is
+                # touched, so the Prospecting row and every single-audience order
+                # stay byte-identical to before.
+                if _tgt == "Retargeting":
+                    _rp = concept.get("_reta_photo") or {}
+                    if _rp.get("needs_human"):
+                        # The library had nothing distinct left. Flag it rather
+                        # than shipping the prospecting image twice.
+                        _r["generation_method"] = "needs_human_selection"
+                        _r["figma_node_id"] = ""
+                        _r["figma_asset_name"] = ""
+                        _r["figma_node_id_left"] = ""
+                        _r["figma_asset_name_left"] = ""
+                        _r["figma_node_id_right"] = ""
+                        _r["figma_asset_name_right"] = ""
+                    elif _rp.get("figma_node_id"):
+                        _r["figma_node_id"] = _rp["figma_node_id"]
+                        _r["figma_asset_name"] = _rp.get("figma_asset_name", "")
+                        if _rp.get("figma_node_id_left"):
+                            _r["figma_node_id_left"] = _rp["figma_node_id_left"]
+                            _r["figma_asset_name_left"] = _rp.get("figma_asset_name_left", "")
+                            _r["figma_node_id_right"] = _rp.get("figma_node_id_right", "")
+                            _r["figma_asset_name_right"] = _rp.get("figma_asset_name_right", "")
                 _sfx = _tgt[:4].lower()
                 _r["asset_id"] = f"{base_row['asset_id']}_{_sfx}"
                 _r["concept_tag"] = f"{base_row.get('concept_tag', '')}-{_sfx}"
