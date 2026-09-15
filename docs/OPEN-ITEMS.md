@@ -1201,3 +1201,44 @@ named for their dimensions. A Reddit section was added to `docs/wiki/19-role-des
 **Still open:** none of this has been run end-to-end. The plugin's Reddit support landed
 2026-09-08 (`effdc1b`) and the containers resolve by name, but no assembly has been executed
 against a real Reddit manifest. Elise's test CSVs are the next step.
+
+## 2026-09-15 — Ad-type pill bug ROOT-CAUSED: it's a font, not the Sept 8 plugin release
+
+Elise's report on the 09-10 call: the 9/8 run produced boards whose pills all read
+"Ad Concept # 1" and "Photo Hero", where runs before 9/8 were correct. She attributed it
+to the updated plugin she'd just installed. **That's wrong, and so were my first two
+diagnoses.** Settled using her test file `ZM4U0qpijTOPWDUZAbzRgK` ("ADAM Test 8/18 and
+8/31"), which conveniently holds an `8/31` page (working) and a `9/8` page (broken).
+
+**What it is.** The two pill labels are the ONLY text in the board master set in
+**`NeueMontreal-Medium`**. Every other text layer on the board uses **`PPNeueMontreal-*`**
+(Regular/Medium/SemiBold). `setTextLayer` calls `figma.loadFontAsync(node.fontName)`; when
+that one font isn't available to the editor it throws, the catch swallows it, and the label
+keeps its placeholder. On the 9/8 board there are exactly 2 layers with the odd font and
+exactly 2 that failed to fill. Everything else on the same board filled with real copy
+(`Copy_Headline`, `Copy_CTA`, both copy panels), which is why fonts looked innocent.
+
+Font availability is per machine and per session: on `8/31` the same font resolved 158
+times, on `9/8` it resolved 0 times.
+
+**Ruled out, with evidence:**
+
+| Hypothesis | Killed by |
+| --- | --- |
+| Manifest columns were empty | Board names carry the data: `ASSEMBLED_concept-1_cost-of-a-bad-hire-v1-pros` through concept-8, correct tags and pros/reta suffixes |
+| `Ad Type` is a COMPONENT_SET instance so text-setting can't stick | In this file `Ad Type` is a plain FRAME |
+| Layer names drifted | `Ad Info` → `Ad Concept Number` → `Button Label` is exactly what the code looks for |
+| More than one `Content` layer, wrong one matched | Exactly one, with `Ad Info` as a direct child |
+| Early return inside `fillConceptBoard` | None; f13/f14 are `if`-guarded, and both copy panels DID fill |
+| `a6969e9` name-drift rewrite broke the lookups | Replayed the exact pill-block lookup sequence against the real 9/8 board JSON. All five steps resolve. |
+| The Sept 8 Reddit release regressed it | The pill block is unchanged since 2026-07-31. `effdc1b` touched 20 lines, all in the Reddit template lookup |
+
+**Fixes shipped (plugin 2026.09.15):**
+- Every step of the pill block now logs when it can't proceed. It was completely silent
+  before, which is why a clean-looking assembly hid 16 broken boards.
+- `setTextLayer`'s failure message now names the font, since a missing font is the common
+  case and the old message gave you nothing to act on.
+
+**Still to do (Figma side, Elise):** restyle both `Button Label` layers in the board master
+from `NeueMontreal-Medium` to `PPNeueMontreal-Medium` so the pills stop depending on a font
+nothing else in the board uses. That removes the failure mode rather than reporting it.

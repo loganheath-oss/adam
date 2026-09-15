@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.08";
+var PLUGIN_VERSION = "2026.09.15";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -962,7 +962,16 @@ async function setTextLayer(node, text) {
     fitTextLayer(node);
     return true;
   } catch (e) {
-    log("    ⚠ Could not update '" + node.name + "': " + e.message);
+    // Name the FONT. A missing font is by far the most common cause here, and
+    // without this the message gives you nothing to act on. The 9/8 pill bug
+    // was exactly this: NeueMontreal-Medium unavailable, while the rest of the
+    // board used PPNeueMontreal-* and filled fine.
+    var fontDesc = "";
+    try {
+      var fn = node.fontName;
+      fontDesc = (fn && fn.family) ? " [font: " + fn.family + " " + fn.style + "]" : " [font: mixed]";
+    } catch (ignored) { fontDesc = " [font: unreadable]"; }
+    log("    ⚠ Could not update '" + node.name + "'" + fontDesc + ": " + e.message);
     return false;
   }
 }
@@ -1978,26 +1987,47 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
     log("  Copy Version 2 (short): filled");
   }
 
-  // Update the "Ad Concept #" and "Ad Type" pills
+  // Update the "Ad Concept #" and "Ad Type" pills.
+  //
+  // Every step below logs when it cannot proceed. Until 2026-09-15 this whole
+  // block was silent on failure, which cost a week: the 9/8 test run produced
+  // 16 boards whose pills all read the template defaults ("Ad Concept # 1" /
+  // "Photo Hero") and the assembly reported clean, so there was nothing to
+  // chase. The cause was a font: these two labels are the only text in the
+  // board master set in NeueMontreal-Medium, while every other layer uses
+  // PPNeueMontreal-*. When that one font is not available to the editor,
+  // loadFontAsync throws, setTextLayer swallows it, and the pills silently
+  // keep their placeholder text.
   var content = findLayerByName(clone, "Content");
+  if (!content) log("  ⚠ Pills skipped: no 'Content' layer in this board");
   if (content) {
     var adInfo = findDirectChildByName(content, "Ad Info");
+    if (!adInfo) log("  ⚠ Pills skipped: 'Content' has no direct child named 'Ad Info'");
     if (adInfo) {
       var conceptPill = findLayerByName(adInfo, "Ad Concept Number");
+      if (!conceptPill) log("  ⚠ Concept pill skipped: no 'Ad Concept Number' layer under 'Ad Info'");
       if (conceptPill) {
         var btnLabel = findLayerByName(conceptPill, "Button Label");
+        if (!btnLabel) log("  ⚠ Concept pill skipped: 'Ad Concept Number' has no 'Button Label' text layer");
         if (btnLabel) {
           var conceptLabel = "Ad Concept " + (conceptIndex + 1);
           if (leadRow.concept_tag) conceptLabel += " · " + leadRow.concept_tag;
           var tgt0 = leadRow.Targeting || leadRow.targeting || "";
           if (tgt0) conceptLabel += " · " + tgt0.toUpperCase();
-          await setTextLayer(btnLabel, conceptLabel);
+          var okConcept = await setTextLayer(btnLabel, conceptLabel);
+          if (!okConcept) log("  ⚠ Concept pill NOT written (still reads '" + btnLabel.characters + "')");
         }
       }
       var adType = findDirectChildByName(adInfo, "Ad Type");
+      if (!adType) log("  ⚠ Ad Type pill skipped: 'Ad Info' has no direct child named 'Ad Type'");
       if (adType) {
         var typeLabel = findLayerByName(adType, "Button Label");
-        if (typeLabel && visualStyle) await setTextLayer(typeLabel, visualStyle);
+        if (!typeLabel) log("  ⚠ Ad Type pill skipped: 'Ad Type' has no 'Button Label' text layer");
+        else if (!visualStyle) log("  ⚠ Ad Type pill skipped: manifest row has no Visual_Style");
+        else {
+          var okType = await setTextLayer(typeLabel, visualStyle);
+          if (!okType) log("  ⚠ Ad Type pill NOT written (still reads '" + typeLabel.characters + "')");
+        }
       }
       // Targeting pill (Prospecting / Retargeting). Forward-compatible: fills ONLY if
       // the template has a "Targeting" pill layer (with a "Button Label" inside);
