@@ -4809,6 +4809,7 @@ WIKI_PAGES = [
     ("17-role-paid-acquisition", "Role: Paid Acquisition"),
     ("18-role-copywriter", "Role: Copywriter"),
     ("19-role-designer", "Role: Designer"),
+    ("20-role-engineer", "Role: Engineer"),
 ]
 
 
