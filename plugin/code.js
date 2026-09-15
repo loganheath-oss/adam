@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.15";
+var PLUGIN_VERSION = "2026.09.16";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -460,6 +460,62 @@ function parseResolutionToWH(s) {
   return [parseInt(m[1], 10), parseInt(m[2], 10)];
 }
 
+// Load every font the template uses BEFORE building anything, and say which
+// ones are unavailable. Without this a missing font surfaces only as per-layer
+// failures buried 16 boards deep in the log — which is how the 9/8 run shipped
+// every pill unfilled while reporting clean.
+async function preflightFonts(template) {
+  if (!template) return;
+  var seen = {}, fonts = [];
+  (function walk(n) {
+    if (n.type === "TEXT") {
+      try {
+        var f = n.fontName;
+        if (f && f.family) {
+          var key = f.family + "|" + f.style;
+          if (!seen[key]) { seen[key] = true; fonts.push(f); }
+        }
+      } catch (e) { /* figma.mixed — the per-layer fallback handles it */ }
+    }
+    if ("children" in n) for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
+  })(template);
+
+  var missing = [];
+  for (var i = 0; i < fonts.length; i++) {
+    try { await figma.loadFontAsync(fonts[i]); }
+    catch (e) { missing.push(fonts[i].family + " " + fonts[i].style); }
+  }
+  if (missing.length) {
+    log("⚠ " + missing.length + " font(s) in this template are NOT available: " + missing.join(", "));
+    log("  Text in those fonts will be set in PP Neue Montreal Medium instead. Install them, or restyle those layers.");
+  } else {
+    log("  Fonts: all " + fonts.length + " available.");
+  }
+}
+
+// A slot may be the image frame itself (Meta) or an auto-layout wrapper holding
+// a size label plus the image frame (Reddit). Descend ONLY when the frame holds
+// exactly one large FRAME child that is strictly smaller than it — that gate is
+// what guarantees Meta behaviour is unchanged (asserted across all 8 Meta
+// masters: zero descend, scripts/verify_plugin_changes.py check C8).
+//
+// The caller keeps the OUTER frame for the unfilled-slot hiding, because on
+// Reddit the size label lives inside the wrapper and hiding the outer hides the
+// label with it.
+function resolveSlotTarget(frame) {
+  var inner = null, n = 0;
+  if ("children" in frame) {
+    for (var i = 0; i < frame.children.length; i++) {
+      var c = frame.children[i];
+      if (c.type === "FRAME" && "width" in c && c.width >= 800 && c.height >= 800) {
+        inner = c; n++;
+      }
+    }
+  }
+  if (n === 1 && (inner.width < frame.width || inner.height < frame.height)) return inner;
+  return frame;
+}
+
 function nodeWH(n) {
   if (!n || !("absoluteBoundingBox" in n) && !("width" in n)) return null;
   if ("width" in n && "height" in n) return [Math.round(n.width), Math.round(n.height)];
@@ -580,13 +636,8 @@ function templateSearchRoots(manifest) {
   push(figma.currentPage, "current page");
 
   // Platform token from the manifest (Meta / Reddit / LinkedIn / YouTube …).
-  var platform = "";
-  for (var i = 0; i < (manifest || []).length && !platform; i++) {
-    platform = String(manifest[i].Platform || manifest[i].platform || "");
-  }
-  var token = _normName(platform).replace(/[^a-z0-9]/g, "");
-  if (token === "3rdpartyaffiliate") token = "thirdparty";
-  if (token.indexOf("google") === 0) token = "google";
+  // Shared with findBoardMaster so page search and master search agree.
+  var token = manifestPlatformToken(manifest);
 
   var pages = figma.root.children;
   if (token) {
@@ -963,16 +1014,35 @@ async function setTextLayer(node, text) {
     return true;
   } catch (e) {
     // Name the FONT. A missing font is by far the most common cause here, and
-    // without this the message gives you nothing to act on. The 9/8 pill bug
-    // was exactly this: NeueMontreal-Medium unavailable, while the rest of the
-    // board used PPNeueMontreal-* and filled fine.
+    // without this the message gives you nothing to act on.
     var fontDesc = "";
     try {
       var fn = node.fontName;
       fontDesc = (fn && fn.family) ? " [font: " + fn.family + " " + fn.style + "]" : " [font: mixed]";
     } catch (ignored) { fontDesc = " [font: unreadable]"; }
-    log("    ⚠ Could not update '" + node.name + "'" + fontDesc + ": " + e.message);
-    return false;
+
+    // FALL BACK TO THE HOUSE FONT rather than silently shipping placeholder.
+    //
+    // This is the 9/8 pill bug, and it is not a two-layer problem: a census of
+    // the file found NeueMontreal-Medium on BOTH pill labels of ALL 14 board
+    // masters across all six platforms (42 layers), while everything around
+    // them uses PPNeueMontreal-*. So the failure regenerates with every new
+    // master and cannot be fixed by restyling. Loading a known-good font and
+    // reassigning also covers fontName === figma.mixed, since the assignment is
+    // wholesale.
+    try {
+      var fallback = { family: "PP Neue Montreal", style: "Medium" };
+      await figma.loadFontAsync(fallback);
+      node.fontName = fallback;
+      node.characters = text;
+      fitTextLayer(node);
+      log("    ↳ '" + node.name + "' set in fallback PP Neue Montreal Medium — original unavailable" + fontDesc);
+      return true;
+    } catch (e2) {
+      log("    ⚠ Could not update '" + node.name + "'" + fontDesc + ": " + e.message
+          + " (fallback also failed: " + e2.message + ")");
+      return false;
+    }
   }
 }
 
@@ -1483,11 +1553,28 @@ function findTemplateByConvention(searchRoot, visualStyle, w, h, hint) {
     // Reddit's containers are named Reddit_Adtype_<Style>, so a prefix search for
     // "Adtype" alone never sees them, and the adtype token sits mid-name rather
     // than at index 0 (2026-09-08). Search both prefixes and match anywhere.
-    var sects = findAllByPrefix(searchRoot, "Adtype")
+    var allSects = findAllByPrefix(searchRoot, "Adtype")
                   .concat(findAllByPrefix(searchRoot, "Reddit_Adtype"));
+    // Only nodes that can HOLD templates are candidates. Every Reddit spec card
+    // carries a TEXT layer named "Adtype_<Style>", and those are found before
+    // the real "Reddit_Adtype_<Style>" FRAMEs (different prefix, concatenated
+    // second). Without this guard first-match-wins always picked a childless
+    // TEXT label and every Reddit style dead-ended: verified 0/40 resolving
+    // before this change, 40/40 after (scripts/verify_plugin_changes.py).
+    var sects = [];
+    for (var sf = 0; sf < allSects.length; sf++) {
+      if ("children" in allSects[sf]) sects.push(allSects[sf]);
+    }
+    // Prefer a container whose name ENDS at the style token, so "Search" cannot
+    // be captured by "Search-and-Checkbox" on page traversal order alone.
     var container = null;
     for (var si = 0; si < sects.length; si++) {
-      if (normAlnum(sects[si].name).indexOf(wantSect) !== -1) { container = sects[si]; break; }
+      if (normAlnum(sects[si].name).slice(-wantSect.length) === wantSect) { container = sects[si]; break; }
+    }
+    if (!container) {
+      for (var sj = 0; sj < sects.length; sj++) {
+        if (normAlnum(sects[sj].name).indexOf(wantSect) !== -1) { container = sects[sj]; break; }
+      }
     }
     if (container) {
       var kids = findAllByPrefix(container, "Template");
@@ -1986,6 +2073,25 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
       shortHeadline, shortPrimary, "Primary Text (short):");
     log("  Copy Version 2 (short): filled");
   }
+  // Reddit is ONE copy version, not Meta's long/short pair (Adrie, 2026-09-10:
+  // primary text only, ~100 chars, a single instance). Elise's Reddit master
+  // reflects that — it kept "Frame 15" and has no Frame 13 or Frame 14.
+  //
+  // The both-absent gate matters: on every Meta master Frame 15 is the PARENT
+  // of Frames 13 and 14, so an unordered check would fire this single-panel
+  // path on every Meta board. Asserted on all 8 Meta masters (check D12c).
+  if (!f13 && !f14) {
+    var f15 = findLayerByName(clone, "Frame 15");
+    if (f15) {
+      // "" as the label argument leaves Elise's own row label untouched; the
+      // long/short relabelling above is Meta bookkeeping and means nothing here.
+      await fillCopyPanelByLabel(findDirectChildByName(f15, "Notes"),
+        (leadRow.Headline || leadHeadline), shortPrimary, "");
+      log("  Single copy panel (Frame 15, one-version platform): filled");
+    } else {
+      log("  ⚠ No copy panel found: board has no Frame 13/14 pair and no Frame 15");
+    }
+  }
 
   // Update the "Ad Concept #" and "Ad Type" pills.
   //
@@ -2047,7 +2153,11 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
       var targetingPill = findDirectChildByName(adInfo, "Targeting");
       if (targetingPill && targeting) {
         var targetLabel = findLayerByName(targetingPill, "Button Label");
-        if (targetLabel) await setTextLayer(targetLabel, targeting);
+        if (!targetLabel) log("  ⚠ Targeting pill skipped: 'Targeting' has no 'Button Label' text layer");
+        else {
+          var okTarget = await setTextLayer(targetLabel, targeting);
+          if (!okTarget) log("  ⚠ Targeting pill NOT written (still reads '" + targetLabel.characters + "')");
+        }
       }
     }
   }
@@ -2073,7 +2183,20 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
   var applied = 0;
   var slotFilled = []; // parallel to slotFrames; true if this slot got content
   for (var s = 0; s < slotFrames.length; s++) {
-    var imageFrame = slotFrames[s];
+    // On Meta the slot IS the image frame. On Reddit it is an auto-layout
+    // wrapper holding a size label plus the real image frame, so the wrapper's
+    // box is ~116px taller than any template and every lookup missed by more
+    // than the +/-12 tolerance. Descend to the real frame and take ITS box.
+    //
+    // Deliberately box-based, not name-based: slot NAMES drift where boxes do
+    // not (normalizeLayerNames below still renames a slot "1440x1080" to
+    // "1440x1800" to repair exactly that), and the Reddit landscape slot's inner
+    // frame is named "Layout - Carousel" with no size in the name at all.
+    var imageFrame = resolveSlotTarget(slotFrames[s]);
+    if (imageFrame !== slotFrames[s]) {
+      log("    slot '" + slotFrames[s].name + "' → inner frame '" + imageFrame.name +
+          "' (" + Math.round(imageFrame.width) + "x" + Math.round(imageFrame.height) + ")");
+    }
     var w = Math.round(imageFrame.width);
     var h = Math.round(imageFrame.height);
     slotFilled.push(false);
@@ -2287,20 +2410,54 @@ async function fillLegacyTemplate(clone, row) {
 // ADAM never rebuilds the layout, only clones + fills it. Found by exact name so
 // there's no "Capture Template" click.
 var BOARD_MASTER_NAME = "Meta - Static Grouped";
-function findBoardMaster() {
-  // Current page first, then the rest of the file. Same "local wins" rule the
-  // template lookup uses: a copy on the page you are working from is an explicit
-  // choice and must beat whichever copy the file-wide walk happens to reach
-  // first (ADAM 2026 holds four "Meta - Static Grouped" frames).
+
+// The platform token off the manifest ("meta" / "reddit" / "linkedin" / …).
+// Shared by templateSearchRoots() and findBoardMaster() so the two can never
+// disagree about which platform a run is for.
+function manifestPlatformToken(manifest) {
+  var platform = "";
+  for (var i = 0; i < (manifest || []).length && !platform; i++) {
+    platform = String(manifest[i].Platform || manifest[i].platform || "");
+  }
+  var token = _normName(platform).replace(/[^a-z0-9]/g, "");
+  if (token === "3rdpartyaffiliate") token = "thirdparty";
+  if (token.indexOf("google") === 0) token = "google";
+  return token;
+}
+
+// Each platform has its own board master: "Meta - Static Grouped",
+// "Reddit - Static Grouped", "Linkedin - Static Grouped" and so on. Matching on
+// the WHOLE normalized name (not a substring) is what makes this safe — it
+// accepts "Reddit - Static Grouped" and rejects the superseded stub
+// "Reddit - Static Grouped/Reddit - Image Feed", whose normalized name carries
+// a tail, with no casing table to maintain per platform.
+//
+// `manifest` is optional: normalizeLayerNames() calls this bare and must keep
+// the historical Meta-only behaviour.
+function findBoardMaster(manifest) {
+  var token = manifest ? manifestPlatformToken(manifest) : "";
+  var wantNorm = token + "staticgrouped";
+  var metaPath = (!token || token === "meta");
+
   function search(root) {
     var match = null;
     (function walk(n) {
       if (match) return;
-      if (n.name === BOARD_MASTER_NAME && n.type === "FRAME") { match = n; return; }
+      if (n.type === "FRAME") {
+        // Meta keeps the literal exact-name test byte-for-byte: ADAM 2026 holds
+        // eight identical "Meta - Static Grouped" frames and has always taken
+        // the first in this traversal order. Do not "improve" that.
+        if (metaPath ? (n.name === BOARD_MASTER_NAME) : (normAlnum(n.name) === wantNorm)) {
+          match = n; return;
+        }
+      }
       if ("children" in n) for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
     })(root);
     return match;
   }
+  // Current page first, then the rest of the file. Same "local wins" rule the
+  // template lookup uses: a copy on the page you are working from is an explicit
+  // choice and must beat whichever copy the file-wide walk reaches first.
   return search(figma.currentPage) || search(figma.root);
 }
 
@@ -2423,11 +2580,15 @@ async function cleanupTestBoards() {
     if (n.name && re.test(n.name)) { toDelete.push(n); return; }
     if ("children" in n) for (var i = 0; i < n.children.length; i++) walk(n.children[i]);
   }
-  for (var p = 0; p < figma.root.children.length; p++) walk(figma.root.children[p]);
+  // CURRENT PAGE ONLY. This used to walk every page in the file, so one click
+  // deleted every 'Sprint · ' container everyone had parked anywhere in a shared
+  // file, not just the clicker's test boards. Scoped 2026-09-15 before a test
+  // week where this button gets pressed repeatedly.
+  walk(figma.currentPage);
   var count = toDelete.length;
   for (var d = 0; d < toDelete.length; d++) { try { toDelete[d].remove(); } catch (e) {} }
-  log("🧹 Deleted " + count + " test board(s) (ASSEMBLED_concept-* / STYLED_concept-*).");
-  figma.notify("Deleted " + count + " test boards.");
+  log("🧹 Deleted " + count + " test board(s) on this page (ASSEMBLED_concept-* / STYLED_concept-*).");
+  figma.notify("Deleted " + count + " test boards on this page.");
   figma.ui.postMessage({ type: "cleanup-complete", count: count });
 }
 
@@ -2444,28 +2605,41 @@ async function assemble(payload) {
       capturedTemplateId = null;
     }
   }
+  // Parsed BEFORE template resolution because the board-master lookup is now
+  // platform-aware (Reddit has its own master and its own slot sizes). Nothing
+  // between the old parse position and here reads the manifest.
+  var manifest;
+  try { manifest = parseCSV(payload.csv); }
+  catch (e) { err("CSV parse error: " + e.message); return; }
+
   var forcedMode = null;
   if (!template) {
-    // Standard output: clone the board master ('Meta - Static Grouped') per
-    // concept — no "Capture Template" click required. Fall back to template
-    // auto-discovery only if the board master isn't in the file.
-    var boardMaster = findBoardMaster();
+    // Standard output: clone the platform's board master per concept — no
+    // "Capture Template" click required. Fall back to template auto-discovery
+    // only if that platform's master isn't in the file.
+    var boardMaster = findBoardMaster(manifest);
     if (boardMaster) {
       template = boardMaster;
       forcedMode = "concept_board";
       log("No template captured — using board master '" + boardMaster.name + "' (concept_board mode; no click needed).");
     } else {
+      // A wrong-platform master must NEVER be the fallback: cloning the Meta
+      // board for a Reddit run gives every slot Meta dimensions, so every
+      // template lookup misses and the boards come out empty-but-clean.
+      // styled_per_row assembles each ad standalone and works for any platform.
+      var missTok = manifestPlatformToken(manifest);
+      if (missTok && missTok !== "meta") {
+        log("⚠ No '" + missTok + "' board master found (looked for a FRAME whose name reduces to '"
+            + missTok + "staticgrouped', e.g. 'Reddit - Static Grouped') — assembling each ad standalone instead.");
+      }
       template = findTemplatesRoot();
       var rootLabel = (template === figma.root) ? "entire document" : ("page '" + template.name + "'");
       log("Board master not found — auto-discovering templates across the " + rootLabel + " (styled_per_row mode).");
     }
   }
 
-  var manifest;
-  try { manifest = parseCSV(payload.csv); }
-  catch (e) { err("CSV parse error: " + e.message); return; }
-
   var mode = forcedMode || detectTemplateMode(template);
+  await preflightFonts(template);
   _asmWarn = 0; _asmMiss = 0; _asmShortfall = 0; _asmDrift = 0; _driftNames = [];
   // Cross-page template lookup needs every page loaded when the document is in
   // dynamic-page mode. Guarded: the API is absent on older Figma builds.
@@ -2672,8 +2846,18 @@ async function assemble(payload) {
       if (node) nodes.push(node);
     }
     if (nodes.length > 0) {
-      figma.currentPage.selection = nodes;
-      figma.viewport.scrollAndZoomIntoView(nodes);
+      // Guarded: assigning selection throws when the assembled nodes live on a
+      // different page than the current one, which is exactly what happens when
+      // output parks in the Generated Tests section on the Template Library
+      // page. Unguarded, a completed run ended in an exception AFTER the
+      // success message, which reads as "it finished then broke".
+      try {
+        figma.currentPage.selection = nodes;
+        figma.viewport.scrollAndZoomIntoView(nodes);
+      } catch (e) {
+        var where = (nodes[0] && nodes[0].parent && nodes[0].parent.name) || "another page";
+        log("  (Could not select the new boards — they were built under '" + where + "', not the page you are on.)");
+      }
     }
   }
 }
