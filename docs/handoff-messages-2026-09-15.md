@@ -11,7 +11,7 @@ Order matters. The first two have third-party lead times and **12 working days**
 
 ---
 
-## 1. Leon Zhao — ownership transfer
+## 1. Leon Zhao: ownership transfer
 
 > Leon, I'm at 12 working days on the contract and there are four things that have to move off my
 > personal accounts before the 30th. None of them can be done after my access ends, so I'd rather
@@ -36,7 +36,7 @@ Order matters. The first two have third-party lead times and **12 working days**
 
 ---
 
-## 2. Haresh's team — LLM Gateway
+## 2. Haresh's team: LLM Gateway
 
 > We still don't have the LLM Gateway values, and that's now the item most likely to miss.
 >
@@ -54,7 +54,7 @@ Order matters. The first two have third-party lead times and **12 working days**
 
 ---
 
-## 3. Elise — updated plugin, and what changed
+## 3. Elise: updated plugin, and what changed
 
 > New plugin is up, version 2026.09.16. Grab it from the /plugin page on the ADAM site, unzip, then
 > Plugins, Development, Import plugin from manifest. Importing over the old one is fine.
