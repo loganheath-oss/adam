@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.16";
+var PLUGIN_VERSION = "2026.09.17";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -2557,14 +2557,54 @@ function findGeneratedArea() {
     })(root);
     return found;
   }
-  var park = search(figma.currentPage) || search(figma.root);
-  var tmpl = null;
-  if (park && park.children) {
-    for (var i = 0; i < park.children.length; i++) {
-      if (park.children[i].type === "FRAME") { tmpl = park.children[i]; break; }
+  function firstFrame(node) {
+    if (!node || !node.children) return null;
+    for (var i = 0; i < node.children.length; i++) {
+      if (node.children[i].type === "FRAME") return node.children[i];
+    }
+    return null;
+  }
+
+  var park = search(figma.currentPage);
+
+  // No section on the page the operator is working from. This used to fall
+  // through to a document-wide search, which found the section on the Template
+  // Library page and built there — so you would run the plugin on your own page
+  // and watch the output appear somewhere else (reported 2026-09-10). Documenting
+  // that as "required setup" was the wrong fix: nobody reads setup docs, they
+  // click Assemble. Create the section here instead, on the page you are on.
+  if (!park) {
+    var elsewhere = search(figma.root);
+    var srcTmpl = firstFrame(elsewhere);
+    if (srcTmpl && typeof figma.createSection === "function") {
+      try {
+        var made = figma.createSection();
+        made.name = "Generated Tests";
+        figma.currentPage.appendChild(made);
+        var copy = srcTmpl.clone();
+        made.appendChild(copy);
+        // Put it where the operator is looking rather than at the origin.
+        if ("x" in made) {
+          made.x = Math.round(figma.viewport.center.x - (copy.width || 0) / 2);
+          made.y = Math.round(figma.viewport.center.y - (copy.height || 0) / 2);
+        }
+        if ("x" in copy) { copy.x = made.x; copy.y = made.y; }
+        park = made;
+        log("  Created a 'Generated Tests' section on this page (copied the container template " +
+            "from '" + (elsewhere && elsewhere.parent && elsewhere.parent.name) + "'), so the " +
+            "output lands here and not on the template page.");
+      } catch (e) {
+        log("  ⚠ Could not create a 'Generated Tests' section on this page (" + e.message +
+            ") — boards will be placed loose on the page instead.");
+        park = null;
+      }
+    } else if (!srcTmpl) {
+      log("  No 'Generated Tests' section anywhere in the file — boards will be placed loose " +
+          "on this page.");
     }
   }
-  return { park: park, template: tmpl };
+
+  return { park: park, template: firstFrame(park) };
 }
 
 async function cleanupTestBoards() {

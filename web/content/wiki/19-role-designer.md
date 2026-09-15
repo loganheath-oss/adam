@@ -34,15 +34,15 @@ Steps 3 and 6 are where almost everything goes wrong, and both of them come down
 
 1. In the ADAM 2026 file, the one holding the template pages, add a page. Call it `Assembly`,
    `Sept sprints`, whatever you want.
-2. Put a `Generated Tests` **section** on that page with one frame inside it. The plugin clones that
-   frame every run, so your output stacks up on your page instead of landing in the section over on
-   the Template Library page.
-3. Run the plugin from your page. Nothing else needs to be on it.
+2. Run the plugin from your page. Nothing else needs to be on it.
 
-**Step 2 isn't really optional.** If your page doesn't have a `Generated Tests` section, the plugin
-falls back to searching the whole document, finds the one on the Template Library page, and builds
-there. So you'll be working on your own page and watching the output land somewhere else. That's the
-fix if you've seen that happen.
+That's genuinely the whole setup as of plugin 2026.09.16. If your page has no `Generated Tests`
+section, the plugin now **creates one for you** on the page you're on, copying the container
+template from wherever it finds one, and says so in the log.
+
+It used to fall back to searching the whole document, find the section on the Template Library page,
+and build there. That's why output kept landing somewhere other than the page you were working on.
+If you have a `Generated Tests` section on your page already, nothing changes: yours still wins.
 
 **Don't keep a separate working file with copied templates in it.** Those copies rot. The August test
 file was missing Lifestyle Photo's 4:5 size and the Us vs Them container entirely, and that run came
@@ -55,8 +55,21 @@ back with one failure and twenty five misses. The plugin can't reach into anothe
 2. **Choose CSV file**, then the sprint's `asset_manifest.csv`.
 3. **Assemble.**
 
-Each ad comes out as a standalone frame at its native size, laid out in a grid near your viewport.
-They don't get nested into a parent frame unless you capture a destination first.
+### Two output shapes, and what picks between them
+
+Worth knowing, because the log says which one you got and they look nothing alike.
+
+**Grouped boards.** The normal case. The plugin finds your platform's board master, clones it once
+per concept, and parks the run inside `Generated Tests` as a single `Sprint · <label>` container.
+Each board carries the copy panel, the pills, and every size of that concept together. This is what
+you get whenever the board master for your platform is in the file.
+
+**Standalone ads.** The fallback. Each ad comes out as its own frame at its native size, laid out in
+a grid near your viewport, not nested into anything. You get this when the board master for your
+platform isn't found, and the log says so in as many words.
+
+So if you were expecting grouped boards and got a loose grid, that isn't a layout preference, it's
+the plugin telling you it couldn't find your board master.
 
 The plugin finds what it needs across the whole file. A copy on your current page always wins, so you
 can override a template locally just by putting one on your page.
@@ -148,6 +161,27 @@ was taught both back in September 2026. If you're working on Reddit:
 - **Two sizes per style.** Portrait `1080x1350` and landscape `1440x1080`.
 - **Each container also has a `Rules` frame.** That's the spec card for the copy team. It's not a
   template and it doesn't get assembled.
+
+### One board master per platform, named exactly
+
+Each platform has its own board master, and the plugin picks it off the manifest's Platform column
+by matching the **whole** name:
+
+```
+Meta - Static Grouped
+Reddit - Static Grouped
+Linkedin - Static Grouped
+Youtube - Static Grouped
+Google - Static Grouped
+Third Party - Static Grouped
+```
+
+Whole-name matching is deliberate. It's what lets a superseded copy sit in the file harmlessly:
+`Reddit - Static Grouped/Reddit - Image Feed` doesn't match, so it can't be picked by accident.
+
+**Never have two masters for one platform with the same name.** The plugin takes the first it finds,
+so which one you get depends on page order. If you're retiring a master, rename it rather than
+leaving a twin.
 
 A couple of things to keep clean over there.
 
