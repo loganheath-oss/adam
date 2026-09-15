@@ -150,9 +150,71 @@ def _audience_photo_checks():
         check("audience photos: single-audience concepts are NOT Both", True)
 
 
+def _reddit_copy_shape_checks():
+    """Reddit is ONE copy version; Meta is a long/short pair.
+
+    field_caps_reddit_feed sat in the style guide unread for a week, so Reddit
+    runs were capped and prompted as if they were Meta. The load-bearing guard
+    here is that the META path is unchanged: if a Reddit branch ever leaks into
+    Meta, that is a regression on the platform that actually ships today.
+    """
+    saved = rp._ACTIVE_PLATFORM
+    try:
+        rp._set_active_platform({"platform": "Meta"})
+        meta = rp._feed_caps()
+        rp._set_active_platform({"platform": "Reddit"})
+        red = rp._feed_caps()
+
+        check("reddit caps: body_short is 100 (Adrie's one-version spec)",
+              red.get("body_short") == 100, f"got {red.get('body_short')!r}")
+        check("reddit caps: no body_long", "body_long" not in red, str(sorted(red)))
+        check("reddit caps: no headline_short", "headline_short" not in red, str(sorted(red)))
+        check("reddit caps: the config's `body` key was mapped to ADAM's body_short",
+              "body" not in red and "body_short" in red, str(sorted(red)))
+        check("reddit caps: no leaked _note key",
+              not any(k.startswith("_") for k in red), str(sorted(red)))
+        check("meta caps: still the long/short pair",
+              meta.get("body_long") == 300 and meta.get("body_short") == 125
+              and meta.get("headline_short") == 30,
+              str(sorted(meta.items())))
+        check("meta caps: unchanged by the Reddit branch",
+              meta == dict(rp._load_style_guide().get("field_caps_meta_feed", {})),
+              "meta caps diverged from the config block")
+
+        # The blanking pass: a model that still emits the Meta pair gets it dropped
+        # on Reddit and kept on Meta.
+        def _concept():
+            return {"body_long": "long one", "headline_short": "short one",
+                    "body_short": "keep me", "headline": "keep me too",
+                    "targeting_copy": {"Prospecting": {"body_long": "aud long",
+                                                       "headline_short": "aud short",
+                                                       "body_short": "aud keep"}}}
+        rp._set_active_platform({"platform": "Reddit"})
+        c = _concept(); rp._drop_meta_only_feed_fields(c)
+        check("reddit blanking: body_long and headline_short cleared",
+              c["body_long"] == "" and c["headline_short"] == "", str(c)[:90])
+        check("reddit blanking: per-audience pair cleared too",
+              c["targeting_copy"]["Prospecting"]["body_long"] == ""
+              and c["targeting_copy"]["Prospecting"]["headline_short"] == "")
+        check("reddit blanking: the fields Reddit DOES use survive",
+              c["body_short"] == "keep me" and c["headline"] == "keep me too"
+              and c["targeting_copy"]["Prospecting"]["body_short"] == "aud keep")
+        check("reddit blanking: columns kept (blanked, not deleted)",
+              "body_long" in c and "headline_short" in c)
+
+        rp._set_active_platform({"platform": "Meta"})
+        c = _concept(); rp._drop_meta_only_feed_fields(c)
+        check("meta blanking: no-op on Meta",
+              c["body_long"] == "long one" and c["headline_short"] == "short one",
+              str(c)[:90])
+    finally:
+        rp._ACTIVE_PLATFORM = saved
+
+
 def offline_checks():
     print("\n== OFFLINE (deterministic) ==")
     _audience_photo_checks()
+    _reddit_copy_shape_checks()
 
     # 1. Proper-noun / acronym casing backstop
     cases = [("Shipped by friday, hired monday on upwork", "Shipped by Friday, hired Monday on Upwork"),

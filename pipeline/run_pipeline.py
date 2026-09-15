@@ -340,6 +340,40 @@ _PN_LIST_FIELDS = ("left_bullets", "right_bullets", "single_bullets", "us_bullet
                    "them_bullets", "search_results", "pie_labels")
 
 
+_META_ONLY_FEED_FIELDS = ("body_long", "headline_short")
+
+
+def _drop_meta_only_feed_fields(concept):
+    """On a Reddit run, blank the feed fields Reddit does not have.
+
+    Reddit is one version: one headline, one body (Adrie, 2026-09-10). The prompt
+    now says so, but a model asked for six fields for months will still emit the
+    pair sometimes, and a half-populated body_long would flow into
+    Primary_Text_Long and render as a second version that Reddit cannot place.
+
+    Blanked rather than deleted so the manifest's column set stays identical for
+    every platform — downstream readers index by column, not by presence.
+    """
+    if _norm_style(_ACTIVE_PLATFORM) != "reddit":
+        return
+    for _f in _META_ONLY_FEED_FIELDS:
+        if concept.get(_f):
+            concept[_f] = ""
+    _tc = concept.get("targeting_copy")
+    if isinstance(_tc, dict):
+        for _aud in _tc.values():
+            if isinstance(_aud, dict):
+                for _f in _META_ONLY_FEED_FIELDS:
+                    if _aud.get(_f):
+                        _aud[_f] = ""
+                # Flattened {feed: {...}} shapes carry the same fields a level down.
+                _feed = _aud.get("feed")
+                if isinstance(_feed, dict):
+                    for _f in _META_ONLY_FEED_FIELDS:
+                        if _feed.get(_f):
+                            _feed[_f] = ""
+
+
 def _fix_concept_proper_nouns(concept):
     """Apply _fix_proper_nouns across a concept's copy fields (incl. nested targeting_copy)."""
     for _f in _PN_TEXT_FIELDS:
@@ -1497,11 +1531,35 @@ _REG_SLOT_TO_FIELD = {"headline": "creative_headline",
                       "subhead": "creative_subhead", "cta": "cta"}
 
 
+def _feed_caps(platform=None):
+    """Feed-field char caps for the ACTIVE platform — {adam_field: max}.
+
+    Meta's feed is a long/short PAIR. Reddit is one version only (Adrie,
+    2026-09-08 working session, recorded in the style guide: "Reddit body copy is
+    100 characters and only ONE instance is needed — not the Meta short/long
+    pair"). Until now `field_caps_reddit_feed` existed in the config and was read
+    by nothing, so Reddit runs were capped as if they were Meta.
+
+    The Reddit block keys its single body field `body`; it is mapped onto ADAM's
+    `body_short` here because that is the field the manifest's
+    Primary_Text_Short column and the plugin actually read.
+    """
+    g = _load_style_guide()
+    plat = _norm_style(platform if platform is not None else _ACTIVE_PLATFORM)
+    if plat == "reddit":
+        caps = {k: v for k, v in (g.get("field_caps_reddit_feed", {}) or {}).items()
+                if not k.startswith("_")}
+        if "body" in caps:
+            caps["body_short"] = caps.pop("body")
+        return caps
+    return dict(g.get("field_caps_meta_feed", {}) or {})
+
+
 def _style_caps(style):
     """Resolve (hard, soft) per-field char caps for a style — {adam_field: max}."""
     g = _load_style_guide()
     multi = set((g.get("_meta", {}) or {}).get("multi_image_fields", []))
-    feed = dict(g.get("field_caps_meta_feed", {}) or {})
+    feed = _feed_caps()
     core_def = dict(g.get("onimage_core_defaults", {}) or {})
     _, entry = _guide_entry_for_style(style)
     cl = dict((entry or {}).get("char_limits", {}) or {})
@@ -1610,7 +1668,7 @@ def _enforce_lengths(concept, style):
     # against the Meta-feed caps (soft — feed overflow is recorded, not de-selected).
     tc = concept.get("targeting_copy")
     if isinstance(tc, dict):
-        feed = (_load_style_guide().get("field_caps_meta_feed", {}) or {})
+        feed = _feed_caps()
         for aud, obj in tc.items():
             if isinstance(obj, dict):
                 for f, cap in feed.items():
@@ -1851,7 +1909,7 @@ def _fit_feed_fields(concepts, style, api_key, sprint_id=None):
     sentence-boundary trim. Deterministic result: feed fields <= caps."""
     import httpx
 
-    caps = dict(_load_style_guide().get("field_caps_meta_feed", {}) or {})
+    caps = _feed_caps()
     # SELF-HEAL (Adrie's "flag but don't fix"): also rewrite the HARD on-image fields
     # (creative_headline/subhead, multi-image fields) to fit. They break the design when
     # they overflow, yet were previously only length-flagged — now the same rewrite-to-fit
@@ -2078,6 +2136,11 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
                 "swap one noun, do not reuse their opening or closing words:\n"
                 + _sib + "\n")
 
+    # Reddit has no body_long at all (Adrie, 2026-09-10: one body field, ~100
+    # chars). Declared here because the long-body format directive below is
+    # Meta-only and must not fire on a Reddit run.
+    _is_reddit = _norm_style(_ACTIVE_PLATFORM) == "reddit"
+
     # LONG-BODY FORMAT — deterministic 50/50 bullet-vs-paragraph across a style's concepts
     # (Logan 2026-07-24: the model defaulted to 100% bulleted). Assign each concept a format
     # by GLOBAL index parity (seq*batch_size + position), so even indices → bulleted, odd →
@@ -2096,7 +2159,7 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
         else:
             _fmt_lines.append(f"  Concept {_j+1}: body_long / Primary_Text_Long = FLOWING PARAGRAPH prose "
                               "(2-3 sentences, NO bullets, NO emoji-led lines).")
-    _body_format_line = (
+    _body_format_line = "" if _is_reddit else (
         "\nLONG-BODY FORMAT — ASSIGNED per concept, follow EXACTLY. This bullet-vs-paragraph split "
         "is REQUIRED (do NOT make them all the same format):\n" + "\n".join(_fmt_lines) + "\n"
     )
@@ -2199,6 +2262,23 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "Do NOT assume any prior familiarity with Upwork."
         )
 
+    # Reddit's feed is ONE version, not Meta's long/short pair (Adrie, 2026-09-10
+    # call and her 2026-09-08 working session). Asking for body_long on a Reddit
+    # run produced copy the platform has nowhere to put, and the caps were being
+    # read off the Meta block regardless. The Meta strings below are untouched, so
+    # a Meta prompt renders byte-identical to before this change.
+    _feed_spec_both = (
+        (
+            "    FEED (around the image, never printed on it): headline (max 50),\n"
+            "      body_short (max 100 — Reddit's ONLY body field). Reddit has NO\n"
+            "      headline_short and NO body_long: do not produce them.\n"
+        ) if _is_reddit else (
+            "    FEED (around the image, never printed on it): headline (max 50), headline_short\n"
+            "      (max 30), body_short (max 125), body_long (max 300 — Primary Text; keep the\n"
+            "      ~half-bulleted rule), description (max 25).\n"
+        )
+    )
+
     # Feed-copy field spec + JSON key list branch on single-vs-both targeting.
     if _is_both:
         ad_platform_block = (
@@ -2215,14 +2295,25 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "  Each maps to an object with BOTH the on-image and the feed copy for that audience:\n"
             "    ON-IMAGE (Text_On_Visual): creative_headline (follow the matched Style Guide caps),\n"
             "      creative_subhead (ONLY if the Style Guide entry allows a subhead — else omit),\n"
-            "    FEED (around the image, never printed on it): headline (max 50), headline_short\n"
-            "      (max 30), body_short (max 125), body_long (max 300 — Primary Text; keep the\n"
-            "      ~half-bulleted rule), description (max 25).\n"
+            + _feed_spec_both +
             "  Apply the Prospecting (cold) vs Retargeting (warm) rules above to BOTH the on-image\n"
             "  and the feed copy — the two audiences must read distinctly.\n"
             "- cta (one shared CTA label), concept_tag (short slug like \"talent-speed-v1\")"
         )
         json_keys_full = "cta, targeting_copy, concept_tag"
+    elif _is_reddit:
+        ad_platform_block = (
+            "AD-PLATFORM copy — the Reddit feed fields shown AROUND the image.\n"
+            "NEVER printed on the image itself; distinct wording from the on-creative copy:\n"
+            "- headline (max 50 characters)\n"
+            "- body_short (max 100 characters — Reddit's ONLY body field)\n"
+            "- description (max 25 characters)\n"
+            "- concept_tag (short slug like \"talent-speed-v1\")\n"
+            "REDDIT IS ONE VERSION. There is no long/short pair here: do NOT produce\n"
+            "headline_short and do NOT produce body_long. One headline and one body per concept."
+        )
+        json_keys_full = ("creative_headline, creative_subhead, headline, "
+                          "body_short, description, cta, concept_tag")
     else:
         ad_platform_block = (
             "AD-PLATFORM copy — the Meta feed fields shown AROUND the image (caption + headline).\n"
@@ -2718,6 +2809,7 @@ Return as JSON array of objects with exactly these keys: {json_keys_full}{multi_
                         # _to_sentence_case just lowercased. Deterministic, runs LAST so it
                         # wins over sentence-casing. Fixes "friday" -> "Friday" (2026-07-27).
                         _fix_concept_proper_nouns(concept)
+                        _drop_meta_only_feed_fields(concept)
                         _flags = _scan_banned_terms(concept)
                         if _flags:
                             concept["legal_flags"] = _flags
