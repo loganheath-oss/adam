@@ -92,6 +92,19 @@ Order matters. The first two have third-party lead times and **12 working days**
 > The portrait versions are correct, so it looks fine until half the run comes out empty.
 > - Us-vs-Them only has one headline and one set of bullets, but the spec calls for both sides.
 >
+> On the two things you raised that I haven't closed:
+> - You wanted the boards to label prospecting vs retargeting. The plugin already has the code
+> to fill a `Targeting` pill, it just needs the layer. I checked and none of the 50 Ad Info
+> blocks in the file has one. Add a `Targeting` pill next to `Ad Concept Number` and `Ad Type`,
+> with a `Button Label` text layer inside it like the other two, and it'll start filling itself.
+> Until then the audience rides on the end of the concept pill instead.
+> - You asked whether there's a doc saying which ad type gets a headline, which gets primary,
+> which gets a CTA. There wasn't. There is now: `docs/adtype-field-reference.md` in the repo,
+> covering all 24 Meta and 20 Reddit types with each field, its character budget, and the Figma
+> layer that carries it. It's generated from Adrie's style guide rather than typed, so it can't
+> drift when she changes a cap. A few multi-field styles are marked as still needing an agreed
+> layer name, and those are worth a pass with me.
+>
 > Two heads-ups rather than asks:
 > - Your Reddit copy panel has a CTA row, and the plugin deliberately hides CTA rows because Meta
 > uses a platform CTA button. If Reddit ads need a visible CTA in that panel, tell me and I'll change
