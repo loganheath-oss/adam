@@ -56,7 +56,7 @@ Order matters. The first two have third-party lead times and **12 working days**
 
 ## 3. Elise: updated plugin, and what changed
 
-> New plugin is up, version 2026.09.16. Grab it from the /plugin page on the ADAM site, unzip, then
+> New plugin is up, version 2026.09.17. Grab it from the /plugin page on the ADAM site, unzip, then
 > Plugins, Development, Import plugin from manifest. Importing over the old one is fine.
 >
 > Reddit should actually assemble now. It couldn't before, and it wasn't close. Four things were
@@ -76,10 +76,12 @@ Order matters. The first two have third-party lead times and **12 working days**
 > - Does Figma show a missing-fonts badge when you open the test file?
 > - Were the 8/31 and 9/8 runs done in the same file and on the same machine?
 >
+> Your output landing on the template page instead of your own is also fixed, and you don't have to
+> do anything for it. The plugin was searching the whole document for a `Generated Tests` section,
+> finding the one on the Template Library page, and building there. It now creates one on whatever
+> page you're on and tells you it did. If you already have one on your page, yours still wins.
+>
 > A few things on your side when you get a chance:
-> - Add a `Generated Tests` **section** to whatever page you run the plugin from. Without one the
-> plugin searches the whole document, finds the section on the Template Library page, and builds
-> there. That's why your output kept landing somewhere else.
 > - `Reddit_Adtype_Split-Screen` has two Rules cards, a blank one and the finished one. Whichever
 > gets read first wins, and a harvest read the blank one and marked the whole ad type as blocked. Can
 > you delete the stale one?

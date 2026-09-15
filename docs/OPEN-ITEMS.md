@@ -1242,3 +1242,70 @@ times, on `9/8` it resolved 0 times.
 **Still to do (Figma side, Elise):** restyle both `Button Label` layers in the board master
 from `NeueMontreal-Medium` to `PPNeueMontreal-Medium` so the pills stop depending on a font
 nothing else in the board uses. That removes the failure mode rather than reporting it.
+
+## 2026-09-15 — Reddit made assemblable end to end; handoff page rebuilt on verified facts
+
+Worked an externally-reviewed plan (a second model reviewed the week, then produced an
+ordered task list; its findings were verified against the repo and live Figma before
+acting, and one of its verdicts was wrong and is noted below).
+
+**The headline: Reddit was not buggy, it was unassemblable.** Four defects stacked, each
+hiding the next. Proven statically by `scripts/verify_plugin_changes.py` (29/29) because
+Figma plugin code cannot be run by whoever writes it.
+
+| # | Defect | Evidence |
+| --- | --- | --- |
+| 1 | `findBoardMaster` hardcoded `"Meta - Static Grouped"`, so a Reddit manifest cloned the Meta board and every slot carried Meta dimensions | `code.js:2289` |
+| 2 | Every Reddit spec card carries a TEXT layer named `Adtype_<Style>`; the real containers are `Reddit_Adtype_<Style>` FRAMEs found under a different prefix and concatenated second, so first-match-wins always took a childless TEXT label | **0/40 template lookups resolved before, 40/40 after** |
+| 3 | Reddit slots are VERTICAL auto-layout wrappers holding a size label plus the image frame, so their boxes are ~116px taller than any template against a ±12 tolerance | descent now yields exactly (1080,1350) and (1440,1080) |
+| 4 | Reddit has one copy panel (`Frame 15`), not Meta's `Frame 13`/`Frame 14` pair | gated on both being absent, since on Meta `Frame 15` is their PARENT |
+
+**Regression gates:** 0 Meta styles change their resolved node id; 0 of 8 Meta masters
+descend a slot; the empty platform token picks the identical board master node
+(`5227:3245`) the old literal walk picked.
+
+**The pill bug was a font, and it is not a two-layer problem.** A census found
+`NeueMontreal-Medium` on both pill labels of **all 14 board masters across all six
+platforms** (42 layers) while everything around them uses `PPNeueMontreal-*`. It
+regenerates with every new master, so `setTextLayer` now falls back to the house font
+rather than silently keeping placeholder text, and a preflight names unavailable fonts
+once before building instead of per-layer failures buried 16 boards deep.
+
+**Where the external review was wrong:** it read `Reddit_Adtype_Split-Screen` as having
+*lost* `caps_are_physical`. It never had it — the entry was a blocked stub with no caps at
+all until 2026-09-10 gave it real ones. Net effect as described; the history was not.
+
+**Where it was right and I was wrong:** I proposed taking slot size from the frame NAME,
+citing the template-frame precedent. It pointed at `code.js:2363`, which renames a
+board-master slot `1440x1080` to `1440x1800` — proof that slot *names* drift where boxes do
+not, the inverse of the template case. It also predicted the wrappers would be auto-layout,
+which the harness confirmed (`layoutMode: VERTICAL`), meaning my fix would have stacked the
+clone as a third item rather than placing it. Descent shipped instead.
+
+**Also shipped:**
+- Prospecting and retargeting now get their own photos (Adrie, 09-10), with tiered
+  exclusions: the relaxed retry for a thin pool drops sprint-wide exclusions but never the
+  sibling. Refuses and flags `needs_human_selection` rather than duplicating across
+  audiences.
+- `field_caps_reddit_feed` had **zero readers**. Reddit runs were capped, prompted and
+  validated as Meta, so they would have produced a long/short pair Reddit cannot place.
+  Now resolved per platform, with the prompt branched and the Meta-only fields blanked
+  post-generation.
+- `findGeneratedArea` creates the output section on the current page instead of building on
+  the Template Library page. Deliberately NOT extended to accept FRAMEs: the `Generated
+  Tests` FRAME at `7356:1258` holds the Reddit master as its first FRAME child and would
+  have been cloned as a container.
+- `cleanupTestBoards` scoped to the current page. It walked every page, so one click deleted
+  every `Sprint ·` container anyone had parked anywhere in a shared file.
+- `docs/wiki/14-handoff.md` rebuilt on verified facts. Every status line says how it was
+  checked; unverifiable claims are marked UNVERIFIED. It previously carried a deadline of
+  "Action before August". Adds the MCP connector sitting in Logan's **personal** Claude Max
+  account, which is what Adrie's gate workflow runs through and was absent from the page.
+
+**Standing limitation:** none of the plugin work has been run in Figma desktop. It is
+statically proven and behaviourally gated, and failures now announce themselves, but
+Elise's first run is the real test.
+
+**Drafts waiting to send** (`docs/handoff-messages-2026-09-15.md`, nothing sent): Leon for
+the four ownership transfers, Haresh for the gateway values with the deadline arithmetic,
+Elise for the plugin plus her eight Figma fixes and two diagnostic questions.
