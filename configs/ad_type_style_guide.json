@@ -616,6 +616,7 @@
         "creative_headline": 49,
         "cta": 14
       },
+      "caps_are_physical": true,
       "rules_v1_complete": true,
       "spec_card_caps": "Headline Max: 49 · CTA Max: 14",
       "description": "Two or more photos on opposite sides paired with copy. Mirrors Meta ads type Split-Screen.",
