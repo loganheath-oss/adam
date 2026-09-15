@@ -3957,19 +3957,6 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                             "reta_asset_name_right": reta_asset_name_right,
                             "reta_needs_human": reta_needs_human,
                         }
-                        # Carried on the concept so the manifest writer can put it
-                        # on the Retargeting row. The writer iterates concepts, not
-                        # this loop, so the dict is the handoff between the two.
-                        if _is_both_audience(concept) and (reta_node_id or reta_needs_human):
-                            concept["_reta_photo"] = {
-                                "figma_node_id": reta_node_id,
-                                "figma_asset_name": reta_asset_name,
-                                "figma_node_id_left": reta_node_id_left,
-                                "figma_asset_name_left": reta_asset_name_left,
-                                "figma_node_id_right": reta_node_id_right,
-                                "figma_asset_name_right": reta_asset_name_right,
-                                "needs_human": reta_needs_human,
-                            }
 
                     # Variant expansion: styles in MULTI_VARIANT_STYLES emit one
                     # row per registered variant. Brandon wants every variant as
@@ -4013,6 +4000,20 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
                             "figma_asset_name_left": figma_asset_name_left,
                             "figma_node_id_right": figma_node_id_right,
                             "figma_asset_name_right": figma_asset_name_right,
+                            # The Retargeting audience's own photo, for Both orders.
+                            # MUST live on the ROW, not on the concept dict: the resume
+                            # path reloads concepts from copy_outputs.json, so anything
+                            # stashed on a concept in memory during this stage is gone by
+                            # the time the manifest is written. Found 2026-09-15 by running
+                            # a real Reddit sprint — stage 03 picked two photos correctly
+                            # and the manifest still wrote one to both audience rows.
+                            "reta_figma_node_id": reta_node_id,
+                            "reta_figma_asset_name": reta_asset_name,
+                            "reta_figma_node_id_left": reta_node_id_left,
+                            "reta_figma_asset_name_left": reta_asset_name_left,
+                            "reta_figma_node_id_right": reta_node_id_right,
+                            "reta_figma_asset_name_right": reta_asset_name_right,
+                            "reta_needs_human": "1" if reta_needs_human else "",
                             # Variant fields — non-empty only for MULTI_VARIANT_STYLES.
                             "variant_name": variant_name,
                             "template_frame_id": template_frame_id,
@@ -4668,7 +4669,8 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results,
         # The two rows used to share one image. Adrie reversed that on 2026-09-10:
         # prospecting and retargeting must not carry the same photo inside a run
         # (two versions of the SAME audience may, since only one ships). Stage 04
-        # pins the second photo and leaves it on concept["_reta_photo"].
+        # pins the second photo onto the image_prompts ROW (not the concept, which
+        # does not survive a resume).
         _tc = concept.get("targeting_copy")
         if isinstance(_tc, dict) and _tc:
             for _tgt in ("Prospecting", "Retargeting"):
@@ -4718,7 +4720,18 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results,
                 # touched, so the Prospecting row and every single-audience order
                 # stay byte-identical to before.
                 if _tgt == "Retargeting":
-                    _rp = concept.get("_reta_photo") or {}
+                    # Read from the ROW, which is persisted to image_prompts.csv and
+                    # survives a resume. The concept dict does not: gate-4 and gate-5
+                    # resumes reload concepts from copy_outputs.json.
+                    _rp = {
+                        "figma_node_id": row.get("reta_figma_node_id", ""),
+                        "figma_asset_name": row.get("reta_figma_asset_name", ""),
+                        "figma_node_id_left": row.get("reta_figma_node_id_left", ""),
+                        "figma_asset_name_left": row.get("reta_figma_asset_name_left", ""),
+                        "figma_node_id_right": row.get("reta_figma_node_id_right", ""),
+                        "figma_asset_name_right": row.get("reta_figma_asset_name_right", ""),
+                        "needs_human": bool(row.get("reta_needs_human")),
+                    }
                     if _rp.get("needs_human"):
                         # The library had nothing distinct left. Flag it rather
                         # than shipping the prospecting image twice.
