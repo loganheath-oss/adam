@@ -106,8 +106,8 @@ you it could not find your board master, not a layout preference.
 
 In this order, taking the first thing it finds:
 
-1. **Your current page.** A copy on the page you are working from always wins, so you can override
-   any template by putting a copy of it on your page.
+1. **Your current page.** A local copy of a template, on the page you are working from, always
+   wins. So you can override any template by dropping a copy of it onto your page.
 2. **That platform's own template page**, chosen from the manifest's Platform column.
 3. **The Template Library page.**
 4. **The whole document**, as a last resort.
@@ -126,7 +126,7 @@ The first line is the plugin version. The last lines tell you how the run went.
 | **`failed`** | A board could not be built. Real problem. |
 | **`misses`** | A layer or slot the plugin looked for and could not find, almost always a layer name that does not match. Real, worth fixing. |
 | **`empty slots`** | Something was left unpopulated. |
-| **`name drift`** | A layer name matched only after the plugin cleaned it up, for example a trailing slash, a double space, or different capitalization. **The run was fine.** It is a tidying list, not a failure. |
+| **`name drift`** | A layer or frame name in Figma matched only after the plugin tidied it up, for example a trailing slash, a double space, or different capitalization. This is about names in the layers panel, not anything on the ad itself. **The run was fine.** It is a cleanup list, not a failure. |
 | **"THIS PLUGIN IS OUT OF DATE"** | Download the new one. |
 
 `failed` and `misses` are the two to act on.

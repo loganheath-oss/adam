@@ -116,7 +116,12 @@ def main():
                           if t.get("type") == "TEXT" and str(t.get("name")).startswith("Copy_")}
                 if not (layers or box(c)[0] >= 800):
                     continue
-                key = re.sub(r"\d{3,5}\s*[x\u00d7]\s*\d{3,5}", "", cname).strip("_- ")
+                # Strip the size AND the theme variant. Light and Dark are the
+                # same layout and SHOULD carry identical layers, so a difference
+                # between them is a real defect. Layout variants (_Single vs
+                # _Double) legitimately differ and stay in separate families.
+                key = re.sub(r"\d{3,5}\s*[x\u00d7]\s*\d{3,5}", "", cname)
+                key = re.sub(r"_(Light|Dark)(?=_|$)", "", key, flags=re.I).strip("_- ")
                 fam[key][cname] = (c, layers)
             for key, per in fam.items():
                 if len(per) < 2:
