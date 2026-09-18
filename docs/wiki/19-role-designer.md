@@ -1,10 +1,29 @@
 # Role guide: Designer (Figma assembly and templates)
 
-**Who this is for:** the designer who turns an approved sprint into finished creatives in Figma, and
-who owns the templates ADAM builds from. Different job from running the tool.
+**Who this is for:** the designer who turns an approved sprint into finished creatives in Figma,
+and who owns the templates ADAM builds from. This is a different job from running the tool.
 
 You own two things. Assembling a sprint, and keeping the template library healthy so assembly keeps
 working.
+
+---
+
+## A few terms used throughout
+
+Defined once here so the rest of the page can be direct.
+
+- **The plugin.** "Upwork Pipeline Assembly", run from Figma's Plugins menu. It reads a CSV and
+  builds the ads.
+- **The manifest.** The `asset_manifest.csv` a sprint produces. One row per ad, carrying the copy
+  and which photo to use.
+- **Board master.** The frame the plugin clones once per concept to build a board. One per platform,
+  for example `Meta - Static Grouped` and `Reddit - Static Grouped`.
+- **The checker.** A script an engineer runs that compares the live Figma file against what the
+  plugin expects, and lists anything that does not match: missing sizes, containers whose names do
+  not line up, photo slots nested inside each other. It changes nothing, it only reports. Asking for
+  it to be run takes seconds and costs nothing.
+- **Populates.** What the plugin does to a text layer or a photo slot: it writes the copy or the
+  image into it.
 
 ---
 
@@ -12,23 +31,23 @@ working.
 
 Worth reading first, because every failure below is a step in this chain.
 
-1. A row comes in with a visual style and the copy fields for that ad.
-2. The plugin normalizes the style name. It lowercases it and strips anything in parentheses, so
-   "Pie Chart (data)" becomes "pie chart".
+1. A row comes in with a visual style and the copy for that ad.
+2. The plugin standardizes the style name, lowercasing it and ignoring anything in parentheses, so
+   "Pie Chart (data)" and "pie chart" are treated as the same style.
 3. It finds the template by looking inside that style's Adtype container first, then widening out.
 4. It clones the template.
-5. Unless the style keeps its own artwork, it drops in the image, either a library photo or a
-   generated one.
-6. It fills the named text layers. Headline, subhead, CTA, bullets.
-7. It runs any special fills the style needs, like the pie percentage arc.
+5. Unless the style keeps its own artwork, it populates the photo slot, either with a library photo
+   or a generated one.
+6. It populates the named text layers. Headline, subhead, CTA, bullets.
+7. It runs any special handling the style needs, like the pie chart's percentage arc.
 
-Steps 3 and 6 are where almost everything goes wrong, and both of them come down to names.
+Steps 3 and 6 are where almost everything goes wrong, and both come down to layer names.
 
 ---
 
 ## Part 1: Assembling a sprint
 
-### One time setup
+### Setting up
 
 **Work inside the ADAM 2026 file, on your own page.**
 
@@ -36,97 +55,92 @@ Steps 3 and 6 are where almost everything goes wrong, and both of them come down
    `Sept sprints`, whatever you want.
 2. Run the plugin from your page. Nothing else needs to be on it.
 
-That's genuinely the whole setup as of plugin 2026.09.16. If your page has no `Generated Tests`
-section, the plugin now **creates one for you** on the page you're on, copying the container
-template from wherever it finds one, and says so in the log.
+That's the whole setup as of plugin 2026.09.17. If your page has no `Generated Tests` section, the
+plugin creates one for you there and says so in its log.
 
-It used to fall back to searching the whole document, find the section on the Template Library page,
-and build there. That's why output kept landing somewhere other than the page you were working on.
-If you have a `Generated Tests` section on your page already, nothing changes: yours still wins.
+It used to search the whole document instead, find the section on the Template Library page, and
+build there, which is why output kept appearing on a page you were not working on. If you already
+have a `Generated Tests` section on your page, yours is still used.
 
-**Don't keep a separate working file with copied templates in it.** Those copies rot. The August test
-file was missing Lifestyle Photo's 4:5 size and the Us vs Them container entirely, and that run came
-back with one failure and twenty five misses. The plugin can't reach into another *file*, only other
-*pages* of the same file, so a separate file always means a hand copied set drifting out of date.
+### Downloading and keeping the plugin current
+
+1. Go to the `/plugin` page on the ADAM site and download the file.
+2. Unzip it. **Put the unzipped folder somewhere permanent**, not in Downloads, since the plugin
+   loads from that folder every time you run it. Documents works well if you clear Downloads
+   regularly.
+3. Back in Figma, open the **Plugins** menu, either from the right-click menu or the top bar.
+4. Choose **Development**, then **Import plugin from manifest**, and select the `manifest.json` file
+   inside the folder you just unzipped.
+
+If you end up with two entries in the list, delete the older one so you cannot run it by mistake.
+
+**Update before reporting a bug.** The plugin runs from a folder on each person's machine, so
+different people can be running different versions without knowing. At one point three different
+versions were in use at once and one was missing a fix from the month before.
+
+Every run prints its version on the first line of the log and checks it against the current one. If
+yours is out of date, the log ends with a loud line telling you so.
 
 ### Running it
 
 1. **Plugins → Development → Upwork Pipeline Assembly.**
-2. **Choose CSV file**, then the sprint's `asset_manifest.csv`.
-3. **Assemble.**
+2. **Choose CSV file**, then pick the sprint's `asset_manifest.csv`.
+3. **Click Assemble.**
 
-### Two output shapes, and what picks between them
+### Two output shapes, and what decides which you get
 
-Worth knowing, because the log says which one you got and they look nothing alike.
+The log tells you which one you got, and they look nothing alike.
 
 **Grouped boards.** The normal case. The plugin finds your platform's board master, clones it once
-per concept, and parks the run inside `Generated Tests` as a single `Sprint · <label>` container.
-Each board carries the copy panel, the pills, and every size of that concept together. This is what
-you get whenever the board master for your platform is in the file.
+per concept, and puts the run inside `Generated Tests` as a single `Sprint · <label>` container.
+Each board holds the copy panel, the labels at the top, and every size of that concept together.
 
-**Standalone ads.** The fallback. Each ad comes out as its own frame at its native size, laid out in
-a grid near your viewport, not nested into anything. You get this when the board master for your
-platform isn't found, and the log says so in as many words.
+**Standalone ads.** The fallback. Each ad comes out as its own frame at its native size, arranged in
+a grid near where you are looking, not grouped into anything.
 
-So if you were expecting grouped boards and got a loose grid, that isn't a layout preference, it's
-the plugin telling you it couldn't find your board master.
+You get the second one when the board master for your platform cannot be found, and the log says so
+in as many words. So if you expected grouped boards and got a loose grid, that is the plugin telling
+you it could not find your board master, not a layout preference.
 
-The plugin finds what it needs across the whole file. A copy on your current page always wins, so you
-can override a template locally just by putting one on your page.
+### Where the plugin looks for templates
 
-Where it looks, in order:
+In this order, taking the first thing it finds:
 
-1. **Your current page.** A local copy wins, so nothing regresses and you can override in place.
-2. **That platform's own template page**, like `-> Meta Templates` or `-> Reddit Templates`, picked
-   off the manifest's Platform column. This step is doing real work. Five pages carry containers with
-   the same names, so a blind document wide search could pull a LinkedIn frame into a Meta run.
-3. **The generic Template Library page.**
-4. **The whole document**, last resort.
+1. **Your current page.** A copy on the page you are working from always wins, so you can override
+   any template by putting a copy of it on your page.
+2. **That platform's own template page**, chosen from the manifest's Platform column.
+3. **The Template Library page.**
+4. **The whole document**, as a last resort.
 
-The log prints the search order at the start of a run and tells you when a template got found
-somewhere other than your working page.
+Step 2 is doing real work. Five pages hold containers with the same names, so without it a Meta run
+could pull a LinkedIn frame.
 
 ### Reading the log
 
-First line tells you the plugin version. The last lines tell you how it went.
+The first line is the plugin version. The last lines tell you how the run went.
 
 | What you see | What it means |
 |---|---|
 | **"Assembly complete… no warnings"** | Clean run. |
-| **"Assembly DEGRADED"** | At least one warning. It fires on *any* warning on purpose, after a run where thirteen real problems hid in the scrollback. Check the count before you worry. |
-| **`failed`** | A board couldn't be built. Real problem. |
-| **`misses`** | A slot or layer it looked for and couldn't find. Usually a naming mismatch. Real, worth fixing. |
-| **`empty slots`** | Something got left unfilled. |
-| **`name drift`** | A name only matched after normalizing, like a trailing slash or a stray space or different capitalization. The run was fine, it self healed. Worth tidying so it doesn't pile up. |
-| **"THIS PLUGIN IS OUT OF DATE"** | Grab the new one. See below. |
+| **"Assembly DEGRADED"** | At least one warning. It says this for *any* warning on purpose, after a run where thirteen real problems scrolled past unnoticed. Check the count before worrying. |
+| **`failed`** | A board could not be built. Real problem. |
+| **`misses`** | A layer or slot the plugin looked for and could not find, almost always a layer name that does not match. Real, worth fixing. |
+| **`empty slots`** | Something was left unpopulated. |
+| **`name drift`** | A layer name matched only after the plugin cleaned it up, for example a trailing slash, a double space, or different capitalization. **The run was fine.** It is a tidying list, not a failure. |
+| **"THIS PLUGIN IS OUT OF DATE"** | Download the new one. |
 
-`failed` and `misses` are the ones to look at. Name drift is a tidy up list, not a failure.
-
-### Keeping the plugin current
-
-Get it from **`/plugin`** on the ADAM site. Download, unzip, then **Plugins → Development → Import
-plugin from manifest…** and pick `manifest.json`. Importing over an old copy is fine. Delete the
-previous entry if you end up with two.
-
-**Do this before you report an assembly bug.** The plugin runs off files on each person's machine, so
-copies drift. At one point three different builds were in use at once and one of them was missing a
-fix from the month before, and the only way to find out was diffing files by hand.
-
-Every assembly logs its version on the first line and reports it back, and the backend answers with
-the version the repo ships. If they don't match, the log ends with a loud out of date line naming
-both.
+`failed` and `misses` are the two to act on.
 
 ---
 
 ## Part 2: Owning the templates
 
-ADAM matches templates by name. Names are the contract between Figma and the tool, which is why
-naming matters more here than it would in a normal design file.
+ADAM finds templates **by name**, so layer and frame names are the contract between Figma and the
+tool. That is why naming matters more here than in a normal design file.
 
-The convention got set in July 2026 by auditing both production files and ranking every naming
-pattern by how recent it was. It's the pattern in the newest work and it's also the most common by
-count. Older ones like `Adtype: Style` and `AdType_CamelCase` are legacy. The plugin still matches
-them as a fallback, but don't use them for anything new.
+The convention was set in July 2026 by auditing both production files and ranking every naming
+pattern by how recently it had been used. Older patterns like `Adtype: Style` and
+`AdType_CamelCase` still work, but do not use them for anything new.
 
 ### Container and frame names
 
@@ -137,163 +151,156 @@ Adtype_Style-Name                          the container
 ```
 
 Real ones: `Adtype_Sticky-Note`, `Adtype_Talent-Profile`,
-`Template_Photo-With-Text_Dark_1440x1440`, `Template_Lifestyle-Photo-Full-Bleed_1440x1440`.
+`Template_Photo-With-Text_Dark_1440x1440`.
 
 - **Hyphenate words inside the style name.** `Sticky-Note`, not `StickyNote`.
-- **Underscores separate the segments.** Prefix, style, variant, size.
-- **Size is `WxH`, no spaces.** Like `1440x1800`.
+- **Underscores separate the parts.** Prefix, style, variant, size.
+- **Size is `WxH` with no spaces**, like `1440x1800`.
 - **Variants go between the style and the size.** `_Single`, `_Double`, `_Dark`.
 
-Sizes and variant words carry meaning, so those have to be exact. Cosmetic drift like a trailing
-slash or doubled spaces or different capitalization gets tolerated and reported now instead of
-quietly breaking a style, but it's still worth cleaning up.
+Sizes and variant words carry meaning, so those have to be exact. Small inconsistencies like a
+trailing slash or a double space are tolerated and reported rather than breaking a style, but they
+are still worth cleaning up.
 
-### Reddit doesn't follow that convention
+### Reddit uses a different convention
 
 Everything above is the Meta convention. The Reddit Templates page does its own thing and the plugin
-was taught both back in September 2026. If you're working on Reddit:
+was taught both:
 
-- **Containers are `Reddit_Adtype_Style-Name`**, like `Reddit_Adtype_Venn-Diagram`. That `Reddit_`
-  prefix means a search for containers starting with "Adtype" never finds them.
-- **Size frames are named for their dimensions**, `1080x1350` and `1440x1080`, not `Template_*`. When
-  a container has no `Template_` named children the plugin falls back to matching on the frame's
-  actual size, which is what makes this work.
-- **Two sizes per style.** Portrait `1080x1350` and landscape `1440x1080`.
-- **Each container also has a `Rules` frame.** That's the spec card for the copy team. It's not a
-  template and it doesn't get assembled.
+- **Containers are `Reddit_Adtype_Style-Name`**, like `Reddit_Adtype_Venn-Diagram`.
+- **Size frames are named for their dimensions**, `1080x1350` and `1440x1080`.
+- **Two sizes per style**, portrait and landscape.
+- **Each container also holds a `Rules` frame.** That is the spec card for the copy team. It is not a
+  template and is never assembled.
 
-### One board master per platform, named exactly
+> **Open question worth settling:** whether to bring Meta and Reddit onto one convention. Raised by
+> Elise, September 2026, preferring to match Meta to Reddit. The plugin matches on the convention
+> rather than a hardcoded list, so this is feasible, but it needs the rename and the plugin change
+> coordinated rather than done separately.
 
-Each platform has its own board master, and the plugin picks it off the manifest's Platform column
-by matching the **whole** name:
+### One board master per platform
+
+Each platform has its own, matched on the whole name:
 
 ```
-Meta - Static Grouped
-Reddit - Static Grouped
-Linkedin - Static Grouped
-Youtube - Static Grouped
-Google - Static Grouped
-Third Party - Static Grouped
+Meta - Static Grouped        Reddit - Static Grouped      Linkedin - Static Grouped
+Youtube - Static Grouped     Google - Static Grouped      Third Party - Static Grouped
 ```
 
-Whole-name matching is deliberate. It's what lets a superseded copy sit in the file harmlessly:
-`Reddit - Static Grouped/Reddit - Image Feed` doesn't match, so it can't be picked by accident.
+Matching on the whole name is deliberate: it lets a retired copy sit in the file harmlessly, because
+a name with anything extra on the end will not match.
 
-**Never have two masters for one platform with the same name.** The plugin takes the first it finds,
-so which one you get depends on page order. If you're retiring a master, rename it rather than
-leaving a twin.
-
-A couple of things to keep clean over there.
-
-**Never leave two `Rules` cards in one container.** `Reddit_Adtype_Split-Screen` has a stale unfilled
-stub sitting next to the finished card right now. Whichever gets read first wins, and in September a
-harvest read the stub and wrote off the whole ad type as blocked when it wasn't.
-
-**Don't leave duplicate size frames.** Several Reddit containers have two frames with the same name
-and the same size. The plugin takes the first one it finds, so if they're different, which one ships
-is a coin flip.
+**Never leave two masters for one platform with the same name.** The plugin takes the first it finds,
+so which one you get depends on page order. If you are retiring one, rename it.
 
 ### Text layer names
 
-This is the part that decides whether copy actually lands. Text layers are `Copy_<Role>`:
+This is the part that decides whether copy populates. Text layers are `Copy_<Role>`:
 
 | Layer name | What goes in it |
 |---|---|
 | `Copy_Headline` | The main headline |
 | `Copy_Subhead` | Subhead or a supporting stat |
 | `Copy_Body` | Body copy |
-| `Copy_CTA` | The on image call to action |
-| `Copy_Headline-Left` / `Copy_Headline-Right` | Paired headlines, like Us vs Them |
+| `Copy_CTA` | The call to action on the image |
+| `Copy_Headline-Left` / `Copy_Headline-Right` | Paired headlines, as in Us vs Them |
 | `Copy_Testimonial` | The quote in a testimonial ad |
 | `Copy_Author` | The attribution under a quote |
 
-Name a text layer anything else and the plugin can't find it, so the ad ships with placeholder text
-in that slot. This is the number one cause of "the ads came out with Lorem Ipsum in them," and it's a
-Figma side fix, not a code fix.
+Name a text layer anything else and the plugin cannot find it, so that slot keeps its placeholder
+text. This is the most common reason ads come out with placeholder copy still on them, and it is
+fixed in Figma, not in code.
 
-### The image placeholder leaf rule
+### Photo slots, and the one rule about nesting
 
-**Only the actual fill rectangle gets named `Image-Placeholder`. Its wrapper frame is named `Image`.**
+A photo slot is named `Image-Placeholder`. Dual-photo styles use `Left-Image-Placeholder` and
+`Right-Image-Placeholder`.
 
-Never name a frame `Image-Placeholder` when it's got a child with the same name. The plugin fills the
-parent, the child keeps its baked in photo, and that stock photo ships on the ad. Nothing looks broken
-in the log either, which is what makes this one nasty. Back in July every Notification 4:5 shipped the
-template's stock photo this way.
+Hyphen, underscore and capitalization do not matter here. `Image_Placeholder` and
+`image_placeholder` both work, because the plugin standardizes the name before matching. No need to
+rename any of those.
 
-The lint catches every one of these.
+**The one rule that does matter: a photo slot must not contain another photo slot.** If a frame
+named `Image-Placeholder` holds a rectangle with the same name, the plugin fills the outer frame and
+the inner one keeps the photo already sitting in it, so the template's own stock photo ships on the
+finished ad. Nothing appears wrong in the log, which is what makes this one expensive.
 
-### Special fills
+Name the wrapper frame `Image` and keep `Image-Placeholder` for the rectangle that actually holds
+the fill. The checker finds every instance of this. **As of September 2026 there are none left in the
+file.**
 
-A few styles need more than swapping text, so their layers matter in particular ways:
+### Styles that need more than text swapping
 
-- **Pie Chart.** Sets the center callout and drives the value arc on the ellipse off a percentage
-  field. That arc is data, not decoration.
-- **Us vs Them.** Fills two headlines plus three bullets on each side.
-- **Sticky Note.** Fills two structured columns, each with a headline and two bullets.
+- **Pie Chart.** Sets the centre callout and draws the value arc from a percentage field. The arc is
+  data, not decoration.
+- **Us vs Them.** Two headlines plus three bullets on each side.
+- **Sticky Note.** Two columns, each with a headline and two bullets.
 - **Reminder and Tweet/Post Mockup.** These two share a base template.
-
-### Known gaps
-
-Tracked, cosmetic, not recognition failures. Listed so you don't go chasing them as bugs:
-
-- **Pie Chart** quadrant labels all share one layer name. They need distinct names and four separate
-  copy fields before all four quadrants can fill independently.
-- **Photo with Text** doesn't fill its subhead on the Light Mode variant, because that variant is
-  missing the layer.
-- A few other styles need Figma side renames before they hit full field coverage.
 
 ---
 
 ## Adding a new template
 
-1. Build the frames following the convention above, in all three sizes.
-2. Name the text layers with the `Copy_<Role>` names, and the image slot per the leaf rule.
-3. Tell the engineer so the style gets added to the registry and the order form.
-4. Run a test sprint with just that style and check the log for misses.
+1. Build the frames following the convention above, in all three sizes. **Cloning an existing
+   template as a starting point is fine and usually faster.**
+2. Name the text layers using the `Copy_<Role>` names above, and the photo slot per the nesting rule.
+3. Tell your producer, who will get the style added to the tool's registry and the order form. That
+   is a code change, so it does not happen the same day.
+4. Run a test sprint using only that style and check the log for misses.
 
-**A style can't be ordered before its template exists.** The order form and the template library are
-kept in step on purpose, so adding one is a two person job between you and the engineer.
+**A style cannot be ordered before its template exists.** The order form and the template library are
+deliberately kept in step.
 
 ---
 
 ## Checking your work without running a sprint
 
-There's a lint that compares the live Figma file against what the plugin expects. It reports per style
-template resolution, missing sizes, containers that don't match, and nested image placeholders. Ask
-the engineer to run it after any batch of template work lands. Takes seconds, costs nothing.
+Ask for the checker to be run after any batch of template work. It compares the live file against
+what the plugin expects and lists what does not match. It takes seconds, costs nothing, and changes
+nothing.
+
+**Known open items live in `docs/figma-punchlist.md`**, regenerated from the live file, with a link
+to every affected node. That is the list to work from, rather than hunting through this page.
 
 ---
 
-## Things that'll bite you
+## Things that will bite you
 
-**A photo lands under the default art.** The nested placeholder thing above. The ad looks fine at a
-glance because it's showing the template's stock image instead of an empty slot. Nine templates had
-this in the August test file. The lint finds them.
+**A photo ends up behind the template's own artwork.** The nesting rule above. The ad looks plausible at
+a glance because it shows the template's stock photo rather than an empty slot.
 
-**A style quietly borrows another one's template.** If a container is misnamed the plugin can fall
-through to a name matched template from a different style. That's why several styles share base
-template names and only stay apart because of their container, and it's why the platform page step in
-the search order exists.
+**A style quietly uses another style's template.** If a container name is wrong, the plugin can reach
+a similarly named template belonging to a different style and use that instead. It is why several
+styles share base template names and are kept apart only by their container.
 
-**A style assembles but fills nothing.** The frame it found is probably an empty skeleton instead of
-the one with the text layers in it, or the container name is off. Check which frame actually has the
-text layers.
+**A style assembles but nothing populates.** The frame it found is probably one with no text layers
+in it, rather than the one that has them. Open the container, check which frame actually contains the
+`Copy_*` layers, and confirm the container name matches the style.
 
-**One size is missing its copy layers.** Check both sizes of a style, not just one. Right now the
-Reddit Graphic-With-Text landscape has only `Copy_Subhead` when it needs two headlines, and the
-Text-with-Icons landscape is missing its three list layers. Both portrait versions are correct, so you
-won't see it unless you look at both.
+**One size of a style is missing layers the others have.** Check every size, not just the one you
+built first. The run half-fills and looks correct until you compare them.
 
-**Copies of templates in another file go stale.** Covered up top, and it's the single most common
-reason a run half works.
+**A copy of a template kept in another file falls out of date.** The plugin can reach other *pages*
+of the ADAM 2026 file but not other *files*, so a separate working file means a hand-copied set that
+stops matching the originals. One such file was missing a size and a whole container, and the run
+came back with one failure and twenty-five misses.
 
-**The plugin doesn't pick up changes on its own.** No hot reload. Re run it in Figma desktop, and if
-it got relinked, re import the manifest.
+**The plugin does not pick up changes on its own.** If an engineer updates it, re-download and
+re-import. Re-running it in Figma uses whatever version is in your folder.
+
+---
+
+## A note on file ownership
+
+Everything here assumes one Figma file, ADAM 2026, as the single source of truth. The Creative team
+does not hold Figma Admin, so if access to that file ever changes, assembly stops until it is
+restored. Worth knowing rather than discovering.
 
 ---
 
 ## Who to ask
 
 - **Copy rules, character caps, approved claims.** Adrie.
-- **A sprint that errored before it got to you.** The copywriter who ran it.
-- **Adding a style to the order form, or running the lint.** The engineer.
+- **A sprint that errored before it reached you.** The copywriter who ran it.
+- **Anything needing a code change**, including adding a style or running the checker. Your producer,
+  who will route it.
