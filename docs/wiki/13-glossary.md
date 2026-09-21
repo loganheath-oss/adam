@@ -19,4 +19,6 @@
 | **Learnings** | `learnings.md` — institutional memory the chat reads every session |
 | **Gate orchestration** | The chat driving a sprint through gates via the `approve_gate` tool |
 | **MCP server** | `mcp_server/server.py` — exposes sprint data as MCP tools (live — mounted in the web app at /mcp; only the standalone Fly host is retired) |
+| **Assembly** | The designer's step: running the plugin to build finished ad boards in Figma |
+| **Issue** | A problem logged in the app (`/admin/issues`) so it is tracked rather than remembered |
 | **The plugin** | `plugin/` "Upwork Pipeline Assembly" — runs in Figma desktop |
