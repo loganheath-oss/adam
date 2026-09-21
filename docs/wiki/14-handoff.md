@@ -1,6 +1,6 @@
 # Handoff
 
-**Last verified 2026-09-15.** Every status line below says how it was checked. Anything that could
+**Last verified 2026-09-21.** Every status line below says how it was checked. Anything that could
 not be checked from the repo, the Railway environment, or the Figma API is marked
 **UNVERIFIED** rather than asserted. The previous version of this page carried a deadline of
 "before August" that had been blown by six weeks without anyone noticing, so the rule here is that
@@ -9,8 +9,35 @@ a claim without a source does not belong on this page.
 The goal is unchanged: a new Upwork owner can run, edit, extend and operate ADAM, and when stuck
 can ask ADAM's own chat and get a grounded answer.
 
-**Inheriting engineer:** Max Karasso. **Logan's contract ends 2026-09-30**, which from today is
-**12 working days**.
+## Timeline, corrected 2026-09-21
+
+**The migration target is now the end of December 2026, not the end of September.** Lee Riley, on
+the 2026-09-21 call: Upwork's engineering org is building a formalized process for taking on asks
+like this one, because InfoSec has been reinventing the wheel per request. That process is expected
+ready **towards the end of December**, and migration happens after it, with the stated expectation
+that Upwork's side takes it on at that point.
+
+What that changes:
+
+- **The ownership transfers below are no longer a September fire drill.** They still have to happen,
+  but they now land alongside the December migration rather than ahead of a September cliff.
+- **Support continues through Q4 in the interim.** Lee and Blake aligned on a set monthly budget
+  covering hosting and API tokens, plus a menu of ad-hoc support options (a two-day sprint, a week,
+  and so on) booked with notice rather than on demand.
+- **Check in with Haresh's team at the beginning of October** on what progress the formalized
+  process has made. Lee is also flagging the timeline to Upwork leadership so the eventual handover
+  is not a surprise.
+- **Ravi's proposal, agreed on the call:** build the migrated version side by side inside Upwork's
+  pipeline while the current one keeps serving, then cut over. The goal is no downtime once the
+  wider team is using it.
+
+**Inheriting engineer:** Max Karasso, with Haresh's team.
+
+**Known coming asks:** international localization, expected around November. Animation is explicitly
+deferred.
+
+**Do not treat anything below as urgent-by-September.** That framing was correct when this page was
+rewritten on 2026-09-15 and is now wrong.
 
 ---
 
@@ -20,9 +47,8 @@ The wiki's knowledge is portable. Nothing here needs Logan's laptop, and the loc
 the runbooks are just one clone of the repo.
 
 What the *running system* depends on is a short list of accounts and keys currently held by Logan or
-CM. **Every one of these has a third-party lead time, and none of them can be done after Logan's
-access ends.** They are the only items on this page that are genuinely unrecoverable, so they go
-first.
+CM. Each has a third-party lead time, so none of them is a last-week job. With the migration now
+targeting the end of December, these move alongside it rather than ahead of a September cliff.
 
 ---
 
@@ -74,11 +100,15 @@ Verified against the repo and the live Figma file on 2026-09-15:
   `/admin/spend`, `/admin/digest`, `/admin/storage`, `/admin/prune`.
 - In-tool wiki with wiki-aware Ask ADAM chat and clickable sources.
 - **Meta**: 21 templates recognized and assembling.
-- **Reddit**: 20 ad types with platform-aware copy rules, caps enforced hard, and as of plugin
-  **2026.09.16** the plugin resolves Reddit templates and Reddit's own board master. Proven
-  statically by `scripts/verify_plugin_changes.py` (29/29), **not yet proven by a real run in Figma
-  desktop.**
-- Three role guides for Paid Acquisition, the copywriter and the designer, in this wiki.
+- **Reddit**: 20 ad types, platform-aware copy rules, caps enforced hard, and as of plugin
+  **2026.09.17** the plugin resolves Reddit templates and Reddit's own board master. Proven
+  statically by `scripts/verify_plugin_changes.py` (29/29) and confirmed working in a real Figma run.
+  Reddit feed copy is body only, one field at 100 characters (corrected 2026-09-21 after live
+  testing; the earlier fix was prompt-only while the schema still demanded a headline).
+- **Four role guides** for Paid Acquisition, the copywriter, the designer and the engineer, in this
+  wiki. Under review by Adrie, Elise, Breanna and Lee; Lee's consolidated feedback is being worked
+  through, and the agreed end state is all four merged into ONE document with tab navigation, linked
+  from the tool.
 
 ### Claims removed from the June version of this page
 
@@ -94,7 +124,8 @@ Verified against the repo and the live Figma file on 2026-09-15:
 ## What is left, in the order it should be done
 
 1. **Transfer ownership** per the table above. Repo, Railway project and billing, the four keys, and
-   the org-level MCP connector registration. This is the only work with an external clock.
+   the org-level MCP connector registration. Lands with the December migration; start the
+   conversations at the October check-in rather than at the end.
 2. **Escalate the LLM Gateway values** (endpoint, key, model) with Haresh's team. Production is
    blocked on values that do not exist yet, and this is a hard constraint, not a nice-to-have.
 3. **Reddit end-to-end verification** with Elise on plugin 2026.09.16, plus her eight Figma fixes.
@@ -131,14 +162,14 @@ Verified against the repo and the live Figma file on 2026-09-15:
 
 | Person | Role | Owns |
 |---|---|---|
-| Max Karasso | Inheriting engineer | The system, after 2026-09-30 |
-| Logan Heath | Tech lead (CM contractor, through 2026-09-30) | Pipeline, web app, chat, plugin, integration |
+| Max Karasso | Inheriting engineer | The system, after the December migration |
+| Logan Heath | Tech lead (CM contractor; Q4 support via a budget + ad-hoc menu, per Lee 2026-09-21) | Pipeline, web app, chat, plugin, integration |
 | Adrie Etherington | Creative lead | Copy rules, brand voice, approved claims, curation |
 | Elise | Designer | Figma templates and the assembly run |
 | Breanna Hovan (Bree) | Design producer | Production schedule, change log |
 | Brian | Upwork CD | Veto on AI photography, source of the no-AI-photo rule |
 | Leon Zhao | Upwork architect / sponsor | Hosting decisions, InfoSec narrative, handoff support |
-| Ravi Parikh | Director of AI (Wonder) | Architecture sign-off |
+| Ravi Vora | Director of AI (Wonder) | Architecture sign-off |
 | Haresh's team | Upwork engineering | LLM Gateway, Terraform, production deploy |
 | Sal / Shams | Upwork InfoSec | Security review |
 | Blake | CM owner | Logan's contracting entity |
