@@ -1004,9 +1004,7 @@
     }
   },
   "field_caps_reddit_feed": {
-    "_note": "Adrie, 2026-09-08 working session: Reddit body copy is 100 characters and only ONE instance is needed — not the Meta short/long pair.",
-    "headline": 50,
-    "body": 100,
-    "description": 25
+    "_note": "Adrie: Reddit's feed is ONE field, body copy at ~100 characters. No feed headline and no description. Stated on the 2026-09-10 call (\"it's NOT a headline... body copy. Primary text works great\") and filed again from live testing 2026-09-21. The on-image creative_headline and cta are separate and unaffected.",
+    "body": 100
   }
 }

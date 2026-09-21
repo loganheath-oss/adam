@@ -165,10 +165,12 @@ def _reddit_copy_shape_checks():
         rp._set_active_platform({"platform": "Reddit"})
         red = rp._feed_caps()
 
-        check("reddit caps: body_short is 100 (Adrie's one-version spec)",
+        check("reddit caps: body_short is 100 (Adrie's one-field spec)",
               red.get("body_short") == 100, f"got {red.get('body_short')!r}")
-        check("reddit caps: no body_long", "body_long" not in red, str(sorted(red)))
-        check("reddit caps: no headline_short", "headline_short" not in red, str(sorted(red)))
+        check("reddit caps: body_short is the ONLY feed field",
+              set(red) == {"body_short"}, str(sorted(red)))
+        for gone in ("body_long", "headline_short", "headline", "description"):
+            check(f"reddit caps: no {gone}", gone not in red, str(sorted(red)))
         check("reddit caps: the config's `body` key was mapped to ADAM's body_short",
               "body" not in red and "body_short" in red, str(sorted(red)))
         check("reddit caps: no leaked _note key",
@@ -188,17 +190,23 @@ def _reddit_copy_shape_checks():
                     "body_short": "keep me", "headline": "keep me too",
                     "targeting_copy": {"Prospecting": {"body_long": "aud long",
                                                        "headline_short": "aud short",
+                                                       "headline": "aud headline",
+                                                       "description": "aud desc",
                                                        "body_short": "aud keep"}}}
         rp._set_active_platform({"platform": "Reddit"})
         c = _concept(); rp._drop_meta_only_feed_fields(c)
         check("reddit blanking: body_long and headline_short cleared",
               c["body_long"] == "" and c["headline_short"] == "", str(c)[:90])
-        check("reddit blanking: per-audience pair cleared too",
-              c["targeting_copy"]["Prospecting"]["body_long"] == ""
-              and c["targeting_copy"]["Prospecting"]["headline_short"] == "")
-        check("reddit blanking: the fields Reddit DOES use survive",
-              c["body_short"] == "keep me" and c["headline"] == "keep me too"
-              and c["targeting_copy"]["Prospecting"]["body_short"] == "aud keep")
+        _p = c["targeting_copy"]["Prospecting"]
+        check("reddit blanking: per-audience feed fields all cleared",
+              all(_p[f] == "" for f in ("body_long", "headline_short", "headline", "description")),
+              str(_p)[:110])
+        check("reddit blanking: body_short, the one field Reddit uses, survives",
+              c["body_short"] == "keep me"
+              and c["targeting_copy"]["Prospecting"]["body_short"] == "aud keep",
+              str(c)[:90])
+        check("reddit blanking: the feed headline is cleared too",
+              c["headline"] == "", f"got {c['headline']!r}")
         check("reddit blanking: columns kept (blanked, not deleted)",
               "body_long" in c and "headline_short" in c)
 
@@ -207,6 +215,21 @@ def _reddit_copy_shape_checks():
         check("meta blanking: no-op on Meta",
               c["body_long"] == "long one" and c["headline_short"] == "short one",
               str(c)[:90])
+
+        # The SCHEMA is what actually decides. A prompt saying "do not write a
+        # headline" while `required` demands one produces a headline anyway —
+        # that is exactly what shipped on 2026-09-15 and what Adrie filed on
+        # 2026-09-21. These assert the required list itself.
+        rp._set_active_platform({"platform": "Reddit"})
+        rf = rp._base_fields()
+        check("reddit schema: feed fields are exactly concept_tag/creative_headline/body_short/cta",
+              set(rf) == {"concept_tag", "creative_headline", "body_short", "cta"}, str(sorted(rf)))
+        for gone in ("headline", "headline_short", "body_long", "description"):
+            check(f"reddit schema: {gone} is NOT required", gone not in rf, str(sorted(rf)))
+        check("reddit schema: on-image creative_headline survives", "creative_headline" in rf)
+        check("reddit schema: on-image cta survives", "cta" in rf)
+        rp._set_active_platform({"platform": "Meta"})
+        check("meta schema: unchanged", set(rp._base_fields()) == set(rp._BASE_FIELDS))
     finally:
         rp._ACTIVE_PLATFORM = saved
 

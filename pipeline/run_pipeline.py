@@ -125,6 +125,31 @@ _LIST_FIELDS = {"us_bullets", "them_bullets", "left_bullets", "right_bullets",
 _BASE_FIELDS = ("concept_tag", "creative_headline", "headline", "headline_short",
                 "body_short", "body_long", "description", "cta")
 
+# Reddit's feed is ONE field: body copy at roughly 100 characters. Adrie on the
+# 2026-09-10 call, correcting herself mid-sentence: "there's only one headline
+# per ad type, and that's it. I mean it's NOT a headline. I don't know what
+# they're calling it, body copy. Primary text works great."
+#
+# She then filed it from live testing on 2026-09-21: "Copy is generating a
+# headline and Body copy. For Reddit, we only need body copy" and "Sometimes it
+# is also generating a description, which also isn't needed."
+#
+# creative_headline and cta STAY: those are the on-image fields the Reddit
+# templates carry Copy_Headline and Copy_CTA layers for. Only the FEED collapses.
+#
+# This has to be enforced in the SCHEMA, not just the prompt. `required` is built
+# from these fields and `headline` carries minLength 2, so asking the prompt not
+# to produce one while the schema demands it just produces one anyway — which is
+# exactly what she was seeing after the 2026-09-15 prompt-only change.
+_REDDIT_BASE_FIELDS = ("concept_tag", "creative_headline", "body_short", "cta")
+
+
+def _base_fields():
+    """Feed fields for the ACTIVE platform."""
+    if _norm_style(_ACTIVE_PLATFORM) == "reddit":
+        return _REDDIT_BASE_FIELDS
+    return _BASE_FIELDS
+
 # Prompted style fields that have NO char_limits entry (the schema's other
 # source) — without a declaration here they are silently STRIPPED by
 # additionalProperties:false. Poll's integer percentages were lost this way
@@ -158,8 +183,9 @@ def _concept_schema(style, is_both, qty):
             return {"type": "string", "minLength": 2}
         return {"type": "string"}
 
-    props = {f: _prop(f) for f in _BASE_FIELDS}
-    required = list(_BASE_FIELDS)
+    _fields = _base_fields()
+    props = {f: _prop(f) for f in _fields}
+    required = list(_fields)
     if _style_uses_subhead(style):
         props["creative_subhead"] = {"type": "string"}
     # Style extras from the guide entry (poll_question, left_bullets, …) —
@@ -183,8 +209,10 @@ def _concept_schema(style, is_both, qty):
             props[f] = dict(spec)
             required.append(f)
     if is_both:
-        aud_fields = ["creative_headline", "headline", "headline_short",
-                      "body_short", "body_long", "description"]
+        aud_fields = (["creative_headline", "body_short"]
+                      if _norm_style(_ACTIVE_PLATFORM) == "reddit" else
+                      ["creative_headline", "headline", "headline_short",
+                       "body_short", "body_long", "description"])
         aud_props = {f: {"type": "string"} for f in aud_fields}
         if _style_uses_subhead(style):
             aud_props["creative_subhead"] = {"type": "string"}
@@ -340,7 +368,7 @@ _PN_LIST_FIELDS = ("left_bullets", "right_bullets", "single_bullets", "us_bullet
                    "them_bullets", "search_results", "pie_labels")
 
 
-_META_ONLY_FEED_FIELDS = ("body_long", "headline_short")
+_META_ONLY_FEED_FIELDS = ("body_long", "headline_short", "headline", "description")
 
 
 def _drop_meta_only_feed_fields(concept):
@@ -2269,9 +2297,9 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     # a Meta prompt renders byte-identical to before this change.
     _feed_spec_both = (
         (
-            "    FEED (around the image, never printed on it): headline (max 50),\n"
-            "      body_short (max 100 — Reddit's ONLY body field). Reddit has NO\n"
-            "      headline_short and NO body_long: do not produce them.\n"
+            "    FEED (around the image, never printed on it): body_short (max 100)\n"
+            "      and NOTHING ELSE. Reddit has no feed headline, no headline_short,\n"
+            "      no body_long and no description. Do not produce them.\n"
         ) if _is_reddit else (
             "    FEED (around the image, never printed on it): headline (max 50), headline_short\n"
             "      (max 30), body_short (max 125), body_long (max 300 — Primary Text; keep the\n"
@@ -2303,17 +2331,16 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
         json_keys_full = "cta, targeting_copy, concept_tag"
     elif _is_reddit:
         ad_platform_block = (
-            "AD-PLATFORM copy — the Reddit feed fields shown AROUND the image.\n"
+            "AD-PLATFORM copy — the Reddit feed copy shown AROUND the image.\n"
             "NEVER printed on the image itself; distinct wording from the on-creative copy:\n"
-            "- headline (max 50 characters)\n"
-            "- body_short (max 100 characters — Reddit's ONLY body field)\n"
-            "- description (max 25 characters)\n"
+            "- body_short (max 100 characters). This is Reddit's ONLY feed field.\n"
             "- concept_tag (short slug like \"talent-speed-v1\")\n"
-            "REDDIT IS ONE VERSION. There is no long/short pair here: do NOT produce\n"
-            "headline_short and do NOT produce body_long. One headline and one body per concept."
+            "REDDIT HAS NO FEED HEADLINE AND NO DESCRIPTION. Do not write one. Reddit\n"
+            "shows a single piece of body copy, so everything you want the reader to\n"
+            "take away from the feed has to live in that one field."
         )
-        json_keys_full = ("creative_headline, creative_subhead, headline, "
-                          "body_short, description, cta, concept_tag")
+        json_keys_full = ("creative_headline, creative_subhead, "
+                          "body_short, cta, concept_tag")
     else:
         ad_platform_block = (
             "AD-PLATFORM copy — the Meta feed fields shown AROUND the image (caption + headline).\n"
