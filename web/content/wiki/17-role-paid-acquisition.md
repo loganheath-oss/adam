@@ -131,12 +131,19 @@ evergreen copy with no angle.
 A strong brief names a theme, says what you're testing, and hands over the actual proof points you
 want used. A weak one names a topic and stops.
 
-| | Weak | Strong |
-|---|---|---|
-| **THEME** | "Hiring on Upwork" | One or two sentences naming the single message, and who it's aimed at |
-| **COPY MUST-DOs** | "Mention speed" | Phrases to hit, words to avoid, the tone, and what NOT to claim |
-| **DESIGN DIRECTION** | "N/A" | A format preference, or an explicit "no preference" |
-| **RESOURCES** | Empty | Links to the stats, the approved claims, and reference ads that worked |
+**A weak brief looks like this:**
+
+- **THEME:** "Hiring on Upwork"
+- **COPY MUST-DOs:** "Mention speed"
+- **DESIGN DIRECTION:** "N/A"
+- **RESOURCES:** empty
+
+**A strong one looks like this:**
+
+- **THEME:** one or two sentences naming the single message, and who it's aimed at
+- **COPY MUST-DOs:** phrases to hit, words to avoid, the tone, and what NOT to claim
+- **DESIGN DIRECTION:** a format preference, or an explicit "no preference"
+- **RESOURCES:** links to the stats, the approved claims, and reference ads that worked
 
 **The KOTH briefs are the model.** [LINK: a recent KOTH brief that does this well]
 
@@ -177,12 +184,19 @@ That's it. Everything after that belongs to the copywriter and the designer.
 
 ## What you can fix yourself, and what you can't
 
-| You can | Somebody else has to |
-|---|---|
-| Rewrite the brief and resubmit | Change an ad type's character limits (engineer) |
-| Change the styles, sizes or audience | Add a new ad style (designer builds the template first) |
-| Ask for a different angle | Fix how the copy reads across every batch (copywriter, via the tool's guidance) |
-| Report something that looks wrong | Anything in Figma |
+**You can do these yourself:**
+
+- Rewrite the brief and resubmit
+- Change the styles, sizes or audience
+- Ask for a different angle
+- Report something that looks wrong
+
+**These need somebody else:**
+
+- Changing an ad type's character limits, which needs an engineer
+- Adding a new ad style, which needs the designer to build the template first
+- Fixing how the copy reads across every batch, which the copywriter does through the tool's guidance
+- Anything in Figma
 
 ---
 

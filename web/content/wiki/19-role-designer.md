@@ -122,13 +122,21 @@ Spot-check a few boards rather than every one:
 
 ## What you can fix yourself, and what you can't
 
-| You can | Send to engineering |
-|---|---|
-| Rename a layer so copy populates | A style missing from the order form |
-| Delete a duplicate frame or a stale Rules card | Running the checker |
-| Restyle a layer to the house font | Copy that's wrong rather than misplaced |
-| Build or fix a template | Anything where the plugin itself misbehaves |
-| Add a `Generated Tests` section | A new size or platform |
+**You can do these yourself:**
+
+- Rename a layer so copy populates
+- Delete a duplicate frame or a stale Rules card
+- Restyle a layer to the house font
+- Build or fix a template
+- Add a `Generated Tests` section
+
+**These need engineering:**
+
+- A style missing from the order form
+- Running the checker
+- Copy that's wrong rather than misplaced
+- Anything where the plugin itself misbehaves
+- A new size or platform
 
 ---
 

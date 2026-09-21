@@ -180,12 +180,26 @@ If you need more: `/admin` is the health overview, the sprint page has the error
 
 ### Who fixes what
 
-| You can fix | Send to the designer | Send to engineering |
-|---|---|---|
-| Copy that's off brief, wrong tone, too long | Ads with placeholder text still on them | A sprint that fails the same way twice |
-| Which concepts ship | Copy landing in the wrong slot on the ad | "model not found" errors |
-| A stale approved quote (`/quotes`) | Anything about how the ad looks | Anything needing a key or a deploy |
-| Recurring copy problems (`/learnings`) | Missing or misnamed template layers | "No space left on device" |
+**You fix these:**
+
+- Copy that's off brief, wrong tone, or too long
+- Which concepts ship
+- A stale approved quote, at `/quotes`
+- Recurring copy problems, at `/learnings`
+
+**Send these to the designer:**
+
+- Ads with placeholder text still on them
+- Copy landing in the wrong slot on the ad
+- Anything about how the ad looks
+- Missing or misnamed template layers
+
+**Send these to engineering:**
+
+- A sprint that fails the same way twice
+- "model not found" errors
+- Anything needing a key or a deploy
+- "No space left on device"
 
 ### When to resume, log, or stop
 
