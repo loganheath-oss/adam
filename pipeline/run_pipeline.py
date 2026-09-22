@@ -1034,9 +1034,19 @@ def stage_02_copy_gen(sprint_id, order, context):
     print("  STAGE 02: COPY GENERATION")
     print("="*60)
 
+    # An "Images Only" order still runs this stage. Concepts ARE the image
+    # direction: stage 03 builds every prompt and photo pick by walking the
+    # SELECTED concepts (see the batch loop), so skipping generation here left
+    # `concepts` empty, every style "SKIPPED — no concepts generated", and zero
+    # image rows. It also returned None into resume_gate_2, which called .get()
+    # on it and crashed the gate outright (Adrie, 2026-09-21, images-only
+    # Reddit). Both symptoms, one cause: images-only was reading as "produce no
+    # creative direction" rather than "don't ship the copy as a deliverable".
+    # `includes_copy` now governs DELIVERY only; the templates carry copy layers
+    # regardless, so the manifest needs this text either way.
     if not order.get("includes_copy", True):
-        print("  Skipped (images-only order)")
-        return None
+        print("  Images-only order — concepts still drive image direction; "
+              "copy is not a deliverable")
 
     run_dir = RUNS_DIR / sprint_id
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -5129,9 +5139,14 @@ def resume_gate_2(sprint_id):
     _mark_stage(sprint_id, "stage_02_copy_gen")
 
     # ── GATE 3: COPY APPROVAL ──────────────────────────────────
+    # Defensive: stage 02 returning None used to crash here on .get(), which
+    # killed the gate and stranded the sprint with no readable reason. A gate
+    # must never be the thing that fails — it should open with nothing in it
+    # and let the reviewer see that.
+    _copy = copy_outputs or {}
     _save_pipeline_state(sprint_id, "awaiting_gate_3")
-    total = len(copy_outputs.get("concepts", []))
-    selected = sum(1 for c in copy_outputs.get("concepts", []) if c.get("selected"))
+    total = len(_copy.get("concepts", []))
+    selected = sum(1 for c in _copy.get("concepts", []) if c.get("selected"))
     _print_gate(3, "COPY APPROVAL", sprint_id, [
         f"Review: {run_dir / 'copy_review.csv'}",
         f"All {total} concepts with scores, rankings, and review notes",

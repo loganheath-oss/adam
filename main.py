@@ -2917,6 +2917,29 @@ def _run_self_check() -> dict:
                                      if _drift else "compiled refs match sources")}
     except Exception as e:
         checks["refs"] = {"ok": False, "detail": str(e)[:80]}
+    try:  # 2b. Figma token canary. The photo library is the ONLY legal source of
+        # people imagery (Brian's no-AI rule), so an expired token doesn't error —
+        # it routes every people-bearing style to needs_human_selection and the
+        # sprint completes looking fine, just with no photos. That is exactly what
+        # happened: the token expired silently and was found days later by accident
+        # while doing something unrelated (2026-09-22). A canary makes the next
+        # expiry announce itself.
+        import httpx as _hx
+        _ft = os.environ.get("FIGMA_ACCESS_TOKEN", "")
+        if not _ft:
+            checks["figma_token"] = {"ok": False, "detail": "FIGMA_ACCESS_TOKEN not set"}
+        else:
+            _fr = _hx.get("https://api.figma.com/v1/me",
+                          headers={"X-Figma-Token": _ft, "User-Agent": "Mozilla/5.0"},
+                          timeout=20)
+            checks["figma_token"] = {
+                "ok": _fr.status_code == 200,
+                "detail": ("valid" if _fr.status_code == 200 else
+                           f"HTTP {_fr.status_code} — photo library is DOWN; "
+                           "mint a new Figma token and set it on Railway"),
+            }
+    except Exception as e:
+        checks["figma_token"] = {"ok": False, "detail": str(e)[:80]}
     try:  # 3. Style guide resolves for every order-form style (schema builder sanity).
         import importlib as _il
         _rpm = sys.modules.get("run_pipeline")

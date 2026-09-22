@@ -204,10 +204,19 @@ export default function NewOrderPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  // needsImages gates the IMAGE-specific controls only (sizes, the asset count).
+  // Platform and visual style are NOT image-specific: copy is generated per
+  // style, and the character caps and CTA policy that constrain it are
+  // per-platform — Reddit's feed is one body line, Meta's is a headline set.
+  // Gating the platform picker behind needsImages meant a Copy Only order could
+  // never choose Reddit, and clearing batches on that choice made it submit an
+  // empty batch list, which intake rejects outright ("batches must be a
+  // non-empty list"). Both were the same mistake: treating "no images" as
+  // "no creative spec". (Adrie, 2026-09-21.)
   const needsImages = deliverable !== "" && deliverable !== "copy-only";
   const step1ok = driver.trim() && aud.size > 0 && deliveryDate;
   const anyStyleChosen = Object.values(batches).some((b) => b.styles.some((s) => s.style));
-  const step2ok = deliverable !== "" && (!needsImages || (!!platform && Object.keys(batches).length > 0 && anyStyleChosen));
+  const step2ok = deliverable !== "" && !!platform && Object.keys(batches).length > 0 && anyStyleChosen;
   const targeting = aud.has("Prospecting") && aud.has("Retargeting") ? "Prospecting and Retargeting" : aud.has("Prospecting") ? "Prospecting" : aud.has("Retargeting") ? "Retargeting" : "";
 
   function toggleAud(a: string) { setAud((p) => { const n = new Set(p); n.has(a) ? n.delete(a) : n.add(a); return n; }); }
@@ -234,19 +243,25 @@ export default function NewOrderPage() {
       "No brief provided.\n\nADAM will write copy from the standing reference docs only — no sprint theme, no key messaging.\n\nSubmit without a brief?"
     )) return;
     setError(""); setBusy(true);
-    const orderBatches = needsImages
-      ? Object.entries(batches).map(([fmt, b]) => {
-          const fd = PLATFORMS[platform].formats[fmt];
-          const styles = b.styles.filter((s) => s.style);
-          const resolutions = fd.resolutions.filter((_, i) => b.res[i]);
-          return {
-            platform, format: fmt, quantity: styles.reduce((n, s) => n + s.qty, 0),
-            styles, visual_styles: styles.map((s) => s.style),
-            style_quantities: styles.reduce<Record<string, number>>((a, s) => { a[s.style] = (a[s.style] || 0) + s.qty; return a; }, {}),
-            resolutions, carousel: fd.carousel, carousel_slides: fd.carousel ? b.slides : null,
-          };
-        }).filter((b) => b.visual_styles.length)
-      : [];
+    // Built for every deliverable, copy-only included. The batch is the creative
+    // spec — platform, format and visual styles — not an image instruction, and
+    // copy generation fans out over exactly these styles. Sending [] here is
+    // what made Copy Only fail validation at intake.
+    const orderBatches = Object.entries(batches).map(([fmt, b]) => {
+      const fd = PLATFORMS[platform].formats[fmt];
+      const styles = b.styles.filter((s) => s.style);
+      // Copy-only keeps one resolution so intake's "at least one resolution"
+      // check passes; sizes have no meaning without images, and carrying all of
+      // them would misreport the order back to the requester at review.
+      const checked = fd.resolutions.filter((_, i) => b.res[i]);
+      const resolutions = needsImages ? checked : checked.slice(0, 1);
+      return {
+        platform, format: fmt, quantity: styles.reduce((n, s) => n + s.qty, 0),
+        styles, visual_styles: styles.map((s) => s.style),
+        style_quantities: styles.reduce<Record<string, number>>((a, s) => { a[s.style] = (a[s.style] || 0) + s.qty; return a; }, {}),
+        resolutions, carousel: fd.carousel, carousel_slides: fd.carousel ? b.slides : null,
+      };
+    }).filter((b) => b.visual_styles.length);
     const order = { delivery_date: deliveryDate, driver, targeting, deliverable, platform: platform || null, batches: orderBatches, brief };
     try {
       const res = await fetch("/api/submit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(order) });
@@ -332,14 +347,14 @@ export default function NewOrderPage() {
               {DELIVERABLES.map(([id, ttl, sub]) => {
                 const on = deliverable === id;
                 return (
-                  <button key={id} type="button" onClick={() => { setDeliverable(id); if (id === "copy-only") { setPlatform(""); setBatches({}); } }} className={["rounded-xl border p-4 text-left", on ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] hover:bg-[#F7F8F6]"].join(" ")}>
+                  <button key={id} type="button" onClick={() => setDeliverable(id)} className={["rounded-xl border p-4 text-left", on ? "border-[#14A800] bg-[#F4FAF1]" : "border-[#E0E0E0] hover:bg-[#F7F8F6]"].join(" ")}>
                     <div className="text-sm font-semibold">{ttl}</div><div className="mt-1 text-xs text-[#5b6660]">{sub}</div>
                   </button>
                 );
               })}
             </div>
 
-            {needsImages && (
+            {deliverable !== "" && (
               <div className="mt-7">
                 <div className="mb-3 flex items-baseline justify-between"><h3 className="text-[15px] font-semibold">Platform</h3><span className="text-xs text-[#9aa0a6]">One platform per request</span></div>
                 <div className="grid gap-3.5 sm:grid-cols-3">
@@ -355,9 +370,10 @@ export default function NewOrderPage() {
               </div>
             )}
 
-            {needsImages && platform && (
+            {platform && (
               <div className="mt-7">
                 <div className="mb-3 flex items-baseline justify-between"><h3 className="text-[15px] font-semibold">Ad Formats</h3><span className="text-xs text-[#9aa0a6]">{platform}</span></div>
+                {!needsImages && <p className="mb-3 text-xs text-[#9aa0a6]">Copy is written per visual style, so pick the styles you want copy for. Sizes don&apos;t apply to a copy-only request.</p>}
                 <div className="space-y-3">
                   {Object.entries(PLATFORMS[platform].formats).map(([fmt, fd]) => {
                     const b = batches[fmt]; const on = !!b;
@@ -398,7 +414,7 @@ export default function NewOrderPage() {
                                 <span className="text-xs text-[#9aa0a6]">2 – 10 images per carousel</span>
                               </div>
                             )}
-                            <div>
+                            <div className={needsImages ? "" : "hidden"}>
                               <p className="mb-1 text-[13px] font-medium">Resolutions</p>
                               <p className="mb-2 text-xs text-[#9aa0a6]">Uncheck any size to exclude it from this batch</p>
                               <div className="flex flex-wrap gap-2">
@@ -494,7 +510,7 @@ export default function NewOrderPage() {
               ))}
             </div>
 
-            {needsImages && (
+            {platform && (
               <>
                 <div className="mb-3 mt-8 flex items-baseline justify-between">
                   <h3 className="text-[15px] font-semibold">Your creatives</h3>
@@ -523,12 +539,14 @@ export default function NewOrderPage() {
                               <button type="button" onClick={() => updateBatch(fmt, (bb) => { const s = [...bb.styles]; s[i] = { ...s[i], qty: s[i].qty + 1 }; return { ...bb, styles: s }; })} className="flex h-7 w-7 items-center justify-center text-[#5b6660] hover:text-[#1d1d1b]">+</button>
                             </div>
                           </div>
-                          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                            <span className="mr-1 text-[11px] uppercase tracking-wide text-[#9aa0a6]">Sizes</span>
-                            {sizes.map((r) => (
-                              <span key={r.size} className="rounded-md bg-[#14A800] px-2 py-1 text-[11px] font-medium text-white">{r.size}</span>
-                            ))}
-                          </div>
+                          {needsImages && (
+                            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                              <span className="mr-1 text-[11px] uppercase tracking-wide text-[#9aa0a6]">Sizes</span>
+                              {sizes.map((r) => (
+                                <span key={r.size} className="rounded-md bg-[#14A800] px-2 py-1 text-[11px] font-medium text-white">{r.size}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         <button type="button" aria-label="Remove" onClick={() => updateBatch(fmt, (bb) => ({ ...bb, styles: bb.styles.filter((_, j) => j !== i) }))} className="text-[#c4c4c4] hover:text-red-500">🗑</button>
                       </div>
@@ -536,8 +554,8 @@ export default function NewOrderPage() {
                   })}
                 </div>
                 <div className="mt-3 flex items-center justify-between rounded-xl bg-[#F7F8F6] px-4 py-3">
-                  <span className="text-sm text-[#5b6660]">Total assets to produce</span>
-                  <span className="text-xl font-semibold tabular-nums">{totalAssets}</span>
+                  <span className="text-sm text-[#5b6660]">{needsImages ? "Total assets to produce" : "Styles to write copy for"}</span>
+                  <span className="text-xl font-semibold tabular-nums">{needsImages ? totalAssets : creativeCount}</span>
                 </div>
                 {creativeCount > 6 && (
                   /* August testing (Adrie): runs are better and more consistent at
@@ -550,7 +568,7 @@ export default function NewOrderPage() {
                 )}
               </>
             )}
-            {deliverable === "copy-only" && <div className="mt-4 rounded-xl bg-[#F7F8F6] px-4 py-3 text-sm text-[#5b6660]">Copy only — no image batches.</div>}
+            {deliverable === "copy-only" && <div className="mt-4 rounded-xl bg-[#F7F8F6] px-4 py-3 text-sm text-[#5b6660]">Copy only. You&apos;ll get the written copy for each style you picked, and no images are produced.</div>}
           </div>
         )}
         </div>

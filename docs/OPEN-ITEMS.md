@@ -1309,3 +1309,80 @@ Elise's first run is the real test.
 **Drafts waiting to send** (`docs/handoff-messages-2026-09-15.md`, nothing sent): Leon for
 the four ownership transfers, Haresh for the gateway values with the deadline arithmetic,
 Elise for the plugin plus her eight Figma fixes and two diagnostic questions.
+
+## 2026-09-22 — 🔴 FIGMA TOKEN EXPIRED IN PRODUCTION; Adrie's three 09-21 bugs fixed
+
+### The token is the urgent one
+
+`FIGMA_ACCESS_TOKEN` on Railway has **expired**. Confirmed against the live service env:
+
+```
+$ railway run --service adam python3 -c "... /v1/me ..."
+{"status":401,"err":"Token has expired"}
+
+$ figma_library._figma_request("/files/DoDwumxELkuAuKKSP5p00e?depth=1")
+HTTPError 403: Forbidden
+```
+
+That is the same token the pipeline's photo library runs on (`pipeline/figma_library.py:69`),
+so **the Upwork brand-library lookup is down in production right now.** Under Brian's
+no-AI-people rule every people-bearing style pulls from that library and never from Gemini,
+so the 2026-07-30 outage guard routes them all to `needs_human_selection` instead. It
+degrades quietly rather than erroring, which is why nobody has reported it: sprints still
+complete, they just come back with no photos chosen.
+
+Nobody but Logan can fix this — it needs a new Figma personal access token minted and set on
+Railway. Not actionable from inside the repo. **Blocks the Reddit-thumbnail harvest below,
+and would have embarrassed us in any live demo.**
+
+Found by accident while harvesting thumbnails, which is the argument for making the self-check
+assert the token rather than only the things that fail loudly. Filed as a follow-up.
+
+### Adrie's three bugs from live testing, 2026-09-21
+
+All three were reported as separate Reddit problems. Two turned out to be one mistake wearing
+two hats, and none of them were Reddit-specific.
+
+**1. Images-only crashed at Gate 2.** `run_pipeline.py` — `stage_02_copy_gen` returned `None`
+for an images-only order, and `resume_gate_2` called `.get()` on it. `AttributeError`, gate
+dead, sprint stranded with nothing readable. Any Images Only order, on any platform.
+
+The early-out was wrong in the first place. Stage 03 builds every image prompt and photo pick
+by walking the SELECTED concepts, so skipping copy generation also meant every style logged
+"SKIPPED — no concepts generated" and the run produced zero image rows. Images-only was
+reading as "produce no creative direction" when it means "don't ship the copy as a
+deliverable". `includes_copy` now governs delivery only; the templates carry copy layers
+regardless, so the manifest needs that text either way. Gate 2 also got a guard, because a
+gate should open empty rather than be the thing that fails.
+
+**2. Copy-only could not be submitted, and had no Reddit option.** Same mistake, form side.
+`web/app/new/page.tsx` cleared the platform when you picked Copy Only and hid the platform
+picker behind `needsImages`, then submitted `batches: []`. Intake rejects that outright
+("batches must be a non-empty list"), so the request died at validation. And with the picker
+hidden, Reddit was unreachable — which matters because platform is what selects the copy
+rules, and Reddit's feed is one body line where Meta's is a headline set.
+
+Platform and visual style are not image concerns. Copy is generated per style and capped per
+platform. The form now collects both for all three deliverables and hides only what is
+genuinely image-specific: the size checkboxes and the asset count.
+
+Both covered by `_deliverable_checks()` in `tests/copy_regression.py`, which asserts the
+form-to-intake contract in both directions — including that the old empty-batch payload still
+fails, so nobody reinstates the shortcut.
+
+**3. Reddit style thumbnails.** Verified exactly: of the 20 Reddit ad types on the form, 13
+have no preview and show an empty grey box. The other 7 are worse — they match a Meta key by
+name and display **Meta artwork for a Reddit ad type**, so someone picking Split Screen for
+Reddit is looking at the wrong ad. All 20 need real previews, not 13.
+
+Root cause is that `web/lib/style-thumbs.ts` was pasted in as base64 "extracted verbatim from
+order-form-ravi.html". There was no way to regenerate it and no way to add to it.
+
+`scripts/harvest_reddit_thumbs.py` replaces that with something reproducible: it renders the
+real Reddit template frames through the Figma images API and writes ordinary public assets
+plus a generated lookup. **Written and ready, cannot run until the token is replaced.**
+
+(Two traps already paid for in there: a full `/v1/files` fetch on ADAM 2026 returns 403
+because the document is too large, so it reads page by page; and Figma's edge 403s urllib's
+default User-Agent, which reads exactly like an auth failure and sends you looking at the
+token.)

@@ -234,10 +234,82 @@ def _reddit_copy_shape_checks():
         rp._ACTIVE_PLATFORM = saved
 
 
+def _deliverable_checks():
+    """All three deliverables must survive intake and reach the right stages.
+
+    Adrie, 2026-09-21: an images-only Reddit order crashed at Gate 2, and a
+    copy-only order could not be submitted at all and had no Reddit option.
+    Two bugs, one shape: the form treated "no images" as "no creative spec",
+    so it sent an empty batch list (intake rejects it outright), and the
+    pipeline treated it as "no creative direction", so stage 02 returned None
+    into a gate that called .get() on it.
+
+    These assert the CONTRACT between the form's payload and intake, because
+    that seam is where both failed and neither end tested it.
+    """
+    import importlib
+    import sys as _sys
+    _sys.path.insert(0, str(rp.BASE_DIR / "pipeline"))
+    intake = importlib.import_module("00_intake")
+
+    def _payload(deliverable, platform="Reddit"):
+        return {
+            "delivery_date": "2026-10-10", "driver": "Adrie Etherington",
+            "targeting": "Prospecting", "deliverable": deliverable,
+            "platform": platform,
+            "batches": [{
+                "platform": platform, "format": "Static Feed", "quantity": 2,
+                "visual_styles": ["Testimonial"],
+                "style_quantities": {"Testimonial": 2},
+                "resolutions": [{"size": "1080x1350", "ratio": "4:5"}],
+            }],
+            "brief": "THEME: regression",
+        }
+
+    for d in ("images-copy", "images-only", "copy-only"):
+        errs = intake.validate_payload(_payload(d))
+        check(f"intake accepts a {d} order", not errs, "; ".join(errs))
+
+    # The exact payload the form used to send for copy-only. Kept as a check so
+    # that if anyone reinstates the empty-batches shortcut, this fails loudly
+    # rather than only showing up when a requester tries to submit.
+    empty = _payload("copy-only")
+    empty["batches"] = []
+    empty["platform"] = None
+    check("intake still REJECTS the old empty-batch copy-only payload",
+          bool(intake.validate_payload(empty)),
+          "an empty batch list must not validate")
+
+    co = intake.build_order(_payload("copy-only"), "t-copy-only")
+    check("copy-only: includes_copy on, includes_images off",
+          co["includes_copy"] is True and co["includes_images"] is False,
+          f"copy={co['includes_copy']} images={co['includes_images']}")
+    check("copy-only: platform survives to the order (Reddit was unreachable)",
+          co["platform"] == "Reddit", repr(co["platform"]))
+
+    io = intake.build_order(_payload("images-only"), "t-images-only")
+    check("images-only: includes_images on, includes_copy off",
+          io["includes_images"] is True and io["includes_copy"] is False,
+          f"copy={io['includes_copy']} images={io['includes_images']}")
+
+    # Stage 02 must no longer bail out on includes_copy=False. Concepts are the
+    # sole input to stage 03's prompt/photo rows, so bailing produced zero image
+    # rows AND a None that crashed the gate.
+    src = (rp.BASE_DIR / "pipeline" / "run_pipeline.py").read_text()
+    head = src.split("def stage_02_copy_gen", 1)[1].split("run_dir = RUNS_DIR", 1)[0]
+    check("stage 02 no longer returns None for an images-only order",
+          "return None" not in head, "the early-out is back")
+    g2 = src.split("def resume_gate_2", 1)[1].split("def resume_gate_3", 1)[0]
+    check("resume_gate_2 cannot crash on a None copy_outputs",
+          "copy_outputs.get(" not in g2,
+          "gate 2 dereferences copy_outputs without a guard")
+
+
 def offline_checks():
     print("\n== OFFLINE (deterministic) ==")
     _audience_photo_checks()
     _reddit_copy_shape_checks()
+    _deliverable_checks()
 
     # 1. Proper-noun / acronym casing backstop
     cases = [("Shipped by friday, hired monday on upwork", "Shipped by Friday, hired Monday on Upwork"),
