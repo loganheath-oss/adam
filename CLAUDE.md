@@ -4,7 +4,7 @@
 
 **Status:** Alpha. Web app, pipeline, and the MCP connector all run on **Railway** (deployed from `loganheath-oss/adam`); the Figma plugin assembles final creatives. (The earlier Replit direction in §10 is retired — Railway is the platform.)
 
-**Owner during build:** Logan Heath (CM). Day-to-day collaborators: Adrie Etherington (creative lead, copy), Brandon Morayo (motion/graphic, Figma templates and library), Bree (design producer). Architectural sponsor inside Upwork: Leon Zhao.
+**Owner during build:** Logan Heath (CM). Day-to-day collaborators: Adrie Etherington (creative lead, copy), Natelise "Elise" Loeb (designer — Figma templates, library, runs the plugin), Breanna "Bree" Hovan (design producer). Upwork stakeholder: Lee Riley. Architectural sponsor inside Upwork: Leon Zhao. (Brandon Morayo left in July 2026; everything of his moved to Elise.)
 
 This file is the orientation doc for both humans inheriting the project and agents working on the codebase. Specific deep dives live in `docs/`.
 
@@ -13,7 +13,7 @@ This file is the orientation doc for both humans inheriting the project and agen
 ## 1. Repo map
 
 ```
-upwork-creative-pipeline/
+adam/
 ├── pipeline/
 │   ├── run_pipeline.py           Local end-to-end pipeline (source of truth for current logic)
 │   ├── 00_intake.py              Stage modules (AWS-bound; behind run_pipeline feature-wise)
@@ -29,11 +29,11 @@ upwork-creative-pipeline/
 │   ├── server.py                 7-tool MCP server (stdio + Streamable HTTP)
 │   ├── Dockerfile
 │   └── fly.toml                  Retired standalone Fly host (MCP now mounted in the web app)
-├── plugin/                       Figma plugin (Brandon's assembly UI)
+├── plugin/                       Figma plugin (the designer's assembly UI — Elise runs it)
 ├── order-form/                   HTML order forms (local + hosted)
 ├── configs/
 │   ├── upwork_config.json        Drive folder IDs, Figma file ID, channel specs
-│   ├── template_registry.json    Template IDs + Brandon's per-template rules
+│   ├── template_registry.json    Template IDs + per-template rules
 │   └── refs_context.json         Compiled brand/legal context (~135KB)
 ├── refs/                         Raw reference docs (brand voice, legal, KOTH performance, tags)
 ├── runs/{sprint_id}/             Per-sprint outputs (order.json, copy_outputs.json, manifest, images, etc.)
@@ -44,7 +44,10 @@ upwork-creative-pipeline/
 └── mindstudio/                   Historical (deprecated, see §6)
 ```
 
-GitHub mirror: `~/Documents/GitHub/adam/` (Upwork-owned). Logan syncs after local changes.
+**Source of truth is GitHub → Railway.** The repo is `loganheath-oss/adam`
+(https://github.com/loganheath-oss/adam); pushing to `main` auto-deploys the backend. Logan's
+working checkout is `~/dev/adam-progress`. An older checkout at
+`~/Documents/upwork-creative-pipeline` has DIVERGED and is stale — do not work from it.
 
 ---
 
@@ -69,7 +72,23 @@ python3 mcp_server/server.py
 #    Push to main → Railway redeploys and the connector updates. No separate deploy.
 ```
 
-Required env vars (`.env`): `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `FIGMA_ACCESS_TOKEN`, `GOOGLE_SERVICE_ACCOUNT_JSON`. See `.env.example` for the full list.
+Required env vars: `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `FIGMA_ACCESS_TOKEN`, `DATABASE_URL`,
+`PIPELINE_API_KEY`, `MCP_AUTH_TOKEN`. See `.env.example`, which is generated from real env reads.
+
+**`GOOGLE_SERVICE_ACCOUNT_JSON` is NOT required** and is not set in production. It appears only in
+`01_load_refs.py` / `06_deliver.py`, which are the non-canonical AWS-era scaffold, and in terraform.
+The canonical path compiles refs locally and delivers through the manifest plus the Figma plugin, so
+there is no Drive upload to authenticate. This line used to list it, which sent people hunting for a
+credential that does nothing (corrected 2026-09-22).
+
+Prefer `railway run --service adam -- <cmd>` over a local `.env`: it injects the real service env, so
+you never handle a key directly.
+
+**Two credentials expire and fail SILENTLY.** `FIGMA_ACCESS_TOKEN` is a Figma personal access token
+with an expiry; when it lapses, the photo library degrades to `needs_human_selection` rather than
+erroring, and sprints complete looking fine with no photos. The self-check now has a canary for it.
+`SLACK_WEBHOOK_URL` is optional and currently unset, which means the daily digest — the only thing
+that carries a failing self-check to a human — no-ops. Set it.
 
 ---
 
@@ -123,7 +142,11 @@ For details on how each tool is wired up: read `mcp_server/server.py`. For a com
 
 ## 5. Figma assembly plugin
 
-Plugin lives in `plugin/`. Brandon runs it manually in Figma desktop after the pipeline produces a manifest CSV.
+Plugin lives in `plugin/`. **Elise runs it manually in Figma desktop** after the pipeline produces a
+manifest CSV. Nobody else can run it: plugin code only executes inside Figma desktop, which is the
+defining constraint of that file and has shipped false confidence twice. The countermeasure is
+`scripts/verify_plugin_changes.py`, which replays the plugin's own lookups in Python against live
+Figma JSON before you push.
 
 **Workflow:** load manifest → plugin clones the appropriate template per row → fills `image_placeholder` (real image file, not a frame), per-style text layers (`lifestyle_image_headline`, `photo_text_headline_text`, etc.), and on-image `CTA` → exports.
 
@@ -133,7 +156,7 @@ Plugin lives in `plugin/`. Brandon runs it manually in Figma desktop after the p
 - `image_placeholder` is a real image file (Figma can't mask frames).
 - `CTA` is on-image only. Platform CTA buttons (Meta's "Sign Up" dropdown, etc.) are not pipeline-generated.
 
-**Templates:** Brandon's `template_registry.json` maps each visual style to a template frame in the Figma file (`DoDwumxELkuAuKKSP5p00e`, "Paid Acquisition 2026"). New styles require a new template before the plugin can assemble them.
+**Templates:** `template_registry.json` maps each visual style to a template frame in the Figma file (`DoDwumxELkuAuKKSP5p00e`, now named "ADAM 2026"). New styles require a new template before the plugin can assemble them.
 
 ---
 
@@ -151,7 +174,15 @@ These are hard rules. Treat them as guardrails when editing code or proposing ar
 
 **MindStudio is out.** Architectural decision finalized May 2026. Don't reference it in current or future flows. The `mindstudio/` directory is historical.
 
-**Hosting today is on CM accounts, not Upwork.** Fly.io is billed to `logan.heath@cm.studio`. Acceptable for alpha. Production migration is to Upwork-internal infrastructure.
+**Hosting today is on CM accounts, not Upwork.** Railway (project `angelic-liberation`, service
+`adam`) is CM-billed. The old Fly.io host is **retired**, not a second environment — it served a
+`runs/` copy baked into its image, which is exactly why it went stale. Production migration is to
+Upwork-internal infrastructure, targeted **end of December 2026** (Lee Riley, 2026-09-21): Upwork
+engineering is building a formalized intake for asks like this one because InfoSec was reinventing
+the wheel per request. Q4 is covered by a monthly budget for hosting and tokens plus an ad-hoc
+support menu agreed between Lee and Blake. The agreed migration shape is Ravi's: build the migrated
+version side by side inside Upwork's pipeline while the current one keeps serving, then cut over, so
+the wider team sees no downtime.
 
 ---
 
@@ -159,14 +190,16 @@ These are hard rules. Treat them as guardrails when editing code or proposing ar
 
 | Person | Role | Owns |
 |---|---|---|
-| Logan Heath | Tech lead (CM contractor) | Pipeline code, MCP server, plugin scaffold, end-to-end integration |
-| Adrie Etherington | Creative lead | Copy generation prompts, brand voice, Claude Project for copy curation |
-| Brandon Morayo (departed 2026-07) | — | Former owner of Figma templates + library tagging; items now with Elise |
-| Bree | Design producer | Production schedule, stakeholder coordination |
+| Logan Heath | Tech lead (CM contractor) | Pipeline code, MCP server, plugin, end-to-end integration |
+| Adrie Etherington | Creative lead | Copy generation prompts, brand voice, runs sprints through the gates |
+| Natelise Loeb ("Elise") | Designer | Figma templates + library tagging, runs the plugin, owns the Designer guide |
+| Breanna Hovan ("Bree") | Design producer | Production schedule, stakeholder coordination, merging the role guides |
+| Lee Riley | Upwork stakeholder | Q4 support + budget, migration timeline, guide requirements |
 | Brian | Upwork CD | Veto on AI photography. Source of the no-AI-photo rule |
 | Leon Zhao | Upwork architect / sponsor | Hosting platform decisions, InfoSec narrative, post-contract handoff support |
-| Ravi Parikh | Director of AI at Wonder | High-level architecture sign-off |
-| Haresh's team | Upwork engineering | Internal LLM Gateway, AWS Terraform, production deployment |
+| Ravi Vora | Director of AI at Wonder | High-level architecture sign-off |
+| Haresh's team (incl. Max) | Upwork engineering | Internal LLM Gateway, production deployment, the December migration |
+| Brandon Morayo | Departed 2026-07 | Former owner of Figma templates + library tagging — everything moved to Elise |
 | Sal / Shams | Upwork InfoSec | Security review (currently being re-engaged via Leon) |
 | Blake | CM owner | Logan's contracting entity |
 
@@ -189,34 +222,48 @@ Decisions that affect how to read the code or extend it. Older decisions move do
 
 ## 9. Current state (what works, what's pending)
 
+*Last verified 2026-09-22. The three template/ownership lines here were a year out of date and
+described Brandon, who left in July — treat anything undated in this section as suspect.*
+
 **Working:**
-- Local pipeline runs end-to-end with `python3 pipeline/run_pipeline.py --csv` or `--test`
-- MCP connector mounted in the Railway backend at `/mcp` — all 7 tools live, reading the current `runs/`
-- Figma plugin assembles for the 3 confirmed templates (Lifestyle Photo, Photo with Text, Quote)
-- Adrie can drive gates from her Claude Project
-- Brandon's tagged brand library lookup in Figma is operational
+- The pipeline runs end-to-end. `pipeline/run_pipeline.py --test`, or a real order through `/new`
+- **Meta and Reddit both ship.** 44 ad types carry copy rules and templates: 24 Meta, 20 Reddit.
+  The order form offers 23 Meta styles and 20 Reddit
+- The Figma plugin assembles both platforms. Reddit was the 2026-09 push: four stacked defects took
+  it from 0/40 to 40/40 resolving, with no Meta regression
+- MCP connector mounted in the Railway backend at `/mcp` — 7 tools, reading the live `/data/runs`
+- Adrie drives the six gates from chat, the web UI, or the connector
+- The tagged brand-library lookup in Figma works — **when the Figma token is valid**, see §6
+- Web app: order form, sprint pages, `/wiki`, `/learnings`, `/quotes`, and the `/admin/*` surfaces
+  (note `/admin` itself 404s; the dashboard is `/admin/dashboard`)
+- Off-volume nightly backup to Postgres, and a self-check with a Figma-token canary
 
 **Pending:**
-- 21 of 24 templates not yet built (Brandon producing 3-5 prioritized by KOTH performance: Chat Bubble, Text-with-Button-and-Cursor, Top Freelancer Profile)
-- 4-quadrant copy generation (sticky-note style) — copy-gen prompt only produces single-headline output today
-- Final delivery format from Figma to Paid Acq team — undefined, currently `asset_manifest.csv`
+- **Reddit style thumbnails.** 13 of 20 show an empty box and the other 7 show META artwork for a
+  Reddit ad type. `scripts/harvest_reddit_thumbs.py` renders them from the real templates; blocked
+  on the Figma token
+- **`SLACK_WEBHOOK_URL` unset**, so nothing alerts (§2)
+- LinkedIn, YouTube, Google/Bing and 3rd Party have templates but **no ad types and no copy rules**,
+  so the order form cannot offer them. Adrie and Elise are working through the copy requirements
+- Final delivery format from Figma to the Paid Acq team — still `asset_manifest.csv`
 - LLM Gateway integration — Haresh's team has not provided endpoint values
-- MCP custom-connector registration in Upwork's Enterprise org — admin escalation required
-- OAuth on the MCP server (replacing the bearer token in URL)
-- Sprint state migration off the Fly volume to S3 / DB
-- Slack notifications on form submit and gate transitions (currently manual)
-- Per-user audit trail (currently the bearer token = a single "system" identity)
+- MCP custom-connector registration in Upwork's Enterprise org — admin escalation required. The
+  connector currently lives in **Logan's personal Claude Max account**, which is a handoff blocker
+- OAuth on the MCP server (replacing the bearer token in the URL)
+- Per-user audit trail (the bearer token is a single "system" identity)
+- Localization expected ~November 2026. Animation explicitly deferred (Lee, 2026-09-21)
 
 ---
 
 ## 10. Architectural direction
 
-**User-facing surface migrates to Replit.** Once SSO lands on the Upwork Replit instance, the pieces best suited to move there are:
-- The order form (currently static HTML)
-- The approval / review interface for non-Adrie reviewers
-- The audit trail and approval state (Leon suggested running Temporal in-container)
+**The Replit direction is RETIRED.** It was the May 2026 plan and is listed in the decisions log
+below for history only. The user-facing surface was built as a Next.js app and ships on Railway
+alongside the backend; the order form is no longer static HTML. Do not design toward Replit.
 
-The MCP server + pipeline can stay portable Python; the orchestration brain (Claude in claude.ai or claude.ai's MCP-aware chat) can stay where it is.
+**Migration target is Upwork-internal, end of December 2026.** See §6 for the shape: side-by-side
+build, then cut over, so the wider team sees no downtime. The MCP server and pipeline are portable
+Python and should stay that way.
 
 **Gate model** moves from 6 gates to 5, with the Gemini-QA gate skipped automatically when no Gemini calls happened (library-fed sprints). Stage 03 needs to expose photo+copy pairings as a reviewable artifact; stage 05 needs to actually present the manifest for review (today it just runs through). Tag derivation in stage 03 is currently a 25-line rule-based function; an LLM-derived tags-within-rule-guardrails approach would sharpen the "right photo for this concept" decision.
 
@@ -238,11 +285,14 @@ The MCP server + pipeline can stay portable Python; the orchestration brain (Cla
 
 **Reference data is compiled.** Edit raw refs in `refs/`, then run `python3 pipeline/build_refs.py` to regenerate `configs/refs_context.json`. Don't hand-edit the compiled file.
 
-**Templates and library:** changes to `template_registry.json` and the Figma file's tagged photo library are coordinated with Brandon. Don't add visual styles to the order form before the corresponding template exists.
+**Templates and library:** changes to `template_registry.json` and the Figma file's tagged photo library are coordinated with **Elise**. Don't add visual styles to the order form before the corresponding template exists.
 
 **Don't reintroduce MindStudio** in any flow. The `mindstudio/` directory is kept for historical reference only.
 
-**Fly redeploys are required** to make new sprint data visible to claude.ai (the `runs/` directory is in the image). For pure code iteration, prefer Claude Code (stdio mode, no deploy needed).
+**No redeploy is needed to see new sprint data.** The connector reads `/data/runs` on the Railway
+volume directly, so sprints appear immediately. The old Fly server baked `runs/` into its image,
+which is why its data went stale — that host is retired. For pure code iteration, prefer Claude
+Code in stdio mode (no deploy needed).
 
 **Conventions:**
 - Mountain-peak-with-underscores for layer names (matches existing spreadsheets)
