@@ -1,6 +1,6 @@
 # Role guide: Designer (Figma assembly and templates)
 
-**Owner:** Natelise Loeb · **Last updated:** 2026-09-21
+**Owner:** Natelise Loeb · **Last updated:** 2026-09-22
 
 ---
 

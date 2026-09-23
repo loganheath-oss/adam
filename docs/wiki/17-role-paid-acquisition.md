@@ -1,6 +1,6 @@
 # Role guide: Paid Acquisition (requesting ads)
 
-**Owner:** Adrie Etherington · **Last updated:** 2026-09-21
+**Owner:** Adrie Etherington · **Last updated:** 2026-09-22
 
 ---
 

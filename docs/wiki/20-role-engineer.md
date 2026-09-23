@@ -1,6 +1,6 @@
 # Role guide: Engineer (inheriting and running ADAM)
 
-**Owner:** the engineer who holds ADAM · **Last updated:** 2026-09-21
+**Owner:** the engineer who holds ADAM · **Last updated:** 2026-09-22
 
 ---
 
@@ -197,8 +197,21 @@ Be loud about these. They are not bugs, they are unbuilt.
 > owned by Upwork engineering. Until they land, the pipeline calls Anthropic and Gemini directly,
 > which is fine for now and not acceptable for production.
 
-> ### ⚠ Delivery has never run
-> `GOOGLE_SERVICE_ACCOUNT_JSON` is unset, so the Drive upload stage has never executed once.
+> ### ⚠ Two credentials fail SILENTLY
+> **`FIGMA_ACCESS_TOKEN` expires.** When it does, the photo library doesn't error — it degrades to
+> `needs_human_selection`, so sprints complete looking fine with no photos chosen. Under the
+> no-AI-people rule the library is the only legal source of people imagery, so this affects most
+> styles. It lapsed unnoticed in September 2026. The self-check now has a canary for it.
+>
+> **`SLACK_WEBHOOK_URL` is unset**, so `_post_daily_slack_digest` returns immediately. That digest is
+> the only thing that carries a failing self-check to a human, which is exactly why the token above
+> went unnoticed. Create an incoming webhook and set the var.
+
+> ### The Drive upload never ran, and does not need to
+> `GOOGLE_SERVICE_ACCOUNT_JSON` is unset. That is **fine**: the Drive upload lives only in
+> `06_deliver.py`, part of the dead AWS-era scaffold. Real delivery is the manifest plus the Figma
+> plugin, which needs no Google credential. Listed here because `CLAUDE.md` used to call that var
+> required and sent people hunting for a credential that does nothing.
 
 > ### ⚠ OAuth on the MCP connector
 > The connector authenticates with a bearer token baked into its URL. Real OAuth is pre-production
