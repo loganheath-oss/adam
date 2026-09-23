@@ -406,8 +406,65 @@ def _guide_placeholder_checks():
           f"{total_open} total [LINK:] markers across the wiki")
 
 
+def _lead_time_checks():
+    """One lead-time rule, stated in three places that had three different answers.
+
+    On 2026-09-22 the guides said TEN business days (Lee's instruction), the
+    Next order form enforced FIVE, and `order-form/order-form-local.html` — the
+    one actually served at /new — enforced THREE. Nobody noticed because each
+    was individually self-consistent.
+
+    The served form is the one that binds, so it is checked first.
+    """
+    import re
+    want = 10
+
+    served = (rp.BASE_DIR / "order-form" / "order-form-local.html").read_text()
+    m = re.search(r"const MIN_BUSINESS_DAYS\s*=\s*(\d+)", served)
+    check("lead time: the SERVED form (/new) requires 10 business days",
+          bool(m) and int(m.group(1)) == want,
+          f"got {m.group(1) if m else 'no MIN_BUSINESS_DAYS'}")
+
+    nextform = (rp.BASE_DIR / "web" / "app" / "new" / "page.tsx").read_text()
+    m2 = re.search(r"MIN_LEAD_BUSINESS_DAYS\s*=\s*(\d+)", nextform)
+    check("lead time: the Next form agrees",
+          bool(m2) and int(m2.group(1)) == want,
+          f"got {m2.group(1) if m2 else 'no MIN_LEAD_BUSINESS_DAYS'}")
+
+    guide = (rp.BASE_DIR / "docs" / "wiki" / "17-role-paid-acquisition.md").read_text()
+    check("lead time: the Paid Acquisition guide says ten",
+          "Ten business days out, minimum" in guide,
+          "the guide no longer states the rule in the expected words")
+    check("lead time: no stale '5 business days' copy survives in the guides",
+          "5 business days" not in guide and "five business days" not in guide.lower(),
+          "a stale lead time is still written down")
+
+
+def _order_form_spec_checks():
+    """Copy-only must still collect a platform and styles on the SERVED form.
+
+    Intake rejects an empty batch list outright, so gating the batch build on
+    "does this deliverable have images" meant a copy-only request could not be
+    submitted at all, and Reddit — whose copy rules differ from Meta's — was
+    unreachable. Fixed in the Next form first, which was the wrong file: /new
+    serves order-form-local.html.
+    """
+    served = (rp.BASE_DIR / "order-form" / "order-form-local.html").read_text()
+    for pattern, label in (
+        ("if (hasImages && selectedPlatform)", "batch/review build gated on hasImages"),
+        ("const showImages =", "platform section hidden for copy-only"),
+    ):
+        check(f"order form: no longer has `{label}`",
+              pattern not in served, f"found: {pattern}")
+    check("order form: batches are built whenever a platform is chosen",
+          "if (selectedPlatform) {" in served,
+          "the platform-only gate is missing")
+
+
 def offline_checks():
     print("\n== OFFLINE (deterministic) ==")
+    _lead_time_checks()
+    _order_form_spec_checks()
     _audience_photo_checks()
     _reddit_copy_shape_checks()
     _deliverable_checks()
