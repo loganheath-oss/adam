@@ -1892,11 +1892,27 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
       if (subText) {
         var subOk = await setFirstTextByCandidates(clone, subLayers, subText);
         if (subOk) log("  ✓ subhead/stat filled");
+        // Headline and CTA both report their misses; subhead and body did not,
+        // and Copy_Subhead is the MOST common missing layer in the file (25 of
+        // the punch list's findings). So the commonest template gap was also the
+        // only one nothing said a word about.
+        //
+        // Deliberately NOT a ⚠: subText comes from the FEED fields
+        // (Description / Primary_Text_Short), which are populated even for
+        // styles whose template has no subhead slot by design — Meme, Logo,
+        // Person-Only, Text-with-Button. A warning would fire on every one of
+        // those and train people to ignore it. This states what happened without
+        // claiming it is wrong; the sibling-size comparison in the punch list is
+        // what can actually tell a real gap from an intentional one.
+        else log("  · subhead/stat not filled — no layer matched [" + subLayers.join(", ") + "]");
       }
 
       // Body copy — templates that use "Copy_Body" (Sticky-Note, Mockup, Reminder).
       var bodyText = row.Primary_Text_Short || row.body_short || row.Primary_Text_Long || row.body_long || "";
-      if (bodyText && await setFirstTextByCandidates(clone, ["Copy_Body"], bodyText)) log("  ✓ body filled");
+      if (bodyText) {
+        if (await setFirstTextByCandidates(clone, ["Copy_Body"], bodyText)) log("  ✓ body filled");
+        else log("  · body not filled — no Copy_Body layer");  // informational, same reasoning as subhead
+      }
 
       // Testimonial quote — prefer the dedicated, cap-fit Testimonial_Quote (≤100)
       // over the long platform body, which overflows the Copy_Testimonial slot.
