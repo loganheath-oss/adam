@@ -1924,8 +1924,18 @@ def _deellipsis_descriptions(concept):
     is a spec failure). Covers description AND the single-line ON-IMAGE fields
     (creative_headline/subhead — a visible '…' literally prints on the ad,
     found live 2026-07-31), base and per-audience. Must run after EVERY pass
-    that can trim (generation post-processing, feed-fit, conditional caps)."""
-    _FIELDS = ("description", "creative_headline", "creative_subhead")
+    that can trim (generation post-processing, feed-fit, conditional caps).
+
+    `cta` belongs here more than any other field and was missing until
+    2026-09-22. A CTA is a BUTTON: there is no "more follows" after it, so an
+    ellipsis on one is never a legitimate trim marker, just a broken label.
+    CTA caps are the tightest in the set (Notification and Poll are 12 chars),
+    so it is also the field most likely to reach the last-resort trim. Adrie
+    reported it in August on a whole style at once — "Post a job…", "Start
+    the…", "Find a…" — and those shipped into delivered files (issue #11).
+    Those exact three strings still reproduced today, which is what a missing
+    field in a list looks like a month later."""
+    _FIELDS = ("description", "creative_headline", "creative_subhead", "cta")
     for f in _FIELDS:
         if concept.get(f):
             concept[f] = _clean_trimmed_line(concept[f])

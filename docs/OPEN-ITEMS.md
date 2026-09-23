@@ -1386,3 +1386,86 @@ plus a generated lookup. **Written and ready, cannot run until the token is repl
 because the document is too large, so it reads page by page; and Figma's edge 403s urllib's
 default User-Agent, which reads exactly like an auth failure and sends you looking at the
 token.)
+
+## 2026-09-22 (cont.) — issue tracker triaged to zero; CTA ellipsis was still live
+
+### The alerting channel was never connected
+
+`SLACK_WEBHOOK_URL` is **not set** on Railway. `_post_daily_slack_digest()` in `main.py` is
+the one mechanism that surfaces a failing self-check to a human, and it returns immediately
+when the webhook is missing. That is why the expired Figma token sat unnoticed: the self-check
+was doing its job and telling nobody.
+
+Two minutes to fix and it needs Logan: create an incoming webhook for the channel (or a DM)
+and add the env var. Nothing else.
+
+Also confirmed absent, and this one is FINE: `GOOGLE_SERVICE_ACCOUNT_JSON`. It appears only in
+`01_load_refs.py` / `06_deliver.py`, which are the dead AWS-era scaffold, and in terraform.
+The canonical path compiles refs locally and delivers through the manifest and the plugin, so
+nothing needs a service account. **`CLAUDE.md` §2 still lists it as a required env var**,
+which would send an inheriting engineer hunting for a credential that does nothing. Worth
+correcting when the handoff docs are next touched.
+
+Live credential sweep, read-only endpoints only, no metered calls:
+
+| Credential | State |
+|---|---|
+| `ANTHROPIC_API_KEY` | OK |
+| `FIGMA_ACCESS_TOKEN` | **EXPIRED** — see the entry above |
+| `DATABASE_URL` | OK (4 tables; `issue_reports`, `usage_events`, `users`, `volume_backups`) |
+| `MCP_AUTH_TOKEN` | OK — endpoint answers the MCP handshake, not a 401 |
+| `PIPELINE_API_KEY` | set |
+| `SLACK_WEBHOOK_URL` | **absent — no alerting** |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | absent, and not needed |
+| `LLM_GATEWAY_*` | absent, expected — Haresh's team has never supplied values |
+
+Volume is at 201 MB of 500 MB, so the ENOSPC class is not close yet.
+
+### The CTA ellipsis bug, reported in August, still live today
+
+Issue #11 said every concept in Text with Button and Cursor had a truncated CTA with a
+trailing ellipsis, and that it had already shipped into delivered files. Reproduced verbatim
+on 2026-09-22:
+
+```
+'Post a job today'     @12 -> 'Post a job…'
+'Start the search now' @12 -> 'Start the…'
+'Find a freelancer'    @10 -> 'Find a…'
+```
+
+`_deellipsis_descriptions` exists precisely to stop a visible trim printing on an ad, and it
+covered `description`, `creative_headline` and `creative_subhead` — but not `cta`. A CTA is a
+**button**. There is no "more follows" after a button, so an ellipsis on one is never a
+legitimate trim marker, only a broken label. CTA caps are also the tightest in the set
+(Notification and Poll are 12 characters), which makes it the field most likely to reach the
+last-resort trim in the first place.
+
+One word added to a tuple. The interesting part is that a month-old report with three exact
+reproduction strings in it sat in the tracker unread, which is the same failure as the token:
+the information existed and nothing carried it to anyone.
+
+### Tracker triaged: 11 open → 0
+
+Read all 15 issue reports out of production and checked each against current code. **Every one
+of the 11 open issues was already fixed** and simply never closed. Two of them are cited *by
+issue number in the code comments that fixed them*, which means the fix landed and the ticket
+was left open anyway.
+
+This mattered operationally: per the gate rules, open issue tickets **pause approval** on
+their sprint, so stale tickets add friction and bury real ones.
+
+| # | Was | Fixed by |
+|---|---|---|
+| 6 | over-cap headline selected | over-cap de-selection via `length_flags` |
+| 7 | Gate 4 ignored the one-per-style pick | stage 03 honours `selected` (2026-07-31) |
+| 8 | skip rows had blank prompt/photo | skip rows now state the reason (cites #8) |
+| 9, 10 | placeholder copy selected; repeated joke | auto-reject + cross/within-style de-dup |
+| 11 | 4 parts | status naming, auto-reject, **CTA fix today**, `_mark_stage` (cites #11) |
+| 12 | Gate 5 manifest empty | preliminary manifest written before Gate 5 |
+| 13 | photo styles produced no files | `ready_for_figma` status (2026-09-01) |
+| 14 | empty manifest + stages "pending" | preliminary manifest + `_mark_stage` (cites #14) |
+| 15 | 36 rows at `pending_assembly` | `ready_for_figma` (2026-09-01) + `_mark_stage` |
+| 18 | Gate 2 NoneType crash | fixed today, `60919d4` |
+
+Each carries a resolution note citing what fixed it and when, so the reasoning survives and
+any of them can be reopened.

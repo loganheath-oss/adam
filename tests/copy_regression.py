@@ -305,11 +305,49 @@ def _deliverable_checks():
           "gate 2 dereferences copy_outputs without a guard")
 
 
+def _cta_ellipsis_checks():
+    """A CTA is a button: an ellipsis on one is never a legitimate trim marker.
+
+    Adrie reported this in August across a whole style (issue #11, shipped into
+    delivered files) and the exact strings still reproduced on 2026-09-22,
+    because `cta` was missing from the de-ellipsis field list. CTA caps are the
+    tightest in the set, so it is the field MOST likely to reach the trim.
+    """
+    for text, cap in (("Post a job today", 12), ("Start the search now", 12),
+                      ("Find a freelancer", 10)):
+        trimmed = rp._smart_trim(text, cap)
+        c = {"cta": trimmed}
+        rp._deellipsis_descriptions(c)
+        check(f"cta: {text!r} @{cap} ships without a visible trim",
+              "…" not in c["cta"] and "..." not in c["cta"],
+              f"trim {trimmed!r} -> shipped {c['cta']!r}")
+        check(f"cta: {text!r} @{cap} is not blanked by the clean-up",
+              bool(c["cta"].strip()), f"got {c['cta']!r}")
+
+    # Per-audience CTAs go through the same pass — a "Both" order carries its
+    # real CTAs under targeting_copy, and that block was the one that shipped.
+    c = {"cta": "Browse the…",
+         "targeting_copy": {"Prospecting": {"cta": "Hire a…"},
+                            "Retargeting": {"cta": "Post a job…"}}}
+    rp._deellipsis_descriptions(c)
+    offenders = [v["cta"] for v in c["targeting_copy"].values() if "…" in v["cta"]]
+    check("cta: per-audience CTAs are de-ellipsised too",
+          not offenders and "…" not in c["cta"], str(offenders))
+
+    # The fields that were already covered must stay covered.
+    c2 = {"creative_headline": "Hire fast…", "description": "Talent…",
+          "creative_subhead": "Ready when…"}
+    rp._deellipsis_descriptions(c2)
+    check("on-image headline/subhead/description still de-ellipsised",
+          not any("…" in v for v in c2.values()), str(c2))
+
+
 def offline_checks():
     print("\n== OFFLINE (deterministic) ==")
     _audience_photo_checks()
     _reddit_copy_shape_checks()
     _deliverable_checks()
+    _cta_ellipsis_checks()
 
     # 1. Proper-noun / acronym casing backstop
     cases = [("Shipped by friday, hired monday on upwork", "Shipped by Friday, hired Monday on Upwork"),
