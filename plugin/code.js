@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.17";
+var PLUGIN_VERSION = "2026.09.23";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -1488,6 +1488,26 @@ var STYLE_ADTYPE_ALIAS = {
 //   prefer   ("dark"|"light") — tone to prefer; alternated per concept for variety.
 // Falls back gracefully: if the preferred combination isn't present, it relaxes
 // (any tone, then any variant) rather than returning nothing.
+// Count the fillable text layers in a template. Used as the LAST tie-break in
+// selectVariant, and to warn when the winner has none.
+//
+// Every filter in selectVariant reads the NAME. For two frames with the same
+// name at the same size — which is exactly what Elise found, 10 pairs across 5
+// Reddit containers — no name filter can separate them, so the winner was
+// whichever the page traversal reached first. If one of the pair is the real
+// template and the other an empty or partial copy, which one ships was a coin
+// flip, and nothing checked or reported that the chosen frame had nothing in
+// it. The board came out structurally correct and completely blank.
+function countCopyLayers(node) {
+  var n = 0;
+  (function walk(x) {
+    if (!x) return;
+    if (x.type === "TEXT" && /^copy[_-]/i.test(String(x.name || ""))) n++;
+    if ("children" in x) for (var i = 0; i < x.children.length; i++) walk(x.children[i]);
+  })(node);
+  return n;
+}
+
 function selectVariant(candidates, hint) {
   if (candidates.length <= 1) return candidates[0] || null;
   hint = hint || {};
@@ -1518,6 +1538,29 @@ function selectVariant(candidates, hint) {
     else {
       var anyTone = pool.filter(function (c) { return tone(c) !== ""; });
       if (anyTone.length) pool = anyTone;   // family is toned but not our pref — take any tone
+    }
+  }
+  // CONTENT TIE-BREAK (2026-09-23). Everything above reads the name, so identical
+  // names tie and first-found wins. Prefer the candidate that actually carries
+  // the most Copy_* layers: between a real template and an empty duplicate, that
+  // is always the real one, and it makes duplicate frames harmless rather than a
+  // coin flip. Only applied when the counts DIFFER, so it can never override a
+  // deliberate name-based choice between two equally-filled variants.
+  if (pool.length > 1) {
+    var best = pool[0], bestN = countCopyLayers(pool[0]), differ = false;
+    for (var q = 1; q < pool.length; q++) {
+      var nq = countCopyLayers(pool[q]);
+      if (nq !== bestN) differ = true;
+      if (nq > bestN) { best = pool[q]; bestN = nq; }
+    }
+    if (differ) {
+      // No ⚠ glyph, on the same principle as name drift: this self-healed, so it
+      // must not inflate the warning count that drives the DEGRADED headline. It
+      // is still reported, because the duplicate is a real template defect.
+      log("    ↻ duplicate frames: chose '" + best.name + "' (" + bestN +
+          " Copy_* layers) over " + (pool.length - 1) + " same-named sibling(s) with fewer — " +
+          "delete the one you are not using");
+      return best;
     }
   }
   return pool[0];
@@ -1606,6 +1649,18 @@ function findTemplateByConvention(searchRoot, visualStyle, w, h, hint) {
   var chosen = selectVariant(matches, hint) || matches[0];
   var node = chosen, viaSet = null;
   if (chosen.type === "COMPONENT_SET") { node = pickPreferredVariant(chosen, []) || chosen; viaSet = chosen; }
+  // An empty template is the failure Elise could not diagnose: the board builds,
+  // nothing populates, and the log said nothing about WHY. A template with zero
+  // Copy_* layers is never correct for a style that expects copy, so say it
+  // plainly and name the frame, which is the one fact needed to go find it.
+  if (countCopyLayers(node) === 0) {
+    // ⚠ is what log() counts toward the DEGRADED headline. This one has NOT
+    // self-healed — nothing will populate — so it must inflate that count,
+    // unlike name drift and the tie-break above, which both resolve themselves.
+    log("    ⚠ EMPTY TEMPLATE: '" + node.name + "' has no Copy_* text layers, so nothing " +
+        "will populate on this board. Open its container in Figma and check whether " +
+        "another frame with the same name holds the layers, or whether they were renamed.");
+  }
   return { node: node, viaSet: viaSet };
 }
 
