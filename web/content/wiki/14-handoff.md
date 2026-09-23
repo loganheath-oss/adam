@@ -96,7 +96,7 @@ Verified against the repo and the live Figma file on 2026-09-15:
 
 - Pipeline runs end to end through all six gates.
 - Web app (order form, dashboard, chat) deployed on Railway, with the `/mcp` connector mounted in it.
-- Admin surfaces live: `/admin`, `/admin/activity` with per-error **Diagnose**, `/admin/issues`,
+- Admin surfaces live: `/admin/dashboard`, `/admin/activity` with per-error **Diagnose**, `/admin/issues`,
   `/admin/spend`, `/admin/digest`, `/admin/storage`, `/admin/prune`.
 - In-tool wiki with wiki-aware Ask ADAM chat and clickable sources.
 - **Meta**: 21 templates recognized and assembling.

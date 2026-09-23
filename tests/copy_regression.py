@@ -342,12 +342,78 @@ def _cta_ellipsis_checks():
           not any("…" in v for v in c2.values()), str(c2))
 
 
+def _wiki_sync_checks():
+    """The Next app serves its OWN copy of the wiki, and nothing kept it in step.
+
+    `docs/wiki/` is the source of truth, but `web/content/wiki/` is a hand-made
+    duplicate that the app bundles and serves at /wiki — which is how the
+    copywriter and designer actually reach these guides from inside ADAM. Every
+    one of the 21 files had drifted by 2026-09-22, so the guides people read in
+    the tool were not the guides in the repo. A copy with no sync check is a
+    copy that is already wrong; this makes the drift fail here instead.
+    """
+    src_dir = rp.BASE_DIR / "docs" / "wiki"
+    app_dir = rp.BASE_DIR / "web" / "content" / "wiki"
+    if not app_dir.exists():
+        check("wiki sync: the app's bundled wiki exists", False, str(app_dir))
+        return
+
+    src = {p.name: p.read_text() for p in sorted(src_dir.glob("*.md"))}
+    app = {p.name: p.read_text() for p in sorted(app_dir.glob("*.md"))}
+
+    missing = sorted(set(src) - set(app))
+    extra = sorted(set(app) - set(src))
+    drifted = sorted(n for n in (set(src) & set(app)) if src[n] != app[n])
+
+    check("wiki sync: every source page is bundled in the app",
+          not missing, f"missing from web/content/wiki: {missing}")
+    check("wiki sync: the app bundles no page that left the source",
+          not extra, f"orphaned in web/content/wiki: {extra}")
+    check("wiki sync: no bundled page has drifted from its source",
+          not drifted,
+          f"{len(drifted)} drifted — run: cp docs/wiki/*.md web/content/wiki/ — {drifted}")
+
+    # The four role guides are the ones people are sent to by name, so name them
+    # individually rather than hiding them in a count.
+    for slug in ("17-role-paid-acquisition", "18-role-copywriter",
+                 "19-role-designer", "20-role-engineer"):
+        n = f"{slug}.md"
+        check(f"wiki sync: {slug} matches its source",
+              n in src and n in app and src[n] == app[n],
+              "drifted or missing")
+
+
+def _guide_placeholder_checks():
+    """A shipped guide must not tell someone to follow a link that isn't there.
+
+    The guides carry `[LINK: ...]` markers while a real URL is still unknown.
+    That is fine in a draft and not fine in the copy a new person is handed, so
+    this keeps the remaining ones VISIBLE and counted rather than discovered by
+    a reader. Drop the name from EXPECTED once it is filled in.
+    """
+    expected = {
+        "17-role-paid-acquisition.md": 1,   # a recent KOTH brief — needs the team
+    }
+    total_open = 0
+    for p in sorted((rp.BASE_DIR / "docs" / "wiki").glob("*.md")):
+        n = p.read_text().count("[LINK:")
+        total_open += n
+        allowed = expected.get(p.name, 0)
+        check(f"guide placeholders: {p.name} has {allowed} known gap(s)",
+              n == allowed, f"found {n}, expected {allowed}")
+    check("guide placeholders: only the KOTH brief is still unfilled",
+          total_open == sum(expected.values()),
+          f"{total_open} total [LINK:] markers across the wiki")
+
+
 def offline_checks():
     print("\n== OFFLINE (deterministic) ==")
     _audience_photo_checks()
     _reddit_copy_shape_checks()
     _deliverable_checks()
     _cta_ellipsis_checks()
+    _wiki_sync_checks()
+    _guide_placeholder_checks()
 
     # 1. Proper-noun / acronym casing backstop
     cases = [("Shipped by friday, hired monday on upwork", "Shipped by Friday, hired Monday on Upwork"),

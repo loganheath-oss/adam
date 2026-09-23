@@ -75,3 +75,48 @@ All 21 ad-type templates on the ⚙️ Template Library page are recognized and 
 - A few styles need real Figma-side layer renames before 100% field coverage.
 
 These are *fill-completeness* polish, not recognition failures — see [Troubleshooting](11-troubleshooting.md).
+
+## Where templates may live (2026-09-03)
+
+Templates **no longer have to sit on the page you run the plugin on.** The lookup walks an
+ordered list of roots and takes the first hit:
+
+1. **The current page** — a local copy still wins, so nothing regresses and a designer can
+   override a template in place.
+2. **The platform's own template page** (`-> Meta Templates`, `-> Reddit Templates`, …), chosen
+   from the manifest's `Platform` column. This step is *required*, not a nicety: five pages carry
+   containers with identical names, so a blind document-wide search could assemble a LinkedIn
+   frame into a Meta run.
+3. **The generic template library page** (any page whose name matches `/template/i`).
+4. **The whole document** — last resort.
+
+The log prints the search order at the start of a run, and says when a template was found
+somewhere other than the working page.
+
+Why this changed: a working page previously had to carry a full copy of the template library.
+Those copies rot — the 2026-08-31 test file was missing Lifestyle Photo's 4:5 size and the
+Us-vs-Them container outright, which produced "1 failed, 25 misses" — and one moved frame could
+break a run.
+
+**Still open (Elise's "dream scenario"):** pointing at a different *file* rather than a different
+page. That needs the templates published as a Figma **library** and `importComponentByKeyAsync`,
+which is a bigger change and a team-plan dependency.
+
+## Updating the plugin (do this before reporting an assembly bug)
+
+The plugin runs from files on each person's machine, so copies drift. On 2026-09-03 three
+different builds were in use at once — one missing a July fix entirely — and the only way to
+find out was diffing files by hand.
+
+**Get the current build:** <https://adam-production-9618.up.railway.app/plugin> — download, unzip,
+then in the Figma desktop app choose **Plugins → Development → Import plugin from manifest…** and
+pick `manifest.json`. Importing over an old copy is fine; delete the previous entry if you end up
+with two.
+
+**How you know you are behind:** every assembly logs `plugin v<version>` on its first line and
+reports that version to the backend, which answers with the version the repo ships. If they differ,
+the plugin log ends with a loud "THIS PLUGIN IS OUT OF DATE" line naming both versions.
+
+**For engineers:** `PLUGIN_VERSION` at the top of `plugin/code.js` is the single source of truth —
+the backend parses it out of that file, so there is no second place to update. Bump it in the same
+commit as any `plugin/` change.

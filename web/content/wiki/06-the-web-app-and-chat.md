@@ -39,7 +39,10 @@ and learnings, and (with approval) edit orders and approve gates. The tools it h
 | `get_references` | The brand/legal refs used |
 | `get_manifest` | The assembly manifest |
 | `edit_order` | Change an order (gated) |
-| `approve_gate` | Advance a sprint through a gate |
+| `select_copy_concepts` | Save the operator's Gate-3 concept picks (keep/drop by tag) — a spoken selection that isn't saved with this is ignored downstream (added 2026-09-01) |
+| `edit_copy` | Apply the operator's copy edits at Gate 3 (per-field, base or per-audience); after Gate 3 approval copy is frozen (added 2026-09-01) |
+| `approve_gate` | Advance a sprint through a gate. If the sprint has OPEN issues, approval pauses and lists them — the operator must explicitly choose to proceed (the acknowledgment is recorded) |
+| `log_issue` | File an operator-reported issue (near-duplicate reports on the same sprint are caught and not re-filed) |
 | `get_chat_history` / `get_gate_decisions` | Audit trail for a sprint |
 | `search_past_sprints` | Find prior runs by query |
 | `get_learnings` / `append_learning` | Read/append institutional memory |

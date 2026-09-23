@@ -34,9 +34,9 @@ checkpoints takes minutes. Image generation is the slow leg.
 
 ## Before you start
 
-- Access to the ADAM web app. [LINK: app URL]
+- Access to the ADAM web app: https://adam-production-9618.up.railway.app
 - Access to the sprint you've been handed.
-- The Slack channel where sprints are shared. [LINK: channel]
+- The Slack channel where sprints are shared: `#paid-acquisition-pipeline`
 - Optional but useful: access to `/learnings` and `/quotes`, both editable in the app.
 
 ---
@@ -150,7 +150,16 @@ Last look at the package.
 
 **Then hand it to the designer.** Post the sprint link in the channel and say it's ready for
 assembly. The designer needs the sprint's `asset_manifest.csv`, which they download from the sprint
-page. [LINK: the handoff message to send]
+page. Something like:
+
+> [sprint link] is approved and ready for assembly.
+> Meta, 5 styles, both audiences, 3 sizes each.
+> Manifest is on the sprint page under Download.
+> Anything that looks wrong on the boards, log it as an issue rather than fixing it quietly, so it
+> gets fixed for the next run too.
+
+That last line is the one worth keeping. A defect fixed by hand in Figma comes back next sprint; a
+defect logged as an issue can become a learning and stop coming back.
 
 ### If a gate won't approve
 
@@ -175,7 +184,7 @@ somebody flagged can't ship quietly.
 tells you the likely cause, the fix, and whether it needs an engineer. That one screen answers most
 questions faster than reading anything else.
 
-If you need more: `/admin` is the health overview, the sprint page has the error text and a
+If you need more: `/admin/dashboard` is the health overview, the sprint page has the error text and a
 **Resume** button, and `/admin/issues` is what people have filed.
 
 ### Who fixes what

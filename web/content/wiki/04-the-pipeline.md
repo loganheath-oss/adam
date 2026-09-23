@@ -42,11 +42,20 @@ python3 pipeline/run_pipeline.py --json runs_demo_order.json
 python3 pipeline/run_pipeline.py --resume SPRINT_ID --gate 2   # order + refs confirmed → runs copy-gen
 python3 pipeline/run_pipeline.py --resume SPRINT_ID --gate 3   # copy approved → image prompts
 python3 pipeline/run_pipeline.py --resume SPRINT_ID --gate 4   # prompts approved → generate images
-python3 pipeline/run_pipeline.py --resume SPRINT_ID --gate 5   # images approved → assembly/manifest
+python3 pipeline/run_pipeline.py --resume SPRINT_ID --gate 5   # images approved → FINAL assembly/manifest (vetoes honored)
 python3 pipeline/run_pipeline.py --resume SPRINT_ID --gate 6   # final QA approved → deliver
 ```
 
 Gates don't block on stdin — each stage **saves state and returns**; you resume with the next `--gate`.
+
+**Manifest timing (2026-09-01):** `--gate 4` now also writes a **preliminary** `asset_manifest.csv` +
+`run_summary.json` (marked `"preliminary": true`, no veto reconcile) so Gate 5 reviews real rows;
+`--gate 5` rebuilds both as final. **Manifest statuses:** `delivered` (server file exists) ·
+`ready_for_figma` (library-photo styles — the plugin places the photo in Figma; no server file by design) ·
+`skipped` (self-contained styles: Us vs Them, Social Media Profile, Pie Chart, Device UI, Platform UI,
+Meme, Talent Profile) · `needs_human_selection` · `pending_assembly` (a genuine gap) ·
+`assembled_in_figma` (reported back by the plugin after assembly). The per-stage tracker inside
+`order.json` now updates as each stage completes.
 
 | Gate | Checkpoint | Why it matters |
 |---|---|---|

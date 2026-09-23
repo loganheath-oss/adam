@@ -8,7 +8,7 @@
 
 ## Where problems show up (check in this order)
 
-1. **The Reliability dashboard — `/admin`** — the headline view. Shows the % of runs completing clean and an **incident list with the actual error message** for every failed run (which sprint, which stage, what went wrong). At the top is a **health strip** — three pills (Volume %, API + models, errors in the last 24h). If any pill is amber or red, that's your first clue; a red banner tells you a run will likely fail until it's fixed. Start here when someone says "ADAM's broken."
+1. **The Reliability dashboard — `/admin/dashboard`** — the headline view. Shows the % of runs completing clean and an **incident list with the actual error message** for every failed run (which sprint, which stage, what went wrong). At the top is a **health strip** — three pills (Volume %, API + models, errors in the last 24h). If any pill is amber or red, that's your first clue; a red banner tells you a run will likely fail until it's fixed. Start here when someone says "ADAM's broken."
 2. **The Activity timeline — `/admin/activity`** — *everything* that happened, newest first: orders, gate approvals, assemblies, edits, and **errors** in one feed. Filter by event type (there's an "⚠ Errors only" option), user, or sprint. This is the "what actually happened, in order" view — use it to see the sequence around a problem, or to catch up on a stretch you missed.
    - **🔍 Diagnose** — on any error row, click **Diagnose** and ADAM analyzes it *against this runbook* and hands back the likely cause + step-by-step fix + whether it needs an engineer. It's the fastest way to triage: let ADAM point you at the right section below before you read further.
 3. **The sprint's own page — `/sprints/<id>`** — shows the exact state (`awaiting_gate_3`, `error`, `interrupted`…), the error text, and a **Resume** button.
@@ -23,7 +23,7 @@
 ## The most common problems and their fixes
 
 ### 1. A sprint failed or is stuck → read the error, hit Resume
-The single most common situation. Open `/sprints/<id>` (or find it in the `/admin` incident list), read the error, then click **Resume** — it re-runs just the failed stage, keeping all prior work.
+The single most common situation. Open `/sprints/<id>` (or find it in the `/admin/dashboard` incident list), read the error, then click **Resume** — it re-runs just the failed stage, keeping all prior work.
 - State says **`interrupted`** or mentions a server restart → a redeploy happened mid-run. Nothing is lost: **Resume**.
 - Same stage fails twice with the same error → match the error text against the cases below.
 
@@ -74,7 +74,7 @@ Two rules cover every deploy failure we ever hit:
 |---|---|
 | API keys (Anthropic, Gemini, Figma) | Railway → `adam` service → Variables |
 | Sprint data | Railway volume (`/data/runs`) — survives redeploys |
-| Usage/reliability/spend data | Railway Postgres (`/admin`, `/admin/activity`, `/admin/spend`, `/admin/digest` read it) |
+| Usage/reliability/spend data | Railway Postgres (`/admin/dashboard`, `/admin/activity`, `/admin/spend`, `/admin/digest` read it) |
 | Monthly budget (optional) | `ADAM_MONTHLY_BUDGET_USD` env var on the `adam` service |
 | Copy guidance ADAM follows | `/learnings` (editable in the app) |
 | Approved testimonial quotes | `/quotes` (editable in the app; testimonial ads draw from it) |

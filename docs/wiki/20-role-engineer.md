@@ -37,19 +37,19 @@ once.
 
 | What | Why you need it |
 |---|---|
-| **GitHub** repo | The canonical source. The backend auto-deploys from `main` |
-| **Railway** project and billing | Hosts both services, holds the env vars and the sprint volume |
-| **Figma** file, edit access | The templates, and every audit script reads it |
+| **GitHub** repo — `loganheath-oss/adam` (https://github.com/loganheath-oss/adam) | The canonical source. The backend auto-deploys from `main` |
+| **Railway** project `angelic-liberation`, service `adam` (https://railway.app) | Hosts both services, holds the env vars and the sprint volume |
+| **Figma** file `DoDwumxELkuAuKKSP5p00e` — "ADAM 2026" (https://www.figma.com/design/DoDwumxELkuAuKKSP5p00e/ADAM-2026), edit access | The templates, and every audit script reads it |
 | **Anthropic API key** | Copy generation and the in-app chat |
 | **Gemini API key** | Image generation |
 | **Figma access token** | Library photo lookup and the checker scripts |
 | **Claude Max / Enterprise** with connector rights | The MCP connector the copywriter drives gates through |
-| Production URLs | [LINK: app URL] and [LINK: admin URL] |
+| Production URLs | App https://adam-production-9618.up.railway.app · Dashboard https://adam-production-9618.up.railway.app/admin/dashboard |
 
 ### 2. Set up locally
 
 ```
-git clone <repo>
+git clone https://github.com/loganheath-oss/adam.git
 cd adam
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r mcp_server/requirements.txt
@@ -64,7 +64,7 @@ service env, so you never handle a key directly.
 Six checks. If all six pass, you have a working system and you can change things with confidence.
 
 - [ ] **The site loads.** Open the app URL, the order form renders.
-- [ ] **Admin is healthy.** `/admin` shows the health strip with no red pills.
+- [ ] **Admin is healthy.** `/admin/dashboard` shows the health strip with no red pills.
 - [ ] **Tests pass.** `python3 tests/copy_regression.py`, offline, free, seconds.
 - [ ] **Plugin version is current.** `/plugin/version` matches `PLUGIN_VERSION` in `plugin/code.js`.
 - [ ] **The Figma check passes.** `railway run --service adam -- python3 tests/figma_template_lint.py`
@@ -107,6 +107,13 @@ railway run python3 scripts/verify_plugin_changes.py
 
 When you change a lookup, add an assertion that the platform you did **not** mean to touch still
 resolves to the same node id. That check is what catches a Reddit change breaking Meta.
+
+The scripts talk to the Figma REST API (reference: https://www.figma.com/developers/api). Two traps
+that cost real time, both already handled in the scripts and worth knowing before you write a new
+one: a whole-file `GET /v1/files/{key}` on ADAM 2026 answers **403** because the document is too
+large, so read it a page at a time via `?depth=1` then `/nodes?ids=`; and Figma's edge answers 403
+to urllib's default User-Agent, which reads exactly like an auth failure and sends you off
+investigating the token.
 
 ### 2. Reference data is compiled, not read
 
@@ -154,7 +161,7 @@ A failed build never takes the site down. The previous deploy keeps serving.
 
 In this order. Most problems are a button or a text edit, not code.
 
-1. **`/admin`.** Completion rate, an incident list with the real error per failed run, and a health
+1. **`/admin/dashboard`.** Completion rate, an incident list with the real error per failed run, and a health
    strip for volume, API and recent errors.
 2. **`/admin/activity`.** Everything that happened, newest first. Every error row has a **Diagnose**
    button that reads the error against the runbook. Use it first.

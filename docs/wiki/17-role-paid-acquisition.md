@@ -37,10 +37,10 @@ You don't run the tool, drive the approvals, or touch Figma.
 
 You need:
 
-- Access to the ADAM order form. [LINK: order form URL]
+- Access to the ADAM order form: https://adam-production-9618.up.railway.app/new
 - Your brief ready, or the notes to write one.
 - Any stats, claims or reference ads you want used, with links.
-- Access to the Slack channel where sprints get shared. [LINK: channel]
+- Access to the Slack channel where sprints get shared: `#paid-acquisition-pipeline`
 
 ---
 
@@ -157,7 +157,16 @@ is a test, say what the test is. Naming the hypothesis gets you a sharper set th
 
 You're done. You'll get a sprint link.
 
-**Post it in the channel** so the copywriter picks it up: [LINK: the Slack message to send]
+**Post it in the channel** so the copywriter picks it up. Something like:
+
+> New ADAM request submitted: [sprint link]
+> Audience: Prospecting and Retargeting · Platform: Meta · 5 styles
+> Needed by: [date]
+> Brief is in the order form. Ping me if anything in it is unclear.
+
+Three things matter in that message: the link, the delivery date, and the fact that the brief lives
+in the order form rather than in the Slack thread. Copy pasted into chat gets edited in chat, and
+then the version ADAM ran on and the version people discussed are two different things.
 
 If you want to follow along, the sprint page shows where it is. You don't have to approve anything.
 

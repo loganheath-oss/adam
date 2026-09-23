@@ -30,7 +30,7 @@ You own two things: assembling a sprint, and keeping the templates working so as
 ## Before you start
 
 - **The ADAM 2026 Figma file:** https://www.figma.com/design/DoDwumxELkuAuKKSP5p00e/ADAM-2026
-- **The plugin download:** [LINK: app URL]/plugin
+- **The plugin download:** https://adam-production-9618.up.railway.app/plugin
 - Figma **desktop app**. The plugin does not run in the browser.
 - The sprint link from the copywriter, and its `asset_manifest.csv`.
 
