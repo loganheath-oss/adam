@@ -138,6 +138,13 @@ const DELIVERABLES = [
 ] as const;
 
 // ── date helpers ─────────────────────────────────────────────────────────────
+// Lee Riley, 2026-09-21: requests need TEN business days, not five. Five was
+// squeezing the copy review, which is the step that decides whether a batch is
+// any good. Declared once because the old five lived in two places — the
+// calendar's minimum and the line of helper text under it — and the guides were
+// updated to ten while both of these stayed at five.
+const MIN_LEAD_BUSINESS_DAYS = 10;
+
 function addBusinessDays(from: Date, n: number) {
   const d = new Date(from);
   let added = 0;
@@ -150,7 +157,7 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 
 function Calendar({ value, onPick }: { value: string; onPick: (v: string) => void }) {
   const today = useMemo(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }, []);
-  const minDate = useMemo(() => addBusinessDays(today, 5), [today]);
+  const minDate = useMemo(() => addBusinessDays(today, MIN_LEAD_BUSINESS_DAYS), [today]);
   const [view, setView] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const year = view.getFullYear(); const month = view.getMonth();
   const firstDow = new Date(year, month, 1).getDay();
@@ -334,7 +341,7 @@ export default function NewOrderPage() {
               <div>
                 <FieldLabel>Delivery date</FieldLabel>
                 <Calendar value={deliveryDate} onPick={setDeliveryDate} />
-                <p className="mt-3 text-center text-xs text-[#9aa0a6]">Weekdays only, 5 business days out minimum.</p>
+                <p className="mt-3 text-center text-xs text-[#9aa0a6]">Weekdays only, {MIN_LEAD_BUSINESS_DAYS} business days out minimum.</p>
               </div>
             </div>
           </div>
