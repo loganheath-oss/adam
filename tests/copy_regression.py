@@ -419,11 +419,23 @@ def _lead_time_checks():
     import re
     want = 10
 
-    served = (rp.BASE_DIR / "order-form" / "order-form-local.html").read_text()
-    m = re.search(r"const MIN_BUSINESS_DAYS\s*=\s*(\d+)", served)
-    check("lead time: the SERVED form (/new) requires 10 business days",
+    # main.py: ORDER_FORM_PATH = order-form/order-form-ravi.html. There are THREE
+    # order-form HTML files here and only that one is served; the fix landed in the
+    # other two first and changed nothing anyone could see. So resolve the path from
+    # main.py rather than naming a file, and the test can never drift off the served
+    # one again.
+    mainsrc = (rp.BASE_DIR / "main.py").read_text()
+    pm = re.search(r'ORDER_FORM_PATH\s*=\s*BASE_DIR\s*/\s*"([^"]+)"\s*/\s*"([^"]+)"', mainsrc)
+    check("lead time: main.py names the served order form", bool(pm), "ORDER_FORM_PATH not parseable")
+    served_path = rp.BASE_DIR / pm.group(1) / pm.group(2) if pm else None
+    served = served_path.read_text() if served_path and served_path.exists() else ""
+    m = re.search(r"businessDaysFromToday\((\d+)\)", served)
+    check(f"lead time: the SERVED form ({pm.group(2) if pm else '?'}) requires 10 business days",
           bool(m) and int(m.group(1)) == want,
-          f"got {m.group(1) if m else 'no MIN_BUSINESS_DAYS'}")
+          f"got {m.group(1) if m else 'no businessDaysFromToday(n)'}")
+    check("lead time: the served form's on-screen hint says ten",
+          "10 business days minimum" in served,
+          "the hint text still shows a different number")
 
     nextform = (rp.BASE_DIR / "web" / "app" / "new" / "page.tsx").read_text()
     m2 = re.search(r"MIN_LEAD_BUSINESS_DAYS\s*=\s*(\d+)", nextform)
@@ -446,19 +458,34 @@ def _order_form_spec_checks():
     Intake rejects an empty batch list outright, so gating the batch build on
     "does this deliverable have images" meant a copy-only request could not be
     submitted at all, and Reddit — whose copy rules differ from Meta's — was
-    unreachable. Fixed in the Next form first, which was the wrong file: /new
-    serves order-form-local.html.
+    unreachable.
+
+    This fix landed in the WRONG FILE twice: first the Next app's page.tsx, then
+    order-form-local.html. There are three order-form HTML files here and `/new`
+    serves only the one main.py names. So resolve the path from main.py rather
+    than hard-coding a filename, or this test drifts off the served form exactly
+    the way the fix did.
     """
-    served = (rp.BASE_DIR / "order-form" / "order-form-local.html").read_text()
+    mainsrc = (rp.BASE_DIR / "main.py").read_text()
+    pm = re.search(r'ORDER_FORM_PATH\s*=\s*BASE_DIR\s*/\s*"([^"]+)"\s*/\s*"([^"]+)"', mainsrc)
+    if not pm:
+        check("order form: main.py names the served form", False, "ORDER_FORM_PATH not parseable")
+        return
+    name = pm.group(2)
+    served = (rp.BASE_DIR / pm.group(1) / name).read_text()
+
     for pattern, label in (
-        ("if (hasImages && selectedPlatform)", "batch/review build gated on hasImages"),
-        ("const showImages =", "platform section hidden for copy-only"),
+        ("hasImages", "a hasImages gate"),
+        ("selectedDeliverable!=='copy-only'", "copy-only excluded from the spec"),
     ):
-        check(f"order form: no longer has `{label}`",
+        check(f"order form ({name}): no longer has {label}",
               pattern not in served, f"found: {pattern}")
-    check("order form: batches are built whenever a platform is chosen",
-          "if (selectedPlatform) {" in served,
+    check(f"order form ({name}): batches build whenever a platform is chosen",
+          "if(selectedPlatform){" in served,
           "the platform-only gate is missing")
+    check(f"order form ({name}): the platform section is never hidden by deliverable",
+          "document.getElementById('platform-section').style.display = 'block';" in served,
+          "the platform section is still conditionally hidden")
 
 
 def offline_checks():

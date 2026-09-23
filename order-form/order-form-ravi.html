@@ -280,7 +280,7 @@ textarea{min-height:150px;resize:vertical;line-height:1.5}
         <div>
           <div style="display:flex;align-items:baseline;justify-content:space-between">
             <p class="field-label">Delivery Date <span class="req">*</span></p>
-            <span class="hint" style="margin-top:0">5 business days minimum</span>
+            <span class="hint" style="margin-top:0">10 business days minimum</span>
           </div>
           <div class="cal" id="calendar"></div>
           <input type="hidden" id="delivery-date">
@@ -487,7 +487,9 @@ function businessDaysFromToday(n){
   while(added<n){ d.setDate(d.getDate()+1); const wd=d.getDay(); if(wd!==0&&wd!==6) added++; }
   d.setHours(0,0,0,0); return d;
 }
-const minDate=businessDaysFromToday(5);
+// Lee Riley, 2026-09-21: ten business days. Five was squeezing the copy review,
+// which is the step that decides whether a batch is any good.
+const minDate=businessDaysFromToday(10);
 function renderCal(){
   const y=calView.getFullYear(), m=calView.getMonth();
   const first=new Date(y,m,1), start=first.getDay(), days=new Date(y,m+1,0).getDate();
@@ -528,10 +530,13 @@ document.querySelectorAll('#deliverable-cards .choice').forEach(c=>{
     c.classList.add('on'); selectedDeliverable=c.dataset.del;
     document.getElementById('warn-images').classList.toggle('show',selectedDeliverable==='images-only');
     document.getElementById('warn-copy').classList.toggle('show',selectedDeliverable==='copy-only');
-    const needsImages = selectedDeliverable!=='copy-only';
-    document.getElementById('platform-section').style.display = needsImages?'block':'none';
-    document.getElementById('formats-section').style.display = (needsImages&&selectedPlatform)?'block':'none';
-    if(!needsImages){ selectedPlatform=null; document.querySelectorAll('#platform-cards .choice').forEach(x=>x.classList.remove('on')); }
+    // Platform and visual style are the CREATIVE SPEC, not an image setting: copy is
+    // generated per style and its caps are per-platform (Reddit's feed is one body
+    // line, Meta's is a headline set). Hiding this for copy-only made Reddit
+    // unreachable AND submitted an empty batch list, which intake rejects outright.
+    // (Adrie, 2026-09-21.) Only the size checkboxes are image-specific.
+    document.getElementById('platform-section').style.display = 'block';
+    document.getElementById('formats-section').style.display = selectedPlatform?'block':'none';
     validateStep2();
   });
 });
@@ -619,7 +624,7 @@ function addStyleRow(container){
 
 function validateStep2(){
   let ok = !!selectedDeliverable;
-  if(selectedDeliverable && selectedDeliverable!=='copy-only'){
+  if(selectedDeliverable){
     // need a platform + at least one format with a chosen style
     ok = !!selectedPlatform;
     const chosenFmts=document.querySelectorAll('.fmt-row.on');
@@ -683,9 +688,11 @@ document.getElementById('style-search').addEventListener('input',e=>buildStyleGr
 
 /* ── PAYLOAD (same contract as prior form) ────────────────────────────────── */
 function buildOrderPayload(){
-  const hasImages = selectedDeliverable && ['images-copy','images-only'].includes(selectedDeliverable);
+  // The batch is the creative spec and copy generation fans out over exactly these
+  // styles, so it is built for every deliverable. Sending [] here is what made a
+  // copy-only order fail intake with "batches must be a non-empty list".
   const batches=[];
-  if(hasImages && selectedPlatform){
+  if(selectedPlatform){
     document.querySelectorAll('.batch-card').forEach(bc=>{
       if(bc.style.display==='none') return;
       const fmt=bc.dataset.format;
@@ -741,7 +748,7 @@ function renderSummary(target){
         '<br><span class="k">Styles:</span> '+(st||'—')+'<br><span class="k">Sizes:</span> '+(sz||'—')+'</div>';
     });
   } else if(p.deliverable==='copy-only'){
-    html+='<div class="sum-batch"><b>Copy only</b> — no image batches</div>';
+    html+='<div class="sum-batch"><b>Copy only</b> — pick the styles you want copy for</div>';
   } else {
     html+='<div class="sum-empty">Complete the previous steps to see your summary.</div>';
   }
