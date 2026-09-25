@@ -488,8 +488,58 @@ def _order_form_spec_checks():
           "the platform section is still conditionally hidden")
 
 
+def _image_gen_off_checks():
+    """Image generation is OFF, because generated images never reached Figma.
+
+    The plugin's only image mechanism is applyLibraryImageToClone, which calls
+    figma.getNodeByIdAsync on a node already inside the Figma file.
+    plugin/code.js has no createImage, no createImageAsync, no fetch, and never
+    reads the manifest's image_file / export_file columns. Measured across every
+    manifest on the volume: all 312 figma_library rows and all 76 dual rows
+    carry a figma_node_id; all 220 gemini_generate and all 308 text_background
+    rows carry none. Every generated image was billed and then ignored.
+
+    These assert the SWITCH, both directions, because the failure mode is
+    financial and silent.
+    """
+    import os as _os
+    prev = _os.environ.get("ADAM_ENABLE_IMAGE_GEN")
+    try:
+        _os.environ["ADAM_ENABLE_IMAGE_GEN"] = "0"
+        rows = [{"asset_id": "a1", "generation_method": "gemini_generate", "prompt": "x"},
+                {"asset_id": "a2", "generation_method": "text_background", "prompt": "y"},
+                {"asset_id": "a3", "generation_method": "figma_library", "figma_node_id": "1:2"}]
+        out = rp.stage_04_generate_images("regression-imggen", rows)
+        check("image gen OFF: stage 04 makes no Gemini calls", out == {}, repr(out))
+
+        # The plugin side of the same fact: if any image-loading API appears in
+        # code.js, a generated image COULD reach a board and this switch should
+        # be revisited rather than silently keeping spend off.
+        js = (rp.BASE_DIR / "plugin" / "code.js").read_text()
+        for api in ("createImageAsync", "createImage(", "fetch("):
+            check(f"plugin still has no `{api}` (no path for a generated image)",
+                  api not in js,
+                  f"{api} appeared — the plugin may now be able to place generated images")
+        check("plugin still ignores the manifest's image_file/export_file columns",
+              "image_file" not in js and "export_file" not in js,
+              "the plugin now reads a file column")
+
+        # The guard must be reversible, or it is a landmine for whoever fixes this.
+        _os.environ["ADAM_ENABLE_IMAGE_GEN"] = "1"
+        src = (rp.BASE_DIR / "pipeline" / "run_pipeline.py").read_text()
+        check("image gen switch is env-tunable in BOTH stage 03 and stage 04",
+              src.count('ADAM_ENABLE_IMAGE_GEN') >= 2,
+              f"found {src.count('ADAM_ENABLE_IMAGE_GEN')} reference(s)")
+    finally:
+        if prev is None:
+            _os.environ.pop("ADAM_ENABLE_IMAGE_GEN", None)
+        else:
+            _os.environ["ADAM_ENABLE_IMAGE_GEN"] = prev
+
+
 def offline_checks():
     print("\n== OFFLINE (deterministic) ==")
+    _image_gen_off_checks()
     _lead_time_checks()
     _order_form_spec_checks()
     _audience_photo_checks()

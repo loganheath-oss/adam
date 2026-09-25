@@ -4087,6 +4087,38 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
         print(f"  ⚠ POLICY: {_policy_flips} row(s) tried to Gemini-generate a "
               "people-photo style — flipped to human selection (no-AI-photo rule)")
 
+    # IMAGE GENERATION IS OFF (2026-09-24, Logan). Generated images have NO path
+    # into Figma and never have: the plugin's only image mechanism is
+    # applyLibraryImageToClone, which calls figma.getNodeByIdAsync on a node
+    # already inside the Figma file. plugin/code.js contains no createImage, no
+    # createImageAsync and no fetch, and never reads the manifest's image_file or
+    # export_file columns. Measured across every manifest on the volume: 312
+    # figma_library rows and 76 dual rows all carry a figma_node_id; all 220
+    # gemini_generate and all 308 text_background rows carry NONE. So every
+    # generated image was billed, written to the volume, and then ignored by the
+    # only thing that could have used it — roughly $65 of Gemini spend on 294
+    # images that reached no board.
+    #
+    # Rows flip to needs_human_selection rather than skip, so the gap is VISIBLE
+    # at Gate 4 and the designer knows a photo is owed, instead of a board
+    # quietly shipping the template's stock artwork.
+    #
+    # Re-enable by setting ADAM_ENABLE_IMAGE_GEN=1 — but do not, until the
+    # plugin can actually place a generated image (upload it into the Figma file
+    # and write its node id onto the row, so these look like figma_library rows).
+    if os.environ.get("ADAM_ENABLE_IMAGE_GEN", "0") not in ("1", "true", "True"):
+        _gen_off = 0
+        for _row in rows:
+            if _row.get("generation_method") in ("gemini_generate", "text_background"):
+                _row["generation_method"] = "needs_human_selection"
+                _row["prompt"] = ""
+                _row["policy_flag"] = "image_gen_disabled_no_figma_path"
+                _gen_off += 1
+        if _gen_off:
+            print(f"  ⏸ IMAGE GENERATION OFF: {_gen_off} row(s) flipped to "
+                  "needs_human_selection (generated images have no path into Figma; "
+                  "set ADAM_ENABLE_IMAGE_GEN=1 to re-enable)")
+
     # Cross-sprint photo freshness: record this sprint's used photos so the
     # "don't reuse a photo for 3 sprints" mechanism actually runs — the
     # write-side call had ZERO callers since it was built (audit P1-9: the
@@ -4133,6 +4165,22 @@ def stage_04_generate_images(sprint_id, image_rows):
     # Importing google.genai eagerly here used to crash library-only sprints when
     # the package wasn't installed.
     NON_GEMINI_METHODS = {"figma_library", "needs_human_selection", "skip"}
+
+    # HARD STOP (2026-09-24). The stage-03 flip above should mean nothing
+    # Gemini-bound ever arrives here, but this is the only function that spends
+    # money at Google, so it refuses on its own rather than trusting an upstream
+    # pass. A resumed sprint replays rows written BEFORE the switch existed, and
+    # those still say gemini_generate — without this guard, resuming an old
+    # sprint would quietly start billing again.
+    if os.environ.get("ADAM_ENABLE_IMAGE_GEN", "0") not in ("1", "true", "True"):
+        _blocked = [r for r in image_rows
+                    if r.get("generation_method") not in NON_GEMINI_METHODS]
+        if _blocked:
+            print(f"  ⏸ IMAGE GENERATION OFF — refusing {len(_blocked)} Gemini call(s). "
+                  "Generated images have no path into Figma. "
+                  "Set ADAM_ENABLE_IMAGE_GEN=1 to re-enable.")
+        return {}
+
     needs_gemini = any(r.get("generation_method") not in NON_GEMINI_METHODS for r in image_rows)
     if not needs_gemini:
         print(f"  All {len(image_rows)} rows are library-fed — no Gemini calls needed.")
