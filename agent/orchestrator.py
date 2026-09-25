@@ -1433,6 +1433,42 @@ async def run_agent_turn(
             yield ": keepalive\n\n"
         response = _call.result()
 
+        # COST ACCOUNTING (2026-09-24). Every other Anthropic call in the system
+        # records its tokens; this one never did. 234 chat turns had been served
+        # with ZERO cost attribution, so "what does ADAM cost" was answerable for
+        # the pipeline and silently wrong for the chat — and the chat is the
+        # surface the copywriter actually drives every gate through.
+        #
+        # Recorded per sprint, into the same token_usage.json the pipeline writes,
+        # so /admin/spend picks it up with no further change. Best-effort: a
+        # billing counter must never be able to break a live chat stream.
+        try:
+            _u = getattr(response, "usage", None)
+            if _u is not None and sprint_id:
+                # Reuse the pipeline's own recorder rather than writing a second
+                # one: same file, same locking, same pricing table, so chat and
+                # copy-gen can never price the same model differently.
+                import importlib.util as _ilu
+                import pathlib as _pl
+                _rp = _sys.modules.get("run_pipeline")
+                if _rp is None:
+                    _spec = _ilu.spec_from_file_location(
+                        "run_pipeline",
+                        _pl.Path(__file__).resolve().parent.parent / "pipeline" / "run_pipeline.py")
+                    _rp = _ilu.module_from_spec(_spec)
+                    _sys.modules["run_pipeline"] = _rp
+                    _spec.loader.exec_module(_rp)
+                _rp._add_token_usage(
+                    sprint_id,
+                    os.environ.get("ADAM_CHAT_MODEL", "claude-sonnet-5"),
+                    getattr(_u, "input_tokens", 0) or 0,
+                    getattr(_u, "output_tokens", 0) or 0,
+                    getattr(_u, "cache_creation_input_tokens", 0) or 0,
+                    getattr(_u, "cache_read_input_tokens", 0) or 0,
+                )
+        except Exception:
+            pass
+
         tool_uses = []
         text_blocks = []
 
