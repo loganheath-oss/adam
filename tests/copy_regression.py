@@ -461,6 +461,29 @@ def _punchlist_checks():
     # ADAM-015: "Each recurring flag is classified as real, false, or
     # informational." The glyph IS the classification, so the table has to name
     # all four or it stops answering "is this error real?".
+    # Adrie, 2026-09-21 (Reddit tab): "In the 'Choose a style' dropdown you only
+    # see images for Graphic with text, split screen, Testimonial, Text only,
+    # Meme, Pie Chart, Notification. All the rest are blank." One flat thumb map
+    # meant a Reddit style only had a picture when its name collided with a Meta
+    # style -- and the picture was the META template.
+    import json as _json, re as _re
+    _op = (rp.BASE_DIR / "order-form" / "order-form-ravi.html").read_text()
+    check("reddit thumbs: a Reddit-specific map is embedded",
+          "STYLE_THUMBS_REDDIT" in _op, "Reddit styles fall back to Meta artwork again")
+    check("reddit thumbs: the lookup is platform-aware",
+          "function styleThumb(" in _op and "selectedPlatform==='Reddit'" in _op,
+          "both call sites must go through styleThumb()")
+    _m = _re.search(r"window\.STYLE_THUMBS_REDDIT\s*=\s*(\{.*?\});", _op, _re.S)
+    _rt = _json.loads(_m.group(1)) if _m else {}
+    _blank = ["Person with Text", "Person Only", "Text with Icons", "Venn Diagram",
+              "App Notification", "Note", "Button", "Search", "Search and Checkbox",
+              "Icon", "Twitter", "Logo"]
+    check("reddit thumbs: all 20 Reddit styles have artwork",
+          len(_rt) == 20, f"got {len(_rt)}")
+    check("reddit thumbs: the 12 Adrie reported blank are covered",
+          all(b in _rt for b in _blank),
+          str([b for b in _blank if b not in _rt]))
+
     check("ADAM-015: the flag-severity table exists",
           "Is this plugin flag real?" in fix_src, "flag classification missing")
     for glyph in ("\u2717", "\u26a0", "\u21bb", "\u00b7"):
