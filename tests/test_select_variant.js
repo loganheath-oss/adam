@@ -4,7 +4,10 @@
 const fs = require('fs');
 const src = fs.readFileSync('plugin/code.js', 'utf8');
 function grab(name) {
-  const i = src.indexOf('function ' + name + '(');
+  // Keep the `async` keyword: slicing from 'function foo(' drops it and the
+  // body's `await` then becomes a SyntaxError.
+  let i = src.indexOf('async function ' + name + '(');
+  if (i < 0) i = src.indexOf('function ' + name + '(');
   if (i < 0) throw new Error('not found: ' + name);
   let d = 0, started = false;
   for (let j = i; j < src.length; j++) {
@@ -187,4 +190,34 @@ ok('exact lookup: un-renamed container still resolves',
 ok('exact lookup: a non-platform prefix is not stripped',
    findLayerByName(N('p', [N('Testing_Adtype_Text-Only')]), 'Adtype_Text-Only') === null);
 
-process.exit(fails ? 1 : 0);
+// (exit moved to the async block below)
+
+// 10. Layer names Elise actually shipped. Read from the live file 2026-09-28:
+// the Reddit page has 4x Copy_Headline1 + 4x Copy_Headline2 and ZERO
+// Copy_Headline-Left/-Right, and 4x Copy_List1..3. Her 2026-09-23 fix for the
+// missing copy layers was therefore invisible to the plugin — she told Adrie it
+// was done and the tool still could not fill it.
+const gv = n => { const m = src.match(new RegExp('var ' + n + '\\s*=\\s*(\\[[^\\]]*\\])')); return JSON.parse(m[1].replace(/'/g,'"')); };
+const L = gv('DUAL_HEADLINE_LEFT'), R = gv('DUAL_HEADLINE_RIGHT');
+ok('dual headline: accepts Elise\'s Copy_Headline1/2', L.includes('Copy_Headline1') && R.includes('Copy_Headline2'), JSON.stringify([L,R]));
+ok('dual headline: convention name still tried FIRST', L[0] === 'Copy_Headline-Left' && R[0] === 'Copy_Headline-Right', JSON.stringify([L,R]));
+
+// fillListLayers: fills Copy_List1..3, and reports false when there are none so
+// the caller falls back to the joined Copy_Body every other template uses.
+const T2 = (name, extra={}) => ({type:'TEXT', name, characters:'', children:[], fontName:{family:'X',style:'Y'}, ...extra});
+global.figma = { loadFontAsync: async () => {} };
+global.log = t => logs.push(t);   // fillListLayers logs its fill count
+// findLayerByName / _findExactByName / _findNormByName are already defined by
+// block 9 above — re-declaring them here is a SyntaxError.
+eval(grab('fitTextLayer') + '\n' + grab('setTextLayer') + '\n' + grab('fillListLayers'));
+(async () => {
+  const withLists = N('tpl', [T2('Copy_List1'), T2('Copy_List2'), T2('Copy_List3')]);
+  const okFill = await fillListLayers(withLists, ['Fast', 'Rated', 'Ready']);
+  ok('list layers: returns true and fills all three', okFill === true &&
+     withLists.children.map(c => c.characters).join('|') === 'Fast|Rated|Ready',
+     JSON.stringify(withLists.children.map(c => c.characters)));
+  const noLists = N('tpl', [T2('Copy_Body')]);
+  ok('list layers: returns false when absent, so Copy_Body fallback runs',
+     (await fillListLayers(noLists, ['a','b'])) === false);
+  process.exit(fails ? 1 : 0);
+})();

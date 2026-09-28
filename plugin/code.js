@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.27";
+var PLUGIN_VERSION = "2026.09.28";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -175,6 +175,34 @@ var STYLE_HEADLINE_LAYERS = {
   "social media profile": ["Subhead-Text", "headline_text"],
   "talent profile":  ["headline_text"],
 };
+
+// Dual-headline layer names. `Copy_Headline-Left/-Right` is the documented
+// convention; `Copy_Headline1/2` is what Elise actually shipped on 2026-09-23
+// when she fixed "the Reddit Graphic-With-Text landscape has only Copy_Subhead
+// when it needs two headlines" (Figma comment on 7028:153, CC'd to Adrie, who
+// replied "good to apply"). Verified against the live file 2026-09-28: the
+// Reddit page has 4x Copy_Headline1 and 4x Copy_Headline2 and ZERO of the
+// hyphenated names, so her completed fix was invisible to the plugin.
+// Convention name stays FIRST so nothing that resolves today changes.
+var DUAL_HEADLINE_LEFT  = ["Copy_Headline-Left",  "Copy_Headline1"];
+var DUAL_HEADLINE_RIGHT = ["Copy_Headline-Right", "Copy_Headline2"];
+
+// Reddit "Text with Icons": three list rows, one layer each (Copy_List1..3),
+// capped at 8 characters per the spec card. Returns true when at least one
+// list layer was filled, so the caller knows not to fall back to the single
+// joined Copy_Body block that every other bullet template uses.
+// ASYNC: setTextLayer loads the font before writing, so every call must be
+// awaited or the write is dropped and the failure surfaces as an unhandled
+// rejection rather than a log line.
+async function fillListLayers(root, items) {
+  var filled = 0;
+  for (var i = 0; i < items.length && i < 3; i++) {
+    var n = findLayerByName(root, "Copy_List" + (i + 1));
+    if (n && n.type === "TEXT" && await setTextLayer(n, items[i])) filled++;
+  }
+  if (filled) log("  ✓ list rows filled (" + filled + ")");
+  return filled > 0;
+}
 
 var STYLE_BULLET_LAYERS = {
   "sticky note": ["right_headline_text", "Right_Headline_Text"],
@@ -2002,13 +2030,18 @@ async function assembleStyledPerRow(searchRoot, manifest, destination, baseX, ba
         var singleHl = row.Single_Headline || row.single_headline || "";
         var singleBullets = splitPipe(row.Single_Bullets || row.single_bullets);
         if (singleHl) await setFirstTextByCandidates(clone, ["Copy_Headline"], singleHl);
-        if (singleBullets.length)
+        // Reddit "Text with Icons" carries THREE separate list layers, one per
+        // icon row, not one body block. Elise added them 2026-09-23 as the fix
+        // for "the Text-with-Icons landscape is missing its three list layers"
+        // and named them Copy_List1..3. Fill those individually when present;
+        // fall back to the joined Copy_Body for every template that has none.
+        if (singleBullets.length && !(await fillListLayers(clone, singleBullets)))
           await setFirstTextByCandidates(clone, ["Copy_Body"], singleBullets.join("\n"));
         // DOUBLE-layout template: real per-column headline layers.
         var dl = row.Left_Headline || row.left_headline || "";
         var dr = row.Right_Headline || row.right_headline || "";
-        if (dl) await setFirstTextByCandidates(clone, ["Copy_Headline-Left"], dl);
-        if (dr) await setFirstTextByCandidates(clone, ["Copy_Headline-Right"], dr);
+        if (dl) await setFirstTextByCandidates(clone, DUAL_HEADLINE_LEFT, dl);
+        if (dr) await setFirstTextByCandidates(clone, DUAL_HEADLINE_RIGHT, dr);
         // Prefer the structured two-column copy (Left/Right headline + 2 bullets each).
         var lh = row.Left_Headline || row.left_headline || headlineText || "";
         var rh = row.Right_Headline || row.right_headline || "";
@@ -2366,9 +2399,10 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
           var stDl = leadRow.Left_Headline || leadRow.left_headline || "";
           var stDr = leadRow.Right_Headline || leadRow.right_headline || "";
           if (stHl) await setFirstTextByCandidates(styledClone, ["Copy_Headline"], stHl);
-          if (stBul.length) await setFirstTextByCandidates(styledClone, ["Copy_Body"], stBul.join("\n"));
-          if (stDl) await setFirstTextByCandidates(styledClone, ["Copy_Headline-Left", "Left_Headline_Text"], stDl);
-          if (stDr) await setFirstTextByCandidates(styledClone, ["Copy_Headline-Right", "right_headline_text", "Right_Headline_Text"], stDr);
+          if (stBul.length && !(await fillListLayers(styledClone, stBul)))
+            await setFirstTextByCandidates(styledClone, ["Copy_Body"], stBul.join("\n"));
+          if (stDl) await setFirstTextByCandidates(styledClone, DUAL_HEADLINE_LEFT.concat(["Left_Headline_Text"]), stDl);
+          if (stDr) await setFirstTextByCandidates(styledClone, DUAL_HEADLINE_RIGHT.concat(["right_headline_text", "Right_Headline_Text"]), stDr);
           var stLb = splitPipe(leadRow.Left_Bullets || leadRow.left_bullets);
           var stRb = splitPipe(leadRow.Right_Bullets || leadRow.right_bullets);
           if (stLb[0]) await setFirstTextByCandidates(styledClone, ["Left_Bullet_Text1", "Left_Bullet_Text_1"], stLb[0]);
