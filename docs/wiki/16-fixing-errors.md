@@ -30,7 +30,8 @@ The single most common situation. Open `/sprints/<id>` (or find it in the `/admi
 ### 2. "No space left on device" (ENOSPC) → prune old sprints
 The storage volume (500 MB) fills up with sprint images; runs then die mid-image-stage. This bit us in production.
 - **See usage (in a browser):** log in at <https://adam-production-9618.up.railway.app/admin/dashboard> — the sprint table has a **Size** column. For the raw per-sprint list, largest first, open <https://adam-production-9618.up.railway.app/admin/storage> in the same browser once you're logged into the dashboard.
-- **Fix:** `POST /admin/prune` with the API key. This one is **not** a page — visiting it in a browser returns 405, because it deletes things and has to be a deliberate call. Deletes old/errored sprints. Keep anything the team still needs, then re-run the failed sprint from its gate.
+- **Fix (in a browser):** tick the sprints in the dashboard's **Sprints** table and use **Delete selected…**. Any admin can do this; you do not need the API key. Full steps and the safeguards are in *Pruning from the dashboard* at the bottom of this page.
+- **Fix (scripted):** `POST /admin/prune`. Still not a page — visiting the URL returns 405, because deleting has to be a deliberate call. Keep anything the team still needs, then re-run the failed sprint from its gate.
 
 > **Host matters.** Every `/admin/*` path lives on the **API** service,
 > `adam-production-9618.up.railway.app` — *not* on `adam-web-production.up.railway.app`, which is the
@@ -153,3 +154,16 @@ with no photo pick. The main concept-board path skips the image step for those r
 and stays quiet, but the legacy and styled-per-row paths will print this warning.
 **While image generation is off, treat it as informational.** It becomes a real
 warning again the day image sourcing is turned back on.
+
+### Pruning from the dashboard (who can, and how)
+
+**Any admin can prune.** The dashboard login is the admin gate, so if you can open
+`/admin/dashboard` you can delete sprints — you do not need the API key in hand.
+
+In the **Sprints** table, tick the sprints you want gone. The bar underneath shows
+how many are selected and roughly how much space they free. **Delete selected…**
+arms it, and a second click confirms. Nothing is deleted on the first click.
+
+A sprint that is mid-run shows a `·` instead of a checkbox and cannot be selected —
+its stage is still writing to that directory. Every deletion writes an audit line
+you can see in the activity feed.

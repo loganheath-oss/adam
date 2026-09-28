@@ -429,6 +429,22 @@ def _punchlist_checks():
     # ADAM-003 must NOT be built on "the prompt string is empty" — that is the
     # normal shape for the kill switch and for self-contained styles.
     rp_src = (rp.BASE_DIR / "pipeline" / "run_pipeline.py").read_text()
+    # Adrie, 2026-09-28: "can admins prune, can I go in and delete sprints?"
+    # She could not test it — /admin/prune took only the raw API key and had no
+    # UI, so there was no way to reach it from a browser at all.
+    check("prune: accepts the dashboard session, not just the raw key",
+          'app.post("/admin/prune", dependencies=[Depends(require_api_key_or_session)])' in main_src,
+          "prune is unreachable from the dashboard again")
+    check("prune: the dashboard has a control",
+          "wirePrune" in main_src and "/admin/prune" in main_src,
+          "no UI means nobody but an engineer can prune")
+    check("prune: a running sprint is refused",
+          '_ACTIVE = ("running", "resuming")' in main_src,
+          "deleting mid-run strands the sprint")
+    check("prune: every deletion writes an audit line (ADAM-002)",
+          'db.log_event("sprint.pruned"' in main_src,
+          "ADAM-002 requires an audit line per deletion")
+
     check("ADAM-003: the do-not-build-as-worded warning is present",
           "READ BEFORE IMPLEMENTING ADAM-003" in rp_src,
           "without it, someone builds a guard that fails every image row")

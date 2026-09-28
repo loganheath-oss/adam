@@ -2406,12 +2406,23 @@ async def delete_sprint(sprint_id: str):
     return JSONResponse({"ok": True, "deleted": sprint_id})
 
 
-@app.post("/admin/prune", dependencies=[Depends(require_api_key)])
+@app.post("/admin/prune", dependencies=[Depends(require_api_key_or_session)])
 async def prune_sprints(request: Request):
     """Bulk-delete sprints to reclaim volume space. JSON body options:
       {"delete": ["id", ...]}   delete these sprint ids
       {"keep":   ["id", ...]}   delete ALL sprints EXCEPT these
       {"errored": true}         also delete any sprint in an error state
+
+    Accepts the dashboard session as well as the API key. Adrie, working session
+    2026-09-28: "is it only admins that can prune, or the engineer?" — the
+    dashboard login IS the admin gate (the cookie is derived from
+    PIPELINE_API_KEY), so anyone who can open /admin/dashboard can prune from
+    the Sprints table. Before this, pruning was reachable only by someone who
+    could hand-craft a POST with the raw key, which is why she could not test it.
+
+    Two guardrails, because this deletes real work: a sprint that is mid-run is
+    refused (its stage is still writing to that directory), and every deletion
+    writes an audit line naming who did it.
     """
     import shutil
     try:
@@ -2443,13 +2454,40 @@ async def prune_sprints(request: Request):
             st = sprint_state.read_state(RUNS_DIR / sid).get("state", "")
             if "error" in st:
                 to_delete.add(sid)
-    deleted = []
-    for sid in to_delete:
+    # A sprint whose stage is still running owns that directory — deleting it
+    # mid-write strands the run in a state even the error handler can't record,
+    # which is the ADAM-002 failure ("sprints silently disappear") in reverse.
+    _ACTIVE = ("running", "resuming")
+    refused = []
+    for sid in sorted(to_delete):
+        st = str(sprint_state.read_state(RUNS_DIR / sid).get("state", "") or "")
+        if any(st.startswith(a) for a in _ACTIVE):
+            refused.append({"sprint_id": sid, "state": st})
+    to_delete -= {r["sprint_id"] for r in refused}
+
+    deleted, freed = [], 0
+    for sid in sorted(to_delete):
         d = _safe_sprint_dir(sid)
-        if d.exists():
-            shutil.rmtree(d, ignore_errors=True)
-            deleted.append(sid)
-    return JSONResponse({"ok": True, "deleted": deleted,
+        if not d.exists():
+            continue
+        try:
+            for f in d.rglob("*"):
+                if f.is_file():
+                    freed += f.stat().st_size
+        except Exception:
+            pass
+        shutil.rmtree(d, ignore_errors=True)
+        deleted.append(sid)
+        # Audit line per sprint — ADAM-002: "deletion requires an explicit
+        # action and writes an audit line."
+        try:
+            db.log_event("sprint.pruned", sprint_id=sid,
+                         meta={"via": "session" if _valid_session(
+                             request.cookies.get(_SESSION_COOKIE)) else "api_key"})
+        except Exception:
+            pass
+    return JSONResponse({"ok": True, "deleted": deleted, "refused": refused,
+                         "freed_mb": round(freed / 1e6, 1),
                          "remaining": [s for s in all_ids if s not in deleted]})
 
 
@@ -2627,11 +2665,17 @@ async function load(){
     ['Backup', bk.ok===false?'FAIL':'OK', bk.ok===false?'bad':'ok'],
   ].map(([l,val,c]) => '<div class="card"><div class="l">'+l+'</div><div class="v '+c+'">'+esc(val)+'</div></div>').join('');
 
+  const active = s => ['running','resuming'].some(a=>String(s.state||'').startsWith(a));
   document.getElementById('sprints').innerHTML =
-    '<table><tr><th>Sprint</th><th>State</th><th>Driver</th><th>Last touched</th><th>Size</th></tr>' +
-    (d.sprints.length? d.sprints.map(s=>'<tr><td><a href="/sprints/'+esc(s.sprint_id)+'">'+esc(s.sprint_id.slice(-12))+'</a>'+(s.archived?' <span class="mut">archived</span>':'')+'</td><td>'+pill(s.state)+
+    '<table><tr><th></th><th>Sprint</th><th>State</th><th>Driver</th><th>Last touched</th><th>Size</th></tr>' +
+    (d.sprints.length? d.sprints.map(s=>'<tr><td>'+(active(s)
+        ? '<span class="mut" title="running — cannot be deleted">·</span>'
+        : '<input type="checkbox" class="psel" value="'+esc(s.sprint_id)+'" data-mb="'+(s.size_mb||0)+'">')+
+      '</td><td><a href="/sprints/'+esc(s.sprint_id)+'">'+esc(s.sprint_id.slice(-12))+'</a>'+(s.archived?' <span class="mut">archived</span>':'')+'</td><td>'+pill(s.state)+
       '</td><td>'+esc(s.driver||'')+'</td><td'+((s.age_hours||0)>168&&String(s.state||'').startsWith('awaiting')?' class="stale"':'')+'>'+ago(s.age_hours)+
-      ' ago</td><td>'+(s.size_mb?s.size_mb+' MB':'—')+'</td></tr>').join('') : '<tr><td colspan=5 class="mut">none</td></tr>') + '</table>';
+      ' ago</td><td>'+(s.size_mb?s.size_mb+' MB':'—')+'</td></tr>').join('') : '<tr><td colspan=6 class="mut">none</td></tr>') + '</table>' +
+    '<div id="prunebar" style="margin-top:10px;font-size:13px"></div>';
+  wirePrune();
 
   document.getElementById('ic').textContent = d.issues.length? '('+d.issues.length+')':'';
   document.getElementById('issues').innerHTML = d.issues.length? d.issues.map(i=>
@@ -2645,6 +2689,46 @@ async function load(){
       '</td><td>'+esc(e.action)+'</td><td>'+esc(e.user||e.user_email||'')+'</td><td>'+
       (e.sprint_id?'<a href="/sprints/'+esc(e.sprint_id)+'">'+esc(String(e.sprint_id).slice(-12))+'</a>':'')+'</td></tr>').join('')
       : '<tr><td colspan=4 class="mut">no activity</td></tr>') + '</table>';
+}
+// ── Prune (Adrie, 2026-09-28: "can admins prune, can I go in and delete sprints?")
+// Two steps on purpose. The first click only ARMS the delete and states exactly
+// what goes and how much it frees; the second does it. No confirm() dialog —
+// a modal here blocks the page, and the count is more useful than a yes/no.
+let pruneArmed = false;
+function wirePrune(){
+  const bar = document.getElementById('prunebar'); if(!bar) return;
+  const boxes = () => Array.from(document.querySelectorAll('.psel'));
+  const chosen = () => boxes().filter(b=>b.checked);
+  function render(msg){
+    const c = chosen();
+    const mb = c.reduce((a,b)=>a+(parseFloat(b.dataset.mb)||0),0);
+    if(msg){ bar.innerHTML = msg; return; }
+    if(!c.length){ pruneArmed=false; bar.innerHTML='<span class="mut">Select sprints to delete. Running sprints can’t be selected.</span>'; return; }
+    bar.innerHTML = pruneArmed
+      ? '<b>Delete '+c.length+' sprint'+(c.length>1?'s':'')+', freeing ~'+mb.toFixed(1)+' MB? This cannot be undone.</b> '+
+        '<button id="pgo" style="background:#dc2626;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:600;cursor:pointer">Delete</button> '+
+        '<button id="pno" style="border:1px solid #d1d5db;background:#fff;border-radius:6px;padding:6px 12px;cursor:pointer">Cancel</button>'
+      : c.length+' selected · ~'+mb.toFixed(1)+' MB '+
+        '<button id="parm" style="border:1px solid #d1d5db;background:#fff;border-radius:6px;padding:6px 12px;cursor:pointer">Delete selected…</button>';
+    const arm=document.getElementById('parm'), go=document.getElementById('pgo'), no=document.getElementById('pno');
+    if(arm) arm.onclick=()=>{pruneArmed=true; render();};
+    if(no)  no.onclick =()=>{pruneArmed=false; render();};
+    if(go)  go.onclick = async ()=>{
+      go.disabled=true; render('Deleting…');
+      try{
+        const r = await fetch('/admin/prune',{method:'POST',headers:{'Content-Type':'application/json'},
+          credentials:'same-origin', body:JSON.stringify({delete:c.map(b=>b.value)})});
+        const j = await r.json();
+        if(!r.ok || j.ok===false) throw new Error(j.error||('HTTP '+r.status));
+        let m = 'Deleted '+(j.deleted||[]).length+' sprint(s), freed '+(j.freed_mb||0)+' MB.';
+        if((j.refused||[]).length) m += ' Refused '+j.refused.length+' still running.';
+        pruneArmed=false; render('<span style="color:#15803d">'+m+'</span>');
+        setTimeout(load, 1200);
+      }catch(e){ pruneArmed=false; render('<span style="color:#dc2626">Prune failed: '+e.message+'</span>'); }
+    };
+  }
+  boxes().forEach(b=>b.onchange=()=>{pruneArmed=false; render();});
+  render();
 }
 load(); setInterval(load, 60000);
 </script></body></html>"""
