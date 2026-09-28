@@ -260,9 +260,18 @@ slot keeps its placeholder. This is the number one cause of ads shipping with pl
 **3. A photo slot inside a photo slot.** Covered above. The ad looks plausible because it shows the
 template's stock photo rather than an empty slot.
 
-**4. Duplicate Reddit frames.** Several containers hold two frames with the same name and size. The
+**4. Same-name Reddit frames.** Several containers hold two frames with the same name and size. The
 plugin takes the first it finds, so if they differ, which one ships is a coin flip. Current list
 with a link to each is in `docs/figma-punchlist.md`.
+
+Most of these are **not duplicates** — they are layout variants nobody gave distinct names. Checked
+on 2026-09-28, the two `1080x1350` frames in `Reddit_Adtype_Meme` are caption-below and
+caption-above; deleting either loses a real layout. The plugin breaks a tie by picking the frame
+with more copy layers, which cannot separate a pair like that, since both carry the same two.
+
+**Rename them rather than deleting them.** A distinct suffix (`1080x1350_Caption-Above`) keeps both
+layouts and makes the plugin deterministic. Delete only once you have confirmed the two are
+genuinely identical.
 
 ---
 

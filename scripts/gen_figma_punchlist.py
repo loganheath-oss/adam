@@ -68,10 +68,22 @@ def main():
          ""]
 
     # ---- 1. duplicate size frames inside a container -----------------------
-    L += ["---", "", "## 1. Duplicate size frames", "",
+    L += ["---", "", "## 1. Same-name size frames", "",
           "Two frames with the same name AND the same size inside one container. The",
-          "plugin takes whichever it reaches first, so if the two ever differ, which one",
-          "ships is arbitrary. Delete the one you are not using.", ""]
+          "plugin takes whichever it reaches first, so if the two differ, which one",
+          "ships is arbitrary.",
+          "",
+          "**Look before you delete.** These are often not duplicates at all but real",
+          "layout variants that were never given distinct names. Verified example",
+          "(2026-09-28): the two `1080x1350` frames in `Reddit_Adtype_Meme` are caption-",
+          "below (7023:1354) and caption-above (7030:455) — deleting either loses a real",
+          "layout. The plugin's tie-break picks the frame with MORE copy layers, so it",
+          "cannot disambiguate a pair like that, where both carry the same two.",
+          "",
+          "**The fix is a rename, not a delete** — give each a distinct suffix",
+          "(`1080x1350_Caption-Above`) and the plugin becomes deterministic while both",
+          "layouts survive. Delete only after confirming the two are genuinely identical.",
+          ""]
     dupes = 0
     for pname, root in full.items():
         for cont in walk(root):
