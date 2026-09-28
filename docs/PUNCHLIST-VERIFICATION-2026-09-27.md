@@ -12,6 +12,27 @@ missing, done against the code rather than against the Status column.
 
 Lee has asked for final QA with Haresh and Max. This is the file to hand them.
 
+## Score
+
+Twenty issues carry IDs (ADAM-001 … 020). Two rows have no ID: one is a Figma link
+for a template image (no action), the other is the "a style assembles but fills
+nothing" troubleshooting note, which is the only row the sheet leaves **In progress**
+and which now lives in the designer guide.
+
+| | Count | IDs |
+|---|---|---|
+| Verified addressed | 9 | 002, 004, 005, 007, 008\*, 009, 010, 014, 019 |
+| Fixed 2026-09-27 | 4 | 001, 011, 015, 018 |
+| Partly addressed | 2 | 006, 017 |
+| Deliberately NOT built | 1 | 003 — see the warning below |
+| Open | 4 | 012, 013, 016, 020 |
+
+\* ADAM-008 is a chat tool, not the "editable field per ad row" the criterion words.
+
+**Nothing in the spreadsheet itself has been updated.** All 53 acceptance criteria
+still read "No" in the workbook, because that file is Adrie's and this record is the
+evidence she would need to fill it in.
+
 ## Verified addressed
 
 | ID | Evidence |
@@ -19,6 +40,7 @@ Lee has asked for final QA with Haresh and Max. This is the file to hand them.
 | ADAM-002 | `/admin/archive`, `archived.json` marker, nightly Postgres backup off-volume |
 | ADAM-004 | `/sprints/{id}/retry` and `/sprints/{id}/resume` — resume re-runs only the failed stage |
 | ADAM-005 | `sprint_state` writes atomically (temp + `os.replace`); torn-file recovery covered by `tests/copy_regression.py` |
+| ADAM-007 | Mapping table is `docs/figma-naming-convention.md` (version-controlled, 2026-07-28). Missing layers fail loudly and name the field — `⚠ headline NOT filled — no layer matched [...]`, `⚠ cta NOT filled`, `⚠ No copy panel found`. Confirmed live over the Figma MCP 2026-09-27: sprint `2026-09-reddit-7f2a1b1591af` has real feed copy rendered into its boards. |
 | ADAM-008 | `edit_copy` agent tool — Gate-3-gated, writes `copy_outputs.json`, logs a `copy_edited` decision |
 | ADAM-009 | `_concept_has_placeholder_copy()` sets `placeholder_flag`; flagged concepts excluded from selection |
 | ADAM-010 | `/sprints/{id}/copy-select` — state guard (`awaiting_gate_3` only), at-least-one-selected check, CTA-mix reapplication, event logged |
