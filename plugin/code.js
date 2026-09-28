@@ -317,8 +317,32 @@ function _noteDrift(found, wanted) {
   log("    \u21ba name drift: matched '" + found + "' (expected '" + wanted + "') \u2014 worth fixing in Figma");
 }
 
+// Name lookups accept the platform bumper too — same rule as the prefix
+// matchers, see _stripPlatformBumper. Verified against the live Meta Templates
+// page 2026-09-27: after Elise's rename the real container is
+// "Meta_Adtype_Text-Only" (depth 1) while an ANNOTATION frame inside its own
+// "Rules" panel is still "Adtype_Text-Only" (depth 3). Exact matching therefore
+// resolved 19 of 24 styles to a rules card instead of the template container.
+// These walks are pre-order, so the depth-1 container is reached before its own
+// Rules child and now wins — which is why this is a fix and not a coin flip.
+// Trailing slashes are stripped on both sides for the same reason _normName
+// strips them: two of the renamed containers ship as "Meta_Adtype_Bespoke/" and
+// "Meta_Adtype_Graphic-With-Text/", and the slash is Figma naming noise, not a
+// different layer. Without this, Graphic-With-Text alone still fell through to
+// its Rules card while the other 18 resolved.
+function _bumperEq(nodeName, target) {
+  var n = String(nodeName || "").replace(/\/+$/, "");
+  var t = String(target   || "").replace(/\/+$/, "");
+  return n === t || _stripPlatformBumper(n) === t;
+}
+
+function _bumperNormEq(nodeName, want) {
+  return _normName(nodeName) === want ||
+         _normName(_stripPlatformBumper(nodeName)) === want;
+}
+
 function _findExactByName(node, name) {
-  if (node.name === name) return node;
+  if (_bumperEq(node.name, name)) return node;
   if ("children" in node) {
     for (var i = 0; i < node.children.length; i++) {
       var found = _findExactByName(node.children[i], name);
@@ -329,7 +353,7 @@ function _findExactByName(node, name) {
 }
 
 function _findNormByName(node, want) {
-  if (_normName(node.name) === want) return node;
+  if (_bumperNormEq(node.name, want)) return node;
   if ("children" in node) {
     for (var i = 0; i < node.children.length; i++) {
       var found = _findNormByName(node.children[i], want);
@@ -362,7 +386,7 @@ function findAllLayersByName(node, name) {
 
 function _findAllNormByName(node, want) {
   var results = [];
-  if (_normName(node.name) === want) results.push(node);
+  if (_bumperNormEq(node.name, want)) results.push(node);
   if ("children" in node) {
     for (var i = 0; i < node.children.length; i++) {
       var sub = _findAllNormByName(node.children[i], want);
@@ -374,7 +398,7 @@ function _findAllNormByName(node, want) {
 
 function _findAllExactByName(node, name) {
   var results = [];
-  if (node.name === name) results.push(node);
+  if (_bumperEq(node.name, name)) results.push(node);
   if ("children" in node) {
     for (var i = 0; i < node.children.length; i++) {
       var sub = _findAllExactByName(node.children[i], name);

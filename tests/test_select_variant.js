@@ -147,4 +147,44 @@ const mixed = N('page', OUTPUT_NAMES.map(n => N(n)).concat([
 ok('prior run: real templates on the same page still resolve',
    hits(mixed, 'Template_Text-Only').length === 2, JSON.stringify(hits(mixed, 'Template_Text-Only')));
 
+// 9. Exact-name lookup must survive the rename too. findContainerByName ->
+// findLayerByName -> _findExactByName is a separate path from the prefix
+// matchers above, and it broke differently: read live from the Meta Templates
+// page 2026-09-27, the real container is "Meta_Adtype_Text-Only" at depth 1
+// while an ANNOTATION frame inside its own Rules panel is still named
+// "Adtype_Text-Only" at depth 3. Exact matching resolved 19 of 22 styles to the
+// rules card. These walks are pre-order, so once the bumper is tolerated the
+// depth-1 container is reached first and wins.
+eval(grab('_bumperEq') + '\n' + grab('_bumperNormEq') + '\n'
+     + grab('_findExactByName') + '\n' + grab('_findNormByName'));
+const findLayerByName = (n, name) => _findExactByName(n, name) || _findNormByName(n, _normName(name));
+
+// Real shape, real names, taken from the live file.
+const container = (nm, inner) => N(nm, [N('Rules', [N(inner)]), N(inner + '_1440x1440')]);
+const metaPage = N('Meta Templates', [
+  container('Meta_Adtype_Text-Only', 'Adtype_Text-Only'),
+  container('Meta_Adtype_Graphic-With-Text/', 'Adtype_Graphic-With-Text'),  // trailing slash, live
+  container('Meta_Adtype_Bespoke/', 'Adtype_Bespoke'),                      // trailing slash, live
+  container('Meta_Adtype_Sticky-Note', 'Adtype_Sticky-Note'),
+]);
+for (const [want, expect] of [
+  ['Adtype_Text-Only', 'Meta_Adtype_Text-Only'],
+  ['Adtype_Graphic-With-Text', 'Meta_Adtype_Graphic-With-Text/'],
+  ['Adtype_Bespoke', 'Meta_Adtype_Bespoke/'],
+  ['Adtype_Sticky-Note', 'Meta_Adtype_Sticky-Note'],
+]) {
+  const hit = findLayerByName(metaPage, want);
+  ok(`exact lookup: "${want}" resolves to the container, not its Rules card`,
+     hit && hit.name === expect, hit ? `got '${hit.name}'` : 'no match');
+}
+
+// An un-renamed file must behave exactly as before.
+const legacyPage = N('Meta Templates', [container('Adtype_Text-Only', 'Adtype_Text-Only_inner')]);
+ok('exact lookup: un-renamed container still resolves',
+   findLayerByName(legacyPage, 'Adtype_Text-Only').name === 'Adtype_Text-Only');
+
+// And the strip must not make unrelated names collide.
+ok('exact lookup: a non-platform prefix is not stripped',
+   findLayerByName(N('p', [N('Testing_Adtype_Text-Only')]), 'Adtype_Text-Only') === null);
+
 process.exit(fails ? 1 : 0);
