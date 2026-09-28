@@ -43,10 +43,10 @@ but no controls"), but if someone checks the criterion literally, it does not ma
 | ID | Missing |
 |---|---|
 | ADAM-003 | The Gate 4 guard does not exist. **See the warning below before building it.** Gate 5 per-style counts (rows with copy / images / exports) not found. |
-| ADAM-006 | No "Re-check" action; no evidence the empty-manifest warning is verified against files on disk. The run log records this false-firing three times, including on the KOTH Sprint 12 comparative. |
-| ADAM-015 | No document classifies each recurring Figma flag as real / false / informational. |
+| ADAM-006 | *(Correction: this was listed as unaddressed in the first pass because I searched UI code. The fix is in `agent/orchestrator.py`'s Gate 5 guidance — `ready_for_figma` rows are declared NORMAL, only a 0-row manifest is a defect, and "NEVER tell the user to wait and check back later — no such background completion exists" closes the third criterion. What is genuinely missing is a literal **Re-check** control; the agent re-reads by calling `get_manifest` again.)* |
+| ADAM-015 | **Closed 2026-09-27.** `16-fixing-errors.md` now classifies every flag the plugin emits by severity glyph (`✗` real miss / `⚠` real warning / `↻` self-healed / `·` informational), extracted from `plugin/code.js`, and names which specific messages look alarming but are not. Includes that `✗ Library node` usually means an expired Figma token rather than a bad template, and that `⚠ row missing figma_node_id` is expected while image generation is off. |
 | ADAM-016 | No intake cancel-reset path found. |
-| ADAM-017 | No evidence either way that proposed actions are wired to real operations. |
+| ADAM-017 | Partly addressed. The known instances are patched in the agent prompt ("NEVER tell the user to wait and check back later", "Never say the copy can't be changed"), and a `WHAT YOU CANNOT DO` block exists — but that block scopes the **public wiki-only helper**, not the sprint-driving agent. There is no general rule stopping the sprint agent proposing an action it has no tool for. |
 | ADAM-020 | The creative-range experiment appears never to have run. |
 
 **ADAM-012 and ADAM-013** both require "renders on three consecutive runs". The

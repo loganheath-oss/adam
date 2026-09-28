@@ -104,3 +104,52 @@ question that one isolated run closed.
 
 ## Template/layer problems in assembled boards
 Run `railway run --service adam -- python3 tests/figma_template_lint.py` — it reports per-style template resolution and nested `Image-Placeholder` layers (the cause of wrong/duplicated photos and placeholder text). Naming standard: `docs/figma-naming-convention.md`.
+
+## Is this plugin flag real? (ADAM-015)
+
+The assembly log marks severity with a glyph. **The glyph is the answer** — you do
+not have to judge each message. This table exists because "is this an error?" came
+up repeatedly in the 2026-09-23 working session, and because a run can finish
+perfectly while printing a dozen lines that look alarming.
+
+| Glyph | Meaning | Do you act? |
+|---|---|---|
+| `✗` | **Real miss.** Something that should have been produced was not. Counts toward the run's miss tally. | Yes |
+| `⚠` | **Real warning.** The run continued, but a slot, layer or pill did not get what it was meant to. Counts toward the warning tally. | Usually |
+| `↻` | **Self-healed.** The plugin hit an ambiguity and resolved it correctly. | No |
+| `·` | **Informational.** Expected absence, by template design. | No |
+
+### The ones that look bad and are not
+
+- **`· subhead/stat not filled — no layer matched`** — some template families are
+  legitimately subhead-free (`subhead_only_without_cta`). Nothing is missing.
+- **`· body not filled — no Copy_Body layer`** — same: that template has no body layer.
+- **`↻ duplicate frames: chose '…'`** — two same-name same-size frames existed and the
+  plugin picked the one with actual copy layers. Worth tidying the file eventually;
+  the run is correct.
+- **`⚠ Testimonial / Talent Profile: no Example Profiles found — kept template …`** —
+  it fell back to the template's own headshot. The ad is fine.
+- **`⚠ 'Generated Tests' container not found — placing boards loose on the page`** —
+  placement only. The boards are there, just not inside a container.
+- **`⚠ Captured node no longer exists — falling back to page search`** — it recovered.
+
+### The ones that mean a real problem
+
+`✗ board failed for concept`, `✗ No styled template found for`, `✗ No image target
+found in clone`, `⚠ EMPTY TEMPLATE`, `⚠ headline NOT filled`, `⚠ cta NOT filled`,
+`⚠ no image applied`, and `⚠ No template by convention and unknown visual_style`.
+
+**`✗ Library node '…'`** deserves its own note: it usually means the photo library
+could not be read, and the most common cause is an **expired `FIGMA_ACCESS_TOKEN`**,
+not a bad template. Check the token before touching Figma.
+
+**`⚠ Could not update '<layer>'`** now only appears when the house-font fallback ALSO
+failed. On its own it used to be routine font noise; today it is real.
+
+### Currently expected: `⚠ row missing figma_node_id`
+
+Image generation is off (2026-09-24), so image rows carry `needs_human_selection`
+with no photo pick. The main concept-board path skips the image step for those rows
+and stays quiet, but the legacy and styled-per-row paths will print this warning.
+**While image generation is off, treat it as informational.** It becomes a real
+warning again the day image sourcing is turned back on.

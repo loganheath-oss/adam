@@ -442,6 +442,15 @@ def _punchlist_checks():
           "How many assets to ask for in one run" in use_src,
           "the ~5-per-run limit exists only in the spreadsheet again")
 
+    # ADAM-015: "Each recurring flag is classified as real, false, or
+    # informational." The glyph IS the classification, so the table has to name
+    # all four or it stops answering "is this error real?".
+    check("ADAM-015: the flag-severity table exists",
+          "Is this plugin flag real?" in fix_src, "flag classification missing")
+    for glyph in ("\u2717", "\u26a0", "\u21bb", "\u00b7"):
+        check(f"ADAM-015: severity table covers {glyph!r}",
+              glyph in fix_src, "a severity class is undocumented")
+
 
 def _admin_host_checks():
     """`/admin/*` paths were documented bare, so readers guessed the wrong host.
