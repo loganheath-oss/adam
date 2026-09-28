@@ -426,11 +426,13 @@ def _admin_host_checks():
     web_host = "adam-web-production.up.railway.app"
     wiki = {p.name: p.read_text() for p in sorted((rp.BASE_DIR / "docs" / "wiki").glob("*.md"))}
 
-    # The exact wrong pairing Adrie was led to build.
-    bad = sorted(n for n, t in wiki.items()
-                 if any(f"{web_host}{seg}" in t for seg in ("/admin", "/sprints")))
+    # The exact wrong pairing Adrie was led to build. ONLY /admin: the front end
+    # does serve /sprints/<id> and /new (both verified 200 on both hosts
+    # 2026-09-27), and Adrie's own tracker links sprints on the web host, so
+    # flagging /sprints here would be a false positive on correct links.
+    bad = sorted(n for n, t in wiki.items() if f"{web_host}/admin" in t)
     check("admin host: no guide points an /admin path at the front-end host",
-          not bad, f"{bad} pair {web_host} with an /admin or /sprints path — it 404s there")
+          not bad, f"{bad} pair {web_host} with an /admin path — it 404s there")
 
     # Anywhere the volume chore is documented, the host has to travel with it.
     for name, text in wiki.items():
