@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.23";
+var PLUGIN_VERSION = "2026.09.27";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -393,9 +393,31 @@ function findAllByPrefix(node, prefix) {
   return results;
 }
 
+// Elise, working session 2026-09-23, on unifying Meta's frame names with
+// Reddit's: "the only thing that's going to change is they're going to get the
+// front bumper that's like meta_". Every template lookup below anchors its
+// prefix test at position 0, so a channel bumper sitting in front of
+// Template_/Adtype_ defeats all of them at once and Meta stops assembling.
+//
+// Accept an optional leading platform token so a frame matches with OR without
+// the bumper. This is only ever tried AFTER the plain test fails, so it widens
+// what matches and can never reject a name that resolves today.
+var _PLATFORM_BUMPERS = ["meta", "reddit", "linkedin", "youtube", "google", "thirdparty"];
+
+function _stripPlatformBumper(name) {
+  var s = String(name || "");
+  var m = /^([A-Za-z0-9 &\/]+?)\s*[_-]\s*(.+)$/.exec(s);
+  if (!m) return s;
+  var token = m[1].toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (token === "3rdpartyaffiliate" || token === "thirdpartyaffiliate") token = "thirdparty";
+  if (token.indexOf("google") === 0) token = "google";
+  return _PLATFORM_BUMPERS.indexOf(token) === -1 ? s : m[2];
+}
+
 function _findAllByPrefixExact(node, prefix) {
   var results = [];
-  if (node.name && node.name.indexOf(prefix) === 0) results.push(node);
+  if (node.name && (node.name.indexOf(prefix) === 0 ||
+                    _stripPlatformBumper(node.name).indexOf(prefix) === 0)) results.push(node);
   if ("children" in node) {
     for (var i = 0; i < node.children.length; i++) {
       var sub = _findAllByPrefixExact(node.children[i], prefix);
@@ -407,7 +429,8 @@ function _findAllByPrefixExact(node, prefix) {
 
 function _findAllByPrefixNorm(node, wantPrefix) {
   var results = [];
-  if (node.name && _normName(node.name).indexOf(wantPrefix) === 0) results.push(node);
+  if (node.name && (_normName(node.name).indexOf(wantPrefix) === 0 ||
+                    _normName(_stripPlatformBumper(node.name)).indexOf(wantPrefix) === 0)) results.push(node);
   if ("children" in node) {
     for (var i = 0; i < node.children.length; i++) {
       var sub = _findAllByPrefixNorm(node.children[i], wantPrefix);

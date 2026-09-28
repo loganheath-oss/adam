@@ -60,4 +60,59 @@ ok('counts nested Copy_ layers', countCopyLayers(nested) === 1, String(countCopy
 ok('ignores non-Copy text layers', countCopyLayers({type:'FRAME',name:'x',children:[
   {type:'TEXT',name:'Label',children:[]}]}) === 0);
 
+// 7. Platform bumper (Elise, 2026-09-23: rename the Meta frames to carry a
+// "meta_" front bumper so they match Reddit's convention). Every template
+// lookup anchors its prefix test at position 0, so the bumper would hide every
+// Meta template at once. Match must survive the rename WITHOUT loosening into
+// a substring search.
+eval(grab('_stripPlatformBumper') + '\n' + grab('_normName') + '\n'
+     + grab('_findAllByPrefixExact') + '\n' + grab('_findAllByPrefixNorm'));
+const _PLATFORM_BUMPERS = ['meta', 'reddit', 'linkedin', 'youtube', 'google', 'thirdparty'];
+
+const N = (name, kids = []) => ({type: 'FRAME', name, children: kids});
+const hits = (root, prefix) => _findAllByPrefixExact(root, prefix).map(n => n.name);
+
+// The names as they are today, and as they'd be after the rename.
+let tree = N('page', [
+  N('Template_Text-Only_Dark_1440x1440'),
+  N('Meta_Template_Text-Only_Dark_1080x1920'),
+  N('Meta - Template_Text-Only_Light_1440x1800'),
+  N('Reddit_Template_Text-Only_Dark_1080x1350'),
+]);
+ok('bumper: un-renamed frame still matches', hits(tree, 'Template_Text-Only').includes('Template_Text-Only_Dark_1440x1440'));
+ok('bumper: Meta_ prefixed frame matches', hits(tree, 'Template_Text-Only').includes('Meta_Template_Text-Only_Dark_1080x1920'));
+ok('bumper: "Meta - " prefixed frame matches', hits(tree, 'Template_Text-Only').includes('Meta - Template_Text-Only_Light_1440x1800'));
+ok('bumper: all four resolve', hits(tree, 'Template_Text-Only').length === 4, JSON.stringify(hits(tree, 'Template_Text-Only')));
+
+// Must NOT become a substring search: a bumper is one leading platform token,
+// nothing else. These are the false positives the change could have bought.
+let neg = N('page', [
+  N('Testing_Template_Text-Only_1440x1440'),   // not a platform token
+  N('Archive-Template_Text-Only_1440x1440'),   // not a platform token
+  N('Copy of Template_Text-Only_1440x1440'),   // no separator token at all
+  N('Board_Meta_Template_Text-Only_1440x1440'),// bumper not in FIRST position
+]);
+ok('bumper: does not match a non-platform prefix', hits(neg, 'Template_Text-Only').length === 0,
+   JSON.stringify(hits(neg, 'Template_Text-Only')));
+
+// A bare platform frame must not be dragged in by the stripping.
+ok('bumper: Adtype_ containers match under a bumper too',
+   hits(N('p', [N('Meta_Adtype_Sticky-Note_Single')]), 'Adtype_Sticky-Note').length === 1);
+ok('bumper: strip leaves a non-platform name untouched',
+   _stripPlatformBumper('Template_Text-Only_1440x1440') === 'Template_Text-Only_1440x1440');
+ok('bumper: strip removes only the platform token',
+   _stripPlatformBumper('Meta_Template_Text-Only') === 'Template_Text-Only');
+
+// The normalized fallback has to survive the bumper as well. _normName only
+// folds case and whitespace (it does NOT collapse _ vs -), so the drift it
+// catches is a casing/trailing-space slip — which must still resolve once the
+// frame also carries a bumper.
+const nhits = (root, p) => _findAllByPrefixNorm(root, _normName(p)).map(n => n.name);
+const drifted = 'Meta_template_text-only_1440x1440 ';
+ok('bumper: normalized fallback matches through the bumper',
+   nhits(N('p', [N(drifted)]), 'Template_Text-Only').length === 1,
+   JSON.stringify(nhits(N('p', [N(drifted)]), 'Template_Text-Only')));
+ok('bumper: that name is genuinely unreachable without the strip',
+   _normName(drifted).indexOf(_normName('Template_Text-Only')) !== 0);
+
 process.exit(fails ? 1 : 0);
