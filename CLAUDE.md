@@ -55,9 +55,8 @@ working checkout is `~/dev/adam-progress`. An older checkout at
 
 ```bash
 # 1. Install
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r mcp_server/requirements.txt
-cp .env.example .env   # then fill in keys
+uv sync                # Python 3.12+; pyproject.toml + uv.lock are the real dep set
+cp .env.example .env   # then fill in keys (or skip and use `railway run`)
 
 # 2. Run the local pipeline against a test order
 python3 pipeline/run_pipeline.py --test

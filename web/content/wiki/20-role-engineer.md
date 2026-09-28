@@ -51,10 +51,15 @@ once.
 ```
 git clone https://github.com/loganheath-oss/adam.git
 cd adam
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r mcp_server/requirements.txt
-cp .env.example .env        # then fill it in
+uv sync                     # Python 3.12+; installs from pyproject.toml + uv.lock
+cp .env.example .env        # then fill it in, or skip it and use `railway run`
 ```
+
+**Use `uv`, not pip.** `pyproject.toml` + `uv.lock` are the real dependency set and
+what the deploy installs (`uv sync --locked`). `mcp_server/requirements.txt` is an
+older partial list — no `anthropic`, no `fastapi`, no `sqlalchemy`, no `psycopg2` —
+so installing from it leaves you unable to run the pipeline at all. This page said
+to use it until 2026-09-28.
 
 Run everything through `railway run` rather than pasting keys into your shell. It injects the
 service env, so you never handle a key directly.
@@ -173,11 +178,14 @@ In this order. Most problems are a button or a text edit, not code.
 **"No space left on device."** The sprint volume is 500 MB and fills with images. Check
 `/admin/storage`, prune at `POST /admin/prune`, re-run from the gate. **A recurring chore, not an
 incident**, and the most likely thing to strand work while you're still learning.
-Both paths are on the API host, `adam-production-9618.up.railway.app` — the front-end host
-(`adam-web-production`) 404s on everything under `/admin`. As of 2026-09-28 this is **not an
-engineer-only chore**: the dashboard's Sprints table has a checkbox per row and a two-step
-**Delete selected…**, so any admin can prune without the API key. `POST /admin/prune` still exists
-for scripting and is not a browsable URL.
+`/admin/storage` and `/admin/prune` are **backend-only** — they 404 on
+`adam-web-production`, which is what Adrie hit on 2026-09-28. Note this is not a clean split:
+`/admin` itself and the activity/spend/digest/issues/roles pages are the **Next.js** admin UI and
+404 on the backend. The full host table is in [Fixing errors](16-fixing-errors.md).
+
+As of 2026-09-28 pruning is **not an engineer-only chore**: the backend dashboard's Sprints table
+has a checkbox per row and a two-step **Delete selected…**, so any admin can prune without the API
+key. `POST /admin/prune` still exists for scripting and is not a browsable URL.
 
 **A 400 saying the credit balance is too low.** Billing, not a bad request. Fund or swap the key,
 resume from Gate 2.

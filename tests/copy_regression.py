@@ -511,15 +511,20 @@ def _admin_host_checks():
     web_host = "adam-web-production.up.railway.app"
     wiki = {p.name: p.read_text() for p in sorted((rp.BASE_DIR / "docs" / "wiki").glob("*.md"))}
 
-    # The exact wrong pairing Adrie was led to build. ONLY /admin: the front end
-    # does serve /sprints/<id> and /new (both verified 200 on both hosts
-    # 2026-09-27), and Adrie's own tracker links sprints on the web host, so
-    # flagging /sprints here would be a false positive on correct links.
-    bad = sorted(n for n, t in wiki.items() if f"{web_host}/admin" in t)
-    check("admin host: no guide points an /admin path at the front-end host",
-          not bad, f"{bad} pair {web_host} with an /admin path — it 404s there")
+    # CORRECTION 2026-09-28: an earlier version of this check asserted that NO
+    # guide may pair the web host with any /admin path. That is wrong — probing
+    # both hosts shows the Next.js app serves /admin plus activity, spend,
+    # digest, issues and roles as PAGES, and /admin 404s on the backend. Only
+    # these three are backend-only, and they are what Adrie actually hit.
+    BACKEND_ONLY = ("/admin/dashboard", "/admin/storage", "/admin/prune",
+                    "/plugin", "/health")
+    bad = sorted(n for n, t in wiki.items()
+                 if any(f"{web_host}{seg}" in t for seg in BACKEND_ONLY))
+    check("admin host: no guide points a backend-only path at the web host",
+          not bad, f"{bad} pair {web_host} with a backend-only path — it 404s there")
 
-    # Anywhere the volume chore is documented, the host has to travel with it.
+    # Anywhere the volume chore is documented, the backend host has to travel
+    # with it — those two really are backend-only.
     for name, text in wiki.items():
         if "/admin/storage" not in text and "/admin/prune" not in text:
             continue

@@ -33,9 +33,18 @@ The storage volume (500 MB) fills up with sprint images; runs then die mid-image
 - **Fix (in a browser):** tick the sprints in the dashboard's **Sprints** table and use **Delete selected…**. Any admin can do this; you do not need the API key. Full steps and the safeguards are in *Pruning from the dashboard* at the bottom of this page.
 - **Fix (scripted):** `POST /admin/prune`. Still not a page — visiting the URL returns 405, because deleting has to be a deliberate call. Keep anything the team still needs, then re-run the failed sprint from its gate.
 
-> **Host matters.** Every `/admin/*` path lives on the **API** service,
-> `adam-production-9618.up.railway.app` — *not* on `adam-web-production.up.railway.app`, which is the
-> Next.js front end and will 404 on all of them.
+> **Host matters, and it is not a clean split.** There are two services and the
+> `/admin` surfaces are divided between them (verified against both hosts 2026-09-28):
+>
+> | Use this | On | Notes |
+> |---|---|---|
+> | `/admin`, `/admin/activity`, `/admin/spend`, `/admin/digest`, `/admin/issues`, `/admin/roles` | **`adam-web-production`** | The Next.js admin UI. These are the pages people read. `/admin` **404s** on the API host. |
+> | `/admin/dashboard`, `/admin/storage`, `/admin/prune` | **`adam-production-9618`** | Backend-only. These **404 on the web host** — this is what Adrie hit on 2026-09-28. |
+> | `/plugin`, `/plugin/version`, `/health` | **`adam-production-9618`** | Backend-only. |
+> | `/new`, `/sprints`, `/wiki`, `/learnings`, `/agent` | either | Both services serve these. The team uses `adam-web-production`; the guides historically named `adam-production-9618`. |
+>
+> The same path can exist on both and mean different things: `/admin/activity` is
+> a **page** on the web host and a **JSON endpoint** on the API host.
 
 ### 3. "Your credit balance is too low" (HTTP 400 from Anthropic) → fund or swap the key
 Copy generation returns a 400 (note: 400, *not* 401 — it looks like a bad request but it's billing).
