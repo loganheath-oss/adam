@@ -174,8 +174,10 @@ In this order. Most problems are a button or a text edit, not code.
 `/admin/storage`, prune at `POST /admin/prune`, re-run from the gate. **A recurring chore, not an
 incident**, and the most likely thing to strand work while you're still learning.
 Both paths are on the API host, `adam-production-9618.up.railway.app` — the front-end host
-(`adam-web-production`) 404s on everything under `/admin`. `/admin/prune` is POST-only and is not
-browsable; the easiest read-only view of sizes is the **Size** column on `/admin/dashboard`.
+(`adam-web-production`) 404s on everything under `/admin`. As of 2026-09-28 this is **not an
+engineer-only chore**: the dashboard's Sprints table has a checkbox per row and a two-step
+**Delete selected…**, so any admin can prune without the API key. `POST /admin/prune` still exists
+for scripting and is not a browsable URL.
 
 **A 400 saying the credit balance is too low.** Billing, not a bad request. Fund or swap the key,
 resume from Gate 2.
