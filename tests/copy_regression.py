@@ -406,6 +406,50 @@ def _guide_placeholder_checks():
           f"{total_open} total [LINK:] markers across the wiki")
 
 
+def _admin_host_checks():
+    """`/admin/*` paths were documented bare, so readers guessed the wrong host.
+
+    Adrie, 2026-09-25, following the guide: "I'm trying to access the storage
+    page via the info in the user guide and am getting a 404" — for
+    adam-web-production.up.railway.app/admin/storage and /admin/prune. Both
+    paths were real; neither is on that host. There are TWO Railway services,
+    and every `/admin` route lives on the API one:
+
+        adam-production-9618.up.railway.app   API — all /admin routes
+        adam-web-production.up.railway.app    Next.js front end — 404s on /admin
+
+    The guides only ever printed the path, so the host was left to the reader,
+    and the front-end host is the one people already have in their history. A
+    path with no host is an incomplete instruction; this keeps it complete.
+    """
+    api_host = "adam-production-9618.up.railway.app"
+    web_host = "adam-web-production.up.railway.app"
+    wiki = {p.name: p.read_text() for p in sorted((rp.BASE_DIR / "docs" / "wiki").glob("*.md"))}
+
+    # The exact wrong pairing Adrie was led to build.
+    bad = sorted(n for n, t in wiki.items()
+                 if any(f"{web_host}{seg}" in t for seg in ("/admin", "/sprints")))
+    check("admin host: no guide points an /admin path at the front-end host",
+          not bad, f"{bad} pair {web_host} with an /admin or /sprints path — it 404s there")
+
+    # Anywhere the volume chore is documented, the host has to travel with it.
+    for name, text in wiki.items():
+        if "/admin/storage" not in text and "/admin/prune" not in text:
+            continue
+        check(f"admin host: {name} names the API host alongside the /admin path",
+              api_host in text,
+              "mentions /admin/storage or /admin/prune with no host — the reader has to guess")
+
+    # /admin/prune is POST-only and destructive. Saying so is what stops someone
+    # reading a 405 as a broken link.
+    for name, text in wiki.items():
+        if "/admin/prune" not in text:
+            continue
+        check(f"admin host: {name} marks /admin/prune as POST",
+              "POST /admin/prune" in text or "`POST /admin/prune`" in text,
+              "names /admin/prune without POST — it is not a page and returns 405 in a browser")
+
+
 def _lead_time_checks():
     """One lead-time rule, stated in three places that had three different answers.
 
@@ -540,6 +584,7 @@ def _image_gen_off_checks():
 def offline_checks():
     print("\n== OFFLINE (deterministic) ==")
     _image_gen_off_checks()
+    _admin_host_checks()
     _lead_time_checks()
     _order_form_spec_checks()
     _audience_photo_checks()

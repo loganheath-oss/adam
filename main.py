@@ -2453,7 +2453,7 @@ async def prune_sprints(request: Request):
                          "remaining": [s for s in all_ids if s not in deleted]})
 
 
-@app.get("/admin/storage", dependencies=[Depends(require_api_key)])
+@app.get("/admin/storage", dependencies=[Depends(require_api_key_or_session)])
 async def storage_report():
     """Volume usage: total + per-sprint sizes (largest first), so you can see
     what's eating the volume and decide what to prune. Read-only."""

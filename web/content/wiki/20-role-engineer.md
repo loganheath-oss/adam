@@ -171,8 +171,11 @@ In this order. Most problems are a button or a text edit, not code.
 ### The failures you will actually meet
 
 **"No space left on device."** The sprint volume is 500 MB and fills with images. Check
-`/admin/storage`, prune at `/admin/prune`, re-run from the gate. **A recurring chore, not an
+`/admin/storage`, prune at `POST /admin/prune`, re-run from the gate. **A recurring chore, not an
 incident**, and the most likely thing to strand work while you're still learning.
+Both paths are on the API host, `adam-production-9618.up.railway.app` — the front-end host
+(`adam-web-production`) 404s on everything under `/admin`. `/admin/prune` is POST-only and is not
+browsable; the easiest read-only view of sizes is the **Size** column on `/admin/dashboard`.
 
 **A 400 saying the credit balance is too low.** Billing, not a bad request. Fund or swap the key,
 resume from Gate 2.

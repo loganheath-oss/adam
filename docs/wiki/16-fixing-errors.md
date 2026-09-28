@@ -29,8 +29,12 @@ The single most common situation. Open `/sprints/<id>` (or find it in the `/admi
 
 ### 2. "No space left on device" (ENOSPC) → prune old sprints
 The storage volume (500 MB) fills up with sprint images; runs then die mid-image-stage. This bit us in production.
-- **See usage:** `GET /admin/storage` (per-sprint sizes, largest first).
-- **Fix:** `POST /admin/prune` (needs the API key) — deletes old/errored sprints. Keep anything the team still needs, then re-run the failed sprint from its gate.
+- **See usage (in a browser):** log in at <https://adam-production-9618.up.railway.app/admin/dashboard> — the sprint table has a **Size** column. For the raw per-sprint list, largest first, open <https://adam-production-9618.up.railway.app/admin/storage> in the same browser once you're logged into the dashboard.
+- **Fix:** `POST /admin/prune` with the API key. This one is **not** a page — visiting it in a browser returns 405, because it deletes things and has to be a deliberate call. Deletes old/errored sprints. Keep anything the team still needs, then re-run the failed sprint from its gate.
+
+> **Host matters.** Every `/admin/*` path lives on the **API** service,
+> `adam-production-9618.up.railway.app` — *not* on `adam-web-production.up.railway.app`, which is the
+> Next.js front end and will 404 on all of them.
 
 ### 3. "Your credit balance is too low" (HTTP 400 from Anthropic) → fund or swap the key
 Copy generation returns a 400 (note: 400, *not* 401 — it looks like a bad request but it's billing).
