@@ -64,7 +64,8 @@ print(f"  plugin expectations: {len(PREFIXES)} styles, {len(CONTAINERS)} contain
 # One deep fetch of the whole document tree (name/type/children only via depth walk).
 doc = api(f"/v1/files/{FILE_KEY}")["document"]
 
-all_names = {}          # name -> count
+all_names = {}          # name -> count (raw, exactly as Figma reports it)
+matchable = set()       # every name PLUS its bumper-stripped form — see below
 frames_by_name = {}     # exact frame name -> node ids
 nested_placeholder = []  # (ancestor name/id, descendant name/id)
 
@@ -74,9 +75,33 @@ def is_ph(nm):
     return s in ("image-placeholder", "left-image-placeholder", "right-image-placeholder")
 
 
+# Elise, working session 2026-09-23: the Meta frames get a "meta_" front bumper
+# so they match Reddit's convention. Every comparison below is anchored at the
+# start of the name — `c in all_names` is exact equality, and the template test
+# uses startswith — so the rename would make this lint report ❌ for EVERY Meta
+# style at once, as if the whole library had vanished. Record the bumper-stripped
+# form alongside the raw one so a name resolves with or without the channel
+# label. Mirrors _stripPlatformBumper() in plugin/code.js; keep the two in step.
+PLATFORM_BUMPERS = {"meta", "reddit", "linkedin", "youtube", "google", "thirdparty"}
+
+
+def strip_platform_bumper(name):
+    m = re.match(r"^([A-Za-z0-9 &/]+?)\s*[_-]\s*(.+)$", str(name or ""))
+    if not m:
+        return str(name or "")
+    token = re.sub(r"[^a-z0-9]", "", m.group(1).lower())
+    if token in ("3rdpartyaffiliate", "thirdpartyaffiliate"):
+        token = "thirdparty"
+    if token.startswith("google"):
+        token = "google"
+    return m.group(2) if token in PLATFORM_BUMPERS else str(name or "")
+
+
 def walk(n, ph_ancestor=None):
     nm = str(n.get("name", ""))
     all_names[nm] = all_names.get(nm, 0) + 1
+    matchable.add(nm)
+    matchable.add(strip_platform_bumper(nm))
     if n.get("type") in ("FRAME", "COMPONENT", "COMPONENT_SET", "SECTION", "GROUP"):
         frames_by_name.setdefault(nm, []).append(n.get("id"))
     here_ph = is_ph(nm)
@@ -93,13 +118,13 @@ findings = []
 print("\n== per-style template resolution ==")
 for style, prefixes in sorted(PREFIXES.items()):
     containers = CONTAINERS.get(style, [])
-    container_hit = next((c for c in containers if c in all_names), None)
+    container_hit = next((c for c in containers if c in matchable), None)
     # which template prefix actually resolves for at least one size?
     tpl_hits = []
     for p in prefixes:
         sizes_found = [s for s in SIZES
                        if any(n == f"{p}_{s}" or (n.startswith(f"{p}_") and n.endswith(f"_{s}"))
-                              for n in all_names)]
+                              for n in matchable)]
         if sizes_found:
             tpl_hits.append((p, sizes_found))
     primary = prefixes[0] if prefixes else ""

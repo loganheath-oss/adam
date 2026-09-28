@@ -115,4 +115,36 @@ ok('bumper: normalized fallback matches through the bumper',
 ok('bumper: that name is genuinely unreachable without the strip',
    _normName(drifted).indexOf(_normName('Template_Text-Only')) !== 0);
 
+// 8. Adrie, working session 2026-09-23: "if we have generated images on a page
+// from a run, will those mess with new incoming information? Will the plugin
+// look at those at all because they're on the same page?" Logan: "I don't think
+// so, but I'm going to be looking into this." Never answered.
+//
+// The answer is that assembly renames every frame it emits away from the
+// Template_/Adtype_ prefixes the lookup searches for, so last run's output is
+// invisible to the next run's template search. That is load-bearing and was
+// never asserted — and the bumper strip above widens what matches, so it needs
+// to hold under the new rule too.
+const OUTPUT_NAMES = [
+  'ASSEMBLED_concept-1_freelance-speed',   // code.js:2914
+  'ASSEMBLED_ad_7',                        // code.js:2939 (legacy path)
+  'STYLED_concept-2_1440x1800',            // code.js:2306
+  'Sprint · 2026-09-27 Reddit',            // code.js:2880
+  'CuratedHeadshot_dana',                  // code.js:1171
+];
+const priorRun = N('page', OUTPUT_NAMES.map(n => N(n)));
+for (const prefix of ['Template', 'Template_', 'Adtype', 'Adtype_']) {
+  ok(`prior run: output is invisible to a "${prefix}" search`,
+     hits(priorRun, prefix).length === 0, JSON.stringify(hits(priorRun, prefix)));
+}
+ok('prior run: the bumper strip does not expose output names',
+   OUTPUT_NAMES.every(n => _stripPlatformBumper(n) === n),
+   JSON.stringify(OUTPUT_NAMES.map(n => [n, _stripPlatformBumper(n)]).filter(([a, b]) => a !== b)));
+
+// And the real library on the same page must still be found alongside it.
+const mixed = N('page', OUTPUT_NAMES.map(n => N(n)).concat([
+  N('Template_Text-Only_Dark_1440x1440'), N('Meta_Template_Text-Only_Dark_1080x1920')]));
+ok('prior run: real templates on the same page still resolve',
+   hits(mixed, 'Template_Text-Only').length === 2, JSON.stringify(hits(mixed, 'Template_Text-Only')));
+
 process.exit(fails ? 1 : 0);
