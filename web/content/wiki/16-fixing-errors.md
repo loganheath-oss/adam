@@ -66,6 +66,21 @@ Two rules cover every deploy failure we ever hit:
 
 ---
 
+### 9. "No confirmed template" warnings → check whether the style actually rendered
+
+Treat this warning as a lead, not a verdict. The 2026-08-21 isolation test ran only
+the nine flagged styles and **eight of the nine rendered fine** — one real failure
+(Search Bar with Talent Badge) hiding behind eight false alarms. If the style came
+out of Figma looking right, the warning was wrong.
+
+**Bespoke is flagged MANUAL by design and is never a defect.** Bespoke is always
+custom and is expected to need hand design, so exclude it from any count of broken
+templates. Leaving it in the list is how a clean run starts looking broken.
+
+The method that settled this is worth reusing: isolate the suspect styles, run only
+those, and log what actually rendered. Four earlier mixed runs could not answer the
+question that one isolated run closed.
+
 ## When you can't fix it
 
 1. **File it in `/admin/issues`** — with the sprint ID and what you expected vs got. This is the system of record.

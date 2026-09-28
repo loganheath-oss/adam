@@ -17,6 +17,18 @@ flowchart LR
   G4 --> G5["Review<br/>images"] --> G6["Final<br/>QA"] --> A["Assemble<br/>in Figma"] --> D["Deliver"]
 ```
 
+## How many assets to ask for in one run
+
+**Around five.** Quality and consistency are measurably better at low volume, and
+twelve degrades output across the board — the worst assembly failure in the whole
+August test window came from a twelve-style run.
+
+This is Adrie's finding from the August test runs (tracked as ADAM-018), and until
+the underlying batching defect is fixed it is a real production limit, not a
+preference. Nothing in the tool enforces it, so it is on the person placing the
+order. If you need thirty assets, split them across runs rather than asking for
+thirty at once.
+
 ## A) The normal flow (web app)
 1. **Submit an order** in the order form: platform, format, quantity, **visual styles**, **resolutions**,
    and a **brief** (the brief is the highest-priority instruction — it overrides standing refs).

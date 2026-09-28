@@ -4166,6 +4166,20 @@ def stage_04_generate_images(sprint_id, image_rows):
     # the package wasn't installed.
     NON_GEMINI_METHODS = {"figma_library", "needs_human_selection", "skip"}
 
+    # ⚠ READ BEFORE IMPLEMENTING ADAM-003. Adrie's August punchlist asks that
+    # "generation_method: skip with an empty prompt fails Gate 4 loudly and
+    # names the affected styles." That guard was never built, and it must NOT be
+    # built as literally worded, because an empty prompt is now the NORMAL shape
+    # for two legitimate cases:
+    #   · the image-generation kill switch (2026-09-24) rewrites every
+    #     Gemini-bound row to needs_human_selection with prompt = "", and
+    #   · self-contained styles (Us vs Them, Pie Chart, Device UI, Platform UI,
+    #     Meme, Social Media Profile, Talent Profile) ship skip with no prompt
+    #     by design — the template carries its own imagery.
+    # The real ADAM-003 defect was rows reaching pending_assembly with NO route
+    # at all. Gate the check on "no generation_method resolved", never on "the
+    # prompt string is empty", or it fails every image row in the run.
+
     # HARD STOP (2026-09-24). The stage-03 flip above should mean nothing
     # Gemini-bound ever arrives here, but this is the only function that spends
     # money at Google, so it refuses on its own rather than trusting an upstream

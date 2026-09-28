@@ -406,6 +406,43 @@ def _guide_placeholder_checks():
           f"{total_open} total [LINK:] markers across the wiki")
 
 
+def _punchlist_checks():
+    """Three criteria out of Adrie's August punchlist that live in source.
+
+    The tracker marks 21 of 22 issues Done while marking all 53 acceptance
+    criteria "No", with no verifier and no date on any of them, so the Status
+    column proves nothing. These are the pieces that were genuinely missing and
+    got built on 2026-09-27; this keeps them from quietly reverting. Full
+    verification record: docs/PUNCHLIST-VERIFICATION-2026-09-27.md
+    """
+    main_src = (rp.BASE_DIR / "main.py").read_text()
+
+    # ADAM-001: "Warning fires at 70% capacity with the number of sprints
+    # eligible for archive." It fired at 80% with a bare percentage.
+    check("ADAM-001: volume warning fires at 70%, not 80%",
+          '"ok": _pct < 70' in main_src,
+          "the volume self-check threshold moved off 70%")
+    check("ADAM-001: the warning names archive-eligible sprints",
+          "eligible for archive" in main_src and "ARCHIVE_AFTER_DAYS" in main_src,
+          "a bare percentage tells an operator there's a problem but not the fix")
+
+    # ADAM-003 must NOT be built on "the prompt string is empty" — that is the
+    # normal shape for the kill switch and for self-contained styles.
+    rp_src = (rp.BASE_DIR / "pipeline" / "run_pipeline.py").read_text()
+    check("ADAM-003: the do-not-build-as-worded warning is present",
+          "READ BEFORE IMPLEMENTING ADAM-003" in rp_src,
+          "without it, someone builds a guard that fails every image row")
+
+    # ADAM-011 / ADAM-018: knowledge that existed ONLY in the spreadsheet.
+    fix_src = (rp.BASE_DIR / "docs" / "wiki" / "16-fixing-errors.md").read_text()
+    use_src = (rp.BASE_DIR / "docs" / "wiki" / "07-using-adam.md").read_text()
+    check("ADAM-011: Bespoke is documented as MANUAL by design",
+          "MANUAL by design" in fix_src, "Bespoke back in the defect count")
+    check("ADAM-018: the per-run asset recommendation is documented",
+          "How many assets to ask for in one run" in use_src,
+          "the ~5-per-run limit exists only in the spreadsheet again")
+
+
 def _admin_host_checks():
     """`/admin/*` paths were documented bare, so readers guessed the wrong host.
 
@@ -586,6 +623,7 @@ def _image_gen_off_checks():
 def offline_checks():
     print("\n== OFFLINE (deterministic) ==")
     _image_gen_off_checks()
+    _punchlist_checks()
     _admin_host_checks()
     _lead_time_checks()
     _order_form_spec_checks()

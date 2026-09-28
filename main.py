@@ -2959,10 +2959,36 @@ def _run_self_check() -> dict:
     except Exception as e:
         checks["styles"] = {"ok": False, "detail": str(e)[:80]}
     try:  # 4. Volume threshold.
+        # Fires at 70%, not 80%, and names how many sprints are already old
+        # enough to archive — ADAM-001 in Adrie's August punchlist: "Warning
+        # fires at 70% capacity with the number of sprints eligible for
+        # archive." A bare percentage tells an operator there's a problem but
+        # not the one action that fixes it, which is why the August runs hit a
+        # hard stop at Gate 5 instead of a warning anyone could act on.
         import shutil as _sh
         _u = _sh.disk_usage(str(RUNS_DIR))
         _pct = round(_u.used / _u.total * 100, 1)
-        checks["volume"] = {"ok": _pct < 80, "detail": f"{_pct}% used"}
+        _eligible = 0
+        try:
+            _cut = datetime.now(timezone.utc) - timedelta(days=ARCHIVE_AFTER_DAYS)
+            for _d in (RUNS_DIR.iterdir() if RUNS_DIR.exists() else []):
+                if not _d.is_dir() or (_d / "archived.json").exists():
+                    continue
+                _st = sprint_state.read_state(_d)
+                _ts = str(_st.get("updated_at") or "")
+                try:
+                    if datetime.fromisoformat(_ts) < _cut:
+                        _eligible += 1
+                except Exception:
+                    pass
+        except Exception:
+            _eligible = -1
+        _detail = f"{_pct}% used"
+        if _eligible >= 0:
+            _detail += (f" — {_eligible} sprint(s) older than {ARCHIVE_AFTER_DAYS}d "
+                        f"eligible for archive" if _eligible
+                        else f" — no sprint older than {ARCHIVE_AFTER_DAYS}d to archive")
+        checks["volume"] = {"ok": _pct < 70, "detail": _detail}
     except Exception as e:
         checks["volume"] = {"ok": False, "detail": str(e)[:80]}
     try:  # 5. Stuck sprints. Two distinct classes (audit 2026-07-30 — the old
