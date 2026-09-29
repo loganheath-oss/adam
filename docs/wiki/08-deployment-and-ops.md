@@ -5,10 +5,18 @@
 ```mermaid
 flowchart LR
   DEV["Your local clone<br/>of the repo"] -->|git push main| GH["GitHub<br/>loganheath-oss/adam"]
-  GH -->|auto-deploy| RW["Railway<br/>service: adam"]
-  RW --> URL["adam-production-9618<br/>.up.railway.app"]
+  GH -->|auto-deploy| RW["Railway<br/>service: adam<br/>(backend + volume)"]
+  DEV -->|railway up, manual| WEB["Railway<br/>service: adam-web<br/>(Next.js)"]
+  WEB --> URL["adam-web-production<br/>.up.railway.app<br/><b>the only public URL</b>"]
+  WEB -.->|forwards what it<br/>does not serve| RW
   ENV["Railway env vars<br/>ANTHROPIC · GEMINI · FIGMA"] -.-> RW
 ```
+
+**One public hostname, two services.** `adam-web` is the address people use; it serves its own
+pages and forwards anything else — the plugin download, `/admin/dashboard`, `/admin/storage`,
+`/admin/prune`, `/health` — to the `adam` backend, which holds the sprint volume and is no longer
+addressed directly. The two services deploy differently: the backend auto-deploys from `main`,
+`adam-web` does not (see **Deploying** below), so a change to either can ship without the other.
 
 ## Where things run
 | Surface | Runs on | Notes |

@@ -11,7 +11,7 @@ Override the host with ADAM_URL if needed.
 """
 import os, json, urllib.request, urllib.error
 
-URL = os.environ.get("ADAM_URL", "https://adam-production-9618.up.railway.app").rstrip("/") + "/api/sprints"
+URL = os.environ.get("ADAM_URL", "https://adam-web-production.up.railway.app").rstrip("/") + "/api/sprints"
 KEY = os.environ.get("PIPELINE_API_KEY", "")
 
 
