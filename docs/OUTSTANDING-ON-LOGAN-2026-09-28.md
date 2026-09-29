@@ -80,3 +80,26 @@ host, guides corrected), and reading Lee's engineering feedback.
 The one loose end is that he never tagged Elise in Figma about the light-mode
 variant — but he had already determined it was not a defect, so there is nothing
 to say.
+
+## 5. One public URL — done 2026-09-29, with two follow-ups
+
+`adam-web-production.up.railway.app` now serves everything via a `fallback`
+rewrite; the `adam` backend keeps the sprint volume and is no longer addressed
+directly. Verified live: 20/20 routes OK, auth-gated routes 401 (reachable) not
+404, dashboard login works through the proxy, plugin zip byte-identical.
+
+Two references to the backend host remain, both machine-to-machine and invisible
+to Upwork. Each needs a deliberate step, neither was worth rushing:
+
+- **Figma plugin.** `plugin/manifest.json` `allowedDomains` hardcodes the backend
+  host and Figma enforces it, so `ui.html` posts `/assembly-report` there. Moving
+  it means a new plugin build AND everyone re-importing — the team had just taken
+  2026.09.28. Do it with the next plugin release, not on its own.
+- **MCP connector.** Registered against the backend host in Logan's personal
+  Claude account (which is separately a handoff blocker — see `CLAUDE.md` §4).
+  Re-pointing it at the public host means re-registering the connector.
+
+**The asymmetry that caused the drift is still there:** the backend auto-deploys
+from `main`, `adam-web` does not (manual `railway up` from an isolated copy). So
+the two can still ship out of step. Worth raising with Haresh's team for the
+December migration — two services is also two things to migrate.
