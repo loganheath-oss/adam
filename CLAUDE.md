@@ -302,7 +302,11 @@ Code in stdio mode (no deploy needed).
 
 ## 12. Pointers
 
-- **Live MCP connector:** https://adam-production-9618.up.railway.app/mcp/ (mounted in the web app; auth via `?auth=<token>`)
+- **Public URL (the only one to share):** https://adam-web-production.up.railway.app — serves its own
+  pages and forwards everything else to the `adam` backend, which is no longer addressed directly.
+- **Live MCP connector:** https://adam-production-9618.up.railway.app/mcp/ — still the backend host,
+  because the connector is registered against it in Logan's Claude account. Re-registering it on the
+  public host is a follow-up.
 - **Figma file:** `DoDwumxELkuAuKKSP5p00e` (Paid Acquisition 2026)
 - **Drive folders** (IDs in `configs/upwork_config.json`):
   - Brand: `1Jn42lIOVAir9QU-PAMGnDmO8gMsz6BGA`

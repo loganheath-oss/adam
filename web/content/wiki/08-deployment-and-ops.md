@@ -48,8 +48,9 @@ The app needs these (set in **Railway env vars**, mirrored locally in `.env`):
 ## Gotchas (ops)
 - **`runs/` lives on a persistent Railway volume** mounted at `/data/runs` (500 MB) — it survives redeploys, so
   sprints created on the deployed app persist. (On the old Fly host it was baked into the image and didn't.)
-  When it fills, image stages fail with ENOSPC → use `/admin/storage` + `POST /admin/prune`, both on the
-  **API** host `adam-production-9618.up.railway.app` (the `adam-web` host has no `/admin` routes and 404s).
+  When it fills, image stages fail with ENOSPC → prune from the dashboard at
+  `adam-web-production.up.railway.app/admin/dashboard` (tick the sprints, **Delete selected…**), or call
+  `POST /admin/prune` for scripting.
 - **`httpx` is required** for copy-gen; ensure it's in the deployed deps (it's used directly, not via SDK).
 - **Anthropic "credit balance too low" returns HTTP 400**, not 401 — looks like a bad request but it's billing.
 - **`import re` must stay imported** in `run_pipeline.py` — the multi-field/chart-pct logic needs it; a

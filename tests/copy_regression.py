@@ -492,44 +492,44 @@ def _punchlist_checks():
 
 
 def _admin_host_checks():
-    """`/admin/*` paths were documented bare, so readers guessed the wrong host.
+    """One public hostname (2026-09-29).
 
-    Adrie, 2026-09-25, following the guide: "I'm trying to access the storage
-    page via the info in the user guide and am getting a 404" — for
-    adam-web-production.up.railway.app/admin/storage and /admin/prune. Both
-    paths were real; neither is on that host. There are TWO Railway services,
-    and every `/admin` route lives on the API one:
+    ADAM ran as two deployed services with two hostnames and the split was
+    invisible until it bit someone: Adrie took /admin/storage out of the guide,
+    opened it on the host she had in her browser, and got a 404 on a route that
+    worked fine on the other one.
 
-        adam-production-9618.up.railway.app   API — all /admin routes
-        adam-web-production.up.railway.app    Next.js front end — 404s on /admin
-
-    The guides only ever printed the path, so the host was left to the reader,
-    and the front-end host is the one people already have in their history. A
-    path with no host is an incomplete instruction; this keeps it complete.
+    adam-web now serves its own pages and forwards everything else to the
+    backend via a `fallback` rewrite, so there is ONE address a human should
+    ever see. This asserts the docs say so. Earlier versions of this check
+    encoded the two-host split and had to be rewritten twice as the truth
+    changed — the lesson being that a check asserting a topology is only as
+    good as the topology.
     """
-    api_host = "adam-production-9618.up.railway.app"
-    web_host = "adam-web-production.up.railway.app"
+    PUBLIC  = "adam-web-production.up.railway.app"
+    BACKEND = "adam-production-9618.up.railway.app"
     wiki = {p.name: p.read_text() for p in sorted((rp.BASE_DIR / "docs" / "wiki").glob("*.md"))}
 
-    # CORRECTION 2026-09-28: an earlier version of this check asserted that NO
-    # guide may pair the web host with any /admin path. That is wrong — probing
-    # both hosts shows the Next.js app serves /admin plus activity, spend,
-    # digest, issues and roles as PAGES, and /admin 404s on the backend. Only
-    # these three are backend-only, and they are what Adrie actually hit.
-    BACKEND_ONLY = ("/admin/dashboard", "/admin/storage", "/admin/prune",
-                    "/plugin", "/health")
-    bad = sorted(n for n, t in wiki.items()
-                 if any(f"{web_host}{seg}" in t for seg in BACKEND_ONLY))
-    check("admin host: no guide points a backend-only path at the web host",
-          not bad, f"{bad} pair {web_host} with a backend-only path — it 404s there")
+    # The backend host should not be handed to a human any more. Two exemptions:
+    # the MCP connector is registered against it and moving that needs a
+    # re-registration, and one line deliberately names it to tell people with
+    # old links that those still work.
+    offenders = {}
+    for name, text in wiki.items():
+        bad = [ln.strip()[:90] for ln in text.splitlines()
+               if BACKEND in ln and "/mcp" not in ln and "older link" not in ln
+               and "<br/>" not in ln]          # mermaid node label = the service, not a URL
+        if bad:
+            offenders[name] = bad
+    check("one URL: no guide hands a reader the backend host",
+          not offenders, str(offenders)[:300])
 
-    # Anywhere the volume chore is documented, the backend host has to travel
-    # with it — those two really are backend-only.
+    # Wherever the volume chore is documented, the public host travels with it.
     for name, text in wiki.items():
         if "/admin/storage" not in text and "/admin/prune" not in text:
             continue
-        check(f"admin host: {name} names the API host alongside the /admin path",
-              api_host in text,
+        check(f"one URL: {name} names the public host alongside the /admin path",
+              PUBLIC in text,
               "mentions /admin/storage or /admin/prune with no host — the reader has to guess")
 
     # /admin/prune is POST-only and destructive. Saying so is what stops someone
@@ -537,9 +537,20 @@ def _admin_host_checks():
     for name, text in wiki.items():
         if "/admin/prune" not in text:
             continue
-        check(f"admin host: {name} marks /admin/prune as POST",
+        check(f"one URL: {name} marks /admin/prune as POST",
               "POST /admin/prune" in text or "`POST /admin/prune`" in text,
               "names /admin/prune without POST — it is not a page and returns 405 in a browser")
+
+    # The rewrite is what makes the single hostname true. If it regresses to
+    # beforeFiles/afterFiles it could shadow /sprints/[id]; if it disappears,
+    # every backend-only route 404s again.
+    cfg = (rp.BASE_DIR / "web" / "next.config.ts").read_text()
+    check("one URL: the fallback rewrite exists",
+          "fallback:" in cfg and '"/:path*"' in cfg,
+          "without it /plugin, /admin/dashboard and /admin/storage 404 on the public host")
+    check("one URL: the catch-all is in the fallback phase, not before/after files",
+          re.search(r"beforeFiles:\s*\[\s*\]", cfg) and re.search(r"afterFiles:\s*\[\s*\]", cfg),
+          "a catch-all in beforeFiles/afterFiles can shadow real pages like /sprints/[id]")
 
 
 def _lead_time_checks():

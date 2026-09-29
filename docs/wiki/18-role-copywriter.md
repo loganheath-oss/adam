@@ -34,7 +34,7 @@ checkpoints takes minutes. Image generation is the slow leg.
 
 ## Before you start
 
-- Access to the ADAM web app: https://adam-production-9618.up.railway.app
+- Access to the ADAM web app: https://adam-web-production.up.railway.app
 - Access to the sprint you've been handed.
 - The Slack channel where sprints are shared: `#paid-acquisition-pipeline`
 - Optional but useful: access to `/learnings` and `/quotes`, both editable in the app.

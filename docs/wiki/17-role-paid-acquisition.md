@@ -37,7 +37,7 @@ You don't run the tool, drive the approvals, or touch Figma.
 
 You need:
 
-- Access to the ADAM order form: https://adam-production-9618.up.railway.app/new
+- Access to the ADAM order form: https://adam-web-production.up.railway.app/new
 - Your brief ready, or the notes to write one.
 - Any stats, claims or reference ads you want used, with links.
 - Access to the Slack channel where sprints get shared: `#paid-acquisition-pipeline`

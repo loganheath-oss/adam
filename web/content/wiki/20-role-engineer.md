@@ -44,7 +44,7 @@ once.
 | **Gemini API key** | Image generation |
 | **Figma access token** | Library photo lookup and the checker scripts |
 | **Claude Max / Enterprise** with connector rights | The MCP connector the copywriter drives gates through |
-| Production URLs | App https://adam-production-9618.up.railway.app · Dashboard https://adam-production-9618.up.railway.app/admin/dashboard |
+| Production URLs | App https://adam-web-production.up.railway.app · Dashboard https://adam-web-production.up.railway.app/admin/dashboard |
 
 ### 2. Set up locally
 
@@ -178,10 +178,9 @@ In this order. Most problems are a button or a text edit, not code.
 **"No space left on device."** The sprint volume is 500 MB and fills with images. Check
 `/admin/storage`, prune at `POST /admin/prune`, re-run from the gate. **A recurring chore, not an
 incident**, and the most likely thing to strand work while you're still learning.
-`/admin/storage` and `/admin/prune` are **backend-only** — they 404 on
-`adam-web-production`, which is what Adrie hit on 2026-09-28. Note this is not a clean split:
-`/admin` itself and the activity/spend/digest/issues/roles pages are the **Next.js** admin UI and
-404 on the backend. The full host table is in [Fixing errors](16-fixing-errors.md).
+`/admin/storage` and `/admin/prune` live on the backend service, but you reach them like
+everything else — through `adam-web-production.up.railway.app`, which forwards any path it does not
+serve itself. There is one public hostname as of 2026-09-29; the backend is not addressed directly.
 
 As of 2026-09-28 pruning is **not an engineer-only chore**: the backend dashboard's Sprints table
 has a checkbox per row and a two-step **Delete selected…**, so any admin can prune without the API

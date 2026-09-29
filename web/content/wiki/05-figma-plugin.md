@@ -108,7 +108,7 @@ The plugin runs from files on each person's machine, so copies drift. On 2026-09
 different builds were in use at once — one missing a July fix entirely — and the only way to
 find out was diffing files by hand.
 
-**Get the current build:** <https://adam-production-9618.up.railway.app/plugin> — download, unzip,
+**Get the current build:** <https://adam-web-production.up.railway.app/plugin> — download, unzip,
 then in the Figma desktop app choose **Plugins → Development → Import plugin from manifest…** and
 pick `manifest.json`. Importing over an old copy is fine; delete the previous entry if you end up
 with two.

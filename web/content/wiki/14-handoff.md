@@ -81,14 +81,16 @@ production.
 
 It is not a rare event, it is a periodic chore, and nobody outside this page knows to do it:
 
-1. `GET /admin/storage` lists per-sprint sizes, largest first. Viewable in a browser once you're
-   logged into `/admin/dashboard`, which also shows the same sizes in its **Size** column.
-2. `POST /admin/prune` deletes old and errored sprints. Needs the API key, and is POST-only —
-   it is not a page you can visit.
+1. Log in at `adam-web-production.up.railway.app/admin/dashboard`. The **Size** column shows
+   per-sprint usage; `/admin/storage` gives the same list as raw JSON, largest first.
+2. Tick the sprints you want gone and use **Delete selected…**. Any admin can do this — the
+   dashboard login *is* the admin gate, so you do not need the API key in hand. Running sprints
+   cannot be selected, and every deletion is logged. `POST /admin/prune` still exists for scripting.
 3. Re-run the failed sprint from its gate.
 
-All `/admin/*` paths are served by the **API** service at `adam-production-9618.up.railway.app`.
-The front end, `adam-web-production.up.railway.app`, does not carry them and returns 404.
+Everything is on the one hostname, `adam-web-production.up.railway.app`. It serves its own pages and
+forwards anything else to the backend, which is no longer addressed directly (see
+[Deployment & ops](08-deployment-and-ops.md)).
 
 Full runbook in [Fixing errors](16-fixing-errors.md). **Whoever inherits Railway inherits this
 chore.** If nobody has the Railway project, nobody can do it, and sprints stay stranded.
