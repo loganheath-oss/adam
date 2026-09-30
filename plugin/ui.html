@@ -151,6 +151,15 @@
     <button id="assemble" class="primary-action">Assemble</button>
   </div>
 
+  <div class="step" style="margin-top:12px">
+    <div class="step-instruction">Naming convention — for the templates page you are on
+      (&lt;Platform&gt;_Adtype_&lt;Style&gt; › [Variant_]WxH › Copy_&lt;Role&gt;). Preview lists every rename and changes nothing.</div>
+    <div class="row" style="gap:6px">
+      <button id="naming-preview" style="flex:1">Preview naming</button>
+      <button id="naming-apply" style="flex:1">Apply naming</button>
+    </div>
+  </div>
+
   <h2 style="font-size: 11px; color: #b0b0b0; margin: 14px 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px;">Log
     <button id="copy-log" style="float:right;font-size:10px;padding:2px 10px;border-radius:10px;border:1px solid #555;background:#2c2c2c;color:#ccc;cursor:pointer">Copy log</button>
   </h2>
@@ -210,6 +219,16 @@
       fileNameEl.classList.add("loaded");
       var lineCount = (t.match(/\n/g) || []).length;
       appendLog("Loaded pasted CSV — " + lineCount + " lines (incl. header).", "success");
+    });
+
+    document.getElementById("naming-preview").addEventListener("click", function () {
+      logEl.innerHTML = "";
+      parent.postMessage({ pluginMessage: { type: "naming-preview" } }, "*");
+    });
+    document.getElementById("naming-apply").addEventListener("click", function () {
+      if (!confirm("Rename the templates on THIS page to the naming convention?\n\nRun Preview first to see every change. Figma's version history can undo it.")) return;
+      logEl.innerHTML = "";
+      parent.postMessage({ pluginMessage: { type: "naming-apply" } }, "*");
     });
 
     document.getElementById("assemble").addEventListener("click", function () {

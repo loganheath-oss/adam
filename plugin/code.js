@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.30c";
+var PLUGIN_VERSION = "2026.09.30d";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -248,15 +248,6 @@ async function fillRedditLayers(clone, key, row) {
     }
     if (await setTextLayer(node, val)) filled++;
   }
-  // Reddit Us vs Them carries a Copy_CTA in EACH column; the generic CTA fill
-  // stops at the first, so the other shipped the template's "Start hiring".
-  var cta = row.CTA || row.cta || "";
-  if (cta && !STYLES_THAT_SKIP_CTA[key]) {
-    var ctas = findAllLayersByName(clone, "Copy_CTA");
-    for (var ci = 1; ci < ctas.length; ci++) {
-      if (ctas[ci].type === "TEXT" && await setTextLayer(ctas[ci], cta)) filled++;
-    }
-  }
   var items = splitPipe(row.Single_Bullets || row.single_bullets);
   var search = splitPipe(row.Search_Results || row.search_results);
   if (key === "text with icons" && items.length && await fillListLayers(clone, items)) filled++;
@@ -272,7 +263,7 @@ async function fillRedditLayers(clone, key, row) {
     }
   }
   if (key === "pie chart" && !(row.Chart_Pct || row.chart_pct) && (row.Pie_Center || row.pie_center)) {
-    if (await setFirstTextByCandidates(clone, ["Center_Callout_Text", "TextOnly_Subhead_Text"],
+    if (await setFirstTextByCandidates(clone, ["Copy_Center", "Center_Callout_Text", "TextOnly_Subhead_Text"],
                                        row.Pie_Center || row.pie_center)) filled++;
   }
   if (filled) log("  ✓ Reddit layers filled (" + filled + ")");
@@ -1500,7 +1491,7 @@ async function fillPieChartValue(clone, pct) {
   // Center callout = the percentage.
   await setFirstTextByCandidates(
     clone,
-    ["Center_Callout_Text", "chart_center_text", "TextOnly_Subhead_Text", "headline_text"],
+    ["Copy_Center", "Center_Callout_Text", "chart_center_text", "TextOnly_Subhead_Text", "headline_text"],
     String(Math.round(p)) + "%"
   );
 
@@ -2551,7 +2542,7 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
     // than the +/-12 tolerance. Descend to the real frame and take ITS box.
     //
     // Deliberately box-based, not name-based: slot NAMES drift where boxes do
-    // not (normalizeLayerNames below still renames a slot "1440x1080" to
+    // not (the retired normalizeLayerNames renamed a slot "1440x1080" to
     // "1440x1800" to repair exactly that), and the Reddit landscape slot's inner
     // frame is named "Layout - Carousel" with no size in the name at all.
     var imageFrame = resolveSlotTarget(slotFrames[s]);
@@ -2598,6 +2589,13 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
         await setFirstTextByCandidates(styledClone, subheadCandidates, creativeSubhead);
         if (leadCta && !STYLES_THAT_SKIP_CTA[key]) {
           await setFirstTextByCandidates(styledClone, ["Copy_CTA", "cta_text", "CTA_Text", "CTA", "cta"], leadCta);
+          // A template can carry several Copy_CTA — one per column on Us vs Them
+          // (Reddit and Meta), one per card on Carousel. The lookup above stops
+          // at the first, so the others shipped the template's "Start hiring".
+          var moreCtas = findAllLayersByName(styledClone, "Copy_CTA");
+          for (var mc = 1; mc < moreCtas.length; mc++) {
+            if (moreCtas[mc].type === "TEXT") await setTextLayer(moreCtas[mc], leadCta);
+          }
         }
         if (key === "sticky note") {
           // Use the REAL sticky copy from the manifest (Single_* for the single-note
@@ -2798,8 +2796,7 @@ function manifestPlatformToken(manifest) {
 // "Reddit - Static Grouped/Reddit - Image Feed", whose normalized name carries
 // a tail, with no casing table to maintain per platform.
 //
-// `manifest` is optional: normalizeLayerNames() calls this bare and must keep
-// the historical Meta-only behaviour.
+// `manifest` is optional: a bare call keeps the historical Meta-only behaviour.
 function findBoardMaster(manifest) {
   var token = manifest ? manifestPlatformToken(manifest) : "";
   var wantNorm = token + "staticgrouped";
@@ -2827,81 +2824,192 @@ function findBoardMaster(manifest) {
   return search(figma.currentPage) || search(figma.root);
 }
 
-// ── Normalize layer names (one-time Figma cleanup) ───────────────────────────
-// Standardizes off-convention layer names to the scheme ADAM expects, so Figma
-// stays the clean source of truth. COLLISION-AWARE: a layer is only renamed when
-// the new name isn't already used elsewhere in its enclosing template — never
-// collapses two layers onto one name (verified: 36 safe renames, 1 skip).
-async function normalizeLayerNames() {
-  await figma.loadAllPagesAsync();
-  var IMG_MAP = { "Image_Placeholder": "Image-Placeholder", "image_placeholder": "Image-Placeholder",
-                  "right_image_placeholder": "Right-Image-Placeholder", "left_image_placeholder": "Left-Image-Placeholder" };
-  var TXT_MAP = { "TextOnly_headline_text": "Copy_Headline", "TextOnly_Subhead_Text": "Copy_Subhead",
-                  "cta_text": "Copy_CTA", "Notification_Headline_Text": "Copy_Headline", "Subhead-Text": "Copy_Subhead" };
-  var renamed = 0, skipped = 0;
+// ── Naming convention (Elise's scheme, applied page by page) ────────────────
+// The scheme is the one Elise built on the Reddit page (read live 2026-09-30):
+//   container  <Platform>_Adtype_<Style>        Reddit_Adtype_Graphic-With-Text
+//   template   [Variant_]<W>x<H>               1080x1350, Dark_1440x1080, Alt1_Light…
+//   copy       Copy_<Role>                      Copy_Headline, Copy_CTA, Copy_Center
+//   photo      Image_Placeholder / Left-/Right-Image-Placeholder
+// Light is the default and carries no word; Dark / Alt / Alt1 / Single / Double
+// / Photo are kept because variant choice reads them.
+//
+// PREVIEW FIRST, current page only. Figma's REST API cannot rename layers, so
+// this runs inside Figma desktop, where Elise can read the plan before anything
+// changes. Anything ambiguous — two frames that would end up with the same name,
+// a second Copy_Headline in one template — is reported and left alone, because
+// the right answer is a design decision (Meta's Testimonial "Photo" / "Text-Only"
+// families became base / Alt1 / Alt2 by hand; no rule can reproduce that).
+//
+// Replaces normalizeLayerNames (2026-07), which ran file-wide with no preview,
+// renamed the fixed "Upwork @Upwork" handle to Copy_Headline (so the headline
+// would overwrite it), turned the Pie Chart centre into Copy_Subhead, and
+// renamed the board master's 1440x1080 slot — a real Reddit size — to 1440x1800.
+var CONVENTION_VARIANTS = ["dark", "alt", "alt1", "alt2", "alt3", "single", "double", "photo"];
+var CONVENTION_PREFIX = { meta: "Meta", reddit: "Reddit", linkedin: "Linkedin", youtube: "Youtube",
+                          google: "Google", thirdparty: "ThirdParty" };
 
-  function walkAll(n, fn) { fn(n); if ("children" in n) for (var i = 0; i < n.children.length; i++) walkAll(n.children[i], fn); }
-  function enclosingTemplate(node) {
-    var p = node.parent;
-    while (p) {
-      if (p.name && (p.name.indexOf("Template_") === 0 || p.name.indexOf("Adtype") === 0)) return p;
-      p = p.parent;
-    }
-    return node.parent || node;
-  }
-  function nameExistsIn(root, target, except) {
-    var found = false;
-    (function w(n) { if (found) return; if (n !== except && n.name === target) { found = true; return; }
-      if ("children" in n) for (var i = 0; i < n.children.length; i++) w(n.children[i]); })(root);
-    return found;
-  }
-  function tryRename(node, target) {
-    if (node.name === target) return;
-    if (nameExistsIn(enclosingTemplate(node), target, node)) { skipped++; return; }
-    node.name = target; renamed++;
-  }
+function _conventionPlatform(pageName) {
+  var t = _normName(pageName).replace(/templates?/g, "").replace(/[^a-z0-9]/g, "");
+  if (t.indexOf("3rdparty") === 0) t = "thirdparty";
+  return CONVENTION_PREFIX[t] || "";
+}
 
-  walkAll(figma.root, function (node) {
-    var nm = node.name || "";
-    // frame names → convention (no collision risk; names are unique per frame)
-    if ((node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE") && nm.indexOf("Template_") === 0) {
-      var nn = nm.replace("Template_Adtype_Hybrid_", "Template_Hybrid_")
-                 .replace("Template_Adtype_Talent-Profile_", "Template_Talent-Profile_")
-                 .replace("Template_LifestylePhoto_", "Template_Lifestyle-Photo-Full-Bleed_")
-                 .replace(/_1440x1880$/, "_1440x1800");
-      if (nn !== nm) { node.name = nn; renamed++; }
+function _conventionStyleSlug(containerName) {
+  var s = _stripPlatformBumper(String(containerName || ""));
+  s = s.replace(new RegExp("[\u2028\u2029]", "g"), "").replace(/^\s*ad\s*type\s*[:_\-\s]*/i, "");
+  s = s.replace(/\/+$/, "").trim().replace(/\s+/g, "-");
+  return s;
+}
+
+function _conventionTemplateName(node, styleSlug) {
+  var nm = String(node.name || "");
+  var m = nm.match(/(\d{3,5})\s*[x×]\s*(\d{3,5})/i);
+  var bw = Math.round(node.width || 0), bh = Math.round(node.height || 0);
+  // A single ad is at most ~2000px a side. Carousel frames hold several cards
+  // (4615x2028 …), so their box says nothing about the ad size — keep the name.
+  var boxIsAnAd = bw > 0 && bh > 0 && bw <= 2400 && bh <= 2400;
+  var w, h, fixed = "";
+  if (m && +m[1] === bw && Math.abs(+m[2] - bh) <= 12) { w = +m[1]; h = +m[2]; }
+  else if (m && !boxIsAnAd) { w = +m[1]; h = +m[2]; }
+  else if (boxIsAnAd) { w = bw; h = bh; if (m) fixed = " (named " + m[1] + "x" + m[2] + ", frame is " + bw + "x" + bh + ")"; }
+  else return null;
+  // Variant words only. A word that is part of the STYLE name is not a variant:
+  // "Photo" in Lifestyle-Photo-Full-Bleed, "Text"/"Only" in Text-Only.
+  var styleAlnum = String(styleSlug || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  // Words on either side of the size ("1080x1920 - Carousel Photo" puts them after).
+  var rest = m ? nm.slice(0, m.index) + " " + nm.slice(m.index + m[0].length) : nm;
+  var restAlnum = rest.toLowerCase().replace(/[^a-z0-9]/g, "");
+  // Testimonial families, as Elise mapped them by hand on the Meta page
+  // (2026-09-29): "Photo" became the base frame, "Text-Only" Alt1 and
+  // "Text-and-Photo" Alt2. Checked by structure: base and Alt2 hold an image
+  // slot, Alt1 does not. (She has since cut Meta back to the base frames; the
+  // other platforms still carry all three families.)
+  var family = "";
+  if (/testimonial/.test(styleAlnum)) {
+    if (/textandphoto/.test(restAlnum)) family = "Alt2";
+    else if (/textonly/.test(restAlnum)) family = "Alt1";
+  }
+  var toks = rest.split(/[\s_\-\/]+/).map(function (t) { return t.toLowerCase(); });
+  // Testimonial "Photo" (no "Text") is Elise's base frame: no variant word.
+  if (family || /testimonial/.test(styleAlnum)) toks = toks.filter(function (t) { return t !== "photo"; });
+  var keep = [];
+  for (var i = 0; i < toks.length; i++) {
+    var t = toks[i];
+    if (CONVENTION_VARIANTS.indexOf(t) === -1 || keep.indexOf(t) !== -1) continue;
+    if (t.length >= 3 && styleAlnum.indexOf(t) !== -1) continue;
+    keep.push(t);
+  }
+  // Light stays the unmarked default inside a family too (Alt1_1440x1440 beside
+  // Alt1_Dark_1440x1440), so a second run renames nothing.
+  if (family) {
+    var dark = keep.indexOf("dark") !== -1;
+    keep = keep.filter(function (t) { return t !== "dark"; });
+    keep.unshift(family.toLowerCase());
+    if (dark) keep.splice(1, 0, "dark");
+  }
+  var variant = keep.map(function (t) { return t.charAt(0).toUpperCase() + t.slice(1); }).join("_");
+  return { name: (variant ? variant + "_" : "") + w + "x" + h, note: fixed };
+}
+
+// Legacy text roles → Copy_<Role>. null = fixed template text ADAM never writes:
+// leave it, and never let it become Copy_* (Copy_ means "ADAM fills this").
+function _conventionTextName(node, styleSlug) {
+  var nm = String(node.name || "");
+  if (nm === "cta_text") return "Copy_CTA";
+  if (nm === "TextOnly_headline_text") return "Copy_Headline";
+  if (nm === "Subhead-Text") return "Copy_Subhead";
+  if (nm === "TextOnly_Subhead_Text") {
+    if (/pie/i.test(styleSlug)) return "Copy_Center";
+    if (!/[A-Za-z]/.test(String(node.characters || ""))) return null;  // "1,530" counter
+    return "Copy_Subhead";
+  }
+  return null;
+}
+
+var _CONVENTION_IMG = { "right_image_placeholder": "Right-Image-Placeholder",
+                        "left_image_placeholder": "Left-Image-Placeholder" };
+
+// Pure: returns the plan, changes nothing. [{node, from, to, kind, note, skip}]
+function conventionPlan(page) {
+  var plan = [];
+  var prefix = _conventionPlatform(page.name);
+  if (!prefix) return { prefix: "", plan: plan };
+  var kids = page.children || [];
+  for (var ci = 0; ci < kids.length; ci++) {
+    var c = kids[ci];
+    if (!/ad\s*type/i.test(c.name || "") || !("children" in c)) continue;
+    var slug = _conventionStyleSlug(c.name);
+    var cTarget = prefix + "_Adtype_" + slug;
+    if (c.name !== cTarget) plan.push({ node: c, from: c.name, to: cTarget, kind: "container" });
+    // Templates: direct frames, minus the Rules cards.
+    var tpls = [], seen = {};
+    for (var ti = 0; ti < c.children.length; ti++) {
+      var t = c.children[ti];
+      if (/^rules/i.test(t.name || "") || ["FRAME", "COMPONENT", "COMPONENT_SET"].indexOf(t.type) === -1) continue;
+      var tn = _conventionTemplateName(t, slug);
+      if (!tn) continue;
+      tpls.push({ node: t, tn: tn });
+      seen[tn.name] = (seen[tn.name] || 0) + 1;
     }
-    // image layers (must actually carry an IMAGE fill)
-    if (IMG_MAP[nm] && node.fills && node.fills.length &&
-        node.fills.some(function (f) { return f.type === "IMAGE"; })) {
-      tryRename(node, IMG_MAP[nm]);
+    for (var k = 0; k < tpls.length; k++) {
+      var e = tpls[k];
+      var clash = seen[e.tn.name] > 1;
+      if (e.node.name !== e.tn.name || clash) {
+        plan.push({ node: e.node, from: e.node.name, to: e.tn.name, kind: "template", note: e.tn.note, where: c.name,
+                    skip: clash ? "another frame in " + c.name + " would get the same name — needs a variant word (Dark / Alt1 / Photo …)" : "" });
+      }
+      // Layers inside the template.
+      var copyCount = {};
+      (function count(n) { if (n.type === "TEXT" && /^Copy_/.test(n.name)) copyCount[n.name] = (copyCount[n.name] || 0) + 1;
+        if ("children" in n) for (var q = 0; q < n.children.length; q++) count(n.children[q]); })(e.node);
+      (function walk(n) {
+        if (n.type === "TEXT") {
+          var to = _conventionTextName(n, slug);
+          if (to) {
+            var dup = to !== "Copy_CTA" && copyCount[to];  // several CTAs per template is normal
+            plan.push({ node: n, from: n.name, to: to, kind: "text", where: c.name + " › " + e.node.name,
+                        skip: dup ? "template already has a " + to : "" });
+            if (!dup) copyCount[to] = (copyCount[to] || 0) + 1;
+          }
+        } else if (_CONVENTION_IMG[n.name]) {
+          plan.push({ node: n, from: n.name, to: _CONVENTION_IMG[n.name], kind: "image", where: c.name + " › " + e.node.name });
+        }
+        if ("children" in n) for (var r = 0; r < n.children.length; r++) walk(n.children[r]);
+      })(e.node);
     }
-    // legacy text layers → Copy_*
-    if (node.type === "TEXT" && TXT_MAP[nm]) tryRename(node, TXT_MAP[nm]);
+  }
+  return { prefix: prefix, plan: plan };
+}
+
+async function applyNamingConvention(apply) {
+  var page = figma.currentPage;
+  var res = conventionPlan(page);
+  if (!res.prefix) {
+    log("Naming: '" + page.name.trim() + "' is not a platform templates page — nothing to do.");
+    figma.ui.postMessage({ type: "naming-complete", changes: 0, skipped: 0 });
+    return;
+  }
+  var todo = res.plan.filter(function (p) { return !p.skip; });
+  var held = res.plan.filter(function (p) { return p.skip; });
+  log("\n=== Naming convention — " + page.name.trim() + " (" + res.prefix + ") — " +
+      (apply ? "APPLYING" : "PREVIEW, nothing changed") + " ===");
+  ["container", "template", "text", "image"].forEach(function (kind) {
+    var rows = todo.filter(function (p) { return p.kind === kind; });
+    if (!rows.length) return;
+    log("\n" + kind.toUpperCase() + "S (" + rows.length + ")");
+    rows.forEach(function (p) {
+      log("  " + (p.where ? p.where + " › " : "") + "'" + p.from + "' → '" + p.to + "'" + (p.note || ""));
+    });
   });
-
-  // board master: left-panel value layers → CopyV{n}_{field}; slot 1440x1080 → 1440x1800
-  var board = findBoardMaster();
-  if (board) {
-    walkAll(board, function (n) { if (n.name === "1440x1080") { n.name = "1440x1800"; renamed++; } });
-    var panel = findLayerByName(board, "Frame 15");
-    if (panel) {
-      ["Frame 13", "Frame 14"].forEach(function (fname, idx) {
-        var vframe = findLayerByName(panel, fname);
-        if (!vframe) return;
-        var notes = findDirectChildByName(vframe, "Notes");
-        var slots = getCopyFrameTextValueLayers(notes);
-        var v = idx + 1;
-        if (slots.headline) { slots.headline.name = "CopyV" + v + "_Headline"; renamed++; }
-        if (slots.primary)  { slots.primary.name  = "CopyV" + v + "_Primary";  renamed++; }
-        if (slots.cta)      { slots.cta.name       = "CopyV" + v + "_CTA";      renamed++; }
-      });
-    }
+  if (held.length) {
+    log("\nLEFT ALONE — needs a decision (" + held.length + ")");
+    held.forEach(function (p) { log("  " + (p.where ? p.where + " › " : "") + "'" + p.from + "' → '" + p.to + "': " + p.skip); });
   }
-
-  log("✓ Normalize complete: " + renamed + " renamed, " + skipped + " skipped (collision-avoided).");
-  figma.notify("Layer names normalized: " + renamed + " renamed, " + skipped + " skipped.");
-  figma.ui.postMessage({ type: "normalize-complete", renamed: renamed, skipped: skipped });
+  if (apply) todo.forEach(function (p) { p.node.name = p.to; });
+  log("\n" + (apply ? "✓ Renamed " : "Would rename ") + todo.length + ", left " + held.length + " for a decision." +
+      (apply ? "" : " Run 'Apply naming' to make these changes."));
+  if (apply) figma.notify("Naming: " + todo.length + " renamed, " + held.length + " left for a decision.");
+  figma.ui.postMessage({ type: "naming-complete", changes: todo.length, skipped: held.length });
 }
 
 // Delete ONLY boards this plugin produced (names starting ASSEMBLED_concept- or
@@ -3274,7 +3382,8 @@ figma.ui.onmessage = async function (msg) {
   if (msg.type === "capture-template") captureTemplate();
   else if (msg.type === "capture-destination") captureDestination();
   else if (msg.type === "assemble") await assemble(msg);
-  else if (msg.type === "normalize-names") await normalizeLayerNames();
+  else if (msg.type === "naming-preview") await applyNamingConvention(false);
+  else if (msg.type === "naming-apply") await applyNamingConvention(true);
   else if (msg.type === "cleanup-boards") await cleanupTestBoards();
   else if (msg.type === "close") figma.closePlugin();
 };

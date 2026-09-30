@@ -73,6 +73,7 @@ let problems = 0;
       await setFirstTextByCandidates(clone, ['Copy_Headline'].concat(STYLE_HEADLINE_LAYERS[key] || []).concat(['headline_text']), row.Headline_On_Creative);
       await setFirstTextByCandidates(clone, ['Copy_Subhead'].concat(STYLE_SUBHEAD_LAYERS[key] || []), row.Subhead_On_Creative);
       if (!STYLES_THAT_SKIP_CTA[key]) await setFirstTextByCandidates(clone, ['Copy_CTA', 'cta_text', 'CTA_Text', 'CTA', 'cta'], row.CTA);
+      if (!STYLES_THAT_SKIP_CTA[key]) for (const c2 of findAllLayersByName(clone, 'Copy_CTA').slice(1)) await setTextLayer(c2, row.CTA);
       await setFirstTextByCandidates(clone, ['Copy_Testimonial'], row.Testimonial_Quote);
       await setFirstTextByCandidates(clone, ['Copy_Author'], row.Testimonial_Author);
       const pl = splitPipe(row.Pie_Labels), quad = ['Copy_TopLeft', 'Copy_TopRight', 'Copy_BottomLeft', 'Copy_BottomRight'];

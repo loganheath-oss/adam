@@ -365,9 +365,47 @@ eval(src.match(/var REDDIT_LAYER_FILLS = \{[\s\S]*?\n\};/)[0].replace('var ', 'g
   rt = R([TX('Copy_Title2', 'Chatbot Developer'), TX('Copy_Title2', 'Pay Hourly'), TX('Copy_Title2', 'Flat-rate'), TX('Copy_Title2', 'Project-based')]);
   await fillRedditLayers(rt, 'search and checkbox', row);
   ok('reddit Search & Checkbox Alt: search term then the three items', chars(rt, 'Copy_Title2').join('|') === 'TERM|A|B|C', chars(rt, 'Copy_Title2').join('|'));
-  rt = R([TX('Copy_CTA', 'Start hiring'), TX('Copy_CTA', 'Start hiring')]);
-  await fillRedditLayers(rt, 'us vs them', row);
-  ok('reddit: every Copy_CTA past the first takes the CTA', chars(rt, 'Copy_CTA')[1] === 'Post a project');
+  ok('every Copy_CTA is filled in board mode, not just the first (Us vs Them, Carousel)',
+     /findAllLayersByName\(styledClone, "Copy_CTA"\)/.test(src));
+  ok('pie centre accepts Copy_Center first', /\["Copy_Center", "Center_Callout_Text"/.test(src));
+
+  // 15. Naming convention tool (Preview / Apply naming). Cases are real names
+  // from the unconverted platform pages and the Meta page, 2026-09-30.
+  eval(['_conventionPlatform', '_conventionStyleSlug', '_conventionTemplateName',
+             '_conventionTextName', 'conventionPlan'].map(grab).join('\n') + '\n'
+            + src.match(/var CONVENTION_VARIANTS = \[[^\]]*\];/)[0].replace('var ', 'global.') + '\n'
+            + src.match(/var CONVENTION_PREFIX = \{[\s\S]*?\};/)[0].replace('var ', 'global.') + '\n'
+            + src.match(/var _CONVENTION_IMG = \{[\s\S]*?\};/)[0].replace('var ', 'global.'));
+  const F = (name, w, h, kids = []) => ({type: 'FRAME', name, width: w, height: h, children: kids});
+  const TXT = (name, characters = 'x') => ({type: 'TEXT', name, characters, children: []});
+  const pg = {type: 'PAGE', name: '    -> Linkedin Templates', children: [
+    F('AdType_Us-Vs-Them', 5000, 2000, [F('Rules', 1500, 1300), F('Template_Us-Vs-Them_1440x1440', 1440, 1440, [TXT('cta_text'), TXT('Copy_CTA')])]),
+    F('Adtype: Meme', 5000, 2000, [F('Template_Meme_Light_1440x1440', 1440, 1440), F('Template_Meme_Dark_1440x1880', 1440, 1800, [{type: 'RECTANGLE', name: 'right_image_placeholder'}])]),
+    F('Adtype_Pie-Chart', 5000, 2000, [F('Adtype_Pie-Chart__1440x1800', 1440, 1800, [TXT('TextOnly_Subhead_Text', 'Lorem Subhead')])]),
+    F('Adtype_Carousel', 9000, 2000, [F('1440x1440 - Carousel', 4723, 1792), F('1440x1440 - Carousel Photo', 6030, 1598)]),
+    F('Adtype_Testimonial', 9000, 2000, [F('Template_Testimonial-Photo_1440x1440', 1440, 1440),
+      F('Template_Testimonial-Text-Only_Light_1440x1440', 1440, 1440), F('Template_Testimonial-Text-Only_Dark_1440x1440', 1440, 1440),
+      F('Template_Testimonial-Text-and-Photo_Light_1440x1440', 1440, 1440)]),
+    F('Adtype_Mockup', 5000, 2000, [F('Template_Mockup_1440x1440', 1440, 1440, [TXT('Notification_Headline_Text', 'Upwork @Upwork')])]),
+  ]};
+  const plan = conventionPlan(pg).plan;
+  const to = (from) => (plan.find(p => p.from === from) || {}).to;
+  ok('naming: container gets the platform prefix', to('AdType_Us-Vs-Them') === 'Linkedin_Adtype_Us-Vs-Them' && to('Adtype: Meme') === 'Linkedin_Adtype_Meme');
+  ok('naming: Light is unmarked, Dark is kept', to('Template_Meme_Light_1440x1440') === '1440x1440');
+  ok('naming: a size typo is corrected from the frame', to('Template_Meme_Dark_1440x1880') === 'Dark_1440x1800');
+  ok('naming: carousel keeps its name size (frame holds several cards)', to('1440x1440 - Carousel') === '1440x1440' && to('1440x1440 - Carousel Photo') === 'Photo_1440x1440');
+  ok('naming: Testimonial families follow the Meta mapping',
+     to('Template_Testimonial-Photo_1440x1440') === '1440x1440' && to('Template_Testimonial-Text-Only_Light_1440x1440') === 'Alt1_1440x1440'
+     && to('Template_Testimonial-Text-Only_Dark_1440x1440') === 'Alt1_Dark_1440x1440' && to('Template_Testimonial-Text-and-Photo_Light_1440x1440') === 'Alt2_1440x1440',
+     JSON.stringify(plan.filter(p => /Testimonial-/.test(p.from)).map(p => p.to)));
+  ok('naming: pie centre becomes Copy_Center, not Copy_Subhead', to('TextOnly_Subhead_Text') === 'Copy_Center');
+  ok('naming: legacy CTA joins the existing Copy_CTA (several per template is normal)', to('cta_text') === 'Copy_CTA' && !plan.find(p => p.from === 'cta_text').skip);
+  ok('naming: fixed handle is left alone', !plan.some(p => p.from === 'Notification_Headline_Text'));
+  ok('naming: image slot spelling', to('right_image_placeholder') === 'Right-Image-Placeholder');
+  // Apply, then plan again: nothing left to do.
+  plan.forEach(p => { if (!p.skip) p.node.name = p.to; });
+  ok('naming: a second run renames nothing', conventionPlan(pg).plan.length === 0, JSON.stringify(conventionPlan(pg).plan.map(p => p.from + '→' + p.to)));
+  ok('naming: an unconverted counter stays out of Copy_', _conventionTextName({name: 'TextOnly_Subhead_Text', characters: '1,530'}, 'App-Notification') === null);
 
   process.exit(fails ? 1 : 0);
 })();

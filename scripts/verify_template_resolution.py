@@ -160,10 +160,16 @@ def by_legacy(root, style, w, h):
 
 
 def main():
-    if not TOKEN:
+    if not TOKEN and "--file" not in sys.argv:
         sys.exit("FIGMA_ACCESS_TOKEN not set (run via: railway run --service adam -- ...)")
-    which = sys.argv[1] if len(sys.argv) > 1 else "all"
-    doc = api(f"files/{FILE_KEY}")["document"]
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    which = args[0] if args else "all"
+    # --file PATH: check a saved (e.g. post-rename) copy instead of the live file.
+    if "--file" in sys.argv:
+        doc = json.load(open(sys.argv[sys.argv.index("--file") + 1]))["document"]
+        which = next((a for a in args if a in ("meta", "reddit", "all")), "all")
+    else:
+        doc = api(f"files/{FILE_KEY}")["document"]
     pages = doc["children"]
     page_of = {n["id"]: p["name"].strip() for p in pages for n in walk(p)}
 
