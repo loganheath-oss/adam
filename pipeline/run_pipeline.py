@@ -361,7 +361,7 @@ def _fix_proper_nouns(text):
 
 _PN_TEXT_FIELDS = ("creative_headline", "creative_subhead", "headline", "headline_short",
                    "body_short", "body", "body_long", "description", "cta", "us_headline",
-                   "them_headline", "left_headline", "right_headline", "single_headline",
+                   "them_headline", "us_subhead", "them_subhead", "left_headline", "right_headline", "single_headline",
                    "poll_question", "testimonial_quote", "chat_message", "chat_label",
                    "button_text", "profile_left", "profile_right", "pie_center")
 _PN_LIST_FIELDS = ("left_bullets", "right_bullets", "single_bullets", "us_bullets",
@@ -2105,12 +2105,21 @@ def _fit_feed_fields(concepts, style, api_key, sprint_id=None):
 # prompt-only to avoid mangling good copy. Flagged concepts are de-selected in the
 # ranking pass so clean copy is what ships.
 _LEGAL_BANNED = [
-    r"vet(?:ted|ting|s)?", r"pre-?screen(?:ed|ing|s)?",
+    r"\bvet(?:ted|ting|s)?\b", r"pre-?screen(?:ed|ing|s)?",
     r"screen(?:ed|ing)?\s+(?:talent|freelancers|candidates|pros)",
     r"background\s+check", r"employ(?:ee|ees|er|ers|ment)?", r"staffing", r"payroll",
     r"guarantee(?:d|s)?", r"salary", r"salaries", r"wages", r"paycheck",
     r"resum[eé]s?", r"\bCVs?\b",
-    r"upwork'?s\s+(?:freelancers|talent|pros|professionals)", r"our\s+freelancers",
+    # Ad Copy Legal Guidelines (Adrie, 2026-09-30, replaced the 20-page Revised
+    # Legal Guidance): never "Upwork freelancers", "Upwork's freelancers" or
+    # "Upwork talent" — so the possessive is optional, not required. "Freelancers
+    # on Upwork" / "talent on Upwork" stay allowed (word order differs).
+    r"\bupwork(?:['’]s)?\s+(?:freelancers|talent|pros|professionals)", r"our\s+freelancers",
+    # Restricted with no approved-brief carve-out a scanner could check: recruit
+    # → "find freelancers" / "source freelancers". "Job", "hire" (when
+    # overused) and "manage talent" are restricted only in context, so they stay
+    # prompt-only, per the rule at the top of this list.
+    r"\brecruit(?:s|ed|ing|er|ers|ment)?\b",
 ]
 _LEGAL_BANNED_RE = [re.compile(p, re.IGNORECASE) for p in _LEGAL_BANNED]
 _LEGAL_SCAN_FIELDS = ["text_on_visual", "creative_headline", "creative_subhead",
@@ -2496,8 +2505,10 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
             "- them_headline (max 18 chars — the old-way/negative side label)\n"
             "- us_bullets (array of EXACTLY 3 strings, max 28 chars each — Upwork-side wins)\n"
             "- them_bullets (array of EXACTLY 3 strings, max 28 chars each — old-way pains)\n"
+            "- us_subhead (max 31 chars — the one-line wrap-up under the Upwork-side bullets)\n"
+            "- them_subhead (max 31 chars — the one-line wrap-up under the old-way bullets)\n"
         )
-        multi_field_keys = ", us_headline, them_headline, us_bullets, them_bullets"
+        multi_field_keys = ", us_headline, them_headline, us_bullets, them_bullets, us_subhead, them_subhead"
     elif _sl == "stickynote":
         multi_field_instructions = (
             "\n===== EXTRA FIELDS FOR \"Sticky Note\" =====\n"
@@ -4740,6 +4751,12 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results,
             "Them_Headline": concept.get("them_headline", ""),
             "Us_Bullets": _join_bullets(concept.get("us_bullets")),
             "Them_Bullets": _join_bullets(concept.get("them_bullets")),
+            # Us vs Them wrap-up line per side (2026-09-30). The guide's rules
+            # always asked for "a one-liner wrap-up beneath the bullets on each
+            # side", but no field carried it, so both Copy_Subhead layers kept
+            # their lorem ipsum and the plugin filled them with guessed copy.
+            "Us_Subhead": concept.get("us_subhead", ""),
+            "Them_Subhead": concept.get("them_subhead", ""),
             "Left_Headline": concept.get("left_headline", ""),
             "Right_Headline": concept.get("right_headline", ""),
             "Left_Bullets": _join_bullets(concept.get("left_bullets")),
@@ -4850,6 +4867,7 @@ def stage_06_deliver(sprint_id, order, copy_outputs, image_rows, image_results,
                 for _col, _f, _is_list in (
                         ("Us_Headline", "us_headline", False), ("Them_Headline", "them_headline", False),
                         ("Us_Bullets", "us_bullets", True), ("Them_Bullets", "them_bullets", True),
+                        ("Us_Subhead", "us_subhead", False), ("Them_Subhead", "them_subhead", False),
                         ("Left_Headline", "left_headline", False), ("Right_Headline", "right_headline", False),
                         ("Left_Bullets", "left_bullets", True), ("Right_Bullets", "right_bullets", True),
                         ("Single_Headline", "single_headline", False), ("Single_Bullets", "single_bullets", True),

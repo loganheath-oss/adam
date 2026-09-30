@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.30";
+var PLUGIN_VERSION = "2026.09.30b";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -1556,31 +1556,57 @@ async function fillUsVsThemCopy(clone, row) {
     }
     return null;
   }
-  var heads = [], bullets = [];
+  // The live Meta templates (2026-09-30) put each column in a container named
+  // for its side — "Left_Copy_Us" / "Right_Copy_Them" — on every size. That is
+  // the most reliable signal there is, so read it first, then the ✅/❌ marker.
+  function containerSide(node) {
+    for (var p = node.parent; p && p !== clone; p = p.parent) {
+      var nm = String(p.name || "");
+      if (/(^|[_\s-])them($|[_\s-])/i.test(nm)) return "them";
+      if (/(^|[_\s-])us($|[_\s-])/i.test(nm)) return "us";
+    }
+    return null;
+  }
+  function side(node) { return containerSide(node) || markerSide(node); }
+
+  var heads = [], bullets = [], subs = [];
   walkChildren(clone, function (n) {
     if (n.type !== "TEXT") return;
     var nm = n.name || "";
-    if (/headline/i.test(nm) && !/subhead/i.test(nm)) heads.push(n);
+    if (/subhead/i.test(nm)) subs.push(n);
+    else if (/headline/i.test(nm)) heads.push(n);
     else if (/bullet/i.test(nm)) bullets.push(n);
   });
 
   // Headlines rarely have a marker beside them → default to order (them, us).
-  var usHeads = heads.filter(function (n) { return markerSide(n) === "us"; });
-  var themHeads = heads.filter(function (n) { return markerSide(n) === "them"; });
+  var usHeads = heads.filter(function (n) { return side(n) === "us"; });
+  var themHeads = heads.filter(function (n) { return side(n) === "them"; });
   if (!usHeads.length && !themHeads.length && heads.length >= 2) { themHeads = [heads[0]]; usHeads = [heads[1]]; }
   if (themHead && themHeads[0]) await setTextLayer(themHeads[0], themHead);
   if (usHead && usHeads[0]) await setTextLayer(usHeads[0], usHead);
 
-  // Bullets: group by marker side, fill in order within each side.
-  var usBul = bullets.filter(function (n) { return markerSide(n) === "us"; });
-  var themBul = bullets.filter(function (n) { return markerSide(n) === "them"; });
+  // Wrap-up line under each side's bullets (Copy_Subhead). Until 2026-09-30 no
+  // copy existed for it, so both kept their lorem ipsum and the residual-lorem
+  // net filled them with guessed copy — 5-6 ⚠ per board in Elise's run.
+  var usSub = row.Us_Subhead || row.us_subhead || "";
+  var themSub = row.Them_Subhead || row.them_subhead || "";
+  var usSubs = subs.filter(function (n) { return side(n) === "us"; });
+  var themSubs = subs.filter(function (n) { return side(n) === "them"; });
+  if (!usSubs.length && !themSubs.length && subs.length >= 2) { themSubs = [subs[0]]; usSubs = [subs[1]]; }
+  if (themSub && themSubs[0]) await setTextLayer(themSubs[0], themSub);
+  if (usSub && usSubs[0]) await setTextLayer(usSubs[0], usSub);
+
+  // Bullets: group by side, fill in order within each side.
+  var usBul = bullets.filter(function (n) { return side(n) === "us"; });
+  var themBul = bullets.filter(function (n) { return side(n) === "them"; });
   if (!usBul.length && !themBul.length && bullets.length) {           // no markers → split by order
     var half = Math.floor(bullets.length / 2);
     themBul = bullets.slice(0, half); usBul = bullets.slice(half);
   }
   for (var a = 0; a < themBul.length && a < themB.length; a++) if (themB[a]) await setTextLayer(themBul[a], themB[a]);
   for (var b = 0; b < usBul.length && b < usB.length; b++) if (usB[b]) await setTextLayer(usBul[b], usB[b]);
-  log("  ✓ us-vs-them filled (us bullets=" + usBul.length + ", them bullets=" + themBul.length + " by marker)");
+  log("  ✓ us-vs-them filled (us bullets=" + usBul.length + ", them bullets=" + themBul.length +
+      ", wrap-ups=" + ((usSub && usSubs.length ? 1 : 0) + (themSub && themSubs.length ? 1 : 0)) + ")");
   return true;
 }
 

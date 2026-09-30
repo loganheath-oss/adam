@@ -209,7 +209,8 @@ global.figma = { loadFontAsync: async () => {} };
 global.log = t => logs.push(t);   // fillListLayers logs its fill count
 // findLayerByName / _findExactByName / _findNormByName are already defined by
 // block 9 above — re-declaring them here is a SyntaxError.
-eval(grab('fitTextLayer') + '\n' + grab('setTextLayer') + '\n' + grab('fillListLayers'));
+eval(grab('fitTextLayer') + '\n' + grab('setTextLayer') + '\n' + grab('fillListLayers') + '\n'
+     + grab('walkChildren') + '\n' + grab('splitPipe') + '\n' + grab('fillUsVsThemCopy'));
 (async () => {
   const withLists = N('tpl', [T2('Copy_List1'), T2('Copy_List2'), T2('Copy_List3')]);
   const okFill = await fillListLayers(withLists, ['Fast', 'Rated', 'Ready']);
@@ -300,6 +301,39 @@ eval(grab('fitTextLayer') + '\n' + grab('setTextLayer') + '\n' + grab('fillListL
   ok('image slot: matches every spelling in the file',
      ['Image_Placeholder', 'image_placeholder', 'Image-Placeholder', 'Left-Image-Placeholder']
        .every(nm => _hasImageSlot({type: 'FRAME', name: 'f', children: [{type: 'RECTANGLE', name: nm}]})));
+
+  // 13. Us vs Them wrap-up lines (Elise's run 2026-09-30: 5-6 "replaced residual
+  // lorem-ipsum" ⚠ per board). Shape is the live Meta 1440x1800: two columns
+  // with IDENTICAL layer names, told apart only by their container.
+  const LT = (name) => ({type: 'TEXT', name, characters: 'Lorem ipsum', children: [],
+                         fontName: {family: 'X', style: 'Y'}});
+  const col = (nm, marker) => {
+    const c = N(nm, [LT('Copy_Headline'),
+      N(marker === '❌' ? 'Right Bullets' : 'Left Bullets',
+        [LT('Copy_Bullet1'), LT('Copy_Bullet2'), LT('Copy_Bullet3'), {type: 'TEXT', name: marker, characters: marker, children: []}]),
+      LT('Copy_Subhead')]);
+    c.children.forEach(k => { k.parent = c; (k.children || []).forEach(g => g.parent = k); });
+    return c;
+  };
+  const uvt = N('1440x1800', [col('Right_Copy_Them', '❌'), col('Left_Copy_Us', '✅')]);
+  uvt.children.forEach(k => k.parent = uvt);
+  await fillUsVsThemCopy(uvt, {
+    Us_Headline: 'Upwork way', Them_Headline: 'Old way',
+    Us_Bullets: 'Proposals in hours|Rated pros|Pay per milestone',
+    Them_Bullets: 'Weeks of sourcing|Unknown fit|Big retainers',
+    Us_Subhead: 'Hire this week — not next quarter', Them_Subhead: 'Slow, pricey, and a gamble'});
+  const texts = []; (function w(n){ if (n.type === 'TEXT') texts.push(n); (n.children||[]).forEach(w); })(uvt);
+  const lorem = texts.filter(t => /lorem/i.test(t.characters));
+  ok('us vs them: no lorem ipsum left (headlines, bullets AND wrap-ups)', lorem.length === 0,
+     lorem.map(t => t.name).join(', '));
+  const [them, us] = uvt.children;
+  const val = (c, nm) => (function f(n){ if (n.name === nm) return n.characters; for (const k of n.children||[]) { const r = f(k); if (r) return r; } })(c);
+  ok('us vs them: wrap-ups land on the right side',
+     val(us, 'Copy_Subhead') === 'Hire this week — not next quarter' && val(them, 'Copy_Subhead') === 'Slow, pricey, and a gamble',
+     `us='${val(us, 'Copy_Subhead')}' them='${val(them, 'Copy_Subhead')}'`);
+  ok('us vs them: headlines land on the right side by container',
+     val(us, 'Copy_Headline') === 'Upwork way' && val(them, 'Copy_Headline') === 'Old way',
+     `us='${val(us, 'Copy_Headline')}' them='${val(them, 'Copy_Headline')}'`);
 
   process.exit(fails ? 1 : 0);
 })();

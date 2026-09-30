@@ -8,6 +8,8 @@
       "them_headline",
       "us_bullets",
       "them_bullets",
+      "us_subhead",
+      "them_subhead",
       "left_headline",
       "right_headline",
       "left_bullets",
@@ -94,7 +96,9 @@
         "us_headline": 18,
         "them_headline": 18,
         "us_bullets": 28,
-        "them_bullets": 28
+        "them_bullets": 28,
+        "us_subhead": 31,
+        "them_subhead": 31
       },
       "cta_mix": "none"
     },

@@ -30,7 +30,7 @@ REF_FILES = {
     "copy_instructions": "meta_copy_instructions.txt",
     "brand_voice": "Claude * Upwork Brand Tone of Voice for Paid Ad copy .txt",
     "writing_style": "Upwork Writing Style Guide Audit - 2025 .txt",
-    "compliance": "Revised Legal Guidance Content Guidelines .txt",
+    "compliance": "Ad Copy Legal Guidelines.txt",
     "copy_playbook": "Claude Meta Ad_Copy_Mini_Playbook .txt",
     "approved_claims": "Copy of Marketing claims III .txt",
     "smb_copy_bank": "SMB Copy Bank_Phase 3_Final.txt",

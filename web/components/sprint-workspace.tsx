@@ -26,7 +26,7 @@ type PipeLine = {
   itemChangedAt?: number;
 };
 
-type QuickAction = { label: string; text?: string; href?: string; navHref?: string; primary?: boolean; pulse?: boolean; approveGate?: number };
+type QuickAction = { label: string; text?: string; href?: string; navHref?: string; primary?: boolean; pulse?: boolean; approveGate?: number; restart?: "resume" | "retry" };
 
 const GATE_DEFS = [
   { num: 2, label: "Order + Refs", sub: "Brief & references review" },
@@ -109,7 +109,14 @@ function quickActionsFor(sprintId: string, raw: string): QuickAction[] {
     actions.push({ label: "⬇ Download manifest (CSV)", href: `/api/sprints/${sprintId}/file/asset_manifest.csv` });
     actions.push({ label: "📊 Run a post-mortem", text: "Walk me through what worked and what to improve next time" });
   } else if (isError) {
-    actions.push({ label: "❓ What went wrong?", text: "What went wrong with the pipeline?", primary: true });
+    // A sprint in error/interrupted can only move again through /resume or
+    // /retry, and until 2026-09-30 no page offered either: Adrie's sprint sat
+    // on "taking longer than expected" after a deploy restarted the backend
+    // mid-copy, with no way out but asking an engineer. "interrupted" is
+    // retried from order.json; "error" re-runs the gate that failed.
+    const how = state.includes("interrupted") ? "retry" : "resume";
+    actions.push({ label: "↻ Resume", restart: how, primary: true, pulse: true });
+    actions.push({ label: "❓ What went wrong?", text: "What went wrong with the pipeline?" });
   } else if (isRunning) {
     actions.push({ label: "⏱ What's happening?", text: "What stage are we on right now and how long until the next gate?" });
     actions.push({ label: "📋 Show the brief", text: "Show me the original order and brief" });
@@ -453,6 +460,29 @@ export function SprintWorkspace({
     maybeStartNarration();
   }, [sprintId, pollState, maybeStartNarration, scrollDown]);
 
+  // Resume / retry an errored or interrupted sprint (proxied server-side, so the
+  // API key never reaches the browser). Same shape as approveGate.
+  const restartSprint = useCallback(async (how: "resume" | "retry") => {
+    if (streamingRef.current || pipelineStreamingRef.current) return;
+    streamingRef.current = true;
+    setStreaming(true);
+    setItems((p) => [...p, { kind: "msg", role: "system", content: "Resuming…" }]);
+    scrollDown();
+    try {
+      const r = await fetch(`/api/sprints/${sprintId}/${how}`, { method: "POST" });
+      const d = await r.json().catch(() => ({}));
+      setItems((p) => [...p, { kind: "msg", role: "system", content: r.ok
+        ? "✓ Resumed — ADAM is re-running the step that stopped…"
+        : r.status === 409 ? "Already resuming — continuing…" : `⚠ ${d.error || "Resume failed"}` }]);
+    } catch {
+      setItems((p) => [...p, { kind: "msg", role: "system", content: "⚠ Resume failed — network error, try again." }]);
+    }
+    streamingRef.current = false;
+    setStreaming(false);
+    await pollState();
+    maybeStartNarration();
+  }, [sprintId, pollState, maybeStartNarration, scrollDown]);
+
   // ── Proactive chat-history polling (server writes gate notifications) ─────────
   const pollChat = useCallback(async () => {
     if (streamingRef.current) return;
@@ -614,7 +644,8 @@ export function SprintWorkspace({
                 key={i}
                 type="button"
                 disabled={streaming}
-                onClick={() => (a.approveGate != null ? approveGate(a.approveGate) : a.text && doSend(a.text))}
+                onClick={() => (a.approveGate != null ? approveGate(a.approveGate)
+                  : a.restart ? restartSprint(a.restart) : a.text && doSend(a.text))}
                 className={`rounded-full border px-3 py-1.5 text-xs font-medium transition disabled:opacity-40 ${a.primary ? "border-primary bg-primary text-primary-foreground hover:brightness-95" : "border-border bg-background hover:bg-muted"} ${a.pulse ? "ring-2 ring-primary/40 ring-offset-1" : ""}`}
               >
                 {a.label}

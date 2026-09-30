@@ -1003,6 +1003,36 @@ def offline_checks():
         _h, _s = rp._style_caps(_st)
         check(f"no-copy style {_st}: no on-image headline cap",
               "creative_headline" not in _h and "creative_headline" not in _s, f"hard={_h} soft={_s}")
+    # 11i. Ad Copy Legal Guidelines replaced the 20-page Revised Legal Guidance
+    # (Adrie, 2026-09-30). The compiled compliance ref must BE the new doc, and
+    # the deterministic scanner must catch its named terms without flagging the
+    # phrasings it approves.
+    _refs = json.loads((REPO / "configs" / "refs_context.json").read_text())
+    check("legal: compliance ref is the new Ad Copy Legal Guidelines",
+          "Ad Copy Guidelines" in _refs.get("compliance", "")
+          and "Revised Legal Guidance" not in json.dumps(_refs.get("_meta", {})),
+          _refs.get("compliance", "")[:80])
+    for _t, _want in (("Hire Upwork freelancers today", True), ("Upwork’s talent is ready", True),
+                      ("Upwork talent, fast", True), ("We recruit for you", True),
+                      ("Vetted pros", True), ("Freelancers on Upwork ship fast", False),
+                      ("Talent on Upwork", False), ("Velvet-smooth launch", False)):
+        check(f"legal scan: {_t!r} -> {'flag' if _want else 'clean'}",
+              bool(rp._scan_banned_terms({"headline": _t})) == _want)
+
+    # 11j. Us vs Them wrap-up line per side — required in the schema (both
+    # audiences), capped at Elise's 31, and carried to the manifest.
+    rp._set_active_platform({"platform": "Meta"})
+    _sch = json.dumps(rp._concept_schema("Us vs Them", True, 3))
+    check("us vs them: wrap-up fields in the copy schema",
+          _sch.count('"us_subhead"') >= 2 and _sch.count('"them_subhead"') >= 2, _sch[:200])
+    _uh, _ = rp._style_caps("Us vs Them")
+    check("us vs them: wrap-ups hard-capped at 31",
+          _uh.get("us_subhead") == 31 and _uh.get("them_subhead") == 31, str(_uh))
+    check("us vs them: wrap-ups reach the manifest",
+          '"Us_Subhead": concept.get("us_subhead"' in _src_rp
+          and '("Them_Subhead", "them_subhead", False)' in _src_rp)
+    rp._set_active_platform({"platform": "Reddit"})
+
     _h, _s = rp._style_caps("Text Only")
     check("copy style Text Only (Reddit): headline cap still enforced",
           isinstance((_h or {}).get("creative_headline") or (_s or {}).get("creative_headline"), int),
