@@ -687,7 +687,7 @@ def _deterministic_selection(reviewed, target, style):
             concept["selected"] = False
             if "⚠ FEED LENGTH" not in concept.get("review_notes", ""):
                 concept["review_notes"] = (
-                    "⚠ FEED LENGTH — over Meta field cap(s): "
+                    "⚠ FEED LENGTH — over field cap(s): "
                     + ", ".join(concept["length_warnings"]) + ". "
                     + concept.get("review_notes", ""))
 
@@ -827,7 +827,40 @@ PHOTO_LIBRARY_STYLES = {
     "Split Screen",   # TWO library photos — dual pick via DUAL_PHOTO_LIBRARY_STYLES
     "Hybrid",         # dashboard mock with a real image_placeholder (2026-06-22)
     "Poll",           # full-bleed placeholder behind the poll card (2026-07-02)
+    # Reddit Person Only (2026-09-30): the template's photo slot is
+    # Right-Image-Placeholder. Missing from this set, it fell to the generation
+    # branch, which is switched off, so every Person Only row came out
+    # needs_human_selection (Adrie's sprint 2026-09-reddit-f29958740ed6).
+    "Person Only",
 }
+
+# Non-library styles whose templates DO have an image slot, verified against the
+# live file 2026-09-30 (only these three, across both Meta and Reddit). With
+# image generation off, a row of one of these genuinely owes a photo. Every
+# other generated style's template has NO slot — its artwork is built in — so
+# nothing is owed and the row is skipped rather than flagged.
+GENERATED_STYLES_WITH_IMAGE_SLOT = {"Bespoke", "Carousel", "Sticky Note"}
+
+
+def _apply_image_gen_off(rows):
+    """Image generation is off: re-route every row that would have been
+    generated. A style with an image slot owes a photo → needs_human_selection;
+    a style without one keeps its template artwork → skip. Returns the number
+    flagged for a human."""
+    flagged = 0
+    for row in rows:
+        if row.get("generation_method") not in ("gemini_generate", "text_background"):
+            continue
+        if row.get("visual_style") not in GENERATED_STYLES_WITH_IMAGE_SLOT:
+            row["generation_method"] = "skip"
+            row["prompt"] = ("(by design: this style's template has no image "
+                             "slot — the plugin keeps its built-in artwork)")
+            continue
+        row["generation_method"] = "needs_human_selection"
+        row["prompt"] = ""
+        row["policy_flag"] = "image_gen_disabled_no_figma_path"
+        flagged += 1
+    return flagged
 
 # Styles that produce multiple variant outputs per concept. The pipeline emits
 # one image-prompt row per variant. Brandon gets every variant as a separate
@@ -1633,9 +1666,15 @@ def _style_caps(style):
             soft[f] = min(cap, soft.get(f, cap))
     for f, cap in feed.items():            # Meta-feed fields (universal) — soft.
         soft[f] = cap
-    for f, cap in core_def.items():        # on-image core fallback if nothing tighter.
-        if f not in hard:
-            soft.setdefault(f, cap)
+    # On-image core fallback if nothing tighter — but NOT for a style that puts
+    # no copy on the asset (Reddit Person Only, Logo: "No copy on asset" on the
+    # spec card). There is no on-image headline to overflow, yet the generic 30
+    # char default flagged every Person Only concept "FEED LENGTH" and demoted
+    # it out of selection (2026-09-30, sprints f29958740ed6 and 95fac739d494).
+    if not (entry or {}).get("no_copy"):
+        for f, cap in core_def.items():
+            if f not in hard:
+                soft.setdefault(f, cap)
     return hard, soft
 
 
@@ -4106,14 +4145,15 @@ def stage_03_image_prompts(sprint_id, order, copy_outputs):
     # Re-enable by setting ADAM_ENABLE_IMAGE_GEN=1 — but do not, until the
     # plugin can actually place a generated image (upload it into the Figma file
     # and write its node id onto the row, so these look like figma_library rows).
+    #
+    # Only rows whose template HAS an image slot owe a photo (2026-09-30). The
+    # rest — Text Only, Note, Logo, Chat Bubble, Reminder … — have no slot at
+    # all, so a generated background could never have landed and nothing is
+    # missing; the plugin builds them from the template's own artwork. Flagging
+    # them read as "40 of 40 rows have no image" at Gate 6 on a Reddit sprint
+    # where only the 8 Person Only rows were actually short a photo.
     if os.environ.get("ADAM_ENABLE_IMAGE_GEN", "0") not in ("1", "true", "True"):
-        _gen_off = 0
-        for _row in rows:
-            if _row.get("generation_method") in ("gemini_generate", "text_background"):
-                _row["generation_method"] = "needs_human_selection"
-                _row["prompt"] = ""
-                _row["policy_flag"] = "image_gen_disabled_no_figma_path"
-                _gen_off += 1
+        _gen_off = _apply_image_gen_off(rows)
         if _gen_off:
             print(f"  ⏸ IMAGE GENERATION OFF: {_gen_off} row(s) flipped to "
                   "needs_human_selection (generated images have no path into Figma; "

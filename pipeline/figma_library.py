@@ -275,6 +275,10 @@ VISUAL_STYLE_TO_TAG = {
     "Hybrid":            "photo_with_text",
     # Poll (2026-07-02): full-bleed lifestyle photo behind the poll card.
     "Poll":              "lifestyle_photo",
+    # Reddit Person Only (2026-09-30): one person, full bleed or avatar crop, in
+    # the template's Right-Image-Placeholder. Same person-in-context pool as
+    # Notification's portrait.
+    "Person Only":       "lifestyle_photo",
     # Aliases for styles that reuse a photo template
     "Social Media Profile": "testimonial",
     "Talent Profile":       "testimonial",

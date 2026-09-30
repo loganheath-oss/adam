@@ -972,6 +972,43 @@ def offline_checks():
     check("lifestyle: registry cap still applies",
           isinstance(_lh.get("creative_headline"), int), f"hard caps: {_lh}")
 
+    # 11h. Adrie's Reddit runs 2026-09-30 (f29958740ed6, 95fac739d494): Gate 6
+    # read "40 of 40 rows needs_human_selection" and flagged every Person Only
+    # concept FEED LENGTH. Three false alarms, one real gap.
+    #   - Text Only / Note / Logo have NO image slot in Figma, so with image
+    #     generation off nothing is owed: skip, not needs_human_selection.
+    #   - Person Only DOES have a slot (Right-Image-Placeholder) and must pull a
+    #     library photo, never fall to generation.
+    #   - Person Only / Logo print no copy on the asset, so the generic 30-char
+    #     on-image headline default must not apply.
+    _rows = [{"visual_style": s, "generation_method": m} for s, m in (
+        ("Text Only", "text_background"), ("Note", "gemini_generate"),
+        ("Logo", "gemini_generate"), ("Graphic with Text", "gemini_generate"),
+        ("Bespoke", "gemini_generate"), ("Lifestyle Photo", "figma_library"))]
+    _n = rp._apply_image_gen_off(_rows)
+    _m = {r["visual_style"]: r["generation_method"] for r in _rows}
+    check("image-gen off: no-slot styles skip, not flagged",
+          all(_m[s] == "skip" for s in ("Text Only", "Note", "Logo", "Graphic with Text")), str(_m))
+    check("image-gen off: a style WITH a slot still flags for a human",
+          _m["Bespoke"] == "needs_human_selection" and _n == 1, f"{_m} flagged={_n}")
+    check("image-gen off: library rows untouched", _m["Lifestyle Photo"] == "figma_library", str(_m))
+    check("image-gen off: wired into stage 03", "_apply_image_gen_off(rows)" in _src_rp)
+    check("Reddit Person Only routes to the photo library",
+          "Person Only" in rp.PHOTO_LIBRARY_STYLES)
+    import figma_library as _fl
+    check("Reddit Person Only has a library tag",
+          "Person Only" in _fl.VISUAL_STYLE_TO_TAG, str(sorted(_fl.VISUAL_STYLE_TO_TAG)))
+    rp._set_active_platform({"platform": "Reddit"})
+    for _st in ("Person Only", "Logo"):
+        _h, _s = rp._style_caps(_st)
+        check(f"no-copy style {_st}: no on-image headline cap",
+              "creative_headline" not in _h and "creative_headline" not in _s, f"hard={_h} soft={_s}")
+    _h, _s = rp._style_caps("Text Only")
+    check("copy style Text Only (Reddit): headline cap still enforced",
+          isinstance((_h or {}).get("creative_headline") or (_s or {}).get("creative_headline"), int),
+          f"hard={_h} soft={_s}")
+    rp._set_active_platform({"platform": "Meta"})
+
     # 11c. sprint_state: atomic CAS gate claims (audit 2026-07-30 — three
     # approval surfaces used to race; now exactly one claimer can win).
     import threading as _th
