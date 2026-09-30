@@ -774,21 +774,32 @@
         "1440x1080"
       ],
       "char_limits": {
-        "left_headline": 22,
-        "them_bullets": 60,
-        "right_headline": 18
+        "us_headline": 22,
+        "them_headline": 18,
+        "us_bullets": 60,
+        "them_bullets": 60
       },
       "rules_v1_complete": true,
-      "spec_card_caps": "Left Headline Max: 22 · Total Bullet Text Max: 60 · Right Headline Max: 18",
+      "spec_card_caps": "Left (Upwork) Headline Max: 22 · Right (Them) Headline Max: 18 · Bullet text per side: 22–60 total",
       "caps_are_physical": true,
-      "description": "Opposing views on opposite sides of layout. Total Bullet Text: 22",
+      "description": "Opposing views on opposite sides of layout. Left = Upwork, right = Them.",
       "rules_na": true,
       "image_placeholders": [
         "Left-Image-Placeholder",
         "Right-Image-Placeholder"
       ],
-      "needs_review": "Card carries CONFLICTING bullet caps — 'Total Bullet Text Max: 60' and 'Total Bullet Text: 22' — and duplicated status lines (both 'Copy Rules N/A' and 'Copy Rules V1 Complete'). Using 60. Confirm with Adrie.",
-      "layout": "Opposing views on opposite sides of layout. Total Bullet Text: 22"
+      "layout": "Opposing views on opposite sides of layout. Left = Upwork, right = Them.",
+      "list_totals": {
+        "us_bullets": {
+          "min": 22,
+          "max": 60
+        },
+        "them_bullets": {
+          "min": 22,
+          "max": 60
+        }
+      },
+      "resolved_note": "Logan, 2026-09-30: the card's two bullet numbers are the MIN (22) and MAX (60) total bullet text per side, and left = Upwork (us), right = Them. Fields renamed left_/right_headline -> us_/them_headline to match Meta; the plugin still reads Left_/Right_ on older manifests."
     },
     "reddit-testimonial": {
       "name": "Reddit — Testimonial",

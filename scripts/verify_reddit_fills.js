@@ -56,7 +56,7 @@ const ROW = {
   Headline_On_Creative: 'HEADLINE', Subhead_On_Creative: 'SUBHEAD',
   Left_Headline: 'LEFTWORD', Right_Headline: 'RIGHTWORD', Single_Headline: 'UNDERLINE',
   Single_Bullets: 'ITEM1|ITEM2|ITEM3', Search_Results: 'SEARCHTERM',
-  Them_Bullets: 'THEM1|THEM2|THEM3', Testimonial_Quote: 'QUOTE', Testimonial_Author: 'AUTHOR',
+  Us_Headline: 'USHEAD', Them_Headline: 'THEMHEAD', Us_Bullets: 'US1|US2|US3', Them_Bullets: 'THEM1|THEM2|THEM3', Testimonial_Quote: 'QUOTE', Testimonial_Author: 'AUTHOR',
   Pie_Labels: 'Q1|Q2|Q3|Q4', Pie_Center: 'CENTER', Chart_Pct: '',
 };
 const STYLE = (c) => c.replace('Reddit_Adtype_', '').replace(/-/g, ' ').replace(/\bvs\b/i, 'vs');

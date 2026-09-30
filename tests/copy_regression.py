@@ -1049,6 +1049,27 @@ def offline_checks():
           and '("Them_Subhead", "them_subhead", False)' in _src_rp)
     rp._set_active_platform({"platform": "Reddit"})
 
+    # 11l. Reddit Us vs Them (Logan, 2026-09-30): left = Upwork, right = Them;
+    # bullet text is 22-60 characters IN TOTAL per side. Both sides required;
+    # Reddit's template has no wrap-up line, so none is asked for.
+    _rs = json.dumps(rp._concept_schema("Us vs Them", True, 3))
+    check("reddit us vs them: both sides' headlines and bullets required",
+          all(_rs.count(f'"{f}"') >= 2 for f in ("us_headline", "them_headline", "us_bullets", "them_bullets"))
+          and "left_headline" not in _rs, _rs[:160])
+    check("reddit us vs them: no wrap-up line (template has none)", "us_subhead" not in _rs)
+    _ok = {"us_bullets": ["Proposals in hours", "Rated pros"], "them_bullets": ["Weeks of sourcing", "Unknown fit"]}
+    _hf, _sf = rp._list_total_flags(_ok, {"us_bullets": {"min": 22, "max": 60}, "them_bullets": {"min": 22, "max": 60}})
+    check("reddit us vs them: 22-60 total per side passes", not _hf and not _sf, f"{_hf} {_sf}")
+    _long = {"us_bullets": ["Proposals within hours, not weeks", "Rated pros with real reviews", "Pay per milestone"]}
+    _hf, _ = rp._list_total_flags(_long, {"us_bullets": {"min": 22, "max": 60}})
+    check("reddit us vs them: over 60 in total is a hard flag", _hf and "us_bullets:total" in _hf[0], str(_hf))
+    _, _sf = rp._list_total_flags({"them_bullets": ["Slow", "Pricey"]}, {"them_bullets": {"min": 22, "max": 60}})
+    check("reddit us vs them: under 22 in total is a soft warning", _sf and "<22" in _sf[0], str(_sf))
+    _c = {"us_headline": "Upwork way", "them_headline": "Old way", "us_bullets": _long["us_bullets"],
+          "them_bullets": ["Weeks of sourcing", "Unknown fit"], "creative_headline": "x", "body_short": "y", "cta": "Go"}
+    check("reddit us vs them: enforcement runs in _enforce_lengths",
+          any("us_bullets:total" in f for f in rp._enforce_lengths(_c, "Us vs Them")))
+
     _h, _s = rp._style_caps("Text Only")
     check("copy style Text Only (Reddit): headline cap still enforced",
           isinstance((_h or {}).get("creative_headline") or (_s or {}).get("creative_headline"), int),

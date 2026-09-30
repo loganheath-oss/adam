@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.30g";
+var PLUGIN_VERSION = "2026.09.30h";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -1136,8 +1136,8 @@ function _adBoundary(node) {
 //     board around it — _growBoardToFit. Reddit's panels already hug.
 //   - Inside an ad: an ad cannot grow. Headline/body layers that are auto-width
 //     still WRAP in place (their size is unchanged); anything that still runs
-//     past the frame is flagged ⚠ so a designer sees it. Length caps exist to
-//     prevent that case.
+//     past the frame is noted in the log (not a ⚠ — it is a designer's fix, not
+//     an assembly failure). Length caps exist to prevent that case.
 function fitTextLayer(node) {
   try {
     if (!node || node.type !== "TEXT") return;
@@ -1150,8 +1150,8 @@ function fitTextLayer(node) {
     if (node.textAutoResize !== "WIDTH_AND_HEIGHT") {
       if (inPanel) return;                                   // the panel grows to fit
       if ((nb.y + nb.height) - (fb.y + fb.height) <= 1) return;
-      log("    ⚠ '" + node.name + "' runs past the bottom of '" + frame.name + "' at " +
-          Math.round(node.fontSize || 0) + "px — kept at template size; shorten the copy or enlarge the box");
+      log("    ↳ note: '" + node.name + "' runs past the bottom of '" + frame.name + "' at " +
+          Math.round(node.fontSize || 0) + "px — kept at template size");
       return;
     }
 
@@ -1165,12 +1165,12 @@ function fitTextLayer(node) {
       node.resize(targetW, node.height);
       log("    ↳ wrapped '" + node.name + "' to " + Math.round(targetW) + "px");
     } else if (!inPanel && (nb.x + nb.width) - (fb.x + fb.width) > 1) {
-      // Flag only text that actually crosses the frame's edge (the 40px margin
-      // above only decides where wrapping starts). Known today: Meta Us vs Them
-      // 1080x1920's Copy_CTA crosses its column by 14px with the TEMPLATE's own
-      // "Start hiring" — the old shrink hid that; the box needs widening.
-      log("    ⚠ '" + node.name + "' runs past the edge of '" + frame.name + "' at " +
-          Math.round(node.fontSize || 0) + "px — kept at template size; shorten the copy or widen the box");
+      // Noted, not warned (Logan, 2026-09-30: a text box a little wider than
+      // its frame is a designer's fix, not an assembly failure — it must not
+      // mark the run DEGRADED). Known today: Meta Us vs Them 1080x1920's
+      // Copy_CTA is 14px wider than its column with the template's own text.
+      log("    ↳ note: '" + node.name + "' runs past the edge of '" + frame.name + "' at " +
+          Math.round(node.fontSize || 0) + "px — kept at template size");
     }
   } catch (e) { /* fitting is best-effort — never block assembly */ }
 }

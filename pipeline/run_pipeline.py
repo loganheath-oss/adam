@@ -1732,11 +1732,33 @@ def _enforce_combined_caps(concept, style):
         print(f"    combined-cap fit: {style} {'+'.join(fields)} {total}>{cap} — trimmed to fit")
 
 
+def _list_total_flags(obj, totals, prefix=""):
+    """(hard, soft) flags for list fields whose limit is on the COMBINED text of
+    the list, not each item. Over the max is hard (the slot overflows); under the
+    min is soft (thin, but prints). Reddit Us vs Them, Logan 2026-09-30: bullet
+    text is 22-60 characters in total per side."""
+    hard, soft = [], []
+    for f, lim in (totals or {}).items():
+        v = obj.get(f)
+        if not isinstance(v, list) or not v:
+            continue
+        n = sum(len(str(x)) for x in v)
+        if isinstance(lim.get("max"), int) and n > lim["max"]:
+            hard.append(f"{prefix}{f}:total {n}>{lim['max']}")
+        if isinstance(lim.get("min"), int) and n < lim["min"]:
+            soft.append(f"{prefix}{f}:total {n}<{lim['min']}")
+    return hard, soft
+
+
 def _enforce_lengths(concept, style):
     """Set concept['length_flags'] (HARD) + ['length_warnings'] (SOFT). Returns the
     hard-flag list (empty = fits)."""
     hard, soft = _style_caps(style)
     hard_flags, soft_flags = [], []
+    _totals = ((_guide_entry_for_style(style)[1] or {}).get("list_totals") or {})
+    _th, _ts = _list_total_flags(concept, _totals)
+    hard_flags += _th
+    soft_flags += _ts
     for f, cap in hard.items():
         hard_flags += _field_overflows(concept, f, cap)
     for f, cap in soft.items():
@@ -1748,6 +1770,9 @@ def _enforce_lengths(concept, style):
         feed = _feed_caps()
         for aud, obj in tc.items():
             if isinstance(obj, dict):
+                _ah, _as = _list_total_flags(obj, _totals, f"{aud}.")
+                hard_flags += _ah
+                soft_flags += _as
                 for f, cap in feed.items():
                     soft_flags += [f"{aud}.{m}" for m in _field_overflows(obj, f, cap)]
                 # PARITY (audit P1-11, 2026-07-31): the per-audience ON-IMAGE
@@ -2497,7 +2522,20 @@ def _generate_copy_for_style(i, batch, style, order, context, api_key, sprint_id
     _approved_quotes_lib = _load_approved_quotes() if _sl == "testimonial" else []
     multi_field_instructions = ""
     multi_field_keys = ""
-    if _sl == "usvsthem":
+    if _sl == "usvsthem" and _norm_style(_ACTIVE_PLATFORM) == "reddit":
+        # Reddit's template: headline + bullets per column, no wrap-up line.
+        # Logan, 2026-09-30: left = Upwork, right = Them; bullet text is 22-60
+        # characters IN TOTAL per side (the card's two numbers are min and max).
+        multi_field_instructions = (
+            "\n===== EXTRA FIELDS FOR \"Us vs Them\" (Reddit) =====\n"
+            "Side-by-side comparison. LEFT column = Upwork, RIGHT column = the old way. ALSO provide:\n"
+            "- us_headline (max 22 chars — the Upwork side label, left)\n"
+            "- them_headline (max 18 chars — the old-way side label, right)\n"
+            "- us_bullets (array of 3 short strings — Upwork-side wins; ALL THREE TOGETHER 22-60 chars)\n"
+            "- them_bullets (array of 3 short strings — old-way pains; ALL THREE TOGETHER 22-60 chars)\n"
+        )
+        multi_field_keys = ", us_headline, them_headline, us_bullets, them_bullets"
+    elif _sl == "usvsthem":
         multi_field_instructions = (
             "\n===== EXTRA FIELDS FOR \"Us vs Them\" =====\n"
             "This is a side-by-side comparison ad. ALSO provide:\n"

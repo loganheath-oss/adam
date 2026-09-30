@@ -275,7 +275,8 @@ eval(src.match(/var REDDIT_LAYER_FILLS = \{[\s\S]*?\n\};/)[0].replace('var ', 'g
   t = textNode({x: 100, y: 100, w: 0, chars: 40, fs: 60, mode: 'WIDTH_AND_HEIGHT', name: 'Profile_Name', parent: ad});
   logs.length = 0; fx.fitTextLayer(t);
   ok('ad label: overflowing text keeps its 60px', t.fontSize === 60, 'fs=' + t.fontSize);
-  ok('ad label: the overflow is flagged ⚠ for a designer', logs.some(l => /⚠ 'Profile_Name' runs past/.test(l)), JSON.stringify(logs));
+  ok('ad label: the overflow is noted for a designer but does NOT count as ⚠ (no DEGRADED)',
+     logs.some(l => /note: 'Profile_Name' runs past/.test(l)) && !logs.some(l => /⚠/.test(l)), JSON.stringify(logs));
   ok('no shrink code left in the plugin', !/fontSize\s*=\s*fs|_shrinkUntil|_FIT_MIN_FS/.test(src));
 
   // Board grows only when a grown panel runs past it.
