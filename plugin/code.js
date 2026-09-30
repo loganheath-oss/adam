@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.30d";
+var PLUGIN_VERSION = "2026.09.30e";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -2578,7 +2578,13 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
 
         // Fill text by ROLE. Copy_* is Elise's current convention, so try it
         // FIRST, then fall back to the legacy per-style layer names.
-        var headlineCandidates = ["Copy_Headline"].concat(STYLE_HEADLINE_LAYERS[key] || []).concat(["headline_text"]);
+        // Reminder and Tweet/Post Mockup print their on-creative line as a body
+        // (52 / 115 chars) in Copy_Body, with no Copy_Headline — Elise's Meta
+        // templates, read 2026-09-30. Without this their body kept lorem ipsum
+        // and the residual-lorem net filled it with a guess (⚠, DEGRADED).
+        var headlineCandidates = ["Copy_Headline"]
+          .concat(key === "reminder" || key === "tweet / post mockup" ? ["Copy_Body"] : [])
+          .concat(STYLE_HEADLINE_LAYERS[key] || []).concat(["headline_text"]);
         if (leadHeadline) await setFirstTextByCandidates(styledClone, headlineCandidates, leadHeadline);
         // On-creative subhead ONLY. The Meta Primary Text (short/long) belongs in
         // the left panels — it must NEVER be printed on the image. Use the
@@ -2614,10 +2620,12 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
           if (stDr) await setFirstTextByCandidates(styledClone, DUAL_HEADLINE_RIGHT.concat(["right_headline_text", "Right_Headline_Text"]), stDr);
           var stLb = splitPipe(leadRow.Left_Bullets || leadRow.left_bullets);
           var stRb = splitPipe(leadRow.Right_Bullets || leadRow.right_bullets);
-          if (stLb[0]) await setFirstTextByCandidates(styledClone, ["Left_Bullet_Text1", "Left_Bullet_Text_1"], stLb[0]);
-          if (stLb[1]) await setFirstTextByCandidates(styledClone, ["Left_Bullet_Text2", "Left_Bullet_Text_2"], stLb[1]);
-          if (stRb[0]) await setFirstTextByCandidates(styledClone, ["Right_Bullet_Text1", "Right_Bullet_Text_1"], stRb[0]);
-          if (stRb[1]) await setFirstTextByCandidates(styledClone, ["Right_Bullet_Text2", "Right_Bullet_Text_2"], stRb[1]);
+          // Copy_Left-Bullet1 … is Elise's current name on the Meta Double
+          // template (2026-09-30); the Left_Bullet_Text* names are legacy.
+          if (stLb[0]) await setFirstTextByCandidates(styledClone, ["Copy_Left-Bullet1", "Left_Bullet_Text1", "Left_Bullet_Text_1"], stLb[0]);
+          if (stLb[1]) await setFirstTextByCandidates(styledClone, ["Copy_Left-Bullet2", "Left_Bullet_Text2", "Left_Bullet_Text_2"], stLb[1]);
+          if (stRb[0]) await setFirstTextByCandidates(styledClone, ["Copy_Right-Bullet1", "Right_Bullet_Text1", "Right_Bullet_Text_1"], stRb[0]);
+          if (stRb[1]) await setFirstTextByCandidates(styledClone, ["Copy_Right-Bullet2", "Right_Bullet_Text2", "Right_Bullet_Text_2"], stRb[1]);
           if (!stHl && !stBul.length && !stDl && !stDr) {
             await fillStickyNoteCopy(styledClone, leadHeadline, leadPrimary, leadRow.Primary_Text_Long || leadPrimary);
           }
