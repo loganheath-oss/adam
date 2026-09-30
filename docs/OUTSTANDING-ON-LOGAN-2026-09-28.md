@@ -103,3 +103,22 @@ to Upwork. Each needs a deliberate step, neither was worth rushing:
 from `main`, `adam-web` does not (manual `railway up` from an isolated copy). So
 the two can still ship out of step. Worth raising with Haresh's team for the
 December migration — two services is also two things to migrate.
+
+## 6. Working session 2026-09-29 — the list, as of 2026-09-30
+
+| Item (Gemini's wording) | State |
+|---|---|
+| Fix 22px font on Reddit | **Done, plugin 2026.09.30** (6bd0eb2). Meta too. Cause: fitTextLayer's shrink loop can't narrow a fixed-width box, so a 3px margin miss ran every copy-panel value to the 22px floor. |
+| Troubleshoot degradation / false flags | **Partly.** Font preflight no longer counts a substituted font as ⚠. Which warnings actually fired in Elise's runs is unknown — the assembly report keeps counts, not lines. Ask Elise to paste the ⚠ lines from one run. |
+| Plugin + manifest logic for new naming | **Done.** Lookup already resolved size-only names via the container; variant choice didn't (light→Dark, photo testimonial→text-only Alt1, Social Media Profile→legacy page). `scripts/verify_template_resolution.py` now proves every style×size per platform. |
+| Reddit thumbnails | **Done 09-29 17:03** (575d618), verified live 09-30: 20/20 load. Adrie's call was before the deploy. |
+| /admin/storage, /admin/prune 404 | **Done 09-29 17:37** (4b212cb), verified live. /admin/prune is a POST behind the dashboard's checkboxes, not a page — the team's Google Doc Engineer guide still says "prune at /admin/prune" with no host. |
+| Replace legal guidelines | **Blocked on Adrie's link.** Swap = refs/ file + `REF_FILES["compliance"]` in build_refs.py + rebuild + copy_regression. Also her Claude Project knowledge. |
+| Invoice to Lee | Logan's. |
+
+Also found: on the Assembly page, `Testing_04302026` holds four frames named
+"Reddit - Static Grouped", and findBoardMaster searches the current page first,
+so a Reddit run started there clones one of those instead of Elise's master
+7356:1259. Today they are structurally identical to it (copy panel at 48px), so
+nothing breaks — but an edit to the real master will not reach runs started
+from Assembly until those copies are deleted or renamed.
