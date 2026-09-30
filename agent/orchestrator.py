@@ -195,7 +195,40 @@ _ON_CREATIVE_FIELDS = [
 ]
 
 
-def _enrich_concept_view(c: dict) -> dict:
+def _reddit_view(c: dict, on_creative: dict) -> dict:
+    """What Reddit ships, per audience, in the labels the operator uses.
+
+    Reddit has NO feed headline and no long/short pair — the feed is one body
+    field (Adrie, 2026-09-10). Each audience ships its own on-creative line and
+    its own body. Left to itself the assistant labelled the per-audience
+    on-creative line "Headline" and added a shared "On-creative" line above
+    both (Adrie, 2026-09-30: "We don't need the Headline. We just need
+    on-creative and body copy for Prospecting and then on-creative and body copy
+    for Retargeting."), so the structure is built here, not by the model."""
+    def block(src: dict, fallback_oc: dict) -> dict:
+        oc = {f: src[f] for f in _ON_CREATIVE_FIELDS if src.get(f) not in (None, "", [])}
+        if not oc:
+            oc = ({"creative_headline": src["creative_headline"]}
+                  if src.get("creative_headline") else dict(fallback_oc))
+        # A single printed line is just text — a "creative_headline" key reads
+        # as "Headline" to the model, which is the mislabel this exists to stop.
+        if list(oc) == ["creative_headline"]:
+            oc = oc["creative_headline"]
+        return {"on_creative": oc, "body": src.get("body_short") or src.get("body") or ""}
+    tc = c.get("targeting_copy")
+    view: dict = {}
+    if isinstance(tc, dict) and tc:
+        for aud in ("Prospecting", "Retargeting"):
+            if isinstance(tc.get(aud), dict):
+                view[aud] = block(tc[aud], on_creative)
+    else:
+        view["All audiences"] = block(c, on_creative)
+    if c.get("cta"):
+        view["cta_on_creative"] = c["cta"]
+    return view
+
+
+def _enrich_concept_view(c: dict, platform: str = "") -> dict:
     """Attach the AUTHORITATIVE presentation data the model must not compute
     itself (audit 2026-07-30: the agent mislabeled fields and repeated an
     invented violation from its own earlier chat message, calling it 'a
@@ -224,6 +257,13 @@ def _enrich_concept_view(c: dict) -> dict:
                "per-audience on-creative landed 2026-07-31; targeting_copy varies feed copy only). ")
             + "creative_headline is an auxiliary concept label, not printed."
         )
+    if re.sub(r"[^a-z]", "", (platform or "").lower()) == "reddit":
+        c["present_as"] = _reddit_view(c, on_creative)
+        c["present_note"] = (
+            "Reddit: present EXACTLY present_as — for each audience an 'On-creative' "
+            "line and a 'Body' line, then the on-creative CTA once. Never show a "
+            "'Headline' (Reddit has no feed headline), never a separate shared "
+            "On-creative line, never long/short versions.")
     flags = {k: c.get(k) for k in ("legal_flags", "length_flags", "length_warnings")
              if c.get(k)}
     c["pipeline_flags"] = flags if flags else {"none": True}
@@ -235,9 +275,10 @@ def tool_get_copy_concepts(sprint_id: str) -> dict:
     if not path.exists():
         return {"error": f"Sprint not found: {sprint_id}"}
     outputs = _read_json(path / "copy_outputs.json")
+    _platform = str((_read_json(path / "order.json") or {}).get("platform", ""))
     if isinstance(outputs, dict) and isinstance(outputs.get("concepts"), list):
         outputs = dict(outputs)
-        outputs["concepts"] = [_enrich_concept_view(c) if isinstance(c, dict) else c
+        outputs["concepts"] = [_enrich_concept_view(c, _platform) if isinstance(c, dict) else c
                                for c in outputs["concepts"]]
     review = _read_csv(path / "copy_review.csv")
     if not review and outputs:
@@ -1232,7 +1273,7 @@ When a sprint is in `awaiting_gate_N`, you must:
 | Gate | Name | Tool to call FIRST | What to show |
 |------|------|--------------------|--------------|
 | 2 | Order + Refs | `get_sprint` + `get_references` | EVERY order field (driver, platform, format, quantity, styles, audience, due date) AND the BRIEF **VERBATIM AND COMPLETE — never paraphrased, never truncated** (it is the creative contract being approved) AND the reference context (refs loaded, brand voice, targeting examples). **If the order has NO brief, lead with a prominent warning and offer `edit_order`.** If the user asks to change anything, apply via `edit_order` and re-show. |
-| 3 | Copy Review | `get_copy_concepts` | Every concept with FULL field detail on the FIRST presentation — NEVER a summary view (real operator complaint 2026-07-29: summarizing forced a second ask). For EACH selected concept show: on-creative headline (per audience on P&R orders), Headline long AND short, Body/Primary short AND long, CTA. Mark which ones the auto-reviewer selected/scored highest. **If a concept has `targeting_copy` (a Prospecting+Retargeting order), show BOTH audience versions — a **Prospecting** block and a **Retargeting** block, each with its OWN on-creative headline AND feed copy (headline + short/long body) — clearly labeled. Every audience gets distinct on-creative copy now; if an audience block appears to be missing its on-creative or feed fields, that is a defect to flag, not a variation to gloss over.** Frame it: "Here are the ad copy concepts. Tell me which you want to ship, or approve all and we'll move to images." **You CAN change copy at this gate: when the operator picks concepts (\"keep one per style\", \"cut the duplicate\"), SAVE it with `select_copy_concepts` — a spoken selection that is not saved is ignored by the image stage. When they ask for wording changes (shorten a headline, fix a CTA, replace placeholder text), APPLY them with `edit_copy` and show the result. Never say the copy can't be changed; after Gate 3 approval it IS frozen — say that instead.** |
+| 3 | Copy Review | `get_copy_concepts` | Every concept with FULL field detail on the FIRST presentation — NEVER a summary view (real operator complaint 2026-07-29: summarizing forced a second ask). For EACH selected concept show: on-creative headline (per audience on P&R orders), Headline long AND short, Body/Primary short AND long, CTA. **REDDIT is different: when a concept carries `present_as`, show exactly that and nothing else — per audience an On-creative line and a Body line, then the on-creative CTA once. No Headline, no long/short, no shared On-creative line (Adrie, 2026-09-30).** Mark which ones the auto-reviewer selected/scored highest. **If a concept has `targeting_copy` (a Prospecting+Retargeting order), show BOTH audience versions — a **Prospecting** block and a **Retargeting** block, each with its OWN on-creative headline AND feed copy (headline + short/long body) — clearly labeled. Every audience gets distinct on-creative copy now; if an audience block appears to be missing its on-creative or feed fields, that is a defect to flag, not a variation to gloss over.** Frame it: "Here are the ad copy concepts. Tell me which you want to ship, or approve all and we'll move to images." **You CAN change copy at this gate: when the operator picks concepts (\"keep one per style\", \"cut the duplicate\"), SAVE it with `select_copy_concepts` — a spoken selection that is not saved is ignored by the image stage. When they ask for wording changes (shorten a headline, fix a CTA, replace placeholder text), APPLY them with `edit_copy` and show the result. Never say the copy can't be changed; after Gate 3 approval it IS frozen — say that instead.** |
 | 4 | Image Prompts | `get_image_prompts` | EVERY ad slot with its visual prompt **IN FULL — never shortened or paraphrased** (the operator is approving these exact words going to the image model). Continue across messages if long. **`generation_method: skip` is BY DESIGN for self-contained styles (Us vs Them, Social Media Profile, Pie Chart, Device UI, Platform UI, Meme, Talent Profile): the template's built-in imagery is used and no prompt/photo is expected — present it as such, never as a missing visual. `figma_library` rows carry a photo pick, not a prompt.** |
 | 5 | Assembly | `get_manifest` | EVERY manifest row's copy+image pairing — style, audience, size, on-creative copy, photo/asset per row. **Do not sample or summarize rows**; group by style and continue across messages if long. **Manifest semantics: a preliminary manifest now EXISTS at Gate 5. Rows with status `ready_for_figma` are NORMAL — library-photo styles are assembled inside Figma by the plugin and never get a server file; they are not failures. If the manifest is EMPTY (0 rows) at Gate 5, that is a DEFECT: offer `log_issue`. NEVER tell the user to \"wait and check back later\" — no such background completion exists.** |
 | 6 | Final QA | `get_sprint` (run_summary + available_files) | The COMPLETE list of what was produced (every file, every flag, counts) — nothing elided. |

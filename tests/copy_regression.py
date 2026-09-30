@@ -1019,6 +1019,22 @@ def offline_checks():
         check(f"legal scan: {_t!r} -> {'flag' if _want else 'clean'}",
               bool(rp._scan_banned_terms({"headline": _t})) == _want)
 
+    # 11k. Reddit Gate-3 view (Adrie, 2026-09-30): per audience ON-CREATIVE +
+    # BODY only — no "Headline", no shared on-creative line. Built in the tool,
+    # not left to the model.
+    sys.path.insert(0, str(REPO / "agent"))
+    import orchestrator as _orc
+    _rc = {"creative_headline": "Idea on one side", "body_short": "Brief to site", "cta": "Post a project",
+           "targeting_copy": {"Prospecting": {"creative_headline": "Idea on one side", "body_short": "Brief to site"},
+                              "Retargeting": {"creative_headline": "Still on one side?", "body_short": "Pros are proposing"}}}
+    _pv = _orc._enrich_concept_view(_rc, "Reddit").get("present_as", {})
+    check("reddit gate 3: per-audience on-creative + body, nothing else",
+          _pv.get("Prospecting") == {"on_creative": "Idea on one side", "body": "Brief to site"}
+          and _pv.get("Retargeting") == {"on_creative": "Still on one side?", "body": "Pros are proposing"},
+          json.dumps(_pv))
+    check("reddit gate 3: no present_as on Meta (Meta keeps headline long/short)",
+          "present_as" not in _orc._enrich_concept_view(_rc, "Meta"))
+
     # 11j. Us vs Them wrap-up line per side — required in the schema (both
     # audiences), capped at Elise's 31, and carried to the manifest.
     rp._set_active_platform({"platform": "Meta"})
