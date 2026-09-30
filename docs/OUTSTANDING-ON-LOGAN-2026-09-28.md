@@ -122,3 +122,12 @@ so a Reddit run started there clones one of those instead of Elise's master
 7356:1259. Today they are structurally identical to it (copy panel at 48px), so
 nothing breaks — but an edit to the real master will not reach runs started
 from Assembly until those copies are deleted or renamed.
+
+**2026-09-30 afternoon — Adrie's two flagged Reddit runs** (f29958740ed6,
+95fac739d494): fixed in b0fce84, deployed 19:19 UTC. Graphic-only styles (Text
+Only, Note, Logo, Graphic with Text) no longer read as owing a photo; Person Only
+now pulls a library photo; Person Only / Logo no longer get a FEED LENGTH flag
+for an on-image headline they don't print. Existing sprints keep their old
+manifests — a rerun shows the result. Still open for Adrie + Elise: Reddit Text
+Only's 20-char headline / 18-char CTA caps make the model write fragments
+("See who's", "That job's still").
