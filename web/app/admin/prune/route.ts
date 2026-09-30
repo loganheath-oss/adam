@@ -14,3 +14,11 @@ export async function POST(req: Request) {
     headers: { "content-type": "application/json" },
   });
 }
+
+// Opening /admin/prune in a browser (Adrie's link, 2026-09-29) used to 404 and
+// then 405: deleting is a POST, made by the dashboard's "Delete selected…"
+// control. Send a visitor to that control instead of an error page.
+// Relative Location: behind Railway's proxy req.url can carry the internal host.
+export async function GET() {
+  return new Response(null, { status: 307, headers: { Location: "/admin/dashboard" } });
+}
