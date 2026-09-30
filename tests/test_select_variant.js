@@ -210,7 +210,10 @@ global.log = t => logs.push(t);   // fillListLayers logs its fill count
 // findLayerByName / _findExactByName / _findNormByName are already defined by
 // block 9 above — re-declaring them here is a SyntaxError.
 eval(grab('fitTextLayer') + '\n' + grab('setTextLayer') + '\n' + grab('fillListLayers') + '\n'
-     + grab('walkChildren') + '\n' + grab('splitPipe') + '\n' + grab('fillUsVsThemCopy'));
+     + grab('walkChildren') + '\n' + grab('splitPipe') + '\n' + grab('fillUsVsThemCopy') + '\n'
+     + grab('_withTrailingSymbolLine') + '\n' + grab('fillRedditLayers') + '\n' + grab('findAllLayersByName')
+     + '\n' + grab('_findAllExactByName') + '\n' + grab('_findAllNormByName') + '\n' + grab('setFirstTextByCandidates'));
+eval(src.match(/var REDDIT_LAYER_FILLS = \{[\s\S]*?\n\};/)[0].replace('var ', 'global.') + '\n' + src.match(/var STYLES_THAT_SKIP_CTA = \{[\s\S]*?\n\};/)[0].replace('var ', 'global.'));
 (async () => {
   const withLists = N('tpl', [T2('Copy_List1'), T2('Copy_List2'), T2('Copy_List3')]);
   const okFill = await fillListLayers(withLists, ['Fast', 'Rated', 'Ready']);
@@ -334,6 +337,37 @@ eval(grab('fitTextLayer') + '\n' + grab('setTextLayer') + '\n' + grab('fillListL
   ok('us vs them: headlines land on the right side by container',
      val(us, 'Copy_Headline') === 'Upwork way' && val(them, 'Copy_Headline') === 'Old way',
      `us='${val(us, 'Copy_Headline')}' them='${val(them, 'Copy_Headline')}'`);
+
+  // 14. Reddit layer map (live Reddit page, 2026-09-30). Each case is a real
+  // template's Copy_* names with its stock text; every one must take the copy.
+  const R = (kids) => { const t = N('tpl', kids); (function p(n){ (n.children||[]).forEach(k => { k.parent = n; p(k); }); })(t); return t; };
+  const TX = (name, characters) => ({type: 'TEXT', name, characters, children: [], fontName: {family: 'X', style: 'Y'}});
+  const row = {Platform: 'Reddit', CTA: 'Post a project', Headline_On_Creative: 'HL', Subhead_On_Creative: 'SUB',
+               Left_Headline: 'Speed', Right_Headline: 'Cost', Single_Headline: 'UNDER',
+               Single_Bullets: 'A|B|C', Search_Results: 'TERM'};
+  const chars = (t, nm) => { const out = []; (function w(n){ if (n.name === nm) out.push(n.characters); (n.children||[]).forEach(w); })(t); return out; };
+  let rt = R([TX('Copy_Headline2', 'Job filled'), TX('Copy_Headline1', 'Job posted')]);
+  await fillRedditLayers(rt, 'graphic with text', row);
+  ok('reddit GWT: Headline1/Headline2 take the two on-creative lines',
+     chars(rt, 'Copy_Headline1')[0] === 'HL' && chars(rt, 'Copy_Headline2')[0] === 'SUB');
+  rt = R([TX('Copy_Title2', 'data experts')]); await fillRedditLayers(rt, 'search', row);
+  ok('reddit Search: Copy_Title2 takes the headline', chars(rt, 'Copy_Title2')[0] === 'HL');
+  for (const st of ['note', 'twitter', 'notification']) {
+    rt = R([TX('Copy_Body', 'stock')]); await fillRedditLayers(rt, st, row);
+    ok(`reddit ${st}: Copy_Body takes the headline`, chars(rt, 'Copy_Body')[0] === 'HL');
+  }
+  rt = R([TX('Copy_Left', 'Lorem\n💰'), TX('Copy_Right', 'Lorem\n🐻'), TX('Copy_BodyCenter', 'x'), TX('Copy_Subhead', 'y')]);
+  await fillRedditLayers(rt, 'venn diagram', row);
+  ok('reddit Venn: words replaced, emoji line kept',
+     chars(rt, 'Copy_Left')[0] === 'Speed\n💰' && chars(rt, 'Copy_Right')[0] === 'Cost\n🐻', JSON.stringify([chars(rt,'Copy_Left'), chars(rt,'Copy_Right')]));
+  ok('reddit Venn: overlap line and underline in the right slots',
+     chars(rt, 'Copy_BodyCenter')[0] === 'SUB' && chars(rt, 'Copy_Subhead')[0] === 'UNDER');
+  rt = R([TX('Copy_Title2', 'Chatbot Developer'), TX('Copy_Title2', 'Pay Hourly'), TX('Copy_Title2', 'Flat-rate'), TX('Copy_Title2', 'Project-based')]);
+  await fillRedditLayers(rt, 'search and checkbox', row);
+  ok('reddit Search & Checkbox Alt: search term then the three items', chars(rt, 'Copy_Title2').join('|') === 'TERM|A|B|C', chars(rt, 'Copy_Title2').join('|'));
+  rt = R([TX('Copy_CTA', 'Start hiring'), TX('Copy_CTA', 'Start hiring')]);
+  await fillRedditLayers(rt, 'us vs them', row);
+  ok('reddit: every Copy_CTA past the first takes the CTA', chars(rt, 'Copy_CTA')[1] === 'Post a project');
 
   process.exit(fails ? 1 : 0);
 })();

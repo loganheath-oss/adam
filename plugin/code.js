@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.30b";
+var PLUGIN_VERSION = "2026.09.30c";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -202,6 +202,81 @@ async function fillListLayers(root, items) {
   }
   if (filled) log("  ✓ list rows filled (" + filled + ")");
   return filled > 0;
+}
+
+// ── Reddit layer map (2026-09-30) ───────────────────────────────────────────
+// Elise's Reddit templates use one scheme, Copy_<Role>, read off the live
+// Reddit Templates page. Board mode only fills the generic roles (Copy_Headline
+// / Copy_Subhead / Copy_CTA), so wherever her role name differs, the copy ADAM
+// generated for that style never landed and the template's stock text shipped
+// ("Job posted / Job filled", "data experts", "Find / Hire / Pay"), or the
+// residual-lorem net filled it with a guess and the run went DEGRADED.
+// [layer, manifest column] per style. Reddit-only: some of these names also
+// exist on other platforms' templates with different roles.
+var REDDIT_LAYER_FILLS = {
+  "graphic with text": [["Copy_Headline1", "Headline_On_Creative"], ["Copy_Headline2", "Subhead_On_Creative"]],
+  "search":            [["Copy_Title2", "Headline_On_Creative"]],
+  "note":              [["Copy_Body", "Headline_On_Creative"]],
+  "twitter":           [["Copy_Body", "Headline_On_Creative"]],
+  "notification":      [["Copy_Body", "Headline_On_Creative"]],
+  "button":            [["Copy_Button", "Headline_On_Creative"]],
+  // Venn: one word per circle, the overlap line, and the line underneath.
+  "venn diagram":      [["Copy_Left", "Left_Headline"], ["Copy_Right", "Right_Headline"],
+                        ["Copy_BodyCenter", "Subhead_On_Creative"], ["Copy_Subhead", "Single_Headline"]],
+};
+
+// Venn's Copy_Left / Copy_Right carry an emoji on their own second line
+// ("Lorem\n💰"). Keep that line; replace only the word.
+function _withTrailingSymbolLine(node, value) {
+  var cur = String(node.characters || "");
+  var nl = cur.lastIndexOf("\n");
+  if (nl < 0) return value;
+  var tail = cur.slice(nl + 1);
+  return /[A-Za-z0-9]/.test(tail) || !tail.trim() ? value : value + "\n" + tail;
+}
+
+async function fillRedditLayers(clone, key, row) {
+  var filled = 0;
+  var map = REDDIT_LAYER_FILLS[key] || [];
+  for (var i = 0; i < map.length; i++) {
+    var val = row[map[i][1]] || "";
+    if (!val) continue;
+    var node = findLayerByName(clone, map[i][0]);
+    if (!node || node.type !== "TEXT") continue;
+    if (key === "venn diagram" && (map[i][0] === "Copy_Left" || map[i][0] === "Copy_Right")) {
+      val = _withTrailingSymbolLine(node, val);
+    }
+    if (await setTextLayer(node, val)) filled++;
+  }
+  // Reddit Us vs Them carries a Copy_CTA in EACH column; the generic CTA fill
+  // stops at the first, so the other shipped the template's "Start hiring".
+  var cta = row.CTA || row.cta || "";
+  if (cta && !STYLES_THAT_SKIP_CTA[key]) {
+    var ctas = findAllLayersByName(clone, "Copy_CTA");
+    for (var ci = 1; ci < ctas.length; ci++) {
+      if (ctas[ci].type === "TEXT" && await setTextLayer(ctas[ci], cta)) filled++;
+    }
+  }
+  var items = splitPipe(row.Single_Bullets || row.single_bullets);
+  var search = splitPipe(row.Search_Results || row.search_results);
+  if (key === "text with icons" && items.length && await fillListLayers(clone, items)) filled++;
+  if (key === "search and checkbox") {
+    // Base: Copy_Title = the search term, Copy_List1-3 = the checkbox items.
+    // Alt: four Copy_Title2 — the search term, then the three items.
+    if (search[0] && await setFirstTextByCandidates(clone, ["Copy_Title"], search[0])) filled++;
+    if (items.length && await fillListLayers(clone, items)) filled++;
+    var t2 = findAllLayersByName(clone, "Copy_Title2");
+    var t2vals = (search[0] ? [search[0]] : []).concat(items);
+    for (var t = 0; t < t2.length && t < t2vals.length; t++) {
+      if (t2[t].type === "TEXT" && await setTextLayer(t2[t], t2vals[t])) filled++;
+    }
+  }
+  if (key === "pie chart" && !(row.Chart_Pct || row.chart_pct) && (row.Pie_Center || row.pie_center)) {
+    if (await setFirstTextByCandidates(clone, ["Center_Callout_Text", "TextOnly_Subhead_Text"],
+                                       row.Pie_Center || row.pie_center)) filled++;
+  }
+  if (filled) log("  ✓ Reddit layers filled (" + filled + ")");
+  return filled;
 }
 
 var STYLE_BULLET_LAYERS = {
@@ -1532,10 +1607,13 @@ function splitPipe(s) {
 // Us vs Them: a side-by-side comparison. Fill the two side headlines and the
 // three bullets per side (us → Bullet1-3, them → Bullet4-6).
 async function fillUsVsThemCopy(clone, row) {
-  var usHead = row.Us_Headline || row.us_headline || row.Headline || row.headline || "";
-  var themHead = row.Them_Headline || row.them_headline || "";
-  var usB = splitPipe(row.Us_Bullets || row.us_bullets);
-  var themB = splitPipe(row.Them_Bullets || row.them_bullets);
+  // Reddit's Us vs Them fields are named by position — left_headline /
+  // right_headline, left = us (Elise's Reddit card) — not us_/them_.
+  var usHead = row.Us_Headline || row.us_headline || row.Left_Headline || row.left_headline
+               || row.Headline || row.headline || "";
+  var themHead = row.Them_Headline || row.them_headline || row.Right_Headline || row.right_headline || "";
+  var usB = splitPipe(row.Us_Bullets || row.us_bullets || row.Left_Bullets || row.left_bullets);
+  var themB = splitPipe(row.Them_Bullets || row.them_bullets || row.Right_Bullets || row.right_bullets);
 
   // The two columns use inconsistent layer names across sizes (Copy_Headline /
   // Copy_Bullet duplicated on some, legacy UsVsThem_* on the 1440x1440). Instead
@@ -1745,13 +1823,28 @@ function selectVariant(candidates, hint) {
   return pool[0];
 }
 
+// Template candidates are FRAMES, never text. The Reddit page holds TEXT labels
+// such as "templates 7-12 (.CSV)" (Elise's pasted run notes), which the
+// case-insensitive fallback of findAllByPrefix matched as "Template*" — every
+// lookup then logged "name drift: matched 'templates 7-12 (.CSV)'" three times
+// per board (her 2026-09-30 log). Same exact-then-normalized rule, text excluded.
+function _templateFramesByPrefix(node, prefix) {
+  function frames(list) { return list.filter(function (n) { return n.type !== "TEXT"; }); }
+  var results = frames(_findAllByPrefixExact(node, prefix));
+  if (results.length === 0) {
+    results = frames(_findAllByPrefixNorm(node, _normName(prefix)));
+    if (results.length > 0) _noteDrift(results[0].name, prefix + "*");
+  }
+  return results;
+}
+
 function findTemplateByConvention(searchRoot, visualStyle, w, h, hint) {
   var raw = normAlnum(visualStyle);
   var an = STYLE_ADTYPE_ALIAS[raw] || raw;
   if (!an) return null;
   // Elise names some template frames Template_* and others Adtype_*_{WxH} — search
   // both so Pie-Chart / Search-Results / Sticky-Note (Adtype_-named) are found too.
-  var all = findAllByPrefix(searchRoot, "Template").concat(findAllByPrefix(searchRoot, "Adtype"));
+  var all = _templateFramesByPrefix(searchRoot, "Template").concat(_templateFramesByPrefix(searchRoot, "Adtype"));
   // Collect EVERY template that matches this adtype + exact width + near-exact
   // height, so selectVariant can choose the right Dark/Light/Alt among them.
   var matches = [];
@@ -2576,6 +2669,9 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
         // Us vs Them (side headlines + bullets) and Poll (question + bars)
         if (key === "us vs them") await fillUsVsThemCopy(styledClone, leadRow);
         if (key === "poll") await fillPollCopy(styledClone, leadRow);
+        if (_normName(leadRow.Platform || leadRow.platform || "").replace(/[^a-z]/g, "") === "reddit") {
+          await fillRedditLayers(styledClone, key, leadRow);
+        }
 
         // Safety net: never ship lorem-ipsum placeholder text on the styled ad.
         await clearResidualLoremIpsum(styledClone, leadRow);

@@ -134,8 +134,9 @@ def fits(n, w, h):
 def by_convention(root, style, w, h):
     raw = alnum(style)
     an = ALIAS.get(raw, raw)
+    # Templates are frames, never TEXT (plugin _templateFramesByPrefix).
     hits = [c for c in by_prefix(root, "Template") + by_prefix(root, "Adtype")
-            if an in alnum(c["name"]) and fits(c, w, h)]
+            if c.get("type") != "TEXT" and an in alnum(c["name"]) and fits(c, w, h)]
     if hits:
         return hits, "by name"
     wants = ["adtype" + raw, "adtype" + an] if raw != an else ["adtype" + an]
