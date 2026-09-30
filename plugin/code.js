@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.30f";
+var PLUGIN_VERSION = "2026.09.30g";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -33,6 +33,7 @@ var PLUGIN_VERSION = "2026.09.30f";
 // their first child variant.
 
 figma.showUI(__html__, { width: 460, height: 640 });
+figma.ui.postMessage({ type: "plugin-version", version: PLUGIN_VERSION });
 
 var capturedTemplateId = null;
 var capturedDestinationId = null;
@@ -3426,6 +3427,7 @@ async function assemble(payload) {
 // ── Message router ──────────────────────────────────────────────────────────
 
 figma.ui.onmessage = async function (msg) {
+  if (msg && msg.type === "get-version") { figma.ui.postMessage({ type: "plugin-version", version: PLUGIN_VERSION }); return; }
   if (msg.type === "capture-template") captureTemplate();
   else if (msg.type === "capture-destination") captureDestination();
   else if (msg.type === "assemble") await assemble(msg);

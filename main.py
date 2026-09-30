@@ -3503,12 +3503,24 @@ async def plugin_download():
     import zipfile
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        ver = _plugin_version() or "unknown"
         for name in ("manifest.json", "code.js", "ui.html"):
             f = PLUGIN_DIR / name
-            if f.exists():
-                z.writestr(f"upwork-pipeline-assembly/{name}", f.read_text())
+            if not f.exists():
+                continue
+            text = f.read_text()
+            if name == "manifest.json":
+                # Put the version in the NAME Figma shows under Plugins ›
+                # Development (2026-09-30: a designer ran a month-old copy all
+                # day and several same-named imports could not be told apart).
+                try:
+                    m = json.loads(text)
+                    m["name"] = f"{m.get('name', 'Upwork Pipeline Assembly')} v{ver}"
+                    text = json.dumps(m, indent=2)
+                except ValueError:
+                    pass
+            z.writestr(f"upwork-pipeline-assembly/{name}", text)
     data = buf.getvalue()
-    ver = _plugin_version() or "unknown"
     return Response(content=data, media_type="application/zip", headers={
         "Content-Disposition": f'attachment; filename="upwork-pipeline-assembly-{ver}.zip"'})
 
@@ -3534,11 +3546,13 @@ ol{{padding-left:20px}} li{{margin:7px 0}} .muted{{color:#5c6b62;font-size:14px}
   <li>Download and unzip the folder.</li>
   <li>In the Figma desktop app: <b>Plugins &rarr; Development &rarr; Import plugin from manifest…</b></li>
   <li>Choose <span class="v">manifest.json</span> from the unzipped folder.</li>
-  <li>Updating? Import over the old one, or delete the previous entry first so you
-      do not end up with two.</li>
+  <li>Updating? First remove the old one: <b>Plugins &rarr; Development &rarr; Manage plugins in
+      development</b>, then remove every older "Upwork Pipeline Assembly". The menu name now
+      ends in its version, so the one to keep reads <span class="v">v{ver}</span>.</li>
+  <li>Open it. The version is next to the title, with <b>✓ Latest version</b> under it — or
+      a red warning if a newer one is on this page.</li>
 </ol>
-<p class="muted">Every assembly logs its plugin version and checks it against this page.
-If your copy is out of date the plugin log will tell you so at the end of a run.</p>
+<p class="muted">Every assembly also logs its plugin version and checks it against this page.</p>
 </body></html>""")
 
 

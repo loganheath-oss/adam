@@ -7,7 +7,11 @@
 // Selection-based: the user picks frames in Figma and clicks "Capture" buttons
 // in the plugin UI. No name-matching heuristics — too brittle.
 
+// PLUGIN_VERSION: shown on the main panel. Bump it whenever this plugin changes.
+var PLUGIN_VERSION = "2026.09.30";
+
 figma.showUI(__html__, { width: 480, height: 720 });
+figma.ui.postMessage({ type: "plugin-version", version: PLUGIN_VERSION });
 
 // ── State (held in plugin memory between user actions) ───────────────────────
 
@@ -708,6 +712,7 @@ function applyTagsToClone(clone, csvRow) {
 // ── Message router ───────────────────────────────────────────────────────────
 
 figma.ui.onmessage = async function (msg) {
+  if (msg && msg.type === "get-version") { figma.ui.postMessage({ type: "plugin-version", version: PLUGIN_VERSION }); return; }
   if (msg.type === "capture-sources") {
     captureSources();
   } else if (msg.type === "capture-template") {

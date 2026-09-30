@@ -126,10 +126,21 @@
     .log-success {
       color: #6bdd6b;
     }
+  
+    /* Version badge — every ADAM plugin shows what it is on its main panel
+       (Logan, 2026-09-30, after a whole day of fixes never reached a designer
+       running a month-old copy). */
+    .plugin-version { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 600; vertical-align: middle; background: #e8f5e3; color: #14a800;
+      border: 1px solid #14a800; font-family: ui-monospace, Menlo, monospace; }
+    .plugin-version.stale { background: #fdecea; color: #c5221f; border-color: #c5221f; }
+    .version-status { font-size: 11px; margin: 2px 0 8px 0; color: #888; }
+    .version-status.stale { color: #c5221f; font-weight: 600; }
   </style>
 </head>
 <body>
-  <h1>Upwork Pipeline Assembly</h1>
+  <h1>Upwork Pipeline Assembly <span id="plugin-version" class="plugin-version">v…</span></h1>
+  <div id="version-status" class="version-status"></div>
   <p class="subtitle">Assembles ads using library photos directly from Figma — no PNG uploads.</p>
 
   <div class="step">
@@ -244,6 +255,26 @@
     onmessage = function (event) {
       var msg = event.data.pluginMessage;
       if (!msg) return;
+      if (msg.type === "plugin-version") {
+        var vb = document.getElementById("plugin-version");
+        if (vb) vb.textContent = "v" + msg.version;
+        // Is this the copy ADAM is serving? (Assembly only — the other plugins
+        // have no network access.) The backend host is the one domain the
+        // manifest allows.
+        fetch("https://adam-production-9618.up.railway.app/plugin/version")
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            var st = document.getElementById("version-status");
+            if (!d || !d.version || !st) return;
+            if (d.version === msg.version) { st.textContent = "✓ Latest version"; st.className = "version-status"; }
+            else {
+              st.textContent = "⚠ Out of date — v" + d.version + " is available at adam-web-production.up.railway.app/plugin";
+              st.className = "version-status stale";
+              document.getElementById("plugin-version").className = "plugin-version stale";
+            }
+          }).catch(function () {});
+        return;
+      }
       if (msg.type === "log") {
         appendLog(msg.text);
       } else if (msg.type === "error") {
@@ -291,6 +322,7 @@
         }
       }
     };
+    parent.postMessage({ pluginMessage: { type: "get-version" } }, "*");
   </script>
 </body>
 </html>

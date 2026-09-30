@@ -12,7 +12,11 @@
 //   COMPONENT/ELLIPSE/GROUP. The node's NAME is the tag value.
 //   New tags are written as 1x1 hidden rectangles with name = tag value.
 
+// PLUGIN_VERSION: shown on the main panel. Bump it whenever this plugin changes.
+var PLUGIN_VERSION = "2026.09.30";
+
 figma.showUI(__html__, { width: 540, height: 800 });
+figma.ui.postMessage({ type: "plugin-version", version: PLUGIN_VERSION });
 
 // ── Tag registry — must stay in sync with pipeline/figma_library.py ──────────
 
@@ -352,6 +356,7 @@ function postSelection() {
 // ── Message router ───────────────────────────────────────────────────────────
 
 figma.ui.onmessage = async function (msg) {
+  if (msg && msg.type === "get-version") { figma.ui.postMessage({ type: "plugin-version", version: PLUGIN_VERSION }); return; }
   try {
     if (msg.type === "scan") {
       var data = await scanLibrary();

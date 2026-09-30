@@ -159,10 +159,20 @@
     .log-success {
       color: #6bdd6b;
     }
+  
+    /* Version badge — every ADAM plugin shows what it is on its main panel
+       (Logan, 2026-09-30, after a whole day of fixes never reached a designer
+       running a month-old copy). */
+    .plugin-version { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 600; vertical-align: middle; background: #e8f5e3; color: #14a800;
+      border: 1px solid #14a800; font-family: ui-monospace, Menlo, monospace; }
+    .plugin-version.stale { background: #fdecea; color: #c5221f; border-color: #c5221f; }
+    .version-status { font-size: 11px; margin: 2px 0 8px 0; color: #888; }
+    .version-status.stale { color: #c5221f; font-weight: 600; }
   </style>
 </head>
 <body>
-  <h1>ADAM Library Tagger</h1>
+  <h1>ADAM Library Tagger <span id="plugin-version" class="plugin-version">v…</span></h1>
   <p class="subtitle">Generates tagged photo components from source shoots + a CSV.</p>
 
   <div class="step">
@@ -418,6 +428,11 @@
     onmessage = function (event) {
       var msg = event.data.pluginMessage;
       if (!msg) return;
+      if (msg.type === "plugin-version") {
+        var vb = document.getElementById("plugin-version");
+        if (vb) vb.textContent = "v" + msg.version;
+        return;
+      }
       if (msg.type === "log") {
         var level = /WARNING|MISMATCH/.test(msg.message) ? "warn" : "info";
         appendLog(msg.message, level);
@@ -478,6 +493,7 @@
         }
       }
     };
+    parent.postMessage({ pluginMessage: { type: "get-version" } }, "*");
   </script>
 </body>
 </html>
