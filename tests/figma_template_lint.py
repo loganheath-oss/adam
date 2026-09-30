@@ -97,11 +97,29 @@ def strip_platform_bumper(name):
     return m.group(2) if token in PLATFORM_BUMPERS else str(name or "")
 
 
+# Size-only names (Elise, working session 2026-09-29): a template is named for its
+# size — "1440x1440", "Dark_1440x1800", "Alt1_Light_1080x1920" — and its
+# container ("Meta_Adtype_Testimonial") carries the channel and style. The plugin
+# resolves these through the container (findTemplateByConvention's section
+# fallback), so the lint must too, or it reports the renamed page as missing.
+# For the full replay of what the plugin picks, per platform page, see
+# scripts/verify_template_resolution.py.
+container_sizes = {}   # container name (bumper-stripped) -> sizes its children are named for
+SIZE_RE = re.compile(r"(\d{3,5})\s*[x×]\s*(\d{3,5})")
+
+
 def walk(n, ph_ancestor=None):
     nm = str(n.get("name", ""))
     all_names[nm] = all_names.get(nm, 0) + 1
     matchable.add(nm)
     matchable.add(strip_platform_bumper(nm))
+    kids = n.get("children") or []
+    if kids and strip_platform_bumper(nm).startswith("Adtype"):
+        sizes = {f"{m.group(1)}x{m.group(2)}" for k in kids
+                 if k.get("type") in ("FRAME", "COMPONENT", "COMPONENT_SET")
+                 for m in [SIZE_RE.search(str(k.get("name", "")))] if m}
+        if sizes:
+            container_sizes.setdefault(strip_platform_bumper(nm).rstrip("/"), set()).update(sizes)
     if n.get("type") in ("FRAME", "COMPONENT", "COMPONENT_SET", "SECTION", "GROUP"):
         frames_by_name.setdefault(nm, []).append(n.get("id"))
     here_ph = is_ph(nm)
@@ -127,6 +145,13 @@ for style, prefixes in sorted(PREFIXES.items()):
                               for n in matchable)]
         if sizes_found:
             tpl_hits.append((p, sizes_found))
+    # A container whose children are named for their sizes IS the template now —
+    # the primary route, not a fallback.
+    for c in containers:
+        sizes_found = [s for s in SIZES if s in container_sizes.get(c.rstrip("/"), set())]
+        if sizes_found:
+            tpl_hits.insert(0, (prefixes[0] if prefixes else c, sizes_found))
+            break
     primary = prefixes[0] if prefixes else ""
     primary_found = tpl_hits and tpl_hits[0][0] == primary
     status = "✅" if (container_hit and tpl_hits) else ("🟡" if tpl_hits else "❌")

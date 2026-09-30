@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.28";
+var PLUGIN_VERSION = "2026.09.30";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -560,9 +560,22 @@ async function preflightFonts(template) {
     try { await figma.loadFontAsync(fonts[i]); }
     catch (e) { missing.push(fonts[i].family + " " + fonts[i].style); }
   }
+  // A missing font is only a warning when the substitute is missing too.
+  // setTextLayer() already sets any unavailable font in the house font, and the
+  // one font that is routinely missing — NeueMontreal-Medium on the two pill
+  // labels of every board master — is substituted on every run. Counting it
+  // here as ⚠ marked every such assembly DEGRADED even though nothing failed
+  // (Elise, 2026-09-29: "usually it's like some small error that it'll throw").
+  // If the house font is ALSO unavailable, each layer that cannot be set logs
+  // its own ⚠ from setTextLayer, so real failures are still counted.
   if (missing.length) {
-    log("⚠ " + missing.length + " font(s) in this template are NOT available: " + missing.join(", "));
-    log("  Text in those fonts will be set in PP Neue Montreal Medium instead. Install them, or restyle those layers.");
+    var houseOk = true;
+    try { await figma.loadFontAsync({ family: "PP Neue Montreal", style: "Medium" }); }
+    catch (e) { houseOk = false; }
+    log((houseOk ? "  ℹ " : "⚠ ") + missing.length + " font(s) in this template are NOT available: " + missing.join(", "));
+    log(houseOk
+      ? "  Text in those fonts is set in PP Neue Montreal Medium instead. Install them, or restyle those layers."
+      : "  The substitute, PP Neue Montreal Medium, is not available either — those layers will keep their template text.");
   } else {
     log("  Fonts: all " + fonts.length + " available.");
   }
@@ -1048,6 +1061,34 @@ function _adBoundary(node) {
 // long text overflows the frame edge and gets clipped — this fixes that:
 // headline/body layers flip to auto-height (wrap); one-line labels shrink to fit.
 // Best-effort and conservative — only touches text that actually overflows.
+//
+// FIXED-WIDTH TEXT IS NEVER SHRUNK FOR WIDTH (2026-09-30). Elise, working session
+// 2026-09-29: "in the template it's 48 but over yonder any of these is 22" — the
+// primary text in the board's copy panel, on Reddit AND Meta, every run since at
+// least August. Every copy-panel value layer is a fixed 620px box (auto-height)
+// that ends 37px inside its clipping Notes frame, i.e. 3px past the 40px margin.
+// That read as a 3px "overflow", and the shrink loop below cannot fix a
+// fixed-width box's WIDTH by changing its font — the box stays 620px wide — so it
+// ran all the way to the 22px floor. Verified on all four board masters
+// (7356:1259, 7638:9769, 7417:814, 5227:3245) and on assembled board 7648:13379.
+// The same trap shrank any fixed-width ad text sitting near its frame's edge.
+//
+// A fixed-width box's width is the designer's decision. The only overflow it can
+// have is VERTICAL (auto-height grows downward), and that is real on Meta, whose
+// Notes panels are a fixed 984px and clip: long primary text at 40px can run off
+// the bottom. So: shrink only while it overflows the bottom, and stop as soon as
+// it fits — template size whenever the copy fits, smaller only when it has to be.
+function _shrinkUntil(node, fits) {
+  var fs = node.fontSize;
+  if (typeof fs !== "number") return null; // mixed fonts — skip
+  var guard = 0;
+  while (guard++ < 60 && !fits() && fs > _FIT_MIN_FS) {
+    fs = Math.max(_FIT_MIN_FS, fs - 2);
+    node.fontSize = fs;
+  }
+  return fs;
+}
+
 function fitTextLayer(node) {
   try {
     if (!node || node.type !== "TEXT") return;
@@ -1055,27 +1096,38 @@ function fitTextLayer(node) {
     if (!frame) return;
     var fb = frame.absoluteBoundingBox, nb = node.absoluteBoundingBox;
     if (!fb || !nb) return;
+
+    if (node.textAutoResize !== "WIDTH_AND_HEIGHT") {
+      var availBottom = fb.y + fb.height;
+      if ((nb.y + nb.height) - availBottom <= 1) return; // fits — leave it alone
+      var startFs = node.fontSize;
+      var endFs = _shrinkUntil(node, function () {
+        var b = node.absoluteBoundingBox;
+        return !b || (b.y + b.height) <= availBottom + 1;
+      });
+      if (endFs !== null && endFs !== startFs) {
+        log("    ↳ shrank '" + node.name + "' " + Math.round(startFs) + " → " + Math.round(endFs) + "px to fit its panel");
+      }
+      return;
+    }
+
     var availRight = fb.x + fb.width - _FIT_MARGIN;
     if ((nb.x + nb.width) - availRight <= 1) return; // fits — leave it alone
 
-    if (node.textAutoResize === "WIDTH_AND_HEIGHT" && _WRAP_HINTS.test(node.name || "")) {
+    if (_WRAP_HINTS.test(node.name || "")) {
       // Convert auto-width headline/body to auto-height so it wraps in place.
       var targetW = Math.max(120, availRight - nb.x);
       node.textAutoResize = "HEIGHT";
       node.resize(targetW, node.height);
       log("    ↳ wrapped '" + node.name + "' to " + Math.round(targetW) + "px");
     } else {
-      // One-line label (name/role/CTA/badge/stat) — shrink font until it fits.
-      var fs = node.fontSize;
-      if (typeof fs !== "number") return; // mixed fonts — skip
-      var guard = 0;
-      while (guard++ < 60) {
+      // One-line auto-width label (name/role/CTA/badge/stat) — its width follows
+      // its font, so shrinking genuinely makes it fit.
+      var fs = _shrinkUntil(node, function () {
         var b = node.absoluteBoundingBox;
-        if (!b || (b.x + b.width) <= availRight + 1 || fs <= _FIT_MIN_FS) break;
-        fs = Math.max(_FIT_MIN_FS, fs - 2);
-        node.fontSize = fs;
-      }
-      log("    ↳ shrank '" + node.name + "' to " + Math.round(fs) + "px to fit");
+        return !b || (b.x + b.width) <= availRight + 1;
+      });
+      if (fs !== null) log("    ↳ shrank '" + node.name + "' to " + Math.round(fs) + "px to fit");
     }
   } catch (e) { /* fitting is best-effort — never block assembly */ }
 }
@@ -1583,6 +1635,19 @@ function countCopyLayers(node) {
   return n;
 }
 
+// True when the template has somewhere to put a photo. Matches every spelling in
+// the live file: Image_Placeholder, image_placeholder, Image-Placeholder, and the
+// Left-/Right- pair on dual-image styles.
+function _hasImageSlot(node) {
+  var found = false;
+  (function walk(x) {
+    if (!x || found) return;
+    if (/image[-_ ]?placeholder/i.test(String(x.name || ""))) { found = true; return; }
+    if ("children" in x) for (var i = 0; i < x.children.length; i++) walk(x.children[i]);
+  })(node);
+  return found;
+}
+
 function selectVariant(candidates, hint) {
   if (candidates.length <= 1) return candidates[0] || null;
   hint = hint || {};
@@ -1597,19 +1662,32 @@ function selectVariant(candidates, hint) {
   if (wantCTA && nonAlt.length) pool = nonAlt;
   else if (!wantCTA && alt.length) pool = alt;
   // Layout-family preference: styles like Testimonial resolve to multiple
-  // families (Photo / Text-Only / Text-and-Photo). When a photo is available,
-  // prefer a template whose name includes "Photo"; when not, prefer "Text-Only".
-  if (hint.hasPhoto === true) {
-    var photoFam = pool.filter(function (c) { return /photo/i.test(c.name); });
-    if (photoFam.length) pool = photoFam;
-  } else if (hint.hasPhoto === false) {
-    var textFam = pool.filter(function (c) { return /text-?only/i.test(c.name); });
-    if (textFam.length) pool = textFam;
+  // families (photo / text-only). When a photo is available prefer a template
+  // that can HOLD one; when not, prefer one that can't.
+  //
+  // Read from the frame's STRUCTURE, not its name (2026-09-30). This used to
+  // test the name for "Photo" / "Text-Only", which Elise's rename to size-only
+  // names removed: the live Meta Testimonial container is now 1440x1440 (photo),
+  // Alt1_* (text only, no placeholder) and Alt2_* (photo). No name says which is
+  // which, so a photo testimonial could land on text-only Alt1 and its photo had
+  // nowhere to go. Whether an image placeholder exists is what the preference
+  // always meant, and it survives any naming.
+  if (hint.hasPhoto === true || hint.hasPhoto === false) {
+    var fam = pool.filter(function (c) { return _hasImageSlot(c) === hint.hasPhoto; });
+    if (fam.length) pool = fam;
   }
   // Tone preference (only if this family actually has toned variants).
+  //
+  // Under the size-only naming the LIGHT variant carries no tone word at all:
+  // Text Only is "Dark_1440x1440" beside plain "1440x1440" (live Meta page,
+  // 2026-09-30), and the same for Photo with Text and Meme. The old fallback
+  // took "any tone" when the preferred one was missing, so every light concept
+  // quietly shipped Dark. An unmarked sibling of a Dark frame IS the light one.
   if (hint.prefer) {
     var toned = pool.filter(function (c) { return tone(c) === hint.prefer; });
+    var unmarked = pool.filter(function (c) { return tone(c) === ""; });
     if (toned.length) pool = toned;
+    else if (hint.prefer === "light" && unmarked.length) pool = unmarked;
     else {
       var anyTone = pool.filter(function (c) { return tone(c) !== ""; });
       if (anyTone.length) pool = anyTone;   // family is toned but not our pref — take any tone
@@ -1685,13 +1763,23 @@ function findTemplateByConvention(searchRoot, visualStyle, w, h, hint) {
     }
     // Prefer a container whose name ENDS at the style token, so "Search" cannot
     // be captured by "Search-and-Checkbox" on page traversal order alone.
+    //
+    // Try the order-form name before its alias. The alias exists for TEMPLATE
+    // frame names ("Template_Social-Profile_*"), but the container is named for
+    // the style — "Meta_Adtype_Social-Media-Profile" — so the aliased token alone
+    // never found it and Social Media Profile fell through to the legacy
+    // Template Library page (verified against the live file, 2026-09-30).
+    var wantSects = raw && raw !== an ? ["adtype" + raw, wantSect] : [wantSect];
     var container = null;
-    for (var si = 0; si < sects.length; si++) {
-      if (normAlnum(sects[si].name).slice(-wantSect.length) === wantSect) { container = sects[si]; break; }
+    for (var wi = 0; wi < wantSects.length && !container; wi++) {
+      var ws = wantSects[wi];
+      for (var si = 0; si < sects.length; si++) {
+        if (normAlnum(sects[si].name).slice(-ws.length) === ws) { container = sects[si]; break; }
+      }
     }
-    if (!container) {
+    for (var wj = 0; wj < wantSects.length && !container; wj++) {
       for (var sj = 0; sj < sects.length; sj++) {
-        if (normAlnum(sects[sj].name).indexOf(wantSect) !== -1) { container = sects[sj]; break; }
+        if (normAlnum(sects[sj].name).indexOf(wantSects[wj]) !== -1) { container = sects[sj]; break; }
       }
     }
     if (container) {
@@ -1713,10 +1801,14 @@ function findTemplateByConvention(searchRoot, visualStyle, w, h, hint) {
         else { var kwh = nodeWH(kc); if (!kwh) continue; kw = kwh[0]; kh = kwh[1]; }
         if (kw === w && Math.abs(kh - h) <= 12) matches.push(kc);
       }
+      // Size-named children ARE the convention now, not a mislabel: Elise,
+      // working session 2026-09-29, dropped the "template_style_name_" front
+      // bumper so a template is named for its size and its container says
+      // which channel and style it is. The old wording told her every Reddit
+      // frame was wrong, on every run.
       if (matches.length) {
-        log("    Matched via section '" + container.name + "' (child frame '" +
-            matches[0].name + "' is mislabeled in Figma — should be Template_Adtype_" +
-            visualStyle.replace(/\s+/g, "-") + "_" + w + "x" + h + ")");
+        log("    Matched '" + container.name + "' › '" + matches[0].name + "' by size" +
+            (matches.length > 1 ? " (" + matches.length + " variants)" : ""));
       }
     }
   }

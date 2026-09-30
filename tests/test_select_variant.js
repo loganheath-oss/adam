@@ -17,7 +17,7 @@ function grab(name) {
 }
 const logs = [];
 const ctx = { log: t => logs.push(t) };
-eval(grab('countCopyLayers') + '\n' + grab('selectVariant')
+eval(grab('countCopyLayers') + '\n' + grab('_hasImageSlot') + '\n' + grab('selectVariant')
      .replace(/\blog\(/g, 'ctx.log('));
 
 const T = (name, n, extra = {}) => ({
@@ -219,5 +219,87 @@ eval(grab('fitTextLayer') + '\n' + grab('setTextLayer') + '\n' + grab('fillListL
   const noLists = N('tpl', [T2('Copy_Body')]);
   ok('list layers: returns false when absent, so Copy_Body fallback runs',
      (await fillListLayers(noLists, ['a','b'])) === false);
+
+  // 11. The 22px copy-panel bug (Elise, 2026-09-29: "in the template it's 48 but
+  // over yonder any of these is 22"). Geometry below is the live Reddit master
+  // 7356:1259: a fixed 620px auto-height value layer ending 37px inside a
+  // clipping Notes frame — 3px past the 40px margin.
+  const fitSrc = ['_adBoundary', '_shrinkUntil', 'fitTextLayer'].map(grab).join('\n');
+  const fitEnv = src.match(/var _WRAP_HINTS[^\n]*\nvar _FIT_MARGIN[^\n]*\nvar _FIT_MIN_FS[^\n]*/)[0];
+  const fit = new Function('log', fitEnv + '\n' + fitSrc + '\nreturn fitTextLayer;')(t => logs.push(t));
+
+  // Fake text node whose box behaves like Figma's: a fixed-width box keeps its
+  // width and grows DOWN as the font grows; an auto-width one grows RIGHT.
+  const textNode = ({x, y, w, chars, fs, mode, name = 'Copy_Value', parent}) => {
+    const n = {type: 'TEXT', name, fontSize: fs, textAutoResize: mode, parent};
+    Object.defineProperty(n, 'absoluteBoundingBox', {get() {
+      const lineW = chars * n.fontSize * 0.5;
+      if (n.textAutoResize === 'WIDTH_AND_HEIGHT') return {x, y, width: lineW, height: n.fontSize * 1.2};
+      const lines = Math.max(1, Math.ceil(lineW / w));
+      return {x, y, width: w, height: lines * n.fontSize * 1.2};
+    }});
+    return n;
+  };
+  const notes = (h) => ({type: 'FRAME', clipsContent: true, width: 694, parent: null,
+                         absoluteBoundingBox: {x: 344, y: 0, width: 694, height: h}});
+
+  // Reddit: Notes hugs its content, so it never clips a short primary text.
+  let t = textNode({x: 381, y: 300, w: 620, chars: 100, fs: 48, mode: 'HEIGHT', parent: notes(5000)});
+  logs.length = 0; fit(t);
+  ok('copy panel: fixed-width primary text KEEPS its 48px (was shrunk to 22)', t.fontSize === 48,
+     'got ' + t.fontSize + ' ' + JSON.stringify(logs));
+
+  // Meta: Notes is a fixed 984px and clips, so long copy that would run off the
+  // bottom shrinks — only as far as it must, never to the floor by default.
+  t = textNode({x: 381, y: 300, w: 620, chars: 600, fs: 40, mode: 'HEIGHT', parent: notes(984)});
+  logs.length = 0; fit(t);
+  const bb = t.absoluteBoundingBox;
+  ok('copy panel: long copy that overflows the bottom shrinks until it fits',
+     t.fontSize < 40 && bb.y + bb.height <= 984 + 1, 'fs=' + t.fontSize + ' bottom=' + (bb.y + bb.height));
+  ok('copy panel: ...and stops at the first size that fits, not the 22px floor',
+     t.fontSize > 22, 'fs=' + t.fontSize);
+
+  // A one-line auto-width label that really runs off the ad edge still shrinks.
+  const ad = {type: 'FRAME', clipsContent: true, width: 1080, parent: null,
+              absoluteBoundingBox: {x: 0, y: 0, width: 1080, height: 1080}};
+  t = textNode({x: 100, y: 100, w: 0, chars: 40, fs: 60, mode: 'WIDTH_AND_HEIGHT', name: 'Profile_Name', parent: ad});
+  logs.length = 0; fit(t);
+  ok('auto-width label: overflowing the right edge still shrinks to fit',
+     t.fontSize < 60 && t.absoluteBoundingBox.x + t.absoluteBoundingBox.width <= 1080 - 40 + 1,
+     'fs=' + t.fontSize);
+
+  // 12. Size-only template names (Elise's rename, live on the Meta page since
+  // 2026-09-29). Variant words that remain: Dark_, Alt_, Alt1_/Alt2_.
+  const V = (name, {slot = true, copy = 2} = {}) => ({type: 'FRAME', name, children: [
+    ...(slot ? [{type: 'RECTANGLE', name: 'Image_Placeholder', children: []}] : []),
+    ...Array.from({length: copy}, (_, i) => ({type: 'TEXT', name: 'Copy_F' + i, children: []})),
+  ]});
+  const tonePair = [V('Dark_1440x1440'), V('1440x1440')];
+  ok('size-only names: prefer light picks the UNMARKED frame, not Dark',
+     selectVariant(tonePair, {prefer: 'light'}).name === '1440x1440',
+     selectVariant(tonePair, {prefer: 'light'}).name);
+  ok('size-only names: prefer dark still picks Dark',
+     selectVariant(tonePair, {prefer: 'dark'}).name === 'Dark_1440x1440');
+  ok('old names: an explicit Light frame still wins for light',
+     selectVariant([V('Template_X_Dark_1440x1440'), V('Template_X_Light_1440x1440')], {prefer: 'light'}).name
+       === 'Template_X_Light_1440x1440');
+
+  // The live Testimonial container: base + Alt2 hold a photo, Alt1 is text-only.
+  const testimonial = [V('1440x1440'), V('Alt1_Light_1440x1440', {slot: false}),
+    V('Alt1_Dark_1440x1440', {slot: false}), V('Alt2_Light_1440x1440'), V('Alt2_Dark_1440x1440')];
+  for (const prefer of ['light', 'dark']) {
+    const withPhoto = selectVariant(testimonial, {hasPhoto: true, prefer});
+    ok(`testimonial with a photo (${prefer}): lands on a frame that can hold it`,
+       _hasImageSlot(withPhoto), withPhoto.name);
+    const noPhoto = selectVariant(testimonial, {hasPhoto: false, prefer});
+    ok(`testimonial without a photo (${prefer}): lands on text-only Alt1`,
+       /^Alt1_/.test(noPhoto.name), noPhoto.name);
+  }
+  ok('photo preference: no-op when every candidate has a slot',
+     selectVariant([V('Dark_1440x1440'), V('1440x1440')], {hasPhoto: false, prefer: 'light'}).name === '1440x1440');
+  ok('image slot: matches every spelling in the file',
+     ['Image_Placeholder', 'image_placeholder', 'Image-Placeholder', 'Left-Image-Placeholder']
+       .every(nm => _hasImageSlot({type: 'FRAME', name: 'f', children: [{type: 'RECTANGLE', name: nm}]})));
+
   process.exit(fails ? 1 : 0);
 })();
