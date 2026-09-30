@@ -8,7 +8,7 @@
 // builds were running at once — one with no DEGRADED logic at all — and the
 // only way to find out was diffing files by hand. A build that cannot say what
 // it is cannot be supported.
-var PLUGIN_VERSION = "2026.09.30e";
+var PLUGIN_VERSION = "2026.09.30f";
 // =================================================
 // Reads a manifest CSV and assembles styled ads inside Figma.
 //
@@ -1104,7 +1104,6 @@ async function applyLibraryImageToClone(clone, libraryNodeId) {
 // rather than shrink (headlines, subheads, bodies, quotes, bullets).
 var _WRAP_HINTS = /headline|subhead|body|testimonial|quote|bullet|descript|paragraph|primary_text|_text/i;
 var _FIT_MARGIN = 40;   // keep text this far from the ad's clipping edge (px)
-var _FIT_MIN_FS = 22;   // don't shrink a label below this
 
 // Find the ancestor that defines the ad's clip boundary — the nearest clipping
 // frame sized like a single ad (not the whole board container).
@@ -1123,38 +1122,21 @@ function _adBoundary(node) {
   return null;
 }
 
-// After setting copy, keep it inside the ad. Auto-width layers never wrap, so
-// long text overflows the frame edge and gets clipped — this fixes that:
-// headline/body layers flip to auto-height (wrap); one-line labels shrink to fit.
-// Best-effort and conservative — only touches text that actually overflows.
+// After setting copy, keep it inside the ad WITHOUT EVER CHANGING ITS SIZE.
 //
-// FIXED-WIDTH TEXT IS NEVER SHRUNK FOR WIDTH (2026-09-30). Elise, working session
-// 2026-09-29: "in the template it's 48 but over yonder any of these is 22" — the
-// primary text in the board's copy panel, on Reddit AND Meta, every run since at
-// least August. Every copy-panel value layer is a fixed 620px box (auto-height)
-// that ends 37px inside its clipping Notes frame, i.e. 3px past the 40px margin.
-// That read as a 3px "overflow", and the shrink loop below cannot fix a
-// fixed-width box's WIDTH by changing its font — the box stays 620px wide — so it
-// ran all the way to the 22px floor. Verified on all four board masters
-// (7356:1259, 7638:9769, 7417:814, 5227:3245) and on assembled board 7648:13379.
-// The same trap shrank any fixed-width ad text sitting near its frame's edge.
-//
-// A fixed-width box's width is the designer's decision. The only overflow it can
-// have is VERTICAL (auto-height grows downward), and that is real on Meta, whose
-// Notes panels are a fixed 984px and clip: long primary text at 40px can run off
-// the bottom. So: shrink only while it overflows the bottom, and stop as soon as
-// it fits — template size whenever the copy fits, smaller only when it has to be.
-function _shrinkUntil(node, fits) {
-  var fs = node.fontSize;
-  if (typeof fs !== "number") return null; // mixed fonts — skip
-  var guard = 0;
-  while (guard++ < 60 && !fits() && fs > _FIT_MIN_FS) {
-    fs = Math.max(_FIT_MIN_FS, fs - 2);
-    node.fontSize = fs;
-  }
-  return fs;
-}
-
+// COPY NEVER SHRINKS (Logan, 2026-09-30: "We want the copy to never shrink").
+// History: until today a shrink loop ran every copy-panel value to a 22px floor
+// on every board (Elise, 2026-09-29: "in the template it's 48 but over yonder any
+// of these is 22") — the fixed 620px boxes sit 3px past the 40px margin, and
+// shrinking a font never narrows a fixed-width box. A morning fix made it shrink
+// only on real overflow; the decision now is that the template's type size is
+// the design and is never changed. What happens instead when copy is long:
+//   - Copy panel (the board's Notes): the panel grows — _growCopyPanel, and the
+//     board around it — _growBoardToFit. Reddit's panels already hug.
+//   - Inside an ad: an ad cannot grow. Headline/body layers that are auto-width
+//     still WRAP in place (their size is unchanged); anything that still runs
+//     past the frame is flagged ⚠ so a designer sees it. Length caps exist to
+//     prevent that case.
 function fitTextLayer(node) {
   try {
     if (!node || node.type !== "TEXT") return;
@@ -1162,18 +1144,13 @@ function fitTextLayer(node) {
     if (!frame) return;
     var fb = frame.absoluteBoundingBox, nb = node.absoluteBoundingBox;
     if (!fb || !nb) return;
+    var inPanel = /^notes$/i.test(String(frame.name || ""));
 
     if (node.textAutoResize !== "WIDTH_AND_HEIGHT") {
-      var availBottom = fb.y + fb.height;
-      if ((nb.y + nb.height) - availBottom <= 1) return; // fits — leave it alone
-      var startFs = node.fontSize;
-      var endFs = _shrinkUntil(node, function () {
-        var b = node.absoluteBoundingBox;
-        return !b || (b.y + b.height) <= availBottom + 1;
-      });
-      if (endFs !== null && endFs !== startFs) {
-        log("    ↳ shrank '" + node.name + "' " + Math.round(startFs) + " → " + Math.round(endFs) + "px to fit its panel");
-      }
+      if (inPanel) return;                                   // the panel grows to fit
+      if ((nb.y + nb.height) - (fb.y + fb.height) <= 1) return;
+      log("    ⚠ '" + node.name + "' runs past the bottom of '" + frame.name + "' at " +
+          Math.round(node.fontSize || 0) + "px — kept at template size; shorten the copy or enlarge the box");
       return;
     }
 
@@ -1186,16 +1163,67 @@ function fitTextLayer(node) {
       node.textAutoResize = "HEIGHT";
       node.resize(targetW, node.height);
       log("    ↳ wrapped '" + node.name + "' to " + Math.round(targetW) + "px");
-    } else {
-      // One-line auto-width label (name/role/CTA/badge/stat) — its width follows
-      // its font, so shrinking genuinely makes it fit.
-      var fs = _shrinkUntil(node, function () {
-        var b = node.absoluteBoundingBox;
-        return !b || (b.x + b.width) <= availRight + 1;
-      });
-      if (fs !== null) log("    ↳ shrank '" + node.name + "' to " + Math.round(fs) + "px to fit");
+    } else if (!inPanel && (nb.x + nb.width) - (fb.x + fb.width) > 1) {
+      // Flag only text that actually crosses the frame's edge (the 40px margin
+      // above only decides where wrapping starts). Known today: Meta Us vs Them
+      // 1080x1920's Copy_CTA crosses its column by 14px with the TEMPLATE's own
+      // "Start hiring" — the old shrink hid that; the box needs widening.
+      log("    ⚠ '" + node.name + "' runs past the edge of '" + frame.name + "' at " +
+          Math.round(node.fontSize || 0) + "px — kept at template size; shorten the copy or widen the box");
     }
   } catch (e) { /* fitting is best-effort — never block assembly */ }
+}
+
+// Grow a copy panel (Notes) so every line of its copy shows at template size.
+// Meta's Notes is a fixed 984px frame that clips, with a fixed-height Copy Frame
+// inside; Reddit's already hugs. Only ever grows, and only when the copy needs it.
+function _growCopyPanel(notes) {
+  try {
+    if (!notes || !("children" in notes)) return;
+    var cf = findDirectChildByName(notes, "Copy Frame");
+    if (cf && cf.layoutMode && cf.layoutMode !== "NONE" && cf.primaryAxisSizingMode === "FIXED") {
+      cf.primaryAxisSizingMode = "AUTO";                      // hug its rows
+    }
+    if (notes.layoutMode && notes.layoutMode !== "NONE") return;  // auto-layout panel hugs already
+    var nb = notes.absoluteBoundingBox;
+    if (!nb || !nb.height) return;
+    var bottom = nb.y;
+    for (var i = 0; i < notes.children.length; i++) {
+      var c = notes.children[i];
+      if (c.visible === false) continue;
+      var b = c.absoluteBoundingBox;
+      if (b) bottom = Math.max(bottom, b.y + b.height);
+    }
+    var scale = notes.height / nb.height;                    // local units per rendered px
+    var need = Math.ceil((bottom - nb.y) * scale + _FIT_MARGIN);
+    if (need > notes.height + 1) {
+      var was = notes.height;
+      notes.resize(notes.width, need);
+      log("    ↳ copy panel grew " + Math.round(was) + " → " + need + "px so the copy keeps its size");
+    }
+  } catch (e) { /* best-effort — never block assembly */ }
+}
+
+// Let the board grow if a grown panel now runs past its fixed height (Meta's
+// board master is a fixed 2528px frame that clips). Boards that fit are left
+// exactly as they were.
+function _growBoardToFit(board) {
+  try {
+    var bb = board && board.absoluteBoundingBox;
+    if (!bb || !("children" in board)) return;
+    var bottom = bb.y;
+    for (var i = 0; i < board.children.length; i++) {
+      var b = board.children[i].absoluteBoundingBox;
+      if (b && board.children[i].visible !== false) bottom = Math.max(bottom, b.y + b.height);
+    }
+    var pad = (board.paddingBottom || 0) * (bb.height / (board.height || bb.height));
+    if (bottom + pad <= bb.y + bb.height + 1) return;
+    var was = board.height;
+    if (board.layoutMode === "HORIZONTAL" && board.counterAxisSizingMode === "FIXED") board.counterAxisSizingMode = "AUTO";
+    else if (board.layoutMode === "VERTICAL" && board.primaryAxisSizingMode === "FIXED") board.primaryAxisSizingMode = "AUTO";
+    else board.resize(board.width, Math.ceil((bottom + pad - bb.y) * (board.height / bb.height)));
+    log("  ↳ board grew " + Math.round(was) + " → " + Math.round(board.height) + "px to fit the copy panel");
+  } catch (e) { /* best-effort */ }
 }
 
 async function setTextLayer(node, text) {
@@ -2369,6 +2397,7 @@ async function fillCopyPanelByLabel(notesFrame, headlineVal, primaryVal, primary
       if ("visible" in group) group.visible = false;
     }
   }
+  _growCopyPanel(notesFrame);
 }
 
 function findImageFrameByDimensions(layoutFrame, w, h) {
@@ -2445,6 +2474,9 @@ async function fillConceptBoard(clone, conceptRows, conceptIndex, styledSearchRo
       log("  ⚠ No copy panel found: board has no Frame 13/14 pair and no Frame 15");
     }
   }
+
+  // Copy never shrinks, so a long panel may have outgrown the board.
+  _growBoardToFit(clone);
 
   // Update the "Ad Concept #" and "Ad Type" pills.
   //
@@ -3288,6 +3320,7 @@ async function assemble(payload) {
       log("⚠ 'Generated Tests' container not found — placing boards loose on the page.");
     }
     var container = sprintContainer || destination;
+    var nextBoardY = insetY;   // after the inset is learned from the container
 
     for (var g = 0; g < groups.length; g++) {
       var group = groups[g];
@@ -3305,9 +3338,15 @@ async function assemble(payload) {
         detachAllInstances(clone);
         if (container && "appendChild" in container) container.appendChild(clone);
         else figma.currentPage.appendChild(clone);
-        if (sprintContainer) { clone.x = insetX; clone.y = insetY + (g * pitch); }   // relative to the container frame
-        else { clone.x = baseX; clone.y = baseY + (g * (template.height + 240)); }
+        // Stack by each board's REAL height: a board whose copy panel grew
+        // (copy never shrinks) is taller than the template.
+        if (sprintContainer) { clone.x = insetX; clone.y = nextBoardY; }   // relative to the container frame
+        else { clone.x = baseX; clone.y = baseY + (nextBoardY - insetY); }
         var r = await fillConceptBoard(clone, group.rows, g, styledSearchRoot);
+        nextBoardY += clone.height + 240;
+        if (sprintContainer && nextBoardY > sprintContainer.height) {
+          try { sprintContainer.resizeWithoutConstraints(sprintContainer.width, nextBoardY); } catch (e) {}
+        }
         log("  Slots filled: " + r.imagesApplied + "/" + (r.boardSlots != null ? r.boardSlots : r.totalRows));
         if (r.boardSlots != null && r.imagesApplied < r.boardSlots) _asmShortfall += (r.boardSlots - r.imagesApplied);
         if (r.imagesApplied > 0) { assembled++; assembledIds.push(clone.id); }

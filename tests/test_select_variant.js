@@ -224,16 +224,16 @@ eval(src.match(/var REDDIT_LAYER_FILLS = \{[\s\S]*?\n\};/)[0].replace('var ', 'g
   ok('list layers: returns false when absent, so Copy_Body fallback runs',
      (await fillListLayers(noLists, ['a','b'])) === false);
 
-  // 11. The 22px copy-panel bug (Elise, 2026-09-29: "in the template it's 48 but
-  // over yonder any of these is 22"). Geometry below is the live Reddit master
-  // 7356:1259: a fixed 620px auto-height value layer ending 37px inside a
-  // clipping Notes frame — 3px past the 40px margin.
-  const fitSrc = ['_adBoundary', '_shrinkUntil', 'fitTextLayer'].map(grab).join('\n');
-  const fitEnv = src.match(/var _WRAP_HINTS[^\n]*\nvar _FIT_MARGIN[^\n]*\nvar _FIT_MIN_FS[^\n]*/)[0];
-  const fit = new Function('log', fitEnv + '\n' + fitSrc + '\nreturn fitTextLayer;')(t => logs.push(t));
+  // 11. COPY NEVER SHRINKS (Logan, 2026-09-30). History: every copy-panel line
+  // was shrunk to a 22px floor (Elise, 2026-09-29: "in the template it's 48 but
+  // over yonder any of these is 22"). Geometry is the live masters: a fixed
+  // 620px auto-height value box inside a clipping Notes frame.
+  const fitSrc = ['_adBoundary', 'fitTextLayer', '_growCopyPanel', '_growBoardToFit', 'findDirectChildByName'].map(grab).join('\n');
+  const fitEnv = src.match(/var _WRAP_HINTS[^\n]*\nvar _FIT_MARGIN[^\n]*/)[0];
+  const fx = new Function('log', fitEnv + '\n' + fitSrc + '\nreturn {fitTextLayer, _growCopyPanel, _growBoardToFit};')(t => logs.push(t));
 
   // Fake text node whose box behaves like Figma's: a fixed-width box keeps its
-  // width and grows DOWN as the font grows; an auto-width one grows RIGHT.
+  // width and grows DOWN; an auto-width one grows RIGHT.
   const textNode = ({x, y, w, chars, fs, mode, name = 'Copy_Value', parent}) => {
     const n = {type: 'TEXT', name, fontSize: fs, textAutoResize: mode, parent};
     Object.defineProperty(n, 'absoluteBoundingBox', {get() {
@@ -244,33 +244,51 @@ eval(src.match(/var REDDIT_LAYER_FILLS = \{[\s\S]*?\n\};/)[0].replace('var ', 'g
     }});
     return n;
   };
-  const notes = (h) => ({type: 'FRAME', clipsContent: true, width: 694, parent: null,
-                         absoluteBoundingBox: {x: 344, y: 0, width: 694, height: h}});
+  // A Notes panel whose height can grow (Figma resize), absolute == local here.
+  const notesPanel = (h) => {
+    const nf = {type: 'FRAME', name: 'Notes', clipsContent: true, width: 694, height: h, parent: null, children: [],
+                resize(w2, h2) { this.width = w2; this.height = h2; }};
+    Object.defineProperty(nf, 'absoluteBoundingBox', {get() { return {x: 344, y: 0, width: nf.width, height: nf.height}; }});
+    return nf;
+  };
 
-  // Reddit: Notes hugs its content, so it never clips a short primary text.
-  let t = textNode({x: 381, y: 300, w: 620, chars: 100, fs: 48, mode: 'HEIGHT', parent: notes(5000)});
-  logs.length = 0; fit(t);
-  ok('copy panel: fixed-width primary text KEEPS its 48px (was shrunk to 22)', t.fontSize === 48,
-     'got ' + t.fontSize + ' ' + JSON.stringify(logs));
+  // Meta: long primary text at 40px in the fixed 984px panel.
+  let panelM = notesPanel(984);
+  let t = textNode({x: 381, y: 300, w: 620, chars: 600, fs: 40, mode: 'HEIGHT', parent: panelM});
+  panelM.children.push(t);
+  logs.length = 0; fx.fitTextLayer(t);
+  ok('copy panel: long Meta copy KEEPS its 40px (never shrinks)', t.fontSize === 40, 'got ' + t.fontSize);
+  ok('copy panel: no overflow warning inside a panel (the panel grows instead)', !logs.some(l => /⚠/.test(l)), JSON.stringify(logs));
+  fx._growCopyPanel(panelM);
+  const tb = t.absoluteBoundingBox;
+  ok('copy panel: the panel grew to show every line', panelM.height >= tb.y + tb.height, `panel ${panelM.height} vs text bottom ${tb.y + tb.height}`);
+  // Reddit: short copy at 48px, panel untouched.
+  let panelR = notesPanel(5000);
+  t = textNode({x: 381, y: 300, w: 620, chars: 100, fs: 48, mode: 'HEIGHT', parent: panelR});
+  panelR.children.push(t);
+  fx.fitTextLayer(t); fx._growCopyPanel(panelR);
+  ok('copy panel: Reddit copy stays 48px and a panel that fits is not resized', t.fontSize === 48 && panelR.height === 5000);
 
-  // Meta: Notes is a fixed 984px and clips, so long copy that would run off the
-  // bottom shrinks — only as far as it must, never to the floor by default.
-  t = textNode({x: 381, y: 300, w: 620, chars: 600, fs: 40, mode: 'HEIGHT', parent: notes(984)});
-  logs.length = 0; fit(t);
-  const bb = t.absoluteBoundingBox;
-  ok('copy panel: long copy that overflows the bottom shrinks until it fits',
-     t.fontSize < 40 && bb.y + bb.height <= 984 + 1, 'fs=' + t.fontSize + ' bottom=' + (bb.y + bb.height));
-  ok('copy panel: ...and stops at the first size that fits, not the 22px floor',
-     t.fontSize > 22, 'fs=' + t.fontSize);
-
-  // A one-line auto-width label that really runs off the ad edge still shrinks.
-  const ad = {type: 'FRAME', clipsContent: true, width: 1080, parent: null,
+  // Inside an ad: never shrinks; real overflow is flagged for a designer.
+  const ad = {type: 'FRAME', name: 'STYLED_concept-1_1080x1080', clipsContent: true, width: 1080, parent: null,
               absoluteBoundingBox: {x: 0, y: 0, width: 1080, height: 1080}};
   t = textNode({x: 100, y: 100, w: 0, chars: 40, fs: 60, mode: 'WIDTH_AND_HEIGHT', name: 'Profile_Name', parent: ad});
-  logs.length = 0; fit(t);
-  ok('auto-width label: overflowing the right edge still shrinks to fit',
-     t.fontSize < 60 && t.absoluteBoundingBox.x + t.absoluteBoundingBox.width <= 1080 - 40 + 1,
-     'fs=' + t.fontSize);
+  logs.length = 0; fx.fitTextLayer(t);
+  ok('ad label: overflowing text keeps its 60px', t.fontSize === 60, 'fs=' + t.fontSize);
+  ok('ad label: the overflow is flagged ⚠ for a designer', logs.some(l => /⚠ 'Profile_Name' runs past/.test(l)), JSON.stringify(logs));
+  ok('no shrink code left in the plugin', !/fontSize\s*=\s*fs|_shrinkUntil|_FIT_MIN_FS/.test(src));
+
+  // Board grows only when a grown panel runs past it.
+  const board = (h, childBottom) => {
+    const b = {type: 'FRAME', width: 3000, height: h, layoutMode: 'HORIZONTAL', counterAxisSizingMode: 'FIXED', paddingBottom: 0,
+               children: [{visible: true, absoluteBoundingBox: {x: 0, y: 0, width: 10, height: childBottom}}]};
+    Object.defineProperty(b, 'absoluteBoundingBox', {get() { return {x: 0, y: 0, width: 3000, height: b.height}; }});
+    return b;
+  };
+  let bd = board(2528, 2400); fx._growBoardToFit(bd);
+  ok('board: a board whose panel fits is left as it was', bd.counterAxisSizingMode === 'FIXED');
+  bd = board(2528, 2900); fx._growBoardToFit(bd);
+  ok('board: a board whose panel outgrew it switches to hug its content', bd.counterAxisSizingMode === 'AUTO');
 
   // 12. Size-only template names (Elise's rename, live on the Meta page since
   // 2026-09-29). Variant words that remain: Dark_, Alt_, Alt1_/Alt2_.
